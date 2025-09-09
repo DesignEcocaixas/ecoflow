@@ -761,6 +761,11 @@ app.post("/veiculos/excluir/:id", (req, res) => {
     });
 });
 
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
+
+
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

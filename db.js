@@ -4,7 +4,7 @@ const mysql = require("mysql2");
 // Cria um pool de conexões (em vez de uma única conexão)
 const pool = mysql.createPool({
   host: "localhost",
-  user: "root",
+  user: "appuser",
   password: "23!Bestdavidx",
   database: "sistema_gestao",
   waitForConnections: true,

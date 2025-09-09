@@ -67,6 +67,9 @@ app.get("/check-session", (req, res) => {
     res.json({ logado: false });
 });
 
+app.get("/", (req, res) => {
+  res.redirect("/login");
+});
 
 // Rota POST /login -> valida login
 app.post("/login", (req, res) => {

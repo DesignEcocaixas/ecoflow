@@ -40,11 +40,11 @@ const upload = multer({ storage });
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-/*app.use(session({
+app.use(session({
     secret: "chave-secreta", // troque por algo seguro
     resave: false,
     saveUninitialized: true
-}));*/
+}));
 
 app.get("/login", (req, res) => {
     if (req.session.user) {

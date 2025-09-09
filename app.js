@@ -41,10 +41,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.use(session({
-    secret: "chave-secreta", // troque por algo seguro
-    resave: false,
-    saveUninitialized: true
+    secret: "chave-super-secreta",   // troque por uma chave forte (ex.: gerada pelo openssl)
+    resave: false,                   // não salva sessão se nada mudou
+    saveUninitialized: false,        // não cria sessões "em branco"
+    cookie: {
+        httpOnly: true,              // impede acesso por JS no browser
+        secure: false,               // true só se usar HTTPS
+        maxAge: 1000 * 60 * 60       // 1 hora
+    }
 }));
+
 
 app.get("/login", (req, res) => {
     if (req.session.user) {

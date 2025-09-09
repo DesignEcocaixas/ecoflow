@@ -1,0 +1,126 @@
+CREATE DATABASE sistema_gestao;
+
+USE sistema_gestao;
+
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL, -- vamos salvar senha com hash (bcrypt)
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+USE sistema_gestao;
+
+INSERT INTO usuarios (nome, email, senha)
+VALUES ('David Silva', 'admin@teste.com', '1234');
+
+CREATE TABLE caixas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50),
+    modelo VARCHAR(100) NOT NULL,
+    preco_parda DECIMAL(10,2) NOT NULL,
+    preco_branca DECIMAL(10,2) NOT NULL
+);
+
+ALTER TABLE caixas
+ADD COLUMN atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE caixas
+ADD COLUMN atualizado_por VARCHAR(100) DEFAULT NULL;
+
+ALTER TABLE usuarios
+ADD COLUMN tipo_usuario ENUM('motorista','admin') DEFAULT 'admin';
+
+CREATE TABLE fornecedores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    porcentagem DECIMAL(5,2) NOT NULL, -- Ex: 10.50 representa 10,5%
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE caixas ADD COLUMN fornecedor_id INT NULL;
+ALTER TABLE caixas ADD CONSTRAINT fk_caixa_fornecedor FOREIGN KEY (fornecedor_id) REFERENCES fornecedores(id) ON DELETE SET NULL;
+
+ALTER TABLE caixas 
+ADD COLUMN fornecedor_id INT NULL,
+ADD CONSTRAINT fk_caixa_fornecedor FOREIGN KEY (fornecedor_id) REFERENCES fornecedores(id) ON DELETE SET NULL; (não rodou na vps)
+
+
+CREATE TABLE checklists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    veiculo ENUM('Master','Strada','Fiorino') NOT NULL,
+    oleo ENUM('Baixo','Médio','Apto') NOT NULL,
+    agua ENUM('Baixo','Médio','Apto') NOT NULL,
+    freio ENUM('Baixo','Médio','Apto') NOT NULL,
+    direcao ENUM('Baixo','Médio','Apto') NOT NULL,
+    combustivel ENUM('Reserva','Abaixo de meio tanque','Meio tanque','Acima de meio tanque','Completo') NOT NULL,
+    pneu_calibragem ENUM('Baixo','Médio','Apto') NOT NULL,
+    pneu_estado ENUM('Desgastado','Meia vida','Apto') NOT NULL,
+    luzes ENUM('Defeito pisca','Defeito lanterna','Defeito farol','Todos Aptos') NOT NULL,
+    ruidos ENUM('Ruído motor','Ruído suspensão','Ruído portas') NOT NULL,
+    lixo ENUM('Pendente','Feito') NOT NULL,
+    responsavel ENUM('Eliege','Mário','Mirna','Renilson') NOT NULL,
+    motorista ENUM('Flávio','Fabrício') NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    atualizado_por VARCHAR(100)
+);
+
+ALTER TABLE checklists 
+MODIFY ruidos ENUM('Sem ruídos anormais','Ruído motor','Ruído suspensão','Ruído portas') NOT NULL;
+
+ALTER TABLE checklists 
+MODIFY motorista ENUM('Flávio','Fabrício','Bryan') NOT NULL;
+
+ALTER TABLE checklists 
+ADD COLUMN registrado_por VARCHAR(100) AFTER motorista;
+
+CREATE TABLE notificacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem VARCHAR(255) NOT NULL,
+    tipo ENUM('checklist', 'caixa') NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE veiculos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  marca VARCHAR(60) NOT NULL,
+  modelo VARCHAR(80) NOT NULL,
+  ano INT NOT NULL,
+  km INT NOT NULL,
+  foto VARCHAR(255) DEFAULT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  atualizado_por VARCHAR(100) DEFAULT NULL
+);
+
+CREATE TABLE veiculo_checklists (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  veiculo_id INT NOT NULL,
+  oficina VARCHAR(120) NOT NULL,         -- nome da oficina/serviço
+  mecanico VARCHAR(120) NOT NULL,
+  valor DECIMAL(10,2) NOT NULL,
+  data_horario DATETIME NOT NULL,
+  km_servico INT NOT NULL,
+  documento VARCHAR(255) DEFAULT NULL,   -- arquivo opcional
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  atualizado_por VARCHAR(100) DEFAULT NULL,
+  CONSTRAINT fk_v_chk_veiculo FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE CASCADE
+);
+
+ALTER TABLE veiculo_checklists
+  ADD COLUMN servico TEXT AFTER veiculo_id,
+  MODIFY COLUMN oficina VARCHAR(120) NOT NULL,
+  CHANGE COLUMN data_horario data_servico DATE NOT NULL;
+
+
+
+LIBS
+
+express
+express-session
+mysql
+exceljs
+multer

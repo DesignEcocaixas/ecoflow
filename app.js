@@ -335,34 +335,38 @@ app.get("/checklist-motoristas", (req, res) => {
 
 
 app.post("/checklist-motoristas/novo", (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
-    if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
 
-    db.query(
-        "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
-        [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`]
-    );
+  // Primeiro extrai os dados do body
+  const {
+    veiculo, oleo, agua, freio, direcao, combustivel,
+    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+    responsavel, motorista
+  } = req.body;
 
+  // Agora pode usar veiculo
+  db.query(
+    "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
+    [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`]
+  );
 
-    const {
-        veiculo, oleo, agua, freio, direcao, combustivel,
-        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
-        responsavel, motorista
-    } = req.body;
-
-    db.query(
-        `INSERT INTO checklists 
-  (veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, registrado_por) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, req.session.user.nome],
-        (err) => {
-            if (err) {
-                console.error("Erro ao inserir checklist:", err);
-            }
-            res.redirect("/checklist-motoristas");
-        }
-    );
+  // Insere checklist
+  db.query(
+    `INSERT INTO checklists 
+    (veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, registrado_por) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, req.session.user.nome],
+    (err) => {
+      if (err) {
+        console.error("Erro ao inserir checklist:", err);
+        return res.status(500).send("Erro ao inserir checklist");
+      }
+      res.redirect("/checklist-motoristas");
+    }
+  );
 });
+
 
 app.post("/checklist-motoristas/editar/:id", (req, res) => {
     if (!req.session.user) return res.redirect("/login");

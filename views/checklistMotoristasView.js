@@ -158,8 +158,7 @@ function checklistMotoristasView(usuario, checklists = []) {
                 <label class="form-label">Motorista</label>
                 <select name="motorista" class="form-select" required>
                   <option ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
-                  <option ${item.motorista === "Fabrício" ? "selected" : ""}>Fabrício</option>
-                  <option ${item.motorista === "Bryan" ? "selected" : ""}>Bryan</option>
+                  <option ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
                 </select>
               </div>
 

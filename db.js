@@ -31,4 +31,8 @@ module.exports = pool;
 /*  Se quiser usar async/await em algumas rotas:
     const promisePool = pool.promise();
     module.exports = { pool, promisePool };
+    
+    CONFIG DB VPS
+    password: "23!Bestdavidx",
+    database: "sistema_gestao", 
 */

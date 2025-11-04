@@ -442,8 +442,7 @@ function checklistMotoristasView(usuario, checklists = []) {
                   <label class="form-label">Motorista</label>
                   <select name="motorista" class="form-select" required>
                     <option>Flávio</option>
-                    <option>Fabrício</option>
-                    <option>Bryan</option>
+                    <option>Thiago</option>
                   </select>
                 </div>
 

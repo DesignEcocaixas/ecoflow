@@ -154,6 +154,7 @@ function checklistMotoristasView(usuario, checklists = []) {
                 </select>
               </div>
 
+              <!--inclusão do nome de thiago-->
               <div class="col-md-6">
                 <label class="form-label">Motorista</label>
                 <select name="motorista" class="form-select" required>

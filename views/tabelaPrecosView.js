@@ -268,8 +268,8 @@ function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, forneced
   <body>
       <!-- Sidebar -->
       <div class="sidebar">
-        <div class="text-center mb-4">
-          <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
+        <div class="text-center">
+          <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
         </div>
         <hr class="bg-light">
         ${menu}

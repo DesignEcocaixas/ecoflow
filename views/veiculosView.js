@@ -395,8 +395,8 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
   <body>
     <!-- Sidebar desktop -->
     <div class="sidebar d-none d-md-block">
-      <div class="text-center mb-4">
-        <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
+      <div class="text-center">
+        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
       </div>
       <hr>
       ${menu}

@@ -17,7 +17,7 @@ function loginView(msg = "") {
   </head>
   <body class="d-flex align-items-center justify-content-center vh-100">
       <div class="card shadow p-4" style="width: 350px;">
-        <div class="text-center mb-4">
+        <div class="text-center">
           <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:150px;">
         </div>
           ${msg ? `<div class="alert alert-danger">${msg}</div>` : ""}

@@ -298,8 +298,8 @@ function checklistMotoristasView(usuario, checklists = []) {
   <body>
       <!-- Sidebar -->
       <div class="sidebar">
-          <div class="text-center mb-4">
-            <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
+          <div class="text-center">
+            <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width: 150px;">
         </div>
           <hr>
           <a href="/home"><i class="fas fa-home me-2"></i>Home</a>

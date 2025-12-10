@@ -115,6 +115,56 @@ ALTER TABLE veiculo_checklists
   MODIFY COLUMN oficina VARCHAR(120) NOT NULL,
   CHANGE COLUMN data_horario data_servico DATE NOT NULL;
 
+Corrigir erro de novos motoristas cadastrados no ckecklist (erro ao salvar checklist)
+
+-- ver como está hoje
+DESCRIBE checklists LIKE 'motorista';
+
+-- migrar para texto livre (mantém acentos)
+ALTER TABLE checklists
+  MODIFY COLUMN motorista VARCHAR(100) 
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci
+  NOT NULL;
+
+ALTER TABLE usuarios
+  MODIFY COLUMN tipo_usuario ENUM('admin','motorista','financeiro')
+  NOT NULL
+  DEFAULT 'motorista';
+
+
+----------------ROTA ENTREGAS----------------
+
+-- Pedidos de entrega (cabeçalho)
+CREATE TABLE IF NOT EXISTS entregas_pedidos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(150) NOT NULL,
+  data_pedido DATE NOT NULL,
+  criado_por VARCHAR(100) NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Clientes por pedido (itens)
+CREATE TABLE IF NOT EXISTS entregas_clientes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  pedido_id INT NOT NULL,
+  cliente_nome VARCHAR(150) NOT NULL,
+  status ENUM('ENTREGUE','NAO_ENTREGUE') NOT NULL DEFAULT 'NAO_ENTREGUE',
+  observacao TEXT NULL,
+  atualizado_por VARCHAR(100) NOT NULL,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_pedido_entrega
+    FOREIGN KEY (pedido_id) REFERENCES entregas_pedidos(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE checklists
+  ADD COLUMN observacao TEXT NULL AFTER motorista,
+  ADD COLUMN foto VARCHAR(255) NULL AFTER observacao;
+
+ALTER TABLE entregas_clientes
+  MODIFY COLUMN status ENUM('ENTREGUE','NAO_ENTREGUE','NA_ROTA')
+  NOT NULL
+  DEFAULT 'NA_ROTA';
 
 
 LIBS

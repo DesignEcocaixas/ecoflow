@@ -8,8 +8,14 @@ function loginView(msg = "") {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Login</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <style>
+          body {
+            background: url('/img/bg.png') no-repeat center center fixed;
+            background-size: cover;
+          }
+      </style>
   </head>
-  <body class="bg-light d-flex align-items-center justify-content-center vh-100">
+  <body class="d-flex align-items-center justify-content-center vh-100">
       <div class="card shadow p-4" style="width: 350px;">
         <div class="text-center mb-4">
           <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:150px;">

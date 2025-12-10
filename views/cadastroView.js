@@ -9,6 +9,7 @@ function cadastroView(usuario, usuarios = []) {
       : `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
         <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
         <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
@@ -59,6 +60,7 @@ function cadastroView(usuario, usuarios = []) {
                 <select name="tipo_usuario" class="form-select">
                   <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Admin</option>
                   <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista</option>
+                  <option value="financeiro" ${u.tipo_usuario === "financeiro" ? "selected" : ""}>Financeiro</option>
                 </select>
               </div>
               <div class="modal-footer">
@@ -198,6 +200,7 @@ function cadastroView(usuario, usuarios = []) {
               <select name="tipo_usuario" class="form-select">
                 <option value="admin">Admin</option>
                 <option value="motorista">Motorista</option>
+                <option value="financeiro">Financeiro</option>
               </select>
             </div>
             <div class="modal-footer">

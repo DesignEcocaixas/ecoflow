@@ -32,145 +32,171 @@ function checklistMotoristasView(usuario, checklists = []) {
   </div>
 
     <!-- Modal Editar -->
-    <div class="modal fade" id="editarModal${item.id}" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <form method="POST" action="/checklist-motoristas/editar/${item.id}">
-            <div class="modal-header">
-              <h5 class="modal-title">Editar Checklist</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body row g-3">
-
-              <div class="col-md-6">
-                <label class="form-label">Veículo</label>
-                <select name="veiculo" class="form-select" required>
-                  <option ${item.veiculo === "Master" ? "selected" : ""}>Master</option>
-                  <option ${item.veiculo === "Strada" ? "selected" : ""}>Strada</option>
-                  <option ${item.veiculo === "Fiorino" ? "selected" : ""}>Fiorino</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Nível do óleo</label>
-                <select name="oleo" class="form-select" required>
-                  <option ${item.oleo === "Baixo" ? "selected" : ""}>Baixo</option>
-                  <option ${item.oleo === "Médio" ? "selected" : ""}>Médio</option>
-                  <option ${item.oleo === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Nível da água do radiador</label>
-                <select name="agua" class="form-select" required>
-                  <option ${item.agua === "Baixo" ? "selected" : ""}>Baixo</option>
-                  <option ${item.agua === "Médio" ? "selected" : ""}>Médio</option>
-                  <option ${item.agua === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Fluído de freio</label>
-                <select name="freio" class="form-select" required>
-                  <option ${item.freio === "Baixo" ? "selected" : ""}>Baixo</option>
-                  <option ${item.freio === "Médio" ? "selected" : ""}>Médio</option>
-                  <option ${item.freio === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Fluído da direção hidráulica</label>
-                <select name="direcao" class="form-select" required>
-                  <option ${item.direcao === "Baixo" ? "selected" : ""}>Baixo</option>
-                  <option ${item.direcao === "Médio" ? "selected" : ""}>Médio</option>
-                  <option ${item.direcao === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Combustível</label>
-                <select name="combustivel" class="form-select" required>
-                  <option ${item.combustivel === "Reserva" ? "selected" : ""}>Reserva</option>
-                  <option ${item.combustivel === "Abaixo de meio tanque" ? "selected" : ""}>Abaixo de meio tanque</option>
-                  <option ${item.combustivel === "Meio tanque" ? "selected" : ""}>Meio tanque</option>
-                  <option ${item.combustivel === "Acima de meio tanque" ? "selected" : ""}>Acima de meio tanque</option>
-                  <option ${item.combustivel === "Completo" ? "selected" : ""}>Completo</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Pneus (Calibragem)</label>
-                <select name="pneu_calibragem" class="form-select" required>
-                  <option ${item.pneu_calibragem === "Baixo" ? "selected" : ""}>Baixo</option>
-                  <option ${item.pneu_calibragem === "Médio" ? "selected" : ""}>Médio</option>
-                  <option ${item.pneu_calibragem === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Pneus (Estado)</label>
-                <select name="pneu_estado" class="form-select" required>
-                  <option ${item.pneu_estado === "Desgastado" ? "selected" : ""}>Desgastado</option>
-                  <option ${item.pneu_estado === "Meia vida" ? "selected" : ""}>Meia vida</option>
-                  <option ${item.pneu_estado === "Apto" ? "selected" : ""}>Apto</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Luzes</label>
-                <select name="luzes" class="form-select" required>
-                  <option ${item.luzes === "Defeito pisca" ? "selected" : ""}>Defeito pisca</option>
-                  <option ${item.luzes === "Defeito lanterna" ? "selected" : ""}>Defeito lanterna</option>
-                  <option ${item.luzes === "Defeito farol" ? "selected" : ""}>Defeito farol</option>
-                  <option ${item.luzes === "Todos Aptos" ? "selected" : ""}>Todos Aptos</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Ruídos anormais</label>
-                <select name="ruidos" class="form-select" required>
-                  <option ${item.ruidos === "Sem ruídos anormais" ? "selected" : ""}>Sem ruídos anormais</option>
-                  <option ${item.ruidos === "Ruído motor" ? "selected" : ""}>Ruído motor</option>
-                  <option ${item.ruidos === "Ruído suspensão" ? "selected" : ""}>Ruído suspensão</option>
-                  <option ${item.ruidos === "Ruído portas" ? "selected" : ""}>Ruído portas</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Remoção do lixo interno</label>
-                <select name="lixo" class="form-select" required>
-                  <option ${item.lixo === "Pendente" ? "selected" : ""}>Pendente</option>
-                  <option ${item.lixo === "Feito" ? "selected" : ""}>Feito</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Responsável logístico</label>
-                <select name="responsavel" class="form-select" required>
-                  <option ${item.responsavel === "Eliege" ? "selected" : ""}>Eliege</option>
-                  <option ${item.responsavel === "Mário" ? "selected" : ""}>Mário</option>
-                  <option ${item.responsavel === "Mirna" ? "selected" : ""}>Mirna</option>
-                  <option ${item.responsavel === "Renilson" ? "selected" : ""}>Renilson</option>
-                </select>
-              </div>
-
-              <!--inclusão do nome de thiago-->
-              <div class="col-md-6">
-                <label class="form-label">Motorista</label>
-                <select name="motorista" class="form-select" required>
-                  <option ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
-                  <option ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
-                </select>
-              </div>
-
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            </div>
-          </form>
+<div class="modal fade" id="editarModal${item.id}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="/checklist-motoristas/editar/${item.id}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Checklist</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-      </div>
+
+        <div class="modal-body row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Veículo</label>
+            <select name="veiculo" class="form-select" required>
+              <option ${item.veiculo === "Master" ? "selected" : ""}>Master</option>
+              <option ${item.veiculo === "Strada" ? "selected" : ""}>Strada</option>
+              <option ${item.veiculo === "Fiorino" ? "selected" : ""}>Fiorino</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Nível do óleo</label>
+            <select name="oleo" class="form-select" required>
+              <option ${item.oleo === "Baixo" ? "selected" : ""}>Baixo</option>
+              <option ${item.oleo === "Médio" ? "selected" : ""}>Médio</option>
+              <option ${item.oleo === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Nível da água do radiador</label>
+            <select name="agua" class="form-select" required>
+              <option ${item.agua === "Baixo" ? "selected" : ""}>Baixo</option>
+              <option ${item.agua === "Médio" ? "selected" : ""}>Médio</option>
+              <option ${item.agua === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Fluído de freio</label>
+            <select name="freio" class="form-select" required>
+              <option ${item.freio === "Baixo" ? "selected" : ""}>Baixo</option>
+              <option ${item.freio === "Médio" ? "selected" : ""}>Médio</option>
+              <option ${item.freio === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Fluído da direção hidráulica</label>
+            <select name="direcao" class="form-select" required>
+              <option ${item.direcao === "Baixo" ? "selected" : ""}>Baixo</option>
+              <option ${item.direcao === "Médio" ? "selected" : ""}>Médio</option>
+              <option ${item.direcao === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Combustível</label>
+            <select name="combustivel" class="form-select" required>
+              <option ${item.combustivel === "Reserva" ? "selected" : ""}>Reserva</option>
+              <option ${item.combustivel === "Abaixo de meio tanque" ? "selected" : ""}>Abaixo de meio tanque</option>
+              <option ${item.combustivel === "Meio tanque" ? "selected" : ""}>Meio tanque</option>
+              <option ${item.combustivel === "Acima de meio tanque" ? "selected" : ""}>Acima de meio tanque</option>
+              <option ${item.combustivel === "Completo" ? "selected" : ""}>Completo</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Pneus (Calibragem)</label>
+            <select name="pneu_calibragem" class="form-select" required>
+              <option ${item.pneu_calibragem === "Baixo" ? "selected" : ""}>Baixo</option>
+              <option ${item.pneu_calibragem === "Médio" ? "selected" : ""}>Médio</option>
+              <option ${item.pneu_calibragem === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Pneus (Estado)</label>
+            <select name="pneu_estado" class="form-select" required>
+              <option ${item.pneu_estado === "Desgastado" ? "selected" : ""}>Desgastado</option>
+              <option ${item.pneu_estado === "Meia vida" ? "selected" : ""}>Meia vida</option>
+              <option ${item.pneu_estado === "Apto" ? "selected" : ""}>Apto</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Luzes</label>
+            <select name="luzes" class="form-select" required>
+              <option ${item.luzes === "Defeito pisca" ? "selected" : ""}>Defeito pisca</option>
+              <option ${item.luzes === "Defeito lanterna" ? "selected" : ""}>Defeito lanterna</option>
+              <option ${item.luzes === "Defeito farol" ? "selected" : ""}>Defeito farol</option>
+              <option ${item.luzes === "Todos Aptos" ? "selected" : ""}>Todos Aptos</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Ruídos anormais</label>
+            <select name="ruidos" class="form-select" required>
+              <option ${item.ruidos === "Sem ruídos anormais" ? "selected" : ""}>Sem ruídos anormais</option>
+              <option ${item.ruidos === "Ruído motor" ? "selected" : ""}>Ruído motor</option>
+              <option ${item.ruidos === "Ruído suspensão" ? "selected" : ""}>Ruído suspensão</option>
+              <option ${item.ruidos === "Ruído portas" ? "selected" : ""}>Ruído portas</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Remoção do lixo interno</label>
+            <select name="lixo" class="form-select" required>
+              <option ${item.lixo === "Pendente" ? "selected" : ""}>Pendente</option>
+              <option ${item.lixo === "Feito" ? "selected" : ""}>Feito</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Responsável logístico</label>
+            <select name="responsavel" class="form-select" required>
+              <option ${item.responsavel === "Eliege" ? "selected" : ""}>Eliege</option>
+              <option ${item.responsavel === "Mário" ? "selected" : ""}>Mário</option>
+              <option ${item.responsavel === "Mirna" ? "selected" : ""}>Mirna</option>
+              <option ${item.responsavel === "Renilson" ? "selected" : ""}>Renilson</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Motorista</label>
+            <select name="motorista" class="form-select" required>
+              <option ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
+              <option ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
+            </select>
+          </div>
+
+          <!-- NOVOS CAMPOS -->
+
+          <div class="col-12">
+            <label class="form-label">Observação (opcional)</label>
+            <textarea name="observacao" class="form-control" rows="3">${item.observacao || ""}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label d-block">Foto em anexo</label>
+            ${
+              item.foto
+                ? `
+                  <a href="/uploads/${item.foto}" target="_blank" class="btn btn-outline-secondary btn-sm mb-2">
+                    <i class="fa-solid fa-image"></i> Ver foto atual
+                  </a>
+                  <br>
+                  <small class="text-muted d-block mb-1">Arquivo atual: ${item.foto}</small>
+                `
+                : `<small class="text-muted d-block mb-2">Nenhuma foto anexada.</small>`
+            }
+            <label class="form-label">Substituir foto (opcional)</label>
+            <input type="file" name="foto" class="form-control" accept="image/*">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
     </div>
+  </div>
+</div>
+
 
 
     <!-- Modal Excluir -->
@@ -319,7 +345,7 @@ function checklistMotoristasView(usuario, checklists = []) {
       <div class="modal fade" id="novoChecklistModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
-            <form method="POST" action="/checklist-motoristas/novo">
+            <form method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data">
               <div class="modal-header">
                 <h5 class="modal-title">Novo Checklist</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -442,8 +468,19 @@ function checklistMotoristasView(usuario, checklists = []) {
                   <label class="form-label">Motorista</label>
                   <select name="motorista" class="form-select" required>
                     <option>Flávio</option>
-                    <option>Thiago</option>
+                    <option>Fabrício</option>
+                    <option>Bryan</option>
                   </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label mt-2">Observação (opcional)</label>
+                  <textarea name="observacao" class="form-control mb-2" rows="3"></textarea>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Anexar foto (opcional)</label>
+                  <input type="file" name="foto" class="form-control mb-3" accept="image/*">
                 </div>
 
               </div>

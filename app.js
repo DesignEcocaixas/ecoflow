@@ -13,6 +13,7 @@ const cadastroView = require("./views/cadastroView");
 const tabelaPrecosView = require("./views/tabelaPrecosView");
 const checklistMotoristasView = require("./views/checklistMotoristasView");
 const veiculosView = require("./views/veiculosView");
+const entregasView = require("./views/entregasView");
 
 const app = express();
 const PORT = 3000;
@@ -66,6 +67,14 @@ app.get("/login", (req, res) => {
     res.send(loginView());
 });
 
+function isLogged(req, res, next) {
+    if (!req.session || !req.session.user) {
+        return res.redirect("/login");
+    }
+    next();
+}
+
+
 app.get("/check-session", (req, res) => {
     if (req.session.user) {
         return res.json({ logado: true, usuario: req.session.user });
@@ -74,7 +83,7 @@ app.get("/check-session", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.redirect("/login");
+    res.redirect("/login");
 });
 
 // Rota POST /login -> valida login
@@ -223,6 +232,11 @@ app.post("/usuarios/excluir/:id", (req, res) => {
 app.get("/tabela-precos", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
+
     db.query(`
   SELECT c.*, f.nome AS fornecedor_nome, f.porcentagem AS fornecedor_pct
   FROM caixas c
@@ -255,11 +269,13 @@ app.get("/tabela-precos", (req, res) => {
 
 });
 
-
-
-
 app.post("/tabela-precos/nova", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { codigo, modelo, preco_parda, preco_branca, fornecedor_id } = req.body;
 
@@ -282,10 +298,14 @@ app.post("/tabela-precos/nova", (req, res) => {
     );
 });
 
-
 // POST editar caixa
 app.post("/tabela-precos/editar/:id", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { id } = req.params;
     const { codigo, modelo, preco_parda, preco_branca } = req.body;
@@ -306,6 +326,13 @@ app.post("/tabela-precos/editar/:id", (req, res) => {
 
 // POST excluir caixa
 app.post("/tabela-precos/excluir/:id", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
+
     const { id } = req.params;
 
     db.query("DELETE FROM caixas WHERE id=?", [id], (err) => {
@@ -319,8 +346,8 @@ app.post("/tabela-precos/excluir/:id", (req, res) => {
 app.get("/checklist-motoristas", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
-    // Agora tanto motorista quanto admin podem acessar
-    if (req.session.user.tipo_usuario !== "motorista" && req.session.user.tipo_usuario !== "admin") {
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
         return res.status(403).send("Acesso negado.");
     }
 
@@ -334,70 +361,215 @@ app.get("/checklist-motoristas", (req, res) => {
 });
 
 
-app.post("/checklist-motoristas/novo", (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
-  if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
-
-  // Primeiro extrai os dados do body
-  const {
-    veiculo, oleo, agua, freio, direcao, combustivel,
-    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
-    responsavel, motorista
-  } = req.body;
-
-  // Agora pode usar veiculo
-  db.query(
-    "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
-    [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`]
-  );
-
-  // Insere checklist
-  db.query(
-    `INSERT INTO checklists 
-    (veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, registrado_por) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, req.session.user.nome],
-    (err) => {
-      if (err) {
-        console.error("Erro ao inserir checklist:", err);
-        return res.status(500).send("Erro ao inserir checklist");
-      }
-      res.redirect("/checklist-motoristas");
-    }
-  );
-});
-
-
-app.post("/checklist-motoristas/editar/:id", (req, res) => {
+app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
 
-    const { id } = req.params;
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    // Extrai os dados do formulário
     const {
-        veiculo, oleo, agua, freio, direcao, combustivel,
-        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
-        responsavel, motorista
+        veiculo,           // ou 'veiculo' se sua coluna ainda se chama assim
+        oleo,
+        agua,
+        freio,
+        direcao,
+        combustivel,
+        pneu_calibragem,
+        pneu_estado,
+        luzes,
+        ruidos,
+        lixo,
+        responsavel,
+        motorista,
+        observacao,       // novo campo
     } = req.body;
 
+    // Nome do arquivo da foto (se foi enviado)
+    const foto = req.file ? req.file.filename : null;
+
+    // Notificação (opcional)
     db.query(
-        `UPDATE checklists SET 
-      veiculo=?, oleo=?, agua=?, freio=?, direcao=?, combustivel=?, 
-      pneu_calibragem=?, pneu_estado=?, luzes=?, ruidos=?, lixo=?, 
-      responsavel=?, motorista=?, atualizado_por=? 
-    WHERE id=?`,
-        [veiculo, oleo, agua, freio, direcao, combustivel, pneu_calibragem, pneu_estado, luzes, ruidos, lixo, responsavel, motorista, req.session.user.nome, id],
-        (err) => {
-            if (err) {
-                console.error("Erro ao atualizar checklist:", err);
-            }
-            res.redirect("/checklist-motoristas");
+        "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
+        [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
+        (errNotif) => {
+            if (errNotif) console.error("Erro ao registrar notificação de checklist:", errNotif);
         }
     );
+
+    // Insert no checklist (já com observacao + foto)
+    const sql = `
+    INSERT INTO checklists 
+      (veiculo, oleo, agua, freio, direcao, combustivel,
+       pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+       responsavel, motorista, registrado_por, observacao, foto) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+    const params = [
+        veiculo,
+        oleo,
+        agua,
+        freio,
+        direcao,
+        combustivel,
+        pneu_calibragem,
+        pneu_estado,
+        luzes,
+        ruidos,
+        lixo,
+        responsavel,
+        motorista,
+        req.session.user.nome,
+        observacao && observacao.trim() !== "" ? observacao : null,
+        foto,
+    ];
+
+    db.query(sql, params, (err) => {
+        if (err) {
+            console.error("Erro ao inserir checklist:", err);
+            return res.status(500).send("Erro ao inserir checklist.");
+        }
+        return res.redirect("/checklist-motoristas");
+    });
+});
+
+app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { id } = req.params;
+
+    // Garante que req.body existe
+    const {
+        veiculo,
+        oleo,
+        agua,
+        freio,
+        direcao,
+        combustivel,
+        pneu_calibragem,
+        pneu_estado,
+        luzes,
+        ruidos,
+        lixo,
+        responsavel,
+        motorista,
+        observacao,
+    } = req.body || {};
+
+    const novaFoto = req.file ? req.file.filename : null;
+
+    // Se o usuário enviou uma nova foto, precisamos:
+    // 1) buscar a foto antiga
+    // 2) apagar do disco (se existir)
+    // 3) atualizar o registro com a nova foto
+    if (novaFoto) {
+        db.query(
+            "SELECT foto FROM checklists WHERE id = ?",
+            [id],
+            (errSel, rows) => {
+                if (errSel) {
+                    console.error("Erro ao buscar checklist para substituir foto:", errSel);
+                    return res.status(500).send("Erro ao atualizar checklist.");
+                }
+
+                if (rows.length && rows[0].foto) {
+                    const fotoAntiga = rows[0].foto;
+                    const caminho = path.join(__dirname, "uploads", fotoAntiga);
+                    if (fs.existsSync(caminho)) {
+                        fs.unlink(caminho, (errUnlink) => {
+                            if (errUnlink) {
+                                console.warn("Erro ao remover foto antiga:", errUnlink);
+                            }
+                        });
+                    }
+                }
+
+                // Agora atualiza tudo, incluindo a nova foto
+                db.query(
+                    `UPDATE checklists
+           SET veiculo = ?, oleo = ?, agua = ?, freio = ?, direcao = ?, combustivel = ?,
+               pneu_calibragem = ?, pneu_estado = ?, luzes = ?, ruidos = ?, lixo = ?,
+               responsavel = ?, motorista = ?, observacao = ?, foto = ?
+           WHERE id = ?`,
+                    [
+                        veiculo,
+                        oleo,
+                        agua,
+                        freio,
+                        direcao,
+                        combustivel,
+                        pneu_calibragem,
+                        pneu_estado,
+                        luzes,
+                        ruidos,
+                        lixo,
+                        responsavel,
+                        motorista,
+                        observacao && observacao.trim() !== "" ? observacao : null,
+                        novaFoto,
+                        id,
+                    ],
+                    (errUpd) => {
+                        if (errUpd) {
+                            console.error("Erro ao atualizar checklist (com nova foto):", errUpd);
+                            return res.status(500).send("Erro ao atualizar checklist.");
+                        }
+                        return res.redirect("/checklist-motoristas");
+                    }
+                );
+            }
+        );
+    } else {
+        // Sem nova foto: não mexe na coluna foto
+        db.query(
+            `UPDATE checklists
+       SET veiculo = ?, oleo = ?, agua = ?, freio = ?, direcao = ?, combustivel = ?,
+           pneu_calibragem = ?, pneu_estado = ?, luzes = ?, ruidos = ?, lixo = ?,
+           responsavel = ?, motorista = ?, observacao = ?
+       WHERE id = ?`,
+            [
+                veiculo,
+                oleo,
+                agua,
+                freio,
+                direcao,
+                combustivel,
+                pneu_calibragem,
+                pneu_estado,
+                luzes,
+                ruidos,
+                lixo,
+                responsavel,
+                motorista,
+                observacao && observacao.trim() !== "" ? observacao : null,
+                id,
+            ],
+            (errUpd) => {
+                if (errUpd) {
+                    console.error("Erro ao atualizar checklist (sem nova foto):", errUpd);
+                    return res.status(500).send("Erro ao atualizar checklist.");
+                }
+                return res.redirect("/checklist-motoristas");
+            }
+        );
+    }
 });
 
 app.post("/checklist-motoristas/excluir/:id", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { id } = req.params;
 
@@ -411,7 +583,11 @@ app.post("/checklist-motoristas/excluir/:id", (req, res) => {
 
 app.get("/checklist-motoristas/download/:id", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    if (req.session.user.tipo_usuario !== "motorista") return res.status(403).send("Acesso negado.");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { id } = req.params;
 
@@ -472,6 +648,11 @@ app.get("/checklist-motoristas/download/:id", (req, res) => {
 app.get("/fornecedores", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
+
     db.query("SELECT * FROM fornecedores ORDER BY criado_em DESC", (err, results) => {
         if (err) {
             console.error("Erro ao buscar fornecedores:", err);
@@ -483,6 +664,11 @@ app.get("/fornecedores", (req, res) => {
 
 app.post("/fornecedores/novo", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { nome, porcentagem } = req.body;
 
@@ -501,6 +687,11 @@ app.post("/fornecedores/novo", (req, res) => {
 
 app.post("/fornecedores/excluir/:id", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
 
     const { id } = req.params;
     db.query("DELETE FROM fornecedores WHERE id = ?", [id], (err) => {
@@ -771,8 +962,228 @@ app.post("/veiculos/excluir/:id", (req, res) => {
     });
 });
 
+// LISTAR ENTREGAS (pedidos + clientes)
+app.get("/entregas", isLogged, (req, res) => {
+    const { titulo, data_inicio, data_fim } = req.query;
+
+    // Monta o WHERE dinamicamente
+    const where = [];
+    const params = [];
+
+    if (titulo && titulo.trim()) {
+        where.push("titulo LIKE ?");
+        params.push(`%${titulo.trim()}%`);
+    }
+
+    if (data_inicio) {
+        where.push("data_pedido >= ?");
+        params.push(data_inicio);
+    }
+
+    if (data_fim) {
+        where.push("data_pedido <= ?");
+        params.push(data_fim);
+    }
+
+    let sqlPedidos = "SELECT * FROM entregas_pedidos";
+    if (where.length) {
+        sqlPedidos += " WHERE " + where.join(" AND ");
+    }
+    sqlPedidos += " ORDER BY data_pedido DESC, id DESC";
+
+    db.query(sqlPedidos, params, (err, pedidos) => {
+        if (err) {
+            console.error("Erro ao listar pedidos:", err);
+            return res.status(500).send("Erro ao carregar entregas.");
+        }
+
+        if (!pedidos.length) {
+            // passa filtros pra view pra manter os campos preenchidos
+            return res.send(
+                entregasView(req.session.user, [], {}, {
+                    titulo: titulo || "",
+                    data_inicio: data_inicio || "",
+                    data_fim: data_fim || "",
+                })
+            );
+        }
+
+        const ids = pedidos.map((p) => p.id);
+        db.query(
+            "SELECT * FROM entregas_clientes WHERE pedido_id IN (?) ORDER BY id DESC",
+            [ids],
+            (err2, clientes) => {
+                if (err2) {
+                    console.error("Erro ao listar clientes:", err2);
+                    return res.status(500).send("Erro ao carregar entregas.");
+                }
+                const clientesMap = {};
+                clientes.forEach((c) => {
+                    if (!clientesMap[c.pedido_id]) clientesMap[c.pedido_id] = [];
+                    clientesMap[c.pedido_id].push(c);
+                });
+
+                res.send(
+                    entregasView(req.session.user, pedidos, clientesMap, {
+                        titulo: titulo || "",
+                        data_inicio: data_inicio || "",
+                        data_fim: data_fim || "",
+                    })
+                );
+            }
+        );
+    });
+});
+
+
+// CRIAR NOVO PEDIDO
+app.post("/entregas/novo", isLogged, (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { titulo, data_pedido } = req.body;
+
+    const usuario = req.session.user; // agora sabemos que existe
+    const nomeUsuario = usuario.nome || usuario.email || "Usuário";
+
+    db.query(
+        "INSERT INTO entregas_pedidos (titulo, data_pedido, criado_por) VALUES (?, ?, ?)",
+        [titulo, data_pedido, nomeUsuario],
+        (err) => {
+            if (err) {
+                console.error("Erro ao criar pedido:", err);
+                return res.status(500).send("Erro ao criar pedido.");
+            }
+
+            // se você estiver usando notificações:
+            db.query(
+                "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'entrega')",
+                [`Pedido '${titulo}' criado por ${nomeUsuario}`],
+                () => { } // ignora erro aqui se quiser
+            );
+
+            return res.redirect("/entregas");
+        }
+    );
+});
+
+// EXCLUIR PEDIDO (cascade apaga clientes)
+app.post("/entregas/:id/excluir", isLogged, /* onlyAdmin, */(req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { id } = req.params;
+    db.query("DELETE FROM entregas_pedidos WHERE id=?", [id], (err) => {
+        if (err) {
+            console.error("Erro ao excluir pedido:", err);
+            return res.status(500).send("Erro ao excluir pedido.");
+        }
+        res.redirect("/entregas");
+    });
+});
+
+// ADICIONAR CLIENTE AO PEDIDO
+app.post("/entregas/:id/clientes/novo", isLogged, (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { id } = req.params;
+    let { cliente_nome, status, observacao } = req.body;
+
+    const user = req.session.user || {};
+    const atualizadoPor = user.nome || user.email || "Usuário";
+
+    // Default de segurança
+    if (!status || !status.trim()) {
+        status = "NA_ROTA";
+    }
+
+    db.query(
+        `INSERT INTO entregas_clientes (pedido_id, cliente_nome, status, observacao, atualizado_por)
+     VALUES (?, ?, ?, ?, ?)`,
+        [id, cliente_nome, status, observacao && observacao.trim() ? observacao : null, atualizadoPor],
+        (err) => {
+            if (err) {
+                console.error("Erro ao adicionar cliente:", err);
+                return res.status(500).send("Erro ao adicionar cliente.");
+            }
+            res.redirect("/entregas");
+        }
+    );
+});
+
+// EDITAR CLIENTE (status/observação/nome)
+app.post("/entregas/clientes/editar/:cid", isLogged, (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { cid } = req.params;
+    const { cliente_nome, status, observacao } = req.body;
+
+    const user = req.session.user || {};
+    const atualizadoPor = user.nome || user.email || "Usuário";
+
+    const sql = `
+    UPDATE entregas_clientes
+    SET cliente_nome = ?, status = ?, observacao = ?, atualizado_por = ?
+    WHERE id = ?
+  `;
+
+    const params = [
+        cliente_nome,
+        status,
+        observacao && observacao.trim() !== "" ? observacao : null,
+        atualizadoPor,
+        cid,
+    ];
+
+    db.query(sql, params, (err) => {
+        if (err) {
+            console.error("Erro ao editar cliente:", err);
+            return res.status(500).send("Erro ao editar cliente.");
+        }
+        return res.redirect("/entregas");
+    });
+});
+
+
+// EXCLUIR CLIENTE DO PEDIDO
+app.post("/entregas/clientes/excluir/:cid", /*isLogged*/ /* onlyAdmin, */(req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { cid } = req.params;
+    db.query("DELETE FROM entregas_clientes WHERE id=?", [cid], (err) => {
+        if (err) {
+            console.error("Erro ao excluir cliente:", err);
+            return res.status(500).send("Erro ao excluir cliente.");
+        }
+        res.redirect("/entregas");
+    });
+});
+
 app.get("/health", (req, res) => {
-  res.send("OK");
+    res.send("OK");
 });
 
 

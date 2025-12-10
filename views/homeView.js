@@ -3,10 +3,15 @@ function homeView(usuario) {
         ? `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
+
   `
-        : `
+        : usuario.tipo_usuario === "financeiro"
+            ? `<a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>`
+            : `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
         <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
         <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>

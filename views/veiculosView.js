@@ -1,43 +1,43 @@
 // views/veiculosView.js
 function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
-    const fmtKM = (n) => Number(n || 0).toLocaleString("pt-BR");
-    const fmtMoeda = (n) =>
-        Number(n || 0).toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    const fmtData = (d) => {
-        try {
-            const dt = new Date(d);
-            return dt.toLocaleDateString("pt-BR");
-        } catch {
-            return d;
-        }
-    };
+  const fmtKM = (n) => Number(n || 0).toLocaleString("pt-BR");
+  const fmtMoeda = (n) =>
+    Number(n || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const fmtData = (d) => {
+    try {
+      const dt = new Date(d);
+      return dt.toLocaleDateString("pt-BR");
+    } catch {
+      return d;
+    }
+  };
 
-    // Acumuladores de modais (fora dos modais de lista)
-    const modaisDetalheEditarExcluir = [];
-    const modaisNovoChecklist = [];
-    const veiculoIds = [];
+  // Acumuladores de modais (fora dos modais de lista)
+  const modaisDetalheEditarExcluir = [];
+  const modaisNovoChecklist = [];
+  const veiculoIds = [];
 
-    const cards = veiculos.length
-        ? veiculos
-            .map((v) => {
-                veiculoIds.push(v.id);
-                const checks = checklistsMap[v.id] || [];
+  const cards = veiculos.length
+    ? veiculos
+      .map((v) => {
+        veiculoIds.push(v.id);
+        const checks = checklistsMap[v.id] || [];
 
-                // Lista de checklists (somente os cards + botões; sem modais aqui)
-                const listaChecks =
-                    checks.length > 0
-                        ? checks
-                            .map((c) => {
-                                const servicoTitulo =
-                                    (c.servico || "").length > 60
-                                        ? `${c.servico.slice(0, 60)}…`
-                                        : (c.servico || "");
+        // Lista de checklists (somente os cards + botões; sem modais aqui)
+        const listaChecks =
+          checks.length > 0
+            ? checks
+              .map((c) => {
+                const servicoTitulo =
+                  (c.servico || "").length > 60
+                    ? `${c.servico.slice(0, 60)}…`
+                    : (c.servico || "");
 
-                                // --- Modal de Detalhes (fora do modal de lista) ---
-                                modaisDetalheEditarExcluir.push(`
+                // --- Modal de Detalhes (fora do modal de lista) ---
+                modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="detalheChecklist${c.id}" tabindex="-1">
                         <div class="modal-dialog">
                           <div class="modal-content">
@@ -53,9 +53,9 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                               <p class="mb-1"><b>Data:</b> ${fmtData(c.data_servico)}</p>
                               <p class="mb-2"><b>KM:</b> ${fmtKM(c.km_servico)}</p>
                               ${c.documento
-                                        ? `<a class="btn btn-sm btn-success" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip"></i> Documento</a>`
-                                        : `<span class="text-muted">Sem documento</span>`
-                                    }
+                    ? `<a class="btn btn-sm btn-success" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip"></i> Documento</a>`
+                    : `<span class="text-muted">Sem documento</span>`
+                  }
                             </div>
                             <div class="modal-footer">
                               <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editarChecklist${c.id}" data-bs-dismiss="modal">
@@ -71,8 +71,8 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
-                                // --- Modal de Edição (fora do modal de lista) ---
-                                modaisDetalheEditarExcluir.push(`
+                // --- Modal de Edição (fora do modal de lista) ---
+                modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="editarChecklist${c.id}" tabindex="-1">
                         <div class="modal-dialog">
                           <div class="modal-content">
@@ -113,8 +113,8 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
-                                // --- Modal de Exclusão (fora do modal de lista) ---
-                                modaisDetalheEditarExcluir.push(`
+                // --- Modal de Exclusão (fora do modal de lista) ---
+                modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="excluirChecklist${c.id}" tabindex="-1">
                         <div class="modal-dialog">
                           <div class="modal-content">
@@ -136,9 +136,9 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
-                                // Card da lista de checklists (agora com SERVIÇO no título)
-                                // Inclui data-* para a busca
-                                return `
+                // Card da lista de checklists (agora com SERVIÇO no título)
+                // Inclui data-* para a busca
+                return `
                       <div
                         class="card mb-2 chk-item"
                         data-servico="${(c.servico || "").toLowerCase()}"
@@ -165,12 +165,12 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                         </div>
                       </div>
                     `;
-                            })
-                            .join("")
-                        : `<p class="text-muted mb-0">Nenhum checklist para este veículo.</p>`;
+              })
+              .join("")
+            : `<p class="text-muted mb-0">Nenhum checklist para este veículo.</p>`;
 
-                // Modal: Novo Checklist (fora do modal de lista)
-                modaisNovoChecklist.push(`
+        // Modal: Novo Checklist (fora do modal de lista)
+        modaisNovoChecklist.push(`
             <div class="modal fade" id="novoChecklistVeiculo${v.id}" tabindex="-1">
               <div class="modal-dialog">
                 <div class="modal-content">
@@ -210,12 +210,12 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
             </div>
           `);
 
-                // Card do veículo + Modal de Lista (com barra de busca + botões)
-                return `
+        // Card do veículo + Modal de Lista (com barra de busca + botões)
+        return `
             <div class="col-12 col-md-6 col-lg-4">
               <div class="card shadow-sm mb-3 h-100">
                 <img src="${v.foto ? `/uploads/${v.foto}` : `/img/vehicle_placeholder.png`
-                    }" 
+          }" 
                     alt="${v.marca} ${v.modelo}" class="card-img-top" 
                     style="max-height:180px; object-fit:cover;">
                 <div class="card-body d-flex flex-column">
@@ -334,25 +334,28 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
               </div>
             </div>
           `;
-            })
-            .join("")
-        : `<p class="text-muted">Nenhum veículo cadastrado.</p>`;
+      })
+      .join("")
+    : `<p class="text-muted">Nenhum veículo cadastrado.</p>`;
 
-    const menu =
-        usuario.tipo_usuario === "motorista"
-            ? `<a href="/checklist-motoristas">Checklist Motoristas</a>`
-            : `
+  const menu = usuario.tipo_usuario === "motorista"
+    ? `
+        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
+  `
+    : usuario.tipo_usuario === "financeiro"
+      ? `<a href="/tabela-precos">Tabela de Preços</a>`
+      : `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
         <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
         <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
         <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-        <hr>
-        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
-    `;
+  `;
 
-    return `
+  return `
   <!DOCTYPE html>
   <html lang="pt-br">
   <head>
@@ -397,6 +400,8 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       </div>
       <hr>
       ${menu}
+      <hr class="bg-light">
+      <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
     </div>
 
     <!-- Sidebar mobile -->

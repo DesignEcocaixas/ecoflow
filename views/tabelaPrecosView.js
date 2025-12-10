@@ -1,5 +1,22 @@
 // views/tabelaPrecosView.js
 function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, fornecedores = []) {
+  const menu = usuario.tipo_usuario === "motorista"
+    ? `
+        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
+  `
+    : usuario.tipo_usuario === "financeiro"
+      ? `<a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>`
+      : `
+        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+        <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
+        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
+        <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
+        <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
+        <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
+  `;
+
   const dataFormatada = ultimaAlteracao
     ? new Date(ultimaAlteracao.atualizado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
     : null;
@@ -255,15 +272,9 @@ function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, forneced
           <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
         </div>
         <hr class="bg-light">
-        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-        <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
-        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-        <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
-        <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
-        <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-        <hr>
-        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
-
+        ${menu}
+        <hr class="bg-light">
+        <a href="/logout" class="d-block text-danger">Sair</a>
     </div>
 
     <!-- Sidebar mobile -->
@@ -275,16 +286,7 @@ function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, forneced
     <div class="offcanvas-body text-center d-flex flex-column align-items-center">
         <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-4" style="max-width:150px;">
         <hr class="bg-light w-100">
-        <div class="d-flex flex-column align-items-center w-100">
-          <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-          <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
-          <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-          <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
-          <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-          <hr>
-        </div>
-        <hr class="bg-light w-100">
-        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
+        ${menu}
     </div>
     </div>
 

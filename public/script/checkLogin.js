@@ -46,3 +46,12 @@ async function removerNotificacao(id) {
 }
 
 */
+
+// Remove o preloader após todo o conteúdo carregar
+window.addEventListener("load", () => {
+  const preloader = document.getElementById("preloader");
+  if (preloader) {
+    preloader.style.opacity = "0";
+    setTimeout(() => preloader.remove(), 300); // efeito suave
+  }
+});

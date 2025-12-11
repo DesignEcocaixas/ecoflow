@@ -26,66 +26,69 @@ function loginView(msg = "") {
           z-index: -1;
         }
 
-        /* ======== ONDAS EM CAMADAS ======== */
-        .waves {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 240px;
-          overflow: hidden;
-          pointer-events: none;
-          z-index: 5;
-        }
+        /* ======== NOVAS ONDAS ======== */
+/* ======== ONDAS SUAVES NO RODAPÉ ======== */
+.waves {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  max-height: 400px;
+  min-height: 80px;
+  pointer-events: none;
+  z-index: 5;
+}
 
-        /* Cada "linha" de ondas é um tapete 200% mais largo que a tela,
-           com duas ondas iguais lado a lado */
-        .wave-row {
-          position: absolute;
-          bottom: 0;
-          width: 200%;
-          height: 100%;
-          display: flex;
-        }
 
-        .wave {
-          width: 50%;
-          height: 100%;
-          flex: 0 0 50%;
-        }
+/* Cada camada de onda */
+.wave-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
 
-        /* Camadas com tempos diferentes (passagem longa) */
-        .wave-row1 {
-          animation: waveMove1 40s linear infinite;
-          z-index: 1;
-        }
+.wave-layer svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
-        .wave-row2 {
-          animation: waveMove2 30s linear infinite;
-          z-index: 2;
-        }
+/* Camada de fundo: movimento bem suave */
+.wave-back {
+  animation: waveBackMove 12s ease-in-out infinite;
+}
 
-        .wave-row3 {
-          animation: waveMove3 22s linear infinite;
-          z-index: 3;
-        }
+/* Camada do meio */
+.wave-mid {
+  animation: waveMidMove 9s ease-in-out infinite;
+}
 
-        /* Loop perfeito: 0% e 100% mostram a mesma coisa,
-           pois o tapete andou exatamente metade da largura (50%) */
-        @keyframes waveMove1 {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
+/* Camada frontal */
+.wave-front {
+  animation: waveFrontMove 6s ease-in-out infinite;
+}
 
-        @keyframes waveMove2 {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
+/* Animações apenas VERTICAIS (sem deslocar no X) */
+@keyframes waveBackMove {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
 
-        @keyframes waveMove3 {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
+@keyframes waveMidMove {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(14px); }
+}
+
+@keyframes waveFrontMove {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(18px); }
+}
+
+
+
 
         /* CARD */
         .login-card {
@@ -106,41 +109,49 @@ function loginView(msg = "") {
       <!-- ONDAS EM CAMADAS (tons de verde baseados no #019934) -->
       <div class="waves">
         <!-- Fundo -->
-        <div class="wave-row wave-row1">
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <div class="wave-layer wave-back">
+          <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
             <path fill="#01993433"
-              d="M0,256 C180,220 260,300 440,280 C620,260 720,160 900,170 C1080,180 1260,260 1440,230 L1440,320 L0,320 Z" />
-          </svg>
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="#01993433"
-              d="M0,256 C180,220 260,300 440,280 C620,260 720,160 900,170 C1080,180 1260,260 1440,230 L1440,320 L0,320 Z" />
+              d="M0,240 C180,260 360,230 540,240 C720,250 900,280 1080,270 C1260,260 1350,250 1440,260 L1440,320 L0,320 Z"/>
           </svg>
         </div>
 
         <!-- Meio -->
-        <div class="wave-row wave-row2">
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="#01993455"
-              d="M0,288 C200,260 260,320 420,300 C580,280 700,200 880,210 C1060,220 1280,300 1440,270 L1440,320 L0,320 Z" />
-          </svg>
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="#01993455"
-              d="M0,288 C200,260 260,320 420,300 C580,280 700,200 880,210 C1060,220 1280,300 1440,270 L1440,320 L0,320 Z" />
+        <div class="wave-layer wave-mid">
+          <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="#01993466"
+              d="M0,250 C200,270 380,240 560,250 C740,260 920,280 1100,275 C1280,270 1360,260 1440,265 L1440,320 L0,320 Z"/>
           </svg>
         </div>
 
         <!-- Frente -->
-        <div class="wave-row wave-row3">
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="#01993488"
-              d="M0,300 C160,270 240,320 380,310 C520,300 680,250 860,260 C1040,270 1210,320 1440,290 L1440,320 L0,320 Z" />
-          </svg>
-          <svg class="wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="#01993488"
-              d="M0,300 C160,270 240,320 380,310 C520,300 680,250 860,260 C1040,270 1210,320 1440,290 L1440,320 L0,320 Z" />
+        <div class="wave-layer wave-front">
+          <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="#019934AA"
+              d="M0,260 C220,280 380,260 580,265 C780,270 980,290 1180,285 C1340,280 1390,270 1440,268 L1440,320 L0,320 Z"/>
           </svg>
         </div>
       </div>
+
+
+  <!-- Camada frontal -->
+  <div class="wave-row wave-row3">
+    <svg class="wave" viewBox="0 0 1440 300" preserveAspectRatio="none">
+      <path fill="#019934bb"
+        d="M0,240 C180,260 380,220 600,240 C820,260 1100,260 1300,240 C1440,230 1440,260 1440,260 L1440,300 L0,300 Z" />
+    </svg>
+    <svg class="wave" viewBox="0 0 1440 300" preserveAspectRatio="none">
+      <path fill="#019934bb"
+        d="M0,240 C180,260 380,220 600,240 C820,260 1100,260 1300,240 C1440,230 1440,260 1440,260 L1440,300 L0,300 Z" />
+    </svg>
+    <svg class="wave" viewBox="0 0 1440 300" preserveAspectRatio="none">
+      <path fill="#019934bb"
+        d="M0,240 C180,260 380,220 600,240 C820,260 1100,260 1300,240 C1440,230 1440,260 1440,260 L1440,300 L0,300 Z" />
+    </svg>
+  </div>
+
+</div>
+
 
       <div class="card shadow p-4 login-card" style="width: 350px;">
         <div class="text-center">

@@ -108,9 +108,9 @@ function cadastroView(usuario, usuarios = []) {
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       body { display: flex; height: 100vh; margin: 0; }
-      .sidebar { width: 220px; background-color: #343a40; color: white; padding: 20px; }
+      .sidebar { width: 220px; background-color: #0D5749; color: white; padding: 20px; }
       .sidebar a { display: block; padding: 10px; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 10px; }
-      .sidebar a:hover { background-color: #495057; }
+      .sidebar a:hover { background-color: #083930ff; }
       .content { flex: 1; padding: 20px; overflow-y: auto; }
       .topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
       .offcanvas { transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out; }
@@ -119,13 +119,20 @@ function cadastroView(usuario, usuarios = []) {
         .sidebar { display: none; }
         .content { width: 100%; padding: 15px; }
       }
+        .usuario-badge {
+              background-color: #0D5749;
+              color: #ffffff;
+              padding: 3px 12px;
+              border-radius: 8px;      /* bordas arredondadas */
+              border: 2px solid #0D5749;
+            }
     </style>
   </head>
   <body>
     <!-- Sidebar desktop -->
     <div class="sidebar d-none d-md-block">
       <div class="text-center">
-        <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width: 150px;">
+        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width: 150px;">
       </div>
       <hr>
       ${menu}
@@ -147,14 +154,18 @@ function cadastroView(usuario, usuarios = []) {
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center justify-content-between">
         <button class="btn btn-outline-dark d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">☰ Menu</button>
       </div>
 
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h2 class="mb-0">Cadastro de Usuários</h2>
-        <span class="fw-bold">👤 Usuário: ${user.nome}</span>
+        <span class="usuario-badge">
+          <i class="fa-solid fa-user"></i> ${usuario.nome}
+        </span>
       </div>
+
+      <hr class="bg-light w-100">
 
       <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
         <i class="fa-solid fa-user-plus"></i> Novo Usuário

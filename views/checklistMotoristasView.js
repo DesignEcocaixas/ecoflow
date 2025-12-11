@@ -1,6 +1,10 @@
 // views/checklistMotoristasView.js
-function checklistMotoristasView(usuario, checklists = []) {
-  const cards = checklists.map(item => `
+function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
+  const user = usuario || { nome: "Usuário" };
+  const page = paginacao.page || 1;
+  const totalPages = paginacao.totalPages || 1;
+
+  const cards = itens.map(item => `
   <div class="card mb-3 shadow-sm">
     <div class="card-body d-flex justify-content-between align-items-center">
       <div>
@@ -172,17 +176,16 @@ function checklistMotoristasView(usuario, checklists = []) {
 
           <div class="col-md-6">
             <label class="form-label d-block">Foto em anexo</label>
-            ${
-              item.foto
-                ? `
+            ${item.foto
+      ? `
                   <a href="/uploads/${item.foto}" target="_blank" class="btn btn-outline-secondary btn-sm mb-2">
                     <i class="fa-solid fa-image"></i> Ver foto atual
                   </a>
                   <br>
                   <small class="text-muted d-block mb-1">Arquivo atual: ${item.foto}</small>
                 `
-                : `<small class="text-muted d-block mb-2">Nenhuma foto anexada.</small>`
-            }
+      : `<small class="text-muted d-block mb-2">Nenhuma foto anexada.</small>`
+    }
             <label class="form-label">Substituir foto (opcional)</label>
             <input type="file" name="foto" class="form-control" accept="image/*">
           </div>
@@ -221,6 +224,30 @@ function checklistMotoristasView(usuario, checklists = []) {
     </div>
   `).join("");
 
+  // paginação (somente se tiver mais de 1 página)
+  const pageLinks = Array.from({ length: totalPages }, (_, i) => {
+    const p = i + 1;
+    return `
+      <li class="page-item ${p === page ? "active" : ""}">
+        <a class="page-link" href="/checklist-motoristas?page=${p}">${p}</a>
+      </li>
+    `;
+  }).join("");
+
+  const paginacaoHtml = totalPages > 1 ? `
+    <nav aria-label="Paginação de checklists" class="mt-3">
+      <ul class="pagination justify-content-center mb-4">
+        <li class="page-item ${page <= 1 ? "disabled" : ""}">
+          <a class="page-link" href="/checklist-motoristas?page=${page - 1}">&laquo;</a>
+        </li>
+        ${pageLinks}
+        <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+          <a class="page-link" href="/checklist-motoristas?page=${page + 1}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  ` : "";
+
   return `
   <!DOCTYPE html>
   <html lang="pt-br">
@@ -231,15 +258,15 @@ function checklistMotoristasView(usuario, checklists = []) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      body { 
+          body { 
             display: flex; 
             height: 100vh; 
-            margin: 0; 
-            }
+            margin: 0;
+          }
 
             .sidebar { 
             width: 220px; 
-            background-color: #343a40; 
+            background-color: #0D5749; 
             color: white; 
             padding: 20px; 
             transition: all 0.3s ease-in-out; /* anima sidebar */
@@ -254,7 +281,7 @@ function checklistMotoristasView(usuario, checklists = []) {
             transition: background-color 0.2s ease-in-out; /* hover suave */
             }
             .sidebar a:hover { 
-            background-color: #495057; 
+            background-color: #083930ff; 
             }
 
             .content { 
@@ -293,6 +320,15 @@ function checklistMotoristasView(usuario, checklists = []) {
                 background-color: #495057;
                 border-radius: 5px;
             }
+
+            .usuario-badge {
+              background-color: #0D5749;
+              color: #ffffff;
+              padding: 3px 12px;
+              border-radius: 8px;      /* bordas arredondadas */
+              border: 2px solid #0D5749;
+            }
+
     </style>
   </head>
   <body>
@@ -329,16 +365,26 @@ function checklistMotoristasView(usuario, checklists = []) {
 
       <!-- Conteúdo -->
       <div class="content">
-      <button class="btn btn-outline-dark d-md-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-            ☰ Menu
+        <button class="btn btn-outline-dark d-md-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+          ☰ Menu
         </button>
-      <div class="d-flex align-items-center justify-content-between mb-3">
-            <h2 class="mb-4">Checklist Motoristas</h2>
-            <span class="fw-bold">👤 Usuário: ${usuario.nome}</span>
-        </div>
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoChecklistModal"><i class="fa-solid fa-clipboard-check"></i> Novo Checklist</button>
+      
+        <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2>Checklist Motoristas</h2>
+        
+        <span class="usuario-badge">
+          <i class="fa-solid fa-user"></i> ${usuario.nome}
+        </span>
 
-        ${checklists.length > 0 ? cards : "<p class='text-muted'>Nenhum checklist registrado ainda.</p>"}
+      </div>
+
+      <hr class="bg-light w-100">
+
+      <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoChecklistModal"><i class="fa-solid fa-clipboard-check"></i> Novo Checklist</button>
+
+        ${itens.length > 0 ? cards : "<p class='text-muted'>Nenhum checklist registrado ainda.</p>"}
+
+        ${paginacaoHtml}
       </div>
 
       <!-- Modal Novo Checklist -->

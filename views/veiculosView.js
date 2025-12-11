@@ -367,9 +367,9 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       body { display: flex; height: 100vh; margin: 0; }
-      .sidebar { width: 220px; background-color: #343a40; color: white; padding: 20px; }
+      .sidebar { width: 220px; background-color: #0D5749; color: white; padding: 20px; }
       .sidebar a { display: block; padding: 10px; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 10px; }
-      .sidebar a:hover { background-color: #495057; }
+      .sidebar a:hover { background-color: #083930ff; }
       .content { flex: 1; padding: 20px; overflow-y: auto; }
       .topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
       .offcanvas { transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out; }
@@ -390,6 +390,13 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
     background-color: #495057;  /* opcional: destaca no hover */
     border-radius: 5px;
   }
+    .usuario-badge {
+              background-color: #0D5749;
+              color: #ffffff;
+              padding: 3px 12px;
+              border-radius: 8px;      /* bordas arredondadas */
+              border: 2px solid #0D5749;
+            }
     </style>
   </head>
   <body>
@@ -420,14 +427,18 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center justify-content-between">
         <button class="btn btn-outline-dark d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">☰ Menu</button>
       </div>
 
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <h2 class="mb-0">Veículos</h2>
-        <span class="fw-bold">👤 Usuário: ${usuario.nome}</span>
+      <div class="d-flex align-items-center justify-content-between">
+        <h2>Veículos</h2>
+        <span class="usuario-badge">
+          <i class="fa-solid fa-user"></i> ${usuario.nome}
+        </span>
       </div>
+
+      <hr class="bg-light w-100">
 
       <!-- Botão: Novo veículo -->
       <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoVeiculoModal">

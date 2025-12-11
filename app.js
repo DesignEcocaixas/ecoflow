@@ -115,10 +115,20 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/home", (req, res) => {
-    if (!req.session.user) {
-        return res.redirect("/login");
-    }
-    res.send(homeView(req.session.user));
+    if (!req.session.user) return res.redirect("/login");
+
+    db.query(
+        "SELECT id, mensagem, tipo, criado_em FROM notificacoes ORDER BY criado_em DESC",
+        (err, rows) => {
+            if (err) {
+                console.error("Erro ao buscar notificações:", err);
+                // Se der erro, manda a home sem notificações
+                return res.send(homeView(req.session.user, []));
+            }
+
+            res.send(homeView(req.session.user, rows || []));
+        }
+    );
 });
 
 app.get("/logout", (req, res) => {
@@ -351,14 +361,73 @@ app.get("/checklist-motoristas", (req, res) => {
         return res.status(403).send("Acesso negado.");
     }
 
-    db.query("SELECT * FROM checklists ORDER BY criado_em DESC", (err, results) => {
-        if (err) {
-            console.error("Erro ao buscar checklists:", err);
-            return res.send("Erro ao carregar checklists.");
+    const usuario = req.session.user;
+
+    // página atual vinda da query (?page=2)
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = 4;
+    const offset = (page - 1) * limit;
+
+    // Se você quiser que motorista veja só os próprios checklists:
+    const where = [];
+    const paramsBase = [];
+
+    if (usuario.tipo_usuario === "motorista") {
+        where.push("motorista = ?");
+        paramsBase.push(usuario.nome);
+    }
+
+    const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+    // 1ª consulta: total de registros (pra calcular páginas)
+    const sqlCount = `
+    SELECT COUNT(*) AS total
+    FROM checklists
+    ${whereSql}
+  `;
+
+    db.query(sqlCount, paramsBase, (errCount, rowsCount) => {
+        if (errCount) {
+            console.error("Erro ao contar checklists:", errCount);
+            return res.status(500).send("Erro ao carregar checklists.");
         }
-        res.send(checklistMotoristasView(req.session.user, results));
+
+        const total = rowsCount[0].total || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+
+        // Garante que page não passe do limite
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        const currentOffset = (currentPage - 1) * limit;
+
+        // 2ª consulta: lista paginada
+        const sqlLista = `
+      SELECT *
+      FROM checklists
+      ${whereSql}
+      ORDER BY id DESC
+      LIMIT ? OFFSET ?
+    `;
+
+        const paramsLista = paramsBase.concat([limit, currentOffset]);
+
+        db.query(sqlLista, paramsLista, (errLista, checklists) => {
+            if (errLista) {
+                console.error("Erro ao buscar checklists:", errLista);
+                return res.status(500).send("Erro ao carregar checklists.");
+            }
+
+            // Envia pra view, incluindo dados da paginação
+            res.send(
+                checklistMotoristasView(usuario, checklists, {
+                    page: currentPage,
+                    totalPages,
+                    total,
+                })
+            );
+        });
     });
 });
+
 
 
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
@@ -722,7 +791,35 @@ app.post("/fornecedores/editar/:id", (req, res) => {
     );
 });
 
-app.get("/notificacoes", (req, res) => {
+/*------------------------SISTEMA DE NOTIFICAÇÕES---------------------------------*/
+
+// Remover uma notificação
+app.post("/notificacoes/:id/excluir", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { id } = req.params;
+    db.query("DELETE FROM notificacoes WHERE id = ?", [id], (err) => {
+        if (err) {
+            console.error("Erro ao remover notificação:", err);
+        }
+        res.redirect("/home");
+    });
+});
+
+// Limpar todas as notificações
+app.post("/notificacoes/limpar", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    db.query("DELETE FROM notificacoes", (err) => {
+        if (err) {
+            console.error("Erro ao limpar notificações:", err);
+        }
+        res.redirect("/home");
+    });
+});
+
+
+/*app.get("/notificacoes", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     db.query("SELECT * FROM notificacoes ORDER BY criado_em DESC LIMIT 10", (err, results) => {
@@ -745,7 +842,7 @@ app.post("/notificacoes/excluir/:id", (req, res) => {
         }
         res.sendStatus(200);
     });
-});
+});*/
 
 // --- Rotas de veículos (somente admin) ---
 // Listagem de veículos + checklists (map por veículo)

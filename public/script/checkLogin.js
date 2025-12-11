@@ -1,3 +1,5 @@
+/*
+
 async function carregarNotificacoes() {
   try {
     const res = await fetch("/notificacoes");
@@ -42,3 +44,5 @@ async function removerNotificacao(id) {
     console.error("Erro ao excluir notificação:", err);
   }
 }
+
+*/

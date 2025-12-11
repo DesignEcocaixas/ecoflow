@@ -260,9 +260,9 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       body { display: flex; height: 100vh; margin: 0; }
-      .sidebar { width: 220px; background-color: #343a40; color: white; padding: 20px; }
+      .sidebar { width: 220px; background-color: #0D5749; color: white; padding: 20px; }
       .sidebar a { display: block; padding: 10px; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 10px; text-align: left;}
-      .sidebar a:hover { background-color: #495057; }
+      .sidebar a:hover { background-color: #083930ff; }
       .content { flex: 1; padding: 20px; overflow-y: auto; }
       .topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
       .offcanvas { transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out; }
@@ -271,6 +271,20 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
         .sidebar { display: none; }
         .content { width: 100%; padding: 15px; }
       }
+        .usuario-badge {
+              background-color: #0D5749;
+              color: #ffffff;
+              padding: 3px 12px;
+              border-radius: 8px;      /* bordas arredondadas */
+              border: 2px solid #0D5749;
+            }
+              .form-contorno {
+    border: 1px solid rgba(0,0,0,0.15); /* contorno leve */
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.6); /* opcional — dá um ar mais clean */
+    backdrop-filter: blur(4px); /* opcional — efeito moderno */
+}
+
     </style>
   </head>
   <body>
@@ -282,7 +296,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
       <hr>
       ${menu}
       <hr>
-      <a href="/logout" class="text-danger">Sair</a>
+      <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
     </div>
 
     <!-- Sidebar mobile -->
@@ -296,62 +310,69 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
         <hr class="bg-light">
         ${menu}
         <hr class="bg-light">
-        <a href="/logout" class="d-block text-danger">Sair</a>
+        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
       </div>
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center justify-content-between">
         <button class="btn btn-outline-dark d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">☰ Menu</button>
       </div>
 
-      <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center justify-content-between">
         <h2 class="mb-0">Entregas</h2>
-        <span class="fw-bold">👤 ${user.nome}</span>
+        <span class="usuario-badge">
+          <i class="fa-solid fa-user"></i> ${usuario.nome}
+        </span>
       </div>
 
-      <!-- FORMULÁRIO DE PESQUISA -->
-      <form class="row g-2 mb-3" method="GET" action="/entregas">
-        <div class="col-md-4">
-          <label class="form-label">Buscar por título do pedido</label>
-          <input
-            type="text"
-            name="titulo"
-            class="form-control"
-            value="${filtros.titulo || ""}"
-            placeholder="Ex.: Pedido Feira de Santana"
-          >
-        </div>
+      <hr class="bg-light w-100">
 
-        <div class="col-md-3">
-          <label class="form-label">Data começa em</label>
-          <input
-            type="date"
-            name="data_inicio"
-            class="form-control"
-            value="${filtros.data_inicio || ""}"
-          >
-        </div>
+      <div class="form-contorno p-3 mb-4 rounded">
+  <!-- FORMULÁRIO DE PESQUISA -->
+  <form class="row g-2 mb-3" method="GET" action="/entregas">
+    <div class="col-md-4">
+      <label class="form-label">Buscar por título do pedido</label>
+      <input
+        type="text"
+        name="titulo"
+        class="form-control"
+        value="${filtros.titulo || ""}"
+        placeholder="Ex.: Pedido Feira de Santana"
+      >
+    </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Data termina em</label>
-          <input
-            type="date"
-            name="data_fim"
-            class="form-control"
-            value="${filtros.data_fim || ""}"
-          >
-        </div>
+    <div class="col-md-3">
+      <label class="form-label">Data começa em</label>
+      <input
+        type="date"
+        name="data_inicio"
+        class="form-control"
+        value="${filtros.data_inicio || ""}"
+      >
+    </div>
 
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
-          <a href="/entregas" class="btn btn-outline-secondary w-100">
-            <i class="fa-solid fa-eraser"></i>
-          </a>
-        </div>
-      </form>
+    <div class="col-md-3">
+      <label class="form-label">Data termina em</label>
+      <input
+        type="date"
+        name="data_fim"
+        class="form-control"
+        value="${filtros.data_fim || ""}"
+      >
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end gap-2">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+      <a href="/entregas" class="btn btn-outline-secondary w-100">
+        <i class="fa-solid fa-eraser"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
 
       <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoPedidoModal">
         <i class="fa-solid fa-file-circle-plus"></i> Novo pedido

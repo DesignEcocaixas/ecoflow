@@ -1,15 +1,19 @@
 // views/entregasView.js
-function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
-    const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, paginacao = {}) {
+  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
-    const menu =
-        user.tipo_usuario === "motorista"
-            ? `<a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+  // paginação
+  const page = paginacao.page || 1;
+  const totalPages = paginacao.totalPages || 1;
+
+  const menu =
+    user.tipo_usuario === "motorista"
+      ? `<a href="/home"><i class="fas fa-home me-2"></i>Home</a>
                 <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
                 <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>`
-            : user.tipo_usuario === "financeiro"
-                ? `<a href="/tabela-precos">Tabela de Preços</a>`
-                : `
+      : user.tipo_usuario === "financeiro"
+        ? `<a href="/tabela-precos">Tabela de Preços</a>`
+        : `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
         <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
@@ -19,41 +23,41 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
         <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
     `;
 
-    const fmtData = (d) => {
-        try {
-            const dt = new Date(d);
-            return dt.toLocaleDateString("pt-BR");
-        } catch {
-            return d || "-";
-        }
-    };
+  const fmtData = (d) => {
+    try {
+      const dt = new Date(d);
+      return dt.toLocaleDateString("pt-BR");
+    } catch {
+      return d || "-";
+    }
+  };
 
-    // Acumulador para modais de clientes (editar/excluir) fora dos modais de pedidos
-    const clienteModals = [];
+  // Acumulador para modais de clientes (editar/excluir) fora dos modais de pedidos
+  const clienteModals = [];
 
-    const cards =
-        pedidos.length > 0
-            ? pedidos
-                .map((p) => {
-                    const clientes = clientesMap[p.id] || [];
+  const cards =
+    pedidos.length > 0
+      ? pedidos
+        .map((p) => {
+          const clientes = clientesMap[p.id] || [];
 
-                    const listaClientes =
-                        clientes.length > 0
-                            ? clientes
-                                .map((c) => {
-                                    const badge =
-                                        c.status === "ENTREGUE"
-                                          ? `<span class="badge bg-success">Entregue</span>`
-                                          : c.status === "NA_ROTA"
-                                          ? `<span class="badge bg-warning text-dark">Na rota para entrega</span>`
-                                          : `<span class="badge bg-danger">Não entregue</span>`;
-                                    const obs =
-                                        c.observacao && c.observacao.trim() !== ""
-                                            ? c.observacao.replace(/\n/g, "<br>")
-                                            : "<em class='text-muted'>Sem observação</em>";
+          const listaClientes =
+            clientes.length > 0
+              ? clientes
+                .map((c) => {
+                  const badge =
+                    c.status === "ENTREGUE"
+                      ? `<span class="badge bg-success">Entregue</span>`
+                      : c.status === "NA_ROTA"
+                        ? `<span class="badge bg-warning text-dark">Na rota para entrega</span>`
+                        : `<span class="badge bg-danger">Não entregue</span>`;
+                  const obs =
+                    c.observacao && c.observacao.trim() !== ""
+                      ? c.observacao.replace(/\n/g, "<br>")
+                      : "<em class='text-muted'>Sem observação</em>";
 
-                                    // Card do cliente (aparece dentro do modal do pedido)
-                                    const clienteCard = `
+                  // Card do cliente (aparece dentro do modal do pedido)
+                  const clienteCard = `
                                     <div class="card mb-2 chk-cliente">
                                       <div class="card-body p-2">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -87,8 +91,8 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
                                     </div>
                                   `;
 
-                                    // Modal EDITAR cliente (fora do modal de pedido)
-                                    const modalEditar = `
+                  // Modal EDITAR cliente (fora do modal de pedido)
+                  const modalEditar = `
                                     <div class="modal fade" id="editarCliente${c.id}" tabindex="-1">
                                       <div class="modal-dialog">
                                         <div class="modal-content">
@@ -121,8 +125,8 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
                                     </div>
                                   `;
 
-                                    // Modal EXCLUIR cliente (fora do modal de pedido)
-                                    const modalExcluir = `
+                  // Modal EXCLUIR cliente (fora do modal de pedido)
+                  const modalExcluir = `
                                     <div class="modal fade" id="excluirCliente${c.id}" tabindex="-1">
                                       <div class="modal-dialog">
                                         <div class="modal-content">
@@ -144,15 +148,15 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
                                     </div>
                                   `;
 
-                                    // Guardamos os modais para renderizar fora do modal de pedido
-                                    clienteModals.push(modalEditar, modalExcluir);
+                  // Guardamos os modais para renderizar fora do modal de pedido
+                  clienteModals.push(modalEditar, modalExcluir);
 
-                                    return clienteCard;
-                                })
-                                .join("")
-                            : `<p class="text-muted">Nenhum cliente neste pedido.</p>`;
+                  return clienteCard;
+                })
+                .join("")
+              : `<p class="text-muted">Nenhum cliente neste pedido.</p>`;
 
-                    return `
+          return `
               <div class="col-12 col-md-6 col-lg-4">
                 <div class="card shadow-sm mb-3 h-100">
                   <div class="card-body d-flex flex-column">
@@ -244,11 +248,37 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
                 </div>
               </div>
             `;
-                })
-                .join("")
-            : `<p class="text-muted">Nenhum pedido criado.</p>`;
+        })
+        .join("")
+      : `<p class="text-muted">Nenhum pedido criado.</p>`;
 
+  // HTML da paginação
+  const paginationHtml = totalPages > 1 ? `
+      <nav aria-label="Paginação de pedidos" class="mt-3">
+        <ul class="pagination justify-content-center">
+          <!-- Anterior -->
+          <li class="page-item ${page <= 1 ? "disabled" : ""}">
+            <a class="page-link" href="/entregas?page=${page - 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">&laquo;</a>
+          </li>
+
+          ${Array.from({ length: totalPages }, (_, i) => {
+    const p = i + 1;
     return `
+              <li class="page-item ${p === page ? "active" : ""}">
+                <a class="page-link" href="/entregas?page=${p}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">${p}</a>
+              </li>
+            `;
+  }).join("")}
+
+          <!-- Próxima -->
+          <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+            <a class="page-link" href="/entregas?page=${page + 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">&raquo;</a>
+          </li>
+        </ul>
+      </nav>
+    ` : "";
+
+  return `
   <!DOCTYPE html>
   <html lang="pt-br">
   <head>
@@ -381,6 +411,8 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}) {
       <div class="row">
         ${cards}
       </div>
+
+      ${paginationHtml}
     </div>
 
 

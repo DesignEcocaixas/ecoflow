@@ -1095,77 +1095,138 @@ app.post("/veiculos/excluir/:id", (req, res) => {
 });
 
 // LISTAR ENTREGAS (pedidos + clientes)
-app.get("/entregas", isLogged, (req, res) => {
-    const { titulo, data_inicio, data_fim } = req.query;
+app.get("/entregas", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
 
-    // Monta o WHERE dinamicamente
-    const where = [];
-    const params = [];
+  const usuario = req.session.user;
 
-    if (titulo && titulo.trim()) {
-        where.push("titulo LIKE ?");
-        params.push(`%${titulo.trim()}%`);
+  // Filtros vindos da query string ou formulário (method="GET")
+  const { titulo, data_inicio, data_fim } = req.query;
+
+  // Paginação
+  const page = parseInt(req.query.page || "1", 10);
+  const limit = 5; // nº de pedidos por página
+
+  // Monta WHERE dinâmico (título / período)
+  const where = [];
+  const params = [];
+
+  if (titulo && titulo.trim() !== "") {
+    where.push("p.titulo LIKE ?");
+    params.push(`%${titulo.trim()}%`);
+  }
+
+  if (data_inicio && data_inicio.trim() !== "") {
+    where.push("DATE(p.data_pedido) >= ?");
+    params.push(data_inicio.trim());
+  }
+
+  if (data_fim && data_fim.trim() !== "") {
+    where.push("DATE(p.data_pedido) <= ?");
+    params.push(data_fim.trim());
+  }
+
+  const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+  // 1) Conta quantos pedidos existem com os filtros (para calcular total de páginas)
+  const sqlCount = `
+    SELECT COUNT(*) AS total
+    FROM entregas_pedidos p
+    ${whereSql}
+  `;
+
+  db.query(sqlCount, params, (errCount, rowsCount) => {
+    if (errCount) {
+      console.error("Erro ao contar pedidos de entregas:", errCount);
+      return res.status(500).send("Erro ao carregar entregas.");
     }
 
-    if (data_inicio) {
-        where.push("data_pedido >= ?");
-        params.push(data_inicio);
-    }
+    const total = rowsCount[0]?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const offset = (currentPage - 1) * limit;
 
-    if (data_fim) {
-        where.push("data_pedido <= ?");
-        params.push(data_fim);
-    }
+    // 2) Busca os pedidos paginados
+    const sqlPedidos = `
+      SELECT p.*
+      FROM entregas_pedidos p
+      ${whereSql}
+      ORDER BY p.data_pedido DESC, p.id DESC
+      LIMIT ? OFFSET ?
+    `;
 
-    let sqlPedidos = "SELECT * FROM entregas_pedidos";
-    if (where.length) {
-        sqlPedidos += " WHERE " + where.join(" AND ");
-    }
-    sqlPedidos += " ORDER BY data_pedido DESC, id DESC";
+    const paramsPedidos = params.concat([limit, offset]);
 
-    db.query(sqlPedidos, params, (err, pedidos) => {
-        if (err) {
-            console.error("Erro ao listar pedidos:", err);
-            return res.status(500).send("Erro ao carregar entregas.");
-        }
+    db.query(sqlPedidos, paramsPedidos, (errPedidos, pedidos) => {
+      if (errPedidos) {
+        console.error("Erro ao buscar pedidos de entregas:", errPedidos);
+        return res.status(500).send("Erro ao carregar entregas.");
+      }
 
-        if (!pedidos.length) {
-            // passa filtros pra view pra manter os campos preenchidos
-            return res.send(
-                entregasView(req.session.user, [], {}, {
-                    titulo: titulo || "",
-                    data_inicio: data_inicio || "",
-                    data_fim: data_fim || "",
-                })
-            );
-        }
+      // Se não tiver pedidos nessa página, não precisa buscar clientes
+      if (!pedidos || pedidos.length === 0) {
+        const filtros = {
+          titulo: titulo || "",
+          data_inicio: data_inicio || "",
+          data_fim: data_fim || ""
+        };
 
-        const ids = pedidos.map((p) => p.id);
-        db.query(
-            "SELECT * FROM entregas_clientes WHERE pedido_id IN (?) ORDER BY id DESC",
-            [ids],
-            (err2, clientes) => {
-                if (err2) {
-                    console.error("Erro ao listar clientes:", err2);
-                    return res.status(500).send("Erro ao carregar entregas.");
-                }
-                const clientesMap = {};
-                clientes.forEach((c) => {
-                    if (!clientesMap[c.pedido_id]) clientesMap[c.pedido_id] = [];
-                    clientesMap[c.pedido_id].push(c);
-                });
+        const paginacao = {
+          page: currentPage,
+          totalPages,
+          total
+        };
 
-                res.send(
-                    entregasView(req.session.user, pedidos, clientesMap, {
-                        titulo: titulo || "",
-                        data_inicio: data_inicio || "",
-                        data_fim: data_fim || "",
-                    })
-                );
-            }
+        return res.send(
+          entregasView(usuario, [], {}, filtros, paginacao)
         );
+      }
+
+      // 3) Busca os clientes de todos os pedidos retornados (numa query só)
+      const idsPedidos = pedidos.map(p => p.id);
+      const sqlClientes = `
+        SELECT c.*
+        FROM entregas_clientes c
+        WHERE c.pedido_id IN (${idsPedidos.map(() => "?").join(",")})
+        ORDER BY c.id ASC
+      `;
+
+      db.query(sqlClientes, idsPedidos, (errClientes, clientes) => {
+        if (errClientes) {
+          console.error("Erro ao buscar clientes das entregas:", errClientes);
+          return res.status(500).send("Erro ao carregar entregas.");
+        }
+
+        // Agrupa clientes por pedido_id
+        const clientesPorPedido = {};
+        (clientes || []).forEach(c => {
+          if (!clientesPorPedido[c.pedido_id]) {
+            clientesPorPedido[c.pedido_id] = [];
+          }
+          clientesPorPedido[c.pedido_id].push(c);
+        });
+
+        const filtros = {
+          titulo: titulo || "",
+          data_inicio: data_inicio || "",
+          data_fim: data_fim || ""
+        };
+
+        const paginacao = {
+          page: currentPage,
+          totalPages,
+          total
+        };
+
+        // IMPORTANTE: a view agora recebe também 'paginacao'
+        res.send(
+          entregasView(usuario, pedidos, clientesPorPedido, filtros, paginacao)
+        );
+      });
     });
+  });
 });
+
 
 
 // CRIAR NOVO PEDIDO

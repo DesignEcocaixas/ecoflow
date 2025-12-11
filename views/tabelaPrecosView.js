@@ -1,5 +1,13 @@
 // views/tabelaPrecosView.js
-function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, fornecedores = []) {
+function tabelaPrecosView(
+  usuario,
+  caixas = [],
+  ultimaAlteracao = null,
+  fornecedores = [],
+  paginacao = {}
+) {
+  const page = paginacao.page || 1;
+  const totalPages = paginacao.totalPages || 1;
   const menu = usuario.tipo_usuario === "motorista"
     ? `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
@@ -53,6 +61,32 @@ function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, forneced
     </tr>
   `;
   }).join("");
+
+    const paginationHtml = totalPages > 1 ? `
+    <nav aria-label="Paginação de caixas" class="mt-3">
+      <ul class="pagination justify-content-center">
+        <!-- Anterior -->
+        <li class="page-item ${page <= 1 ? "disabled" : ""}">
+          <a class="page-link" href="/tabela-precos?page=${page - 1}">&laquo;</a>
+        </li>
+
+        ${Array.from({ length: totalPages }, (_, i) => {
+          const p = i + 1;
+          return `
+            <li class="page-item ${p === page ? "active" : ""}">
+              <a class="page-link" href="/tabela-precos?page=${p}">${p}</a>
+            </li>
+          `;
+        }).join("")}
+
+        <!-- Próxima -->
+        <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+          <a class="page-link" href="/tabela-precos?page=${page + 1}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  ` : "";
+
 
 
   const modais = caixas.map(caixa => `
@@ -358,6 +392,9 @@ function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, forneced
             ${linhas || "<tr><td colspan='6' class='text-center'>Nenhuma caixa cadastrada</td></tr>"}
           </tbody>
         </table>
+
+        ${paginationHtml}
+
 
 
         <!-- Modais Editar/Excluir -->

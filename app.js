@@ -247,37 +247,72 @@ app.get("/tabela-precos", (req, res) => {
         return res.status(403).send("Acesso negado.");
     }
 
-    db.query(`
+    // ----- PAGINAÇÃO -----
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = 5; // máximo de caixas por página
+    // ----------------------
+
+    // Primeiro: contar quantas caixas existem (para calcular total de páginas)
+    db.query("SELECT COUNT(*) AS total FROM caixas", (errCount, rowsCount) => {
+        if (errCount) {
+            console.error("Erro ao contar caixas:", errCount);
+            return res.send("Erro ao carregar caixas.");
+        }
+
+        const total = rowsCount[0].total || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        const offset = (currentPage - 1) * limit;
+
+        // Depois: buscar as caixas com JOIN + paginação
+        db.query(`
   SELECT c.*, f.nome AS fornecedor_nome, f.porcentagem AS fornecedor_pct
   FROM caixas c
   LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
   ORDER BY c.id DESC
-`, (err, caixas) => {
-        if (err) {
-            console.error("Erro ao buscar caixas:", err);
-            return res.send("Erro ao carregar caixas.");
-        }
-
-        db.query("SELECT atualizado_em, atualizado_por FROM caixas ORDER BY atualizado_em DESC LIMIT 1", (err2, alteracao) => {
-            if (err2) {
-                console.error("Erro ao buscar última alteração:", err2);
-                return res.send("Erro ao carregar alterações.");
+  LIMIT ? OFFSET ?
+`, [limit, offset], (err, caixas) => {
+            if (err) {
+                console.error("Erro ao buscar caixas:", err);
+                return res.send("Erro ao carregar caixas.");
             }
 
-            db.query("SELECT * FROM fornecedores ORDER BY criado_em DESC", (err3, fornecedores) => {
-                if (err3) {
-                    console.error("Erro ao buscar fornecedores:", err3);
-                    return res.send("Erro ao carregar fornecedores.");
+            db.query("SELECT atualizado_em, atualizado_por FROM caixas ORDER BY atualizado_em DESC LIMIT 1", (err2, alteracao) => {
+                if (err2) {
+                    console.error("Erro ao buscar última alteração:", err2);
+                    return res.send("Erro ao carregar alterações.");
                 }
 
-                const ultimaAlteracao = alteracao.length > 0 ? alteracao[0] : null;
+                db.query("SELECT * FROM fornecedores ORDER BY criado_em DESC", (err3, fornecedores) => {
+                    if (err3) {
+                        console.error("Erro ao buscar fornecedores:", err3);
+                        return res.send("Erro ao carregar fornecedores.");
+                    }
 
-                res.send(tabelaPrecosView(req.session.user, caixas, ultimaAlteracao, fornecedores));
+                    const ultimaAlteracao = alteracao.length > 0 ? alteracao[0] : null;
+
+                    // Objeto de paginação enviado para a view
+                    const paginacao = {
+                        page: currentPage,
+                        totalPages,
+                        total
+                    };
+
+                    // Agora a view recebe também 'paginacao' como 5º parâmetro
+                    res.send(tabelaPrecosView(
+                        req.session.user,
+                        caixas,
+                        ultimaAlteracao,
+                        fornecedores,
+                        paginacao
+                    ));
+                });
             });
         });
     });
 
 });
+
 
 app.post("/tabela-precos/nova", (req, res) => {
     if (!req.session.user) return res.redirect("/login");

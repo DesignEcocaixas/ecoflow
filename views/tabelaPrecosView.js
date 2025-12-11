@@ -356,27 +356,39 @@ function tabelaPrecosView(
 
         <p class="text-muted mb-4"><small>${alteracaoTexto}</small></p>
 
-        <!-- Botão Nova Caixa -->
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novaCaixaModal">
-          <i class="fa-solid fa-box"></i> Nova Caixa
-        </button>
+        <!-- Container que alinha horizontalmente -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
 
-        <!-- Botão Gerar Orçamento -->
-        ${caixas.length > 0 ? `
-          <button class="btn btn-primary mb-3 ms-2" data-bs-toggle="modal" data-bs-target="#orcamentoModal">
-            <i class="fa-solid fa-file-invoice-dollar"></i> Gerar Orçamento
-          </button>
-        ` : ""}
+          <!-- COLUNA ESQUERDA: Botões -->
+          <div class="d-flex align-items-center gap-2">
 
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#novaCaixaModal">
+              <i class="fa-solid fa-box"></i> Nova Caixa
+            </button>
 
-        <button class="btn btn-info mb-3 ms-2" data-bs-toggle="modal" data-bs-target="#fornecedoresModal"><i class="fa-solid fa-truck"></i> Fornecedores</button>
-        <div class="mb-3">
-        <div class="input-group mb-3">
-          <input type="text" id="searchInput" class="form-control" placeholder="Pesquisar por código, modelo ou fornecedor...">
-          <button id="searchBtn" class="btn btn-primary">Pesquisar</button>
-          <button id="clearBtn" class="btn btn-secondary">Limpar</button>
+            ${caixas.length > 0 ? `
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orcamentoModal">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Gerar Orçamento
+              </button>
+            ` : ""}
+
+            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#fornecedoresModal">
+              <i class="fa-solid fa-truck"></i> Fornecedores
+            </button>
+
+          </div>
+
+          <!-- COLUNA DIREITA: Campo de busca -->
+          <div class="input-group" style="max-width: 500px; width: 100%;">
+            <input type="text" id="searchInput" class="form-control" placeholder="Pesquisar por código, modelo ou fornecedor...">
+            <button id="searchBtn" class="btn btn-primary">Pesquisar</button>
+            <button id="clearBtn" class="btn btn-secondary">Limpar</button>
+          </div>
+
         </div>
 
+
+        <div class="mb-3">
         <table class="table table-bordered table-striped" id="caixasTable">
           <thead>
             <tr>

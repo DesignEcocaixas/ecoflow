@@ -249,7 +249,7 @@ app.get("/tabela-precos", (req, res) => {
 
     // ----- PAGINAÇÃO -----
     const page = parseInt(req.query.page || "1", 10);
-    const limit = 6; // máximo de caixas por página
+    const limit = 7; // máximo de caixas por página
     // ----------------------
 
     // Primeiro: contar quantas caixas existem (para calcular total de páginas)

@@ -347,7 +347,7 @@ app.get("/checklist-motoristas", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     if (req.session.user.tipo_usuario !== "admin" &&
-        req.session.user.tipo_usuario !== "financeiro") {
+        req.session.user.tipo_usuario !== "motorista") {
         return res.status(403).send("Acesso negado.");
     }
 

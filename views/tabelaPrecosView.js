@@ -4,10 +4,12 @@ function tabelaPrecosView(
   caixas = [],
   ultimaAlteracao = null,
   fornecedores = [],
-  paginacao = {}
+  paginacao = {},
+  filtros = {} // ✅ ADICIONADO (não remove nada, só adiciona)
 ) {
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
+
   const menu = usuario.tipo_usuario === "motorista"
     ? `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
@@ -32,7 +34,6 @@ function tabelaPrecosView(
   const alteracaoTexto = ultimaAlteracao
     ? `Última alteração: ${dataFormatada} por ${ultimaAlteracao.atualizado_por}`
     : "Nenhuma alteração registrada ainda";
-
 
   const fmt = (n) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -62,31 +63,34 @@ function tabelaPrecosView(
   `;
   }).join("");
 
-    const paginationHtml = totalPages > 1 ? `
-    <nav aria-label="Paginação de caixas" class="mt-3">
-      <ul class="pagination justify-content-center">
-        <!-- Anterior -->
-        <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link" href="/tabela-precos?page=${page - 1}">&laquo;</a>
-        </li>
+  // ✅ garante que o termo de busca continue nos links da paginação
+  const qParam = paginacao.q ? `&q=${encodeURIComponent(paginacao.q)}` : "";
 
-        ${Array.from({ length: totalPages }, (_, i) => {
-          const p = i + 1;
-          return `
-            <li class="page-item ${p === page ? "active" : ""}">
-              <a class="page-link" href="/tabela-precos?page=${p}">${p}</a>
-            </li>
-          `;
-        }).join("")}
 
-        <!-- Próxima -->
-        <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link" href="/tabela-precos?page=${page + 1}">&raquo;</a>
-        </li>
-      </ul>
-    </nav>
-  ` : "";
+  const paginationHtml = totalPages > 1 ? `
+  <nav aria-label="Paginação de caixas" class="mt-3">
+    <ul class="pagination justify-content-center">
+      <!-- Anterior -->
+      <li class="page-item ${page <= 1 ? "disabled" : ""}">
+        <a class="page-link" href="/tabela-precos?page=${page - 1}${qParam}">&laquo;</a>
+      </li>
 
+      ${Array.from({ length: totalPages }, (_, i) => {
+    const p = i + 1;
+    return `
+          <li class="page-item ${p === page ? "active" : ""}">
+            <a class="page-link" href="/tabela-precos?page=${p}${qParam}">${p}</a>
+          </li>
+        `;
+  }).join("")}
+
+      <!-- Próxima -->
+      <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+        <a class="page-link" href="/tabela-precos?page=${page + 1}${qParam}">&raquo;</a>
+      </li>
+    </ul>
+  </nav>
+` : "";
 
 
   const modais = caixas.map(caixa => `
@@ -215,14 +219,11 @@ function tabelaPrecosView(
     ? fornecedores.map(f => `<option value="${f.id}">${f.nome} (${f.porcentagem}%)</option>`).join("")
     : '<option value="">Nenhum fornecedor cadastrado</option>';
 
-
   const opcoes = caixas.map(caixa => `
     <option value="${caixa.id}" data-parda="${caixa.preco_parda}" data-branca="${caixa.preco_branca}">
       ${caixa.modelo}
     </option>
   `).join("");
-
-
 
   return `
   <!DOCTYPE html>
@@ -316,23 +317,23 @@ function tabelaPrecosView(
   </head>
   <body>
     <!-- PRELOADER -->
-<div id="preloader" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity .3s ease;
-">
-    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
-        <span class="visually-hidden">Carregando...</span>
+    <div id="preloader" style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity .3s ease;
+    ">
+        <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
     </div>
-</div>
 
       <!-- Sidebar -->
       <div class="sidebar">
@@ -341,8 +342,6 @@ function tabelaPrecosView(
         </div>
         <hr class="bg-light">
         ${menu}
-        <hr class="bg-light">
-        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
     </div>
 
     <!-- Sidebar mobile -->
@@ -364,11 +363,17 @@ function tabelaPrecosView(
       <button class="btn btn-outline-dark d-md-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
             ☰ Menu
         </button>
+        
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 class="mb-0">Tabela de Preços</h2>
-            <span class="usuario-badge">
-          <i class="fa-solid fa-user"></i> ${usuario.nome}
-        </span>
+            <div class="mr-2 d-flex align-items-center gap-3">
+              <span class="usuario-badge">
+                <i class="fa-solid fa-user"></i> ${usuario.nome}
+              </span>
+              <a href="/logout" class="text-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Sair
+              </a>
+            </div>
         </div>
 
         <hr class="bg-light w-100">
@@ -397,15 +402,21 @@ function tabelaPrecosView(
 
           </div>
 
-          <!-- COLUNA DIREITA: Campo de busca -->
-          <div class="input-group" style="max-width: 500px; width: 100%;">
-            <input type="text" id="searchInput" class="form-control" placeholder="Pesquisar por código, modelo ou fornecedor...">
-            <button id="searchBtn" class="btn btn-primary">Pesquisar</button>
-            <button id="clearBtn" class="btn btn-secondary">Limpar</button>
-          </div>
+          <!-- ✅ COLUNA DIREITA: Campo de busca (AGORA ENVIA PRO BACKEND) -->
+          <form class="input-group" style="max-width: 500px; width: 100%;" method="GET" action="/tabela-precos">
+            <input
+              type="text"
+              id="searchInput"
+              name="q"
+              class="form-control"
+              placeholder="Pesquisar por código, modelo ou fornecedor..."
+              value="${(filtros && filtros.q) ? filtros.q : ""}"
+            >
+            <button id="searchBtn" type="submit" class="btn btn-primary">Pesquisar</button>
+            <a id="clearBtn" href="/tabela-precos" class="btn btn-secondary">Limpar</a>
+          </form>
 
         </div>
-
 
         <div class="mb-3">
         <table class="table table-bordered table-striped" id="caixasTable">
@@ -426,41 +437,38 @@ function tabelaPrecosView(
 
         ${paginationHtml}
 
-
-
         <!-- Modais Editar/Excluir -->
         ${modais}
       </div>
 
       <!-- Modal Nova Caixa -->
-<div class="modal fade" id="novaCaixaModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" action="/tabela-precos/nova">
-        <div class="modal-header">
-          <h5 class="modal-title">Nova Caixa</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal fade" id="novaCaixaModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form method="POST" action="/tabela-precos/nova">
+              <div class="modal-header">
+                <h5 class="modal-title">Nova Caixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <input type="text" name="codigo" class="form-control mb-2" placeholder="Código (opcional)">
+                <input type="text" name="modelo" class="form-control mb-2" placeholder="Modelo" required>
+                <input type="number" step="0.01" name="preco_parda" class="form-control mb-2" placeholder="Preço Parda" required>
+                <input type="number" step="0.01" name="preco_branca" class="form-control mb-2" placeholder="Preço Branca" required>
+                
+                <label class="form-label">Fornecedor</label>
+                <select name="fornecedor_id" class="form-select mb-2" required>
+                  <option value="">-- Selecione um fornecedor --</option>
+                  ${fornecedoresOptions}
+                </select>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="modal-body">
-          <input type="text" name="codigo" class="form-control mb-2" placeholder="Código (opcional)">
-          <input type="text" name="modelo" class="form-control mb-2" placeholder="Modelo" required>
-          <input type="number" step="0.01" name="preco_parda" class="form-control mb-2" placeholder="Preço Parda" required>
-          <input type="number" step="0.01" name="preco_branca" class="form-control mb-2" placeholder="Preço Branca" required>
-          
-          <label class="form-label">Fornecedor</label>
-          <select name="fornecedor_id" class="form-select mb-2" required>
-            <option value="">-- Selecione um fornecedor --</option>
-            ${fornecedoresOptions}
-          </select>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
+      </div>
 
       <!-- Modal Orçamento -->
       <div class="modal fade" id="orcamentoModal" tabindex="-1">
@@ -541,6 +549,42 @@ function tabelaPrecosView(
         </div>
       </div>
       ${modaisFornecedores}
+      
+      <script>
+  (function () {
+    const input = document.getElementById("searchInput");
+    const btn = document.getElementById("searchBtn");
+    const clear = document.getElementById("clearBtn");
+
+    // mantém o valor do input quando voltar da busca
+    const params = new URLSearchParams(window.location.search);
+    const qAtual = params.get("q") || "";
+    if (input) input.value = qAtual;
+
+    if (btn) {
+      btn.addEventListener("click", function () {
+        const q = (input?.value || "").trim();
+        const url = new URL(window.location.href);
+
+        // sempre volta pra página 1 quando pesquisar
+        url.searchParams.set("page", "1");
+
+        if (q) url.searchParams.set("q", q);
+        else url.searchParams.delete("q");
+
+        window.location.href = url.toString();
+      });
+    }
+
+    if (clear) {
+      clear.addEventListener("click", function () {
+        window.location.href = "/tabela-precos";
+      });
+    }
+  })();
+</script>
+
+
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
       <script src="/script/orcamento.js"></script>
       <script src="./script/checkLogin.js"></script>

@@ -238,79 +238,98 @@ app.post("/usuarios/excluir/:id", (req, res) => {
     });
 });
 
-
 app.get("/tabela-precos", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
-    if (req.session.user.tipo_usuario !== "admin" &&
-        req.session.user.tipo_usuario !== "financeiro") {
+    if (
+        req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "financeiro"
+    ) {
         return res.status(403).send("Acesso negado.");
     }
 
-    // ----- PAGINAÇÃO -----
-    const page = parseInt(req.query.page || "1", 10);
-    const limit = 7; // máximo de caixas por página
-    // ----------------------
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = 7;
+    const offset = (page - 1) * limit;
 
-    // Primeiro: contar quantas caixas existem (para calcular total de páginas)
-    db.query("SELECT COUNT(*) AS total FROM caixas", (errCount, rowsCount) => {
-        if (errCount) {
-            console.error("Erro ao contar caixas:", errCount);
-            return res.send("Erro ao carregar caixas.");
-        }
+    const q = (req.query.q || "").trim();
 
-        const total = rowsCount[0].total || 0;
-        const totalPages = Math.max(1, Math.ceil(total / limit));
-        const currentPage = Math.min(Math.max(page, 1), totalPages);
-        const offset = (currentPage - 1) * limit;
+    const where = q
+        ? `WHERE (c.codigo LIKE ? OR c.modelo LIKE ? OR f.nome LIKE ?)`
+        : "";
 
-        // Depois: buscar as caixas com JOIN + paginação
-        db.query(`
-  SELECT c.*, f.nome AS fornecedor_nome, f.porcentagem AS fornecedor_pct
-  FROM caixas c
-  LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
-  ORDER BY c.id DESC
-  LIMIT ? OFFSET ?
-`, [limit, offset], (err, caixas) => {
-            if (err) {
-                console.error("Erro ao buscar caixas:", err);
+    const whereParams = q ? [`%${q}%`, `%${q}%`, `%${q}%`] : [];
+
+    // 1) COUNT TOTAL (sem LIMIT) -> pra preencher a paginação
+    db.query(
+        `
+    SELECT COUNT(*) AS total
+    FROM caixas c
+    LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
+    ${where}
+    `,
+        whereParams,
+        (errCount, countRows) => {
+            if (errCount) {
+                console.error("Erro ao contar caixas:", errCount);
                 return res.send("Erro ao carregar caixas.");
             }
 
-            db.query("SELECT atualizado_em, atualizado_por FROM caixas ORDER BY atualizado_em DESC LIMIT 1", (err2, alteracao) => {
-                if (err2) {
-                    console.error("Erro ao buscar última alteração:", err2);
-                    return res.send("Erro ao carregar alterações.");
-                }
+            const total = Number(countRows?.[0]?.total || 0);
+            const totalPages = Math.max(Math.ceil(total / limit), 1);
 
-                db.query("SELECT * FROM fornecedores ORDER BY criado_em DESC", (err3, fornecedores) => {
-                    if (err3) {
-                        console.error("Erro ao buscar fornecedores:", err3);
-                        return res.send("Erro ao carregar fornecedores.");
+            // 2) DADOS DA PÁGINA (com LIMIT/OFFSET)
+            db.query(
+                `
+        SELECT c.*, f.nome AS fornecedor_nome, f.porcentagem AS fornecedor_pct
+        FROM caixas c
+        LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
+        ${where}
+        ORDER BY c.id DESC
+        LIMIT ? OFFSET ?
+        `,
+                [...whereParams, limit, offset],
+                (err, caixas) => {
+                    if (err) {
+                        console.error("Erro ao buscar caixas:", err);
+                        return res.send("Erro ao carregar caixas.");
                     }
 
-                    const ultimaAlteracao = alteracao.length > 0 ? alteracao[0] : null;
+                    db.query(
+                        "SELECT atualizado_em, atualizado_por FROM caixas ORDER BY atualizado_em DESC LIMIT 1",
+                        (err2, alteracao) => {
+                            if (err2) {
+                                console.error("Erro ao buscar última alteração:", err2);
+                                return res.send("Erro ao carregar alterações.");
+                            }
 
-                    // Objeto de paginação enviado para a view
-                    const paginacao = {
-                        page: currentPage,
-                        totalPages,
-                        total
-                    };
+                            db.query(
+                                "SELECT * FROM fornecedores ORDER BY criado_em DESC",
+                                (err3, fornecedores) => {
+                                    if (err3) {
+                                        console.error("Erro ao buscar fornecedores:", err3);
+                                        return res.send("Erro ao carregar fornecedores.");
+                                    }
 
-                    // Agora a view recebe também 'paginacao' como 5º parâmetro
-                    res.send(tabelaPrecosView(
-                        req.session.user,
-                        caixas,
-                        ultimaAlteracao,
-                        fornecedores,
-                        paginacao
-                    ));
-                });
-            });
-        });
-    });
+                                    const ultimaAlteracao = alteracao.length > 0 ? alteracao[0] : null;
 
+                                    res.send(
+                                        tabelaPrecosView(
+                                            req.session.user,
+                                            caixas,
+                                            ultimaAlteracao,
+                                            fornecedores,
+                                            { page, totalPages, limit, total, q } // <- paginacao completa
+                                        )
+                                    );
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    );
 });
 
 
@@ -1096,58 +1115,58 @@ app.post("/veiculos/excluir/:id", (req, res) => {
 
 // LISTAR ENTREGAS (pedidos + clientes)
 app.get("/entregas", (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
+    if (!req.session.user) return res.redirect("/login");
 
-  const usuario = req.session.user;
+    const usuario = req.session.user;
 
-  // Filtros vindos da query string ou formulário (method="GET")
-  const { titulo, data_inicio, data_fim } = req.query;
+    // Filtros vindos da query string ou formulário (method="GET")
+    const { titulo, data_inicio, data_fim } = req.query;
 
-  // Paginação
-  const page = parseInt(req.query.page || "1", 10);
-  const limit = 5; // nº de pedidos por página
+    // Paginação
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = 5; // nº de pedidos por página
 
-  // Monta WHERE dinâmico (título / período)
-  const where = [];
-  const params = [];
+    // Monta WHERE dinâmico (título / período)
+    const where = [];
+    const params = [];
 
-  if (titulo && titulo.trim() !== "") {
-    where.push("p.titulo LIKE ?");
-    params.push(`%${titulo.trim()}%`);
-  }
+    if (titulo && titulo.trim() !== "") {
+        where.push("p.titulo LIKE ?");
+        params.push(`%${titulo.trim()}%`);
+    }
 
-  if (data_inicio && data_inicio.trim() !== "") {
-    where.push("DATE(p.data_pedido) >= ?");
-    params.push(data_inicio.trim());
-  }
+    if (data_inicio && data_inicio.trim() !== "") {
+        where.push("DATE(p.data_pedido) >= ?");
+        params.push(data_inicio.trim());
+    }
 
-  if (data_fim && data_fim.trim() !== "") {
-    where.push("DATE(p.data_pedido) <= ?");
-    params.push(data_fim.trim());
-  }
+    if (data_fim && data_fim.trim() !== "") {
+        where.push("DATE(p.data_pedido) <= ?");
+        params.push(data_fim.trim());
+    }
 
-  const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+    const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
 
-  // 1) Conta quantos pedidos existem com os filtros (para calcular total de páginas)
-  const sqlCount = `
+    // 1) Conta quantos pedidos existem com os filtros (para calcular total de páginas)
+    const sqlCount = `
     SELECT COUNT(*) AS total
     FROM entregas_pedidos p
     ${whereSql}
   `;
 
-  db.query(sqlCount, params, (errCount, rowsCount) => {
-    if (errCount) {
-      console.error("Erro ao contar pedidos de entregas:", errCount);
-      return res.status(500).send("Erro ao carregar entregas.");
-    }
+    db.query(sqlCount, params, (errCount, rowsCount) => {
+        if (errCount) {
+            console.error("Erro ao contar pedidos de entregas:", errCount);
+            return res.status(500).send("Erro ao carregar entregas.");
+        }
 
-    const total = rowsCount[0]?.total || 0;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const currentPage = Math.min(Math.max(page, 1), totalPages);
-    const offset = (currentPage - 1) * limit;
+        const total = rowsCount[0]?.total || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        const offset = (currentPage - 1) * limit;
 
-    // 2) Busca os pedidos paginados
-    const sqlPedidos = `
+        // 2) Busca os pedidos paginados
+        const sqlPedidos = `
       SELECT p.*
       FROM entregas_pedidos p
       ${whereSql}
@@ -1155,76 +1174,76 @@ app.get("/entregas", (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const paramsPedidos = params.concat([limit, offset]);
+        const paramsPedidos = params.concat([limit, offset]);
 
-    db.query(sqlPedidos, paramsPedidos, (errPedidos, pedidos) => {
-      if (errPedidos) {
-        console.error("Erro ao buscar pedidos de entregas:", errPedidos);
-        return res.status(500).send("Erro ao carregar entregas.");
-      }
+        db.query(sqlPedidos, paramsPedidos, (errPedidos, pedidos) => {
+            if (errPedidos) {
+                console.error("Erro ao buscar pedidos de entregas:", errPedidos);
+                return res.status(500).send("Erro ao carregar entregas.");
+            }
 
-      // Se não tiver pedidos nessa página, não precisa buscar clientes
-      if (!pedidos || pedidos.length === 0) {
-        const filtros = {
-          titulo: titulo || "",
-          data_inicio: data_inicio || "",
-          data_fim: data_fim || ""
-        };
+            // Se não tiver pedidos nessa página, não precisa buscar clientes
+            if (!pedidos || pedidos.length === 0) {
+                const filtros = {
+                    titulo: titulo || "",
+                    data_inicio: data_inicio || "",
+                    data_fim: data_fim || ""
+                };
 
-        const paginacao = {
-          page: currentPage,
-          totalPages,
-          total
-        };
+                const paginacao = {
+                    page: currentPage,
+                    totalPages,
+                    total
+                };
 
-        return res.send(
-          entregasView(usuario, [], {}, filtros, paginacao)
-        );
-      }
+                return res.send(
+                    entregasView(usuario, [], {}, filtros, paginacao)
+                );
+            }
 
-      // 3) Busca os clientes de todos os pedidos retornados (numa query só)
-      const idsPedidos = pedidos.map(p => p.id);
-      const sqlClientes = `
+            // 3) Busca os clientes de todos os pedidos retornados (numa query só)
+            const idsPedidos = pedidos.map(p => p.id);
+            const sqlClientes = `
         SELECT c.*
         FROM entregas_clientes c
         WHERE c.pedido_id IN (${idsPedidos.map(() => "?").join(",")})
         ORDER BY c.id ASC
       `;
 
-      db.query(sqlClientes, idsPedidos, (errClientes, clientes) => {
-        if (errClientes) {
-          console.error("Erro ao buscar clientes das entregas:", errClientes);
-          return res.status(500).send("Erro ao carregar entregas.");
-        }
+            db.query(sqlClientes, idsPedidos, (errClientes, clientes) => {
+                if (errClientes) {
+                    console.error("Erro ao buscar clientes das entregas:", errClientes);
+                    return res.status(500).send("Erro ao carregar entregas.");
+                }
 
-        // Agrupa clientes por pedido_id
-        const clientesPorPedido = {};
-        (clientes || []).forEach(c => {
-          if (!clientesPorPedido[c.pedido_id]) {
-            clientesPorPedido[c.pedido_id] = [];
-          }
-          clientesPorPedido[c.pedido_id].push(c);
+                // Agrupa clientes por pedido_id
+                const clientesPorPedido = {};
+                (clientes || []).forEach(c => {
+                    if (!clientesPorPedido[c.pedido_id]) {
+                        clientesPorPedido[c.pedido_id] = [];
+                    }
+                    clientesPorPedido[c.pedido_id].push(c);
+                });
+
+                const filtros = {
+                    titulo: titulo || "",
+                    data_inicio: data_inicio || "",
+                    data_fim: data_fim || ""
+                };
+
+                const paginacao = {
+                    page: currentPage,
+                    totalPages,
+                    total
+                };
+
+                // IMPORTANTE: a view agora recebe também 'paginacao'
+                res.send(
+                    entregasView(usuario, pedidos, clientesPorPedido, filtros, paginacao)
+                );
+            });
         });
-
-        const filtros = {
-          titulo: titulo || "",
-          data_inicio: data_inicio || "",
-          data_fim: data_fim || ""
-        };
-
-        const paginacao = {
-          page: currentPage,
-          totalPages,
-          total
-        };
-
-        // IMPORTANTE: a view agora recebe também 'paginacao'
-        res.send(
-          entregasView(usuario, pedidos, clientesPorPedido, filtros, paginacao)
-        );
-      });
     });
-  });
 });
 
 

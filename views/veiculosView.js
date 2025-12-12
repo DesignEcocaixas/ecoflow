@@ -426,8 +426,6 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       </div>
       <hr>
       ${menu}
-      <hr class="bg-light">
-      <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
     </div>
 
     <!-- Sidebar mobile -->
@@ -450,12 +448,17 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
         <button class="btn btn-outline-dark d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">☰ Menu</button>
       </div>
 
-      <div class="d-flex align-items-center justify-content-between">
-        <h2>Veículos</h2>
-        <span class="usuario-badge">
-          <i class="fa-solid fa-user"></i> ${usuario.nome}
-        </span>
-      </div>
+      <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="mb-0">Veículos</h2>
+            <div class="mr-2 d-flex align-items-center gap-3">
+              <span class="usuario-badge">
+                <i class="fa-solid fa-user"></i> ${usuario.nome}
+              </span>
+              <a href="/logout" class="text-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Sair
+              </a>
+            </div>
+        </div>
 
       <hr class="bg-light w-100">
 

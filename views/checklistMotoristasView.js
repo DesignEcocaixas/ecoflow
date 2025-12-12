@@ -361,8 +361,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
           <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
           <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
           <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-          <hr>
-          <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
       </div>
 
 <!-- Sidebar mobile -->
@@ -392,13 +390,16 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         </button>
       
         <div class="d-flex align-items-center justify-content-between mb-3">
-        <h2>Checklist Motoristas</h2>
-        
-        <span class="usuario-badge">
-          <i class="fa-solid fa-user"></i> ${usuario.nome}
-        </span>
-
-      </div>
+            <h2 class="mb-0">Checklist Motoristas</h2>
+            <div class="mr-2 d-flex align-items-center gap-3">
+              <span class="usuario-badge">
+                <i class="fa-solid fa-user"></i> ${usuario.nome}
+              </span>
+              <a href="/logout" class="text-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Sair
+              </a>
+            </div>
+        </div>
 
       <hr class="bg-light w-100">
 

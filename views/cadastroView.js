@@ -14,8 +14,6 @@ function cadastroView(usuario, usuarios = []) {
         <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
         <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
         <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-        <hr>
-        <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
     `;
 
   const linhas =
@@ -143,23 +141,23 @@ function cadastroView(usuario, usuarios = []) {
   </head>
   <body>
     <!-- PRELOADER -->
-<div id="preloader" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity .3s ease;
-">
-    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
-        <span class="visually-hidden">Carregando...</span>
+    <div id="preloader" style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity .3s ease;
+    ">
+        <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
     </div>
-</div>
 
     <!-- Sidebar desktop -->
     <div class="sidebar d-none d-md-block">
@@ -180,8 +178,6 @@ function cadastroView(usuario, usuarios = []) {
         <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-4" style="max-width:150px;">
         <hr class="bg-light">
         ${menu}
-        <hr class="bg-light">
-        <a href="/logout" class="d-block text-danger">Sair</a>
       </div>
     </div>
 
@@ -191,11 +187,16 @@ function cadastroView(usuario, usuarios = []) {
       </div>
 
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h2 class="mb-0">Cadastro de Usuários</h2>
-        <span class="usuario-badge">
-          <i class="fa-solid fa-user"></i> ${usuario.nome}
-        </span>
-      </div>
+            <h2 class="mb-0">Cadastro usuário</h2>
+            <div class="mr-2 d-flex align-items-center gap-3">
+              <span class="usuario-badge">
+                <i class="fa-solid fa-user"></i> ${usuario.nome}
+              </span>
+              <a href="/logout" class="text-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Sair
+              </a>
+            </div>
+        </div>
 
       <hr class="bg-light w-100">
 

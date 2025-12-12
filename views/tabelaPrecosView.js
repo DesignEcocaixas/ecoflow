@@ -315,6 +315,25 @@ function tabelaPrecosView(
     </style>
   </head>
   <body>
+    <!-- PRELOADER -->
+<div id="preloader" style="
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity .3s ease;
+">
+    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+</div>
+
       <!-- Sidebar -->
       <div class="sidebar">
         <div class="text-center">
@@ -524,6 +543,7 @@ function tabelaPrecosView(
       ${modaisFornecedores}
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
       <script src="/script/orcamento.js"></script>
+      <script src="./script/checkLogin.js"></script>
   </body>
   </html>
   `;

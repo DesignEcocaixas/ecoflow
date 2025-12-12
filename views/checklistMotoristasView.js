@@ -265,35 +265,37 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
           }
 
             .sidebar { 
-            width: 220px; 
-            background-color: #0D5749; 
-            color: white; 
-            padding: 20px; 
-            transition: all 0.3s ease-in-out; /* anima sidebar */
+              width: 220px; 
+              background-color: #0D5749; 
+              color: white; 
+              padding: 20px; 
+              transition: all 0.3s ease-in-out; /* anima sidebar */
             }
+            
             .sidebar a { 
-            display: block; 
-            padding: 10px; 
-            color: white; 
-            text-decoration: none; 
-            border-radius: 5px; 
-            margin-bottom: 10px; 
-            transition: background-color 0.2s ease-in-out; /* hover suave */
+              display: block; 
+              padding: 10px; 
+              color: white; 
+              text-decoration: none; 
+              border-radius: 5px; 
+              margin-bottom: 10px; 
+              transition: background-color 0.2s ease-in-out; /* hover suave */
             }
+
             .sidebar a:hover { 
-            background-color: #083930ff; 
+              background-color: #083930ff; 
             }
 
             .content { 
-            flex: 1; 
-            padding: 20px; 
+              flex: 1; 
+              padding: 20px; 
             }
 
             .offcanvas {
-            transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out;
+              transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out;
             }
 
-            /* No mobile */
+            /*---------------------Mobile---------------------*/
             @media (max-width: 767.98px) {
             body {
                 flex-direction: column;
@@ -314,9 +316,9 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                 padding: 10px;
                 color: white;
                 text-decoration: none;
-                }
+              }
 
-                .offcanvas-body a:hover {
+            .offcanvas-body a:hover {
                 background-color: #495057;
                 border-radius: 5px;
             }
@@ -332,6 +334,24 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     </style>
   </head>
   <body>
+  <!-- PRELOADER -->
+<div id="preloader" style="
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity .3s ease;
+">
+    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+</div>
       <!-- Sidebar -->
       <div class="sidebar">
           <div class="text-center">
@@ -339,6 +359,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         </div>
           <hr>
           <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+          <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
           <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
           <hr>
           <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
@@ -356,6 +377,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         <div class="d-flex flex-column align-items-center w-100">
         <hr>
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
+        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
         </div>
         <hr class="bg-light w-100">
@@ -538,6 +560,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       </div>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="./script/checkLogin.js"></script>
   </body>
   </html>
   `;

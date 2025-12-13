@@ -414,7 +414,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       <div class="modal fade" id="novoChecklistModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
-            <form method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data">
+            <form method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" autocomplete="off">
               <div class="modal-header">
                 <h5 class="modal-title">Novo Checklist</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -534,10 +534,10 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Motorista</label>
-                  <select name="motorista" class="form-select" required>
-                    <option>Flávio</option>
-                    <option>Thiago</option>
+                  <select name="motorista" class="form-select" required autocomplete="off">
+                    <option value="" selected disabled>Selecione o motorista</option>
+                    <option value="Flávio">Flávio</option>
+                    <option value="Thiago">Thiago</option>
                   </select>
                 </div>
 

@@ -488,47 +488,35 @@ app.get("/checklist-motoristas", (req, res) => {
 
 
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+  if (!req.session.user) return res.redirect("/login");
 
-    if (req.session.user.tipo_usuario !== "admin" &&
-        req.session.user.tipo_usuario !== "motorista") {
-        return res.status(403).send("Acesso negado.");
+  if (req.session.user.tipo_usuario !== "admin" &&
+      req.session.user.tipo_usuario !== "motorista") {
+    return res.status(403).send("Acesso negado.");
+  }
+
+  const {
+    veiculo, oleo, agua, freio, direcao, combustivel,
+    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+    responsavel, motorista, observacao,
+  } = req.body;
+
+  // ✅ CORREÇÃO: motorista é O NOME SELECIONADO NO FORM
+  if (!motorista || motorista.trim() === "") {
+    return res.status(400).send("Selecione o motorista no formulário.");
+  }
+
+  const foto = req.file ? req.file.filename : null;
+
+  db.query(
+    "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
+    [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
+    (errNotif) => {
+      if (errNotif) console.error("Erro ao registrar notificação de checklist:", errNotif);
     }
+  );
 
-    const {
-        veiculo,
-        oleo,
-        agua,
-        freio,
-        direcao,
-        combustivel,
-        pneu_calibragem,
-        pneu_estado,
-        luzes,
-        ruidos,
-        lixo,
-        responsavel,
-        motorista,   // vem do form (admin usa)
-        observacao,
-    } = req.body;
-
-    // ✅ motorista logado SEMPRE registra no próprio nome
-    const motoristaFinal =
-        req.session.user.tipo_usuario === "motorista"
-            ? req.session.user.nome
-            : motorista;
-
-    const foto = req.file ? req.file.filename : null;
-
-    db.query(
-        "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
-        [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
-        (errNotif) => {
-            if (errNotif) console.error("Erro ao registrar notificação de checklist:", errNotif);
-        }
-    );
-
-    const sql = `
+  const sql = `
     INSERT INTO checklists 
       (veiculo, oleo, agua, freio, direcao, combustivel,
        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
@@ -536,33 +524,25 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-    const params = [
-        veiculo,
-        oleo,
-        agua,
-        freio,
-        direcao,
-        combustivel,
-        pneu_calibragem,
-        pneu_estado,
-        luzes,
-        ruidos,
-        lixo,
-        responsavel,
-        motoristaFinal,                 // ✅ aqui
-        req.session.user.nome,
-        observacao && observacao.trim() !== "" ? observacao : null,
-        foto,
-    ];
+  const params = [
+    veiculo, oleo, agua, freio, direcao, combustivel,
+    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+    responsavel,
+    motorista.trim(),                 // ✅ do formulário
+    req.session.user.nome,            // ✅ quem registrou (logado)
+    observacao && observacao.trim() !== "" ? observacao : null,
+    foto,
+  ];
 
-    db.query(sql, params, (err) => {
-        if (err) {
-            console.error("Erro ao inserir checklist:", err);
-            return res.status(500).send("Erro ao inserir checklist.");
-        }
-        return res.redirect("/checklist-motoristas");
-    });
+  db.query(sql, params, (err) => {
+    if (err) {
+      console.error("Erro ao inserir checklist:", err);
+      return res.status(500).send("Erro ao inserir checklist.");
+    }
+    return res.redirect("/checklist-motoristas");
+  });
 });
+
 
 
 

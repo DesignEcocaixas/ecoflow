@@ -426,10 +426,12 @@ app.get("/checklist-motoristas", (req, res) => {
     const where = [];
     const paramsBase = [];
 
-    if (usuario.tipo_usuario === "motorista") {
-        where.push("motorista = ?");
-        paramsBase.push(usuario.nome);
-    }
+    // ✅ CORREÇÃO: NÃO filtrar por usuario.nome, pois "motorista" é o nome selecionado no formulário.
+    // Isso fazia motoristas novos não enxergarem os checklists existentes.
+    // if (usuario.tipo_usuario === "motorista") {
+    //     where.push("motorista = ?");
+    //     paramsBase.push(usuario.nome);
+    // }
 
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
 
@@ -484,6 +486,7 @@ app.get("/checklist-motoristas", (req, res) => {
 
 
 
+
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
@@ -492,9 +495,8 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
         return res.status(403).send("Acesso negado.");
     }
 
-    // Extrai os dados do formulário
     const {
-        veiculo,           // ou 'veiculo' se sua coluna ainda se chama assim
+        veiculo,
         oleo,
         agua,
         freio,
@@ -506,14 +508,18 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
         ruidos,
         lixo,
         responsavel,
-        motorista,
-        observacao,       // novo campo
+        motorista,   // vem do form (admin usa)
+        observacao,
     } = req.body;
 
-    // Nome do arquivo da foto (se foi enviado)
+    // ✅ motorista logado SEMPRE registra no próprio nome
+    const motoristaFinal =
+        req.session.user.tipo_usuario === "motorista"
+            ? req.session.user.nome
+            : motorista;
+
     const foto = req.file ? req.file.filename : null;
 
-    // Notificação (opcional)
     db.query(
         "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
         [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
@@ -522,7 +528,6 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
         }
     );
 
-    // Insert no checklist (já com observacao + foto)
     const sql = `
     INSERT INTO checklists 
       (veiculo, oleo, agua, freio, direcao, combustivel,
@@ -544,7 +549,7 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
         ruidos,
         lixo,
         responsavel,
-        motorista,
+        motoristaFinal,                 // ✅ aqui
         req.session.user.nome,
         observacao && observacao.trim() !== "" ? observacao : null,
         foto,
@@ -558,6 +563,8 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
         return res.redirect("/checklist-motoristas");
     });
 });
+
+
 
 app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");

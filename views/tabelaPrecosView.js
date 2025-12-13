@@ -306,7 +306,7 @@ function tabelaPrecosView(
                 background-color: #495057;
                 border-radius: 5px;
             }
-                .usuario-badge {
+            .usuario-badge {
               background-color: #0D5749;
               color: #ffffff;
               padding: 3px 12px;

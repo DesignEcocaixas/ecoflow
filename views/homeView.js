@@ -26,7 +26,7 @@ function menuCard(href, titulo, icone, disabled = false) {
     ? `
       ${menuCard("/home", "Home", "fas fa-home")}
       ${menuCard("/checklist-motoristas", "Checklist", "fas fa-clipboard-check")}
-      ${menuCard("/entregas", "Entregas", "fas fa-truck")}
+      ${menuCard("/entregas", "Rotas", "fa-solid fa-route")}
     `
     : usuario.tipo_usuario === "financeiro"
       ? `
@@ -35,7 +35,7 @@ function menuCard(href, titulo, icone, disabled = false) {
       : `
         ${menuCard("/home", "Home", "fas fa-home")}
         ${menuCard("/tabela-precos", "Tabela de Preços", "fas fa-tags")}
-        ${menuCard("/entregas", "Entregas", "fas fa-truck")}
+        ${menuCard("/entregas", "Rotas", "fa-solid fa-route")}
         ${menuCard("/checklist-motoristas", "Checklist", "fas fa-clipboard-check")}
         ${menuCard("/catalogo", "Catálogo", "fas fa-box-open", true)}
         ${menuCard("/veiculos", "Veículos", "fas fa-car")}
@@ -53,7 +53,7 @@ function menuCard(href, titulo, icone, disabled = false) {
       <meta http-equiv="Expires" content="0">
 
       <title>Home</title>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
       <style>

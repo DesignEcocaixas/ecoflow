@@ -10,13 +10,13 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     user.tipo_usuario === "motorista"
       ? `<a href="/home"><i class="fas fa-home me-2"></i>Home</a>
                 <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-                <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>`
+                <a href="/entregas"><i class="fa-solid fa-route me-2"></i>Rotas</a>`
       : user.tipo_usuario === "financeiro"
         ? `<a href="/tabela-precos">Tabela de Preços</a>`
         : `
         <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
         <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
-        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
+        <a href="/entregas"><i class="fa-solid fa-route me-2"></i>Rotas</a>
         <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
         <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
         <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
@@ -440,7 +440,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
 
 
       <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoPedidoModal">
-        <i class="fa-solid fa-file-circle-plus"></i> Novo pedido
+        <i class="fa-solid fa-route"></i> Nova Rota
       </button>
 
       <div class="row">
@@ -457,11 +457,11 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         <div class="modal-content">
           <form method="POST" action="/entregas/novo">
             <div class="modal-header">
-              <h5 class="modal-title">Novo Pedido</h5>
+              <h5 class="modal-title">Criar Nova Rota</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <label class="form-label">Título do pedido</label>
+              <label class="form-label">Cidade</label>
               <input type="text" name="titulo" class="form-control mb-2" required>
 
               <label class="form-label">Data</label>

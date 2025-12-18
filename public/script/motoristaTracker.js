@@ -68,3 +68,7 @@
   window.iniciarRastreamento = iniciarRastreamento;
   window.pararRastreamento = pararRastreamento;
 })();
+
+setInterval(() => {
+  socket.emit("motorista:online", { nome });
+}, 30000); // a cada 30s

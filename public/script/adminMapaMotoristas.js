@@ -1,104 +1,83 @@
+// public/script/adminMapaMotoristas.js
 (() => {
-    console.log("[adminMapaMotoristas] carregou");
-
-    function ready(fn) {
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", fn);
-        } else fn();
+    if (!window.io) {
+        console.warn("Socket.io não encontrado (window.io).");
+        return;
+    }
+    if (!window.L) {
+        console.warn("Leaflet não encontrado (window.L).");
+        return;
     }
 
-    ready(() => {
-        if (!window.L) {
-            console.warn("[adminMapaMotoristas] Leaflet (L) não encontrado");
+    let map;
+    const markers = new Map(); // key = id (preferencial) ou nome (fallback)
+    let ultimaLista = [];
+    const socket = io();
+
+    // entra como admin pra receber updates
+    socket.emit("admin:join");
+
+    function initMap() {
+        if (map) return;
+
+        const el = document.getElementById("mapaMotoristas");
+        if (!el) {
+            console.warn("#mapaMotoristas não encontrado.");
             return;
         }
-        if (!window.io) {
-            console.warn("[adminMapaMotoristas] Socket.io (io) não encontrado");
-            return;
-        }
 
-        const modalEl = document.getElementById("mapaMotoristasModal");
-        const mapaEl = document.getElementById("mapaMotoristas");
+        map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19
+        }).addTo(map);
+    }
 
-        if (!modalEl || !mapaEl) {
-            console.warn("[adminMapaMotoristas] modal/mapa não encontrados no DOM");
-            return;
-        }
+    function render(lista) {
+        if (!map) return;
 
-        const socket = io();
-        socket.emit("admin:join");
+        const idsAtuais = new Set(lista.map((x) => x.id || x.nome));
 
-        let map = null;
-        const markers = new Map(); // key: nome
-
-        function initMap() {
-            if (map) return;
-
-            console.log("[adminMapaMotoristas] initMap()");
-
-            map = L.map("mapaMotoristas", { zoomControl: true }).setView(
-                [-12.9714, -38.5014],
-                12
-            );
-
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                maxZoom: 19
-            }).addTo(map);
-        }
-
-        function render(lista) {
-            if (!map) return;
-
-            lista = Array.isArray(lista) ? lista : [];
-
-            const nomesAtuais = new Set(lista.map(m => m.nome));
-
-            for (const [nome, mk] of markers.entries()) {
-                if (!nomesAtuais.has(nome)) {
-                    map.removeLayer(mk);
-                    markers.delete(nome);
-                }
+        // remove marcadores que sumiram
+        for (const [id, mk] of markers.entries()) {
+            if (!idsAtuais.has(id)) {
+                map.removeLayer(mk);
+                markers.delete(id);
             }
-
-            lista.forEach(m => {
-                if (typeof m.lat !== "number" || typeof m.lng !== "number") return;
-
-                const pos = [m.lat, m.lng];
-                const label = `${m.nome || "Motorista"}<br>
-          <small>${new Date(m.updatedAt).toLocaleString("pt-BR")}</small>
-          ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}`;
-
-                if (markers.has(m.nome)) {
-                    markers.get(m.nome).setLatLng(pos).setPopupContent(label);
-                } else {
-                    const mk = L.marker(pos).addTo(map).bindPopup(label);
-                    markers.set(m.nome, mk);
-                }
-            });
         }
 
-        // 🔥 PONTO CHAVE: só cria/invalida quando o modal realmente abriu
-        modalEl.addEventListener("shown.bs.modal", () => {
-            console.log("[adminMapaMotoristas] modal shown");
+        // atualiza/cria marcadores
+        lista.forEach((m) => {
+            const key = m.id || m.nome;
+            const pos = [m.lat, m.lng];
 
-            // garante que o container já “tem tamanho” quando criar o mapa
-            setTimeout(() => {
-                initMap();
-                map.invalidateSize(true);
-            }, 250);
-        });
+            const label = `
+        <b>${m.nome || "Motorista"}</b><br>
+        <small>${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
+        ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}
+      `;
 
-        socket.on("motoristas:update", (lista) => {
-            // se ainda não abriu o modal, só guarda; quando abrir renderiza
-            window.__ultimaListaMotoristas = lista;
-            if (map) render(lista);
-        });
-
-        // quando abrir, renderiza o snapshot se já tiver
-        modalEl.addEventListener("shown.bs.modal", () => {
-            if (map && window.__ultimaListaMotoristas) {
-                render(window.__ultimaListaMotoristas);
+            if (markers.has(key)) {
+                markers.get(key).setLatLng(pos).setPopupContent(label);
+            } else {
+                const mk = L.marker(pos).addTo(map).bindPopup(label);
+                markers.set(key, mk);
             }
         });
+    }
+
+    // quando abrir o modal, inicializa e renderiza o snapshot
+    const modal = document.getElementById("mapaMotoristasModal");
+    modal?.addEventListener("shown.bs.modal", () => {
+        initMap();
+        setTimeout(() => {
+            map?.invalidateSize();
+            render(ultimaLista);
+        }, 200);
+    });
+
+    // recebe updates do backend
+    socket.on("motoristas:update", (lista) => {
+        ultimaLista = Array.isArray(lista) ? lista : [];
+        render(ultimaLista);
     });
 })();

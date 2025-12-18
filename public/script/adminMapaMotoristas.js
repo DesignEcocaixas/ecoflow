@@ -1,32 +1,28 @@
 // public/script/adminMapaMotoristas.js
 (() => {
-    if (!window.io) {
-        console.warn("Socket.io não encontrado (window.io).");
-        return;
-    }
-    if (!window.L) {
-        console.warn("Leaflet não encontrado (window.L).");
-        return;
-    }
+    if (!window.io) return console.warn("Socket.io não encontrado (window.io).");
+    if (!window.L) return console.warn("Leaflet não encontrado (window.L).");
 
-    let map;
-    const markers = new Map(); // key = id (preferencial) ou nome (fallback)
+    let map = null;
+    const markers = new Map();
     let ultimaLista = [];
     const socket = io();
 
-    // entra como admin pra receber updates
     socket.emit("admin:join");
 
     function initMap() {
         if (map) return;
 
         const el = document.getElementById("mapaMotoristas");
-        if (!el) {
-            console.warn("#mapaMotoristas não encontrado.");
-            return;
+        if (!el) return console.warn("#mapaMotoristas não encontrado.");
+
+        // GARANTE QUE O CONTAINER NÃO TEM INSTÂNCIA ANTIGA
+        if (el._leaflet_id) {
+            try { el._leaflet_id = null; } catch { }
+            el.innerHTML = "";
         }
 
-        map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador
+        map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19
         }).addTo(map);
@@ -35,17 +31,15 @@
     function render(lista) {
         if (!map) return;
 
-        const idsAtuais = new Set(lista.map((x) => x.id || x.nome));
+        const keysAtuais = new Set(lista.map(x => x.id || x.nome));
 
-        // remove marcadores que sumiram
-        for (const [id, mk] of markers.entries()) {
-            if (!idsAtuais.has(id)) {
+        for (const [key, mk] of markers.entries()) {
+            if (!keysAtuais.has(key)) {
                 map.removeLayer(mk);
-                markers.delete(id);
+                markers.delete(key);
             }
         }
 
-        // atualiza/cria marcadores
         lista.forEach((m) => {
             const key = m.id || m.nome;
             const pos = [m.lat, m.lng];
@@ -65,8 +59,8 @@
         });
     }
 
-    // quando abrir o modal, inicializa e renderiza o snapshot
     const modal = document.getElementById("mapaMotoristasModal");
+
     modal?.addEventListener("shown.bs.modal", () => {
         initMap();
         setTimeout(() => {
@@ -75,7 +69,15 @@
         }, 200);
     });
 
-    // recebe updates do backend
+    // ✅ AQUI: DESTROI O MAPA AO FECHAR (resolve o erro)
+    modal?.addEventListener("hidden.bs.modal", () => {
+        if (map) {
+            map.remove();
+            map = null;
+        }
+        markers.clear();
+    });
+
     socket.on("motoristas:update", (lista) => {
         ultimaLista = Array.isArray(lista) ? lista : [];
         render(ultimaLista);

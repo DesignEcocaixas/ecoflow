@@ -55,7 +55,10 @@ io.on("connection", (socket) => {
             updatedAt: new Date()
         });
 
-        io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
+        io.to("admins").emit(
+            "motoristas:update",
+            Array.from(motoristasOnline.entries()).map(([id, v]) => ({ id, ...v }))
+        );
     });
 
 

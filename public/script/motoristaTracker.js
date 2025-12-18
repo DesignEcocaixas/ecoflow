@@ -2,62 +2,82 @@ console.log("motoristaTracker carregou", new Date().toISOString());
 
 // public/script/motoristaTracker.js
 (() => {
-  if (!window.io) return;
+  if (!("geolocation" in navigator)) {
+    console.warn("Geolocation não suportado neste navegador.");
+    return;
+  }
+
+  if (!window.io) {
+    console.warn("Socket.io não encontrado (window.io).");
+    return;
+  }
 
   const socket = io();
   const nome = window.NOME_USUARIO || "Motorista";
 
+  console.log("motoristaTracker carregou", new Date().toISOString(), { nome });
+
   socket.emit("motorista:online", { nome });
 
-  function emitir(pos) {
-    const { latitude, longitude, accuracy } = pos.coords;
+  function emitPosicao(pos, origem = "watch") {
+    const { latitude, longitude, accuracy } = pos.coords || {};
+    if (typeof latitude !== "number" || typeof longitude !== "number") return;
 
-    // Se vier muito ruim, você pode ignorar (ou aumentar o limite)
-    if (accuracy && accuracy > 150) return;
+    // Ignora leituras muito ruins (ajuste se quiser)
+    if (accuracy && accuracy > 80) return;
 
-    // guarda a última posição boa (pra fallback)
-    try {
-      localStorage.setItem("ultima_posicao", JSON.stringify({
-        lat: latitude,
-        lng: longitude,
-        accuracy,
-        ts: Date.now()
-      }));
-    } catch { }
-
-    socket.emit("motorista:posicao", { lat: latitude, lng: longitude, accuracy });
+    socket.emit("motorista:posicao", {
+      nome,
+      lat: latitude,
+      lng: longitude,
+      accuracy,
+      origem
+    });
   }
 
-  function logErro(err, etapa) {
-    console.warn(`[Geo ${etapa}]`, { code: err.code, message: err.message });
-
-    if (err.code === 3) {
-      console.warn("Timeout (demorou demais pra obter localização). Vou tentar fallback...");
-    }
+  function logErro(tag, err) {
+    console.warn(tag, err);
   }
 
-  // 1) “Aquecida” do GPS (muito importante)
-  navigator.geolocation.getCurrentPosition(
-    (pos) => enviar(pos),
-    (err) => console.warn("[Geo getCurrentPosition]", err),
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
-  );
+  function watchHigh() {
+    return navigator.geolocation.watchPosition(
+      (pos) => emitPosicao(pos, "watch_high"),
+      (err) => {
+        logErro("[Geo watch high]", err);
 
-  navigator.geolocation.watchPosition(
-    (pos) => enviar(pos),
-    (err) => {
-      console.warn("[Geo watch high]", err);
-      if (err.code === 3) {
-        console.warn("Timeout. Tentando fallback...");
-        navigator.geolocation.watchPosition(
-          (pos) => enviar(pos),
-          (err2) => console.warn("[Geo watch fallback]", err2),
-          { enableHighAccuracy: false, maximumAge: 10000, timeout: 60000 }
-        );
+        // code 3 = timeout
+        if (err && err.code === 3) {
+          console.warn("Timeout (alta precisão). Vou tentar fallback...");
+          watchFallback();
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 60000
       }
-    },
+    );
+  }
+
+  function watchFallback() {
+    return navigator.geolocation.watchPosition(
+      (pos) => emitPosicao(pos, "watch_fallback"),
+      (err) => logErro("[Geo watch fallback]", err),
+      {
+        enableHighAccuracy: false,
+        maximumAge: 10000,
+        timeout: 60000
+      }
+    );
+  }
+
+  // Primeira leitura (ajuda a “fixar” antes do watch)
+  navigator.geolocation.getCurrentPosition(
+    (pos) => emitPosicao(pos, "getCurrentPosition"),
+    (err) => logErro("[Geo getCurrentPosition]", err),
     { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
   );
-  // opcional: expõe pra debug
-  window.__watchHigh = watchHigh;
+
+  // Inicia watch principal
+  watchHigh();
 })();

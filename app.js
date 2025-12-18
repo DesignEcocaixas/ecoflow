@@ -39,20 +39,25 @@ io.on("connection", (socket) => {
         socket.data.nome = nome || "Motorista";
     });
 
-    socket.on("motorista:posicao", ({ lat, lng }) => {
-        const nome = socket.data.nome || "Motorista";
+    socket.on("motorista:posicao", ({ nome, lat, lng, accuracy, origem }) => {
+        const nomeFinal = nome || socket.data.nome || "Motorista";
+        socket.data.nome = nomeFinal;
+
         if (typeof lat !== "number" || typeof lng !== "number") return;
 
         motoristasOnline.set(socket.id, {
-            nome,
+            id: socket.id,              // <<< importante pro front identificar
+            nome: nomeFinal,
             lat,
             lng,
+            accuracy: accuracy ?? null, // opcional
+            origem: origem ?? null,     // opcional
             updatedAt: new Date()
         });
 
-        // manda pra todos admins conectados
         io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
     });
+
 
     socket.on("admin:join", () => {
         socket.join("admins");
@@ -64,6 +69,7 @@ io.on("connection", (socket) => {
         motoristasOnline.delete(socket.id);
         io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
     });
+
 });
 
 // configura o multer

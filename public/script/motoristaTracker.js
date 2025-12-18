@@ -1,3 +1,5 @@
+console.log("motoristaTracker carregou", new Date().toISOString());
+
 // public/script/motoristaTracker.js
 (() => {
   if (!window.io) return;
@@ -21,7 +23,7 @@
         accuracy,
         ts: Date.now()
       }));
-    } catch {}
+    } catch { }
 
     socket.emit("motorista:posicao", { lat: latitude, lng: longitude, accuracy });
   }
@@ -36,48 +38,26 @@
 
   // 1) “Aquecida” do GPS (muito importante)
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      console.log("GPS inicial OK");
-      emitir(pos);
-    },
-    (err) => logErro(err, "getCurrentPosition"),
-    { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
+    (pos) => enviar(pos),
+    (err) => console.warn("[Geo getCurrentPosition]", err),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
   );
 
-  // 2) Watch principal (alta precisão)
-  const watchHigh = navigator.geolocation.watchPosition(
-    (pos) => emitir(pos),
+  navigator.geolocation.watchPosition(
+    (pos) => enviar(pos),
     (err) => {
-      logErro(err, "watch high");
-
-      // 3) Se der timeout, tenta fallback (baixa precisão) e usa última posição salva
+      console.warn("[Geo watch high]", err);
       if (err.code === 3) {
-        try {
-          const saved = JSON.parse(localStorage.getItem("ultima_posicao") || "null");
-          if (saved) {
-            socket.emit("motorista:posicao", {
-              lat: saved.lat,
-              lng: saved.lng,
-              accuracy: saved.accuracy
-            });
-          }
-        } catch {}
-
-        // fallback: baixa precisão costuma “pegar” mais rápido
-        navigator.geolocation.getCurrentPosition(
-          (pos2) => emitir(pos2),
-          (err2) => logErro(err2, "fallback getCurrentPosition"),
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 10000 }
+        console.warn("Timeout. Tentando fallback...");
+        navigator.geolocation.watchPosition(
+          (pos) => enviar(pos),
+          (err2) => console.warn("[Geo watch fallback]", err2),
+          { enableHighAccuracy: false, maximumAge: 10000, timeout: 60000 }
         );
       }
     },
-    {
-      enableHighAccuracy: true,
-      timeout: 30000,   // aumentamos
-      maximumAge: 2000  // permite usar leitura recente (não “velha” demais)
-    }
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
   );
-
   // opcional: expõe pra debug
   window.__watchHigh = watchHigh;
 })();

@@ -443,6 +443,12 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         <i class="fa-solid fa-route"></i> Nova Rota
       </button>
 
+      ${usuario.tipo_usuario === "admin" ? `
+      <button class="btn btn-outline-primary mb-3" data-bs-toggle="modal" data-bs-target="#mapaMotoristasModal">
+        <i class="fa-solid fa-location-dot"></i> Motoristas em tempo real
+      </button>
+      ` : ""}
+
       <div class="row">
         ${cards}
       </div>
@@ -478,8 +484,103 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     <!-- Modais de clientes (editar/excluir) fora dos modais de pedidos -->
     ${clienteModals.join("")}
 
+    ${usuario.tipo_usuario === "admin" ? `
+<div class="modal fade" id="mapaMotoristasModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Localização em tempo real — Motoristas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="mapaMotoristas" style="height: 70vh; width: 100%; border-radius: 12px;"></div>
+        <small class="text-muted d-block mt-2">
+          * Atualiza automaticamente. Se não aparecer, verifique HTTPS e permissões de localização no celular do motorista.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+` : ""}
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
+    <script>
+      window.NOME_USUARIO = "${usuario.nome}";
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/script/motoristaTracker.js"></script>
+
+    ${usuario.tipo_usuario === "admin" ? `
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+    (() => {
+      let map, markers = new Map(); // key = nome do motorista
+      const socket = io();
+
+      // entra como admin pra receber updates
+      socket.emit("admin:join");
+
+      function initMap() {
+        if (map) return;
+
+        map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador (ajuste como quiser)
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19
+        }).addTo(map);
+      }
+
+      const modal = document.getElementById("mapaMotoristasModal");
+      modal?.addEventListener("shown.bs.modal", () => {
+        initMap();
+        setTimeout(() => map.invalidateSize(), 200);
+      });
+
+      socket.on("motoristas:update", (lista) => {
+        // lista = [{nome, lat, lng, updatedAt}, ...]
+        if (!map) return;
+
+        const nomesAtuais = new Set(lista.map(x => x.nome));
+
+        // remove marcadores que sumiram
+        for (const [nome, mk] of markers.entries()) {
+          if (!nomesAtuais.has(nome)) {
+            map.removeLayer(mk);
+            markers.delete(nome);
+          }
+        }
+
+        // atualiza/cria marcadores
+        lista.forEach(m => {
+          const pos = [m.lat, m.lng];
+          const label = \`\${m.nome}<br><small>\${new Date(m.updatedAt).toLocaleString("pt-BR")}</small>\`;
+
+          if (markers.has(m.nome)) {
+            markers.get(m.nome).setLatLng(pos).setPopupContent(label);
+          } else {
+            const mk = L.marker(pos).addTo(map).bindPopup(label);
+            markers.set(m.nome, mk);
+          }
+        });
+      });
+    })();
+    </script>
+    ` : ""}
+
+    <!-- Motorista: se você quiser rastrear também na tela /entregas -->
+    ${usuario.tipo_usuario === "motorista" ? `
+    <script>
+      window.NOME_USUARIO = "${usuario.nome}";
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/script/motoristaTracker.js"></script>
+    ` : ""}
+
+
   </body>
   </html>
   `;

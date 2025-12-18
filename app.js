@@ -1,5 +1,6 @@
 // app.js
 const express = require("express");
+const http = require("http");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const db = require("./db");
@@ -15,11 +16,23 @@ const checklistMotoristasView = require("./views/checklistMotoristasView");
 const veiculosView = require("./views/veiculosView");
 const entregasView = require("./views/entregasView");
 
+const { Server } = require("socket.io");
 const app = express();
 const PORT = 3000;
 
+const server = http.createServer(app);
+
 // pasta de uploads pública
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const io = new Server(server, {
+  cors: { origin: "*" } // se for mesmo domínio, pode deixar padrão
+});
+
+// Guarda localização em memória (simples e rápido)
+const motoristasOnline = new Map(); 
+// key: socket.id
+// value: { nome, lat, lng, updatedAt }
 
 // configura o multer
 const storage = multer.diskStorage({
@@ -35,8 +48,8 @@ const storage = multer.diskStorage({
         cb(null, `${base}_${ts}${ext}`);
     }
 });
-const upload = multer({ storage });
 
+const upload = multer({ storage });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -51,7 +64,6 @@ app.use(session({
         maxAge: 1000 * 60 * 60       // 1 hora
     }
 }));
-
 
 app.get("/login", (req, res) => {
     if (req.session.user) {
@@ -73,7 +85,6 @@ function isLogged(req, res, next) {
     }
     next();
 }
-
 
 app.get("/check-session", (req, res) => {
     if (req.session.user) {
@@ -1361,7 +1372,6 @@ app.post("/entregas/clientes/editar/:cid", isLogged, (req, res) => {
     });
 });
 
-
 // EXCLUIR CLIENTE DO PEDIDO
 app.post("/entregas/clientes/excluir/:cid", /*isLogged*/ /* onlyAdmin, */(req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -1385,7 +1395,4 @@ app.get("/health", (req, res) => {
     res.send("OK");
 });
 
-
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
-});
+server.listen(PORT, '0.0.0.0',() => console.log("Servidor rodando na porta}"));

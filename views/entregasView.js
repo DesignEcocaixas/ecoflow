@@ -590,6 +590,14 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       </script>
     ` : ""}
 
+    ${usuario.tipo_usuario === "admin" ? `
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="/script/adminMapaMotoristas.js"></script>
+    ` : ""}
+
+
     ${usuario.tipo_usuario === "motorista" ? `
       <script>
         document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {

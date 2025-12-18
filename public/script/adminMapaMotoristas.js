@@ -64,19 +64,26 @@
     modal?.addEventListener("shown.bs.modal", () => {
         initMap();
         setTimeout(() => {
-            map?.invalidateSize();
-            render(ultimaLista);
+            const el = document.getElementById("mapaMotoristas");
+            if (map && el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+                map.invalidateSize();
+                render(ultimaLista);
+            }
         }, 200);
+
     });
 
     // ✅ AQUI: DESTROI O MAPA AO FECHAR (resolve o erro)
     modal?.addEventListener("hidden.bs.modal", () => {
+        // evita qualquer resize pendente tentando rodar depois
         if (map) {
+            map.off();
             map.remove();
             map = null;
         }
         markers.clear();
     });
+
 
     socket.on("motoristas:update", (lista) => {
         ultimaLista = Array.isArray(lista) ? lista : [];

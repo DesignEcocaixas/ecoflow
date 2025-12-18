@@ -1,12 +1,9 @@
-console.log("motoristaTracker carregou", new Date().toISOString());
-
 // public/script/motoristaTracker.js
 (() => {
   if (!("geolocation" in navigator)) {
     console.warn("Geolocation não suportado neste navegador.");
     return;
   }
-
   if (!window.io) {
     console.warn("Socket.io não encontrado (window.io).");
     return;
@@ -15,31 +12,14 @@ console.log("motoristaTracker carregou", new Date().toISOString());
   const socket = io();
   const nome = window.NOME_USUARIO || "Motorista";
 
-  console.log("motoristaTracker carregou", new Date().toISOString(), { nome });
-
-  // garante que reenvia online quando reconectar
-  socket.on("connect", () => {
-    socket.emit("motorista:online", { nome });
-  });
+  let watchId = null;
+  let iniciado = false;
 
   socket.emit("motorista:online", { nome });
 
-  let watchId = null;
-  let usandoFallback = false;
-
-  function stopWatch() {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
-  }
-
-  function emitPosicao(pos, origem = "watch") {
+  function emitPosicao(pos, origem) {
     const { latitude, longitude, accuracy } = pos.coords || {};
     if (typeof latitude !== "number" || typeof longitude !== "number") return;
-
-    // Ignora leituras muito ruins (ajuste se quiser)
-    if (accuracy && accuracy > 80) return;
 
     socket.emit("motorista:posicao", {
       nome,
@@ -50,63 +30,41 @@ console.log("motoristaTracker carregou", new Date().toISOString());
     });
   }
 
-  function logErro(tag, err) {
-    console.warn(tag, err);
-  }
+  function iniciarRastreamento() {
+    if (iniciado) return;
+    iniciado = true;
 
-  function watchHigh() {
-    stopWatch();
-    usandoFallback = false;
+    console.log("Iniciando rastreamento GPS...", { nome });
 
+    // 1) pega uma posição inicial (ajuda MUITO)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => emitPosicao(pos, "getCurrentPosition"),
+      (err) => console.warn("[Geo getCurrentPosition]", err),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+    );
+
+    // 2) inicia watch
     watchId = navigator.geolocation.watchPosition(
-      (pos) => emitPosicao(pos, "watch_high"),
-      (err) => {
-        logErro("[Geo watch high]", err);
-
-        // code 3 = timeout (muito comum no início)
-        if (err && err.code === 3 && !usandoFallback) {
-          console.warn("Timeout (alta precisão). Vou tentar fallback...");
-          watchFallback();
-        }
+      (pos) => {
+        // se quiser, pode filtrar precisão aqui:
+        // if (pos.coords.accuracy && pos.coords.accuracy > 120) return;
+        emitPosicao(pos, "watch");
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 60000
-      }
+      (err) => console.warn("[Geo watch]", err),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
     );
   }
 
-  function watchFallback() {
-    stopWatch();
-    usandoFallback = true;
-
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => emitPosicao(pos, "watch_fallback"),
-      (err) => logErro("[Geo watch fallback]", err),
-      {
-        enableHighAccuracy: false,
-        maximumAge: 10000,
-        timeout: 60000
-      }
-    );
-  }
-
-  // Primeira leitura (ajuda a “fixar” antes do watch)
-  navigator.geolocation.getCurrentPosition(
-    (pos) => emitPosicao(pos, "getCurrentPosition"),
-    (err) => logErro("[Geo getCurrentPosition]", err),
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
-  );
-
-  // Inicia watch principal
-  watchHigh();
-
-  // opcional: se a aba voltar a ficar visível, reinicia o watch (melhora no mobile)
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      // reinicia para pegar posição “fresca”
-      watchHigh();
+  function pararRastreamento() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
     }
-  });
+    iniciado = false;
+    console.log("Rastreamento parado.");
+  }
+
+  // ✅ expõe pro botão chamar
+  window.iniciarRastreamento = iniciarRastreamento;
+  window.pararRastreamento = pararRastreamento;
 })();

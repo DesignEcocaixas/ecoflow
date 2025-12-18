@@ -610,6 +610,13 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       <script src="/script/motoristaTracker.js"></script>
     ` : ""}
 
+    <script>
+      document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {
+        window.iniciarRastreamento?.();
+      });
+    </script>
+
+
   </body>
   </html>
   `;

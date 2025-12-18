@@ -46,14 +46,14 @@ io.on("connection", (socket) => {
         if (typeof lat !== "number" || typeof lng !== "number") return;
 
         motoristasOnline.set(socket.id, {
-            id: socket.id,              // <<< importante pro front identificar
-            nome: nomeFinal,
+            id: socket.id,
+            nome,
             lat,
             lng,
-            accuracy: accuracy ?? null, // opcional
-            origem: origem ?? null,     // opcional
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            online: true
         });
+
 
         io.to("admins").emit(
             "motoristas:update",
@@ -69,9 +69,21 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        motoristasOnline.delete(socket.id);
-        io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
+        if (motoristasOnline.has(socket.id)) {
+            const m = motoristasOnline.get(socket.id);
+            motoristasOnline.set(socket.id, {
+                ...m,
+                online: false,
+                updatedAt: new Date()
+            });
+        }
+
+        io.to("admins").emit(
+            "motoristas:update",
+            Array.from(motoristasOnline.values())
+        );
     });
+
 
 });
 

@@ -44,11 +44,17 @@
             const key = m.id || m.nome;
             const pos = [m.lat, m.lng];
 
+          const status = m.online
+            ? "<span style='color:green'>● Online</span>"
+            : "<span style='color:gray'>● Offline</span>";
+
             const label = `
-        <b>${m.nome || "Motorista"}</b><br>
-        <small>${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
-        ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}
-      `;
+            <b>${m.nome}</b><br>
+            ${status}<br>
+            <small>${new Date(m.updatedAt).toLocaleString("pt-BR")}</small>
+            ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}
+            `;
+
 
             if (markers.has(key)) {
                 markers.get(key).setLatLng(pos).setPopupContent(label);

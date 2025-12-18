@@ -522,58 +522,74 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 
-    <script>
-    (() => {
-      let map, markers = new Map(); // key = nome do motorista
-      const socket = io();
+      <script>
+      (() => {
+        let map;
+        let markers = new Map(); // key = id do motorista (socket.id)
+        let ultimaLista = [];
+        const socket = io();
 
-      // entra como admin pra receber updates
-      socket.emit("admin:join");
+        // entra como admin pra receber updates
+        socket.emit("admin:join");
 
-      function initMap() {
-        if (map) return;
+        function initMap() {
+          if (map) return;
 
-        map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador (ajuste como quiser)
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19
-        }).addTo(map);
-      }
-
-      const modal = document.getElementById("mapaMotoristasModal");
-      modal?.addEventListener("shown.bs.modal", () => {
-        initMap();
-        setTimeout(() => map.invalidateSize(), 200);
-      });
-
-      socket.on("motoristas:update", (lista) => {
-        // lista = [{nome, lat, lng, updatedAt}, ...]
-        if (!map) return;
-
-        const nomesAtuais = new Set(lista.map(x => x.nome));
-
-        // remove marcadores que sumiram
-        for (const [nome, mk] of markers.entries()) {
-          if (!nomesAtuais.has(nome)) {
-            map.removeLayer(mk);
-            markers.delete(nome);
-          }
+          map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador (ajuste como quiser)
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19
+          }).addTo(map);
         }
 
-        // atualiza/cria marcadores
-        lista.forEach(m => {
-          const pos = [m.lat, m.lng];
-          const label = \`\${m.nome}<br><small>\${new Date(m.updatedAt).toLocaleString("pt-BR")}</small>\`;
+        function render(lista) {
+          if (!map) return;
 
-          if (markers.has(m.nome)) {
-            markers.get(m.nome).setLatLng(pos).setPopupContent(label);
-          } else {
-            const mk = L.marker(pos).addTo(map).bindPopup(label);
-            markers.set(m.nome, mk);
+          // se o backend ainda não mandar "id", tenta fallback (mas o ideal é vir id)
+          const idsAtuais = new Set(lista.map(x => x.id || x.nome));
+
+          // remove marcadores que sumiram
+          for (const [id, mk] of markers.entries()) {
+            if (!idsAtuais.has(id)) {
+              map.removeLayer(mk);
+              markers.delete(id);
+            }
           }
+
+          // atualiza/cria marcadores
+          lista.forEach(m => {
+            const key = m.id || m.nome; // fallback
+            const pos = [m.lat, m.lng];
+
+            const label = \`${m.nome || "Motorista"}<br>
+              <small>${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
+              ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}\`;
+
+            if (markers.has(key)) {
+              markers.get(key).setLatLng(pos).setPopupContent(label);
+            } else {
+              const mk = L.marker(pos).addTo(map).bindPopup(label);
+              markers.set(key, mk);
+            }
+          });
+        }
+
+        const modal = document.getElementById("mapaMotoristasModal");
+        modal?.addEventListener("shown.bs.modal", () => {
+          initMap();
+          setTimeout(() => {
+            map.invalidateSize();
+            render(ultimaLista); // <<< renderiza o snapshot atual ao abrir
+          }, 200);
         });
-      });
-    })();
-    </script>
+
+        socket.on("motoristas:update", (lista) => {
+          // lista = [{id, nome, lat, lng, updatedAt, accuracy...}, ...]
+          ultimaLista = Array.isArray(lista) ? lista : [];
+          render(ultimaLista);
+        });
+      })();
+      </script>
+
     ` : ""}
 
     <!-- Motorista: se você quiser rastrear também na tela /entregas -->

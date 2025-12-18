@@ -560,9 +560,12 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
             const key = m.id || m.nome; // fallback
             const pos = [m.lat, m.lng];
 
-            const label = \`${m.nome || "Motorista"}<br>
-              <small>${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
-              ${m.accuracy ? `<br><small>Precisão: ${Math.round(m.accuracy)}m</small>` : ""}\`;
+            // >>> AJUSTE AQUI: label com template literal multilinha (sem quebrar ao colar)
+            const label = \`
+              <b>\${m.nome || "Motorista"}</b><br>
+              <small>\${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
+              \${m.accuracy ? \`<br><small>Precisão: \${Math.round(m.accuracy)}m</small>\` : ""}
+            \`;
 
             if (markers.has(key)) {
               markers.get(key).setLatLng(pos).setPopupContent(label);
@@ -588,7 +591,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           render(ultimaLista);
         });
       })();
-      </script>
 
     ` : ""}
 

@@ -262,13 +262,13 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           </li>
 
           ${Array.from({ length: totalPages }, (_, i) => {
-    const p = i + 1;
-    return `
+            const p = i + 1;
+            return `
               <li class="page-item ${p === page ? "active" : ""}">
                 <a class="page-link" href="/entregas?page=${p}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">${p}</a>
               </li>
             `;
-  }).join("")}
+          }).join("")}
 
           <!-- Próxima -->
           <li class="page-item ${page >= totalPages ? "disabled" : ""}">
@@ -285,9 +285,15 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Entregas</title>
+
+    ${usuario.tipo_usuario === "admin" ? `
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    ` : ""}
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
       body { display: flex; height: 100vh; margin: 0; }
       .sidebar { width: 220px; background-color: #0D5749; color: white; padding: 20px; }
@@ -318,16 +324,15 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
               background-color: #0D5749;
               color: #ffffff;
               padding: 3px 12px;
-              border-radius: 8px;      /* bordas arredondadas */
+              border-radius: 8px;
               border: 2px solid #0D5749;
             }
               .form-contorno {
-    border: 1px solid rgba(0,0,0,0.15); /* contorno leve */
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.6); /* opcional — dá um ar mais clean */
-    backdrop-filter: blur(4px); /* opcional — efeito moderno */
-}
-
+                border: 1px solid rgba(0,0,0,0.15);
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(4px);
+              }
     </style>
   </head>
   <body>
@@ -394,59 +399,59 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       <hr class="bg-light w-100">
 
       <div class="form-contorno p-3 mb-4 rounded">
-  <!-- FORMULÁRIO DE PESQUISA -->
-  <form class="row g-2 mb-3" method="GET" action="/entregas">
-    <div class="col-md-4">
-      <label class="form-label">Buscar por título do pedido</label>
-      <input
-        type="text"
-        name="titulo"
-        class="form-control"
-        value="${filtros.titulo || ""}"
-        placeholder="Ex.: Pedido Feira de Santana"
-      >
-    </div>
+        <!-- FORMULÁRIO DE PESQUISA -->
+        <form class="row g-2 mb-3" method="GET" action="/entregas">
+          <div class="col-md-4">
+            <label class="form-label">Buscar por título do pedido</label>
+            <input
+              type="text"
+              name="titulo"
+              class="form-control"
+              value="${filtros.titulo || ""}"
+              placeholder="Ex.: Pedido Feira de Santana"
+            >
+          </div>
 
-    <div class="col-md-3">
-      <label class="form-label">Data começa em</label>
-      <input
-        type="date"
-        name="data_inicio"
-        class="form-control"
-        value="${filtros.data_inicio || ""}"
-      >
-    </div>
+          <div class="col-md-3">
+            <label class="form-label">Data começa em</label>
+            <input
+              type="date"
+              name="data_inicio"
+              class="form-control"
+              value="${filtros.data_inicio || ""}"
+            >
+          </div>
 
-    <div class="col-md-3">
-      <label class="form-label">Data termina em</label>
-      <input
-        type="date"
-        name="data_fim"
-        class="form-control"
-        value="${filtros.data_fim || ""}"
-      >
-    </div>
+          <div class="col-md-3">
+            <label class="form-label">Data termina em</label>
+            <input
+              type="date"
+              name="data_fim"
+              class="form-control"
+              value="${filtros.data_fim || ""}"
+            >
+          </div>
 
-    <div class="col-md-2 d-flex align-items-end gap-2">
-      <button type="submit" class="btn btn-primary w-100">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </button>
-      <a href="/entregas" class="btn btn-outline-secondary w-100">
-        <i class="fa-solid fa-eraser"></i>
-      </a>
-    </div>
-  </form>
-</div>
-
+          <div class="col-md-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <a href="/entregas" class="btn btn-outline-secondary w-100">
+              <i class="fa-solid fa-eraser"></i>
+            </a>
+          </div>
+        </form>
+      </div>
 
       <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoPedidoModal">
         <i class="fa-solid fa-route"></i> Nova Rota
       </button>
 
-      <button id="btnAtivarLocalizacao" class="btn btn-primary">
+      ${usuario.tipo_usuario === "motorista" ? `
+      <button id="btnAtivarLocalizacao" class="btn btn-primary mb-3">
         Ativar localização
       </button>
-
+      ` : ""}
 
       ${usuario.tipo_usuario === "admin" ? `
       <button class="btn btn-outline-primary mb-3" data-bs-toggle="modal" data-bs-target="#mapaMotoristasModal">
@@ -460,7 +465,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
 
       ${paginationHtml}
     </div>
-
 
     <!-- Modal: Novo Pedido -->
     <div class="modal fade" id="novoPedidoModal" tabindex="-1">
@@ -508,34 +512,31 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     </div>
     ` : ""}
 
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
+
     <script>
       window.NOME_USUARIO = "${usuario.nome}";
     </script>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/script/motoristaTracker.js"></script>
 
     ${usuario.tipo_usuario === "admin" ? `
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
       <script>
       (() => {
         let map;
-        let markers = new Map(); // key = id do motorista (socket.id)
+        let markers = new Map(); // key = id do motorista (socket.id) ou nome (fallback)
         let ultimaLista = [];
         const socket = io();
 
-        // entra como admin pra receber updates
         socket.emit("admin:join");
 
         function initMap() {
           if (map) return;
 
-          map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11); // Salvador (ajuste como quiser)
+          map = L.map("mapaMotoristas").setView([-12.9714, -38.5014], 11);
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19
           }).addTo(map);
@@ -544,10 +545,8 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         function render(lista) {
           if (!map) return;
 
-          // se o backend ainda não mandar "id", tenta fallback (mas o ideal é vir id)
           const idsAtuais = new Set(lista.map(x => x.id || x.nome));
 
-          // remove marcadores que sumiram
           for (const [id, mk] of markers.entries()) {
             if (!idsAtuais.has(id)) {
               map.removeLayer(mk);
@@ -555,12 +554,10 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
             }
           }
 
-          // atualiza/cria marcadores
           lista.forEach(m => {
-            const key = m.id || m.nome; // fallback
+            const key = m.id || m.nome;
             const pos = [m.lat, m.lng];
 
-            // >>> AJUSTE AQUI: label com template literal multilinha (sem quebrar ao colar)
             const label = \`
               <b>\${m.nome || "Motorista"}</b><br>
               <small>\${m.updatedAt ? new Date(m.updatedAt).toLocaleString("pt-BR") : ""}</small>
@@ -581,33 +578,29 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           initMap();
           setTimeout(() => {
             map.invalidateSize();
-            render(ultimaLista); // <<< renderiza o snapshot atual ao abrir
+            render(ultimaLista);
           }, 200);
         });
 
         socket.on("motoristas:update", (lista) => {
-          // lista = [{id, nome, lat, lng, updatedAt, accuracy...}, ...]
           ultimaLista = Array.isArray(lista) ? lista : [];
           render(ultimaLista);
         });
       })();
-
+      </script>
     ` : ""}
 
-    <!-- Motorista: se você quiser rastrear também na tela /entregas -->
     ${usuario.tipo_usuario === "motorista" ? `
-    <script>
-      window.NOME_USUARIO = "${usuario.nome}";
+      <script>
+        document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {
+          // Só dispara o tracker ao clicar (se você quiser manter manual)
+          // Se preferir automático, pode remover esse botão e deixar o tracker rodar sozinho.
+          console.log("Ativar localização clicado");
+        });
+      </script>
 
-      document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {
-        iniciar(); // sua função que chama getCurrentPosition + watchPosition
-      });
-
-    </script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/script/motoristaTracker.js"></script>
+      <script src="/script/motoristaTracker.js"></script>
     ` : ""}
-
 
   </body>
   </html>

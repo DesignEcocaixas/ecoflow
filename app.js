@@ -26,13 +26,45 @@ const server = http.createServer(app);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const io = new Server(server, {
-  cors: { origin: "*" } // se for mesmo domínio, pode deixar padrão
+    cors: { origin: "*" } // se for mesmo domínio, pode deixar padrão
 });
 
 // Guarda localização em memória (simples e rápido)
-const motoristasOnline = new Map(); 
+const motoristasOnline = new Map();
 // key: socket.id
 // value: { nome, lat, lng, updatedAt }
+
+io.on("connection", (socket) => {
+    socket.on("motorista:online", ({ nome }) => {
+        socket.data.nome = nome || "Motorista";
+    });
+
+    socket.on("motorista:posicao", ({ lat, lng }) => {
+        const nome = socket.data.nome || "Motorista";
+        if (typeof lat !== "number" || typeof lng !== "number") return;
+
+        motoristasOnline.set(socket.id, {
+            nome,
+            lat,
+            lng,
+            updatedAt: new Date()
+        });
+
+        // manda pra todos admins conectados
+        io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
+    });
+
+    socket.on("admin:join", () => {
+        socket.join("admins");
+        // manda o snapshot atual quando o admin entrar
+        socket.emit("motoristas:update", Array.from(motoristasOnline.values()));
+    });
+
+    socket.on("disconnect", () => {
+        motoristasOnline.delete(socket.id);
+        io.to("admins").emit("motoristas:update", Array.from(motoristasOnline.values()));
+    });
+});
 
 // configura o multer
 const storage = multer.diskStorage({
@@ -499,35 +531,35 @@ app.get("/checklist-motoristas", (req, res) => {
 
 
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
+    if (!req.session.user) return res.redirect("/login");
 
-  if (req.session.user.tipo_usuario !== "admin" &&
-      req.session.user.tipo_usuario !== "motorista") {
-    return res.status(403).send("Acesso negado.");
-  }
-
-  const {
-    veiculo, oleo, agua, freio, direcao, combustivel,
-    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
-    responsavel, motorista, observacao,
-  } = req.body;
-
-  // ✅ CORREÇÃO: motorista é O NOME SELECIONADO NO FORM
-  if (!motorista || motorista.trim() === "") {
-    return res.status(400).send("Selecione o motorista no formulário.");
-  }
-
-  const foto = req.file ? req.file.filename : null;
-
-  db.query(
-    "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
-    [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
-    (errNotif) => {
-      if (errNotif) console.error("Erro ao registrar notificação de checklist:", errNotif);
+    if (req.session.user.tipo_usuario !== "admin" &&
+        req.session.user.tipo_usuario !== "motorista") {
+        return res.status(403).send("Acesso negado.");
     }
-  );
 
-  const sql = `
+    const {
+        veiculo, oleo, agua, freio, direcao, combustivel,
+        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+        responsavel, motorista, observacao,
+    } = req.body;
+
+    // ✅ CORREÇÃO: motorista é O NOME SELECIONADO NO FORM
+    if (!motorista || motorista.trim() === "") {
+        return res.status(400).send("Selecione o motorista no formulário.");
+    }
+
+    const foto = req.file ? req.file.filename : null;
+
+    db.query(
+        "INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'checklist')",
+        [`Checklist do veículo ${veiculo} registrado por ${req.session.user.nome}`],
+        (errNotif) => {
+            if (errNotif) console.error("Erro ao registrar notificação de checklist:", errNotif);
+        }
+    );
+
+    const sql = `
     INSERT INTO checklists 
       (veiculo, oleo, agua, freio, direcao, combustivel,
        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
@@ -535,23 +567,23 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  const params = [
-    veiculo, oleo, agua, freio, direcao, combustivel,
-    pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
-    responsavel,
-    motorista.trim(),                 // ✅ do formulário
-    req.session.user.nome,            // ✅ quem registrou (logado)
-    observacao && observacao.trim() !== "" ? observacao : null,
-    foto,
-  ];
+    const params = [
+        veiculo, oleo, agua, freio, direcao, combustivel,
+        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+        responsavel,
+        motorista.trim(),                 // ✅ do formulário
+        req.session.user.nome,            // ✅ quem registrou (logado)
+        observacao && observacao.trim() !== "" ? observacao : null,
+        foto,
+    ];
 
-  db.query(sql, params, (err) => {
-    if (err) {
-      console.error("Erro ao inserir checklist:", err);
-      return res.status(500).send("Erro ao inserir checklist.");
-    }
-    return res.redirect("/checklist-motoristas");
-  });
+    db.query(sql, params, (err) => {
+        if (err) {
+            console.error("Erro ao inserir checklist:", err);
+            return res.status(500).send("Erro ao inserir checklist.");
+        }
+        return res.redirect("/checklist-motoristas");
+    });
 });
 
 
@@ -1395,4 +1427,4 @@ app.get("/health", (req, res) => {
     res.send("OK");
 });
 
-server.listen(PORT, '0.0.0.0',() => console.log("Servidor rodando na porta}"));
+server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta}"));

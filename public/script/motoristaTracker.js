@@ -4,29 +4,31 @@
 
   const socket = io();
 
-  // tente achar o nome do usuário logado pela variável global (você vai setar na view)
+  // Nome do usuário logado (vem da view)
   const nome = window.NOME_USUARIO || "Motorista";
 
   socket.emit("motorista:online", { nome });
 
-  function enviarPosicao(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    socket.emit("motorista:posicao", { lat, lng });
-  }
+  navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
 
-  function erro(err) {
-    console.warn("GPS erro:", err);
-  }
+      // 🚫 Ignora leituras ruins (localização aproximada / IP / cache)
+      if (accuracy && accuracy > 80) return;
 
-  // atualiza continuamente
-  if ("geolocation" in navigator) {
-    navigator.geolocation.watchPosition(enviarPosicao, erro, {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
+      socket.emit("motorista:posicao", {
+        lat: latitude,
+        lng: longitude,
+        accuracy
+      });
+    },
+    (err) => {
+      console.warn("Geo error:", err);
+    },
+    {
+      enableHighAccuracy: true, // força GPS real quando disponível
+      maximumAge: 0,           // NÃO usa posição antiga
       timeout: 15000
-    });
-  } else {
-    console.warn("Geolocation não suportado no navegador.");
-  }
+    }
+  );
 })();

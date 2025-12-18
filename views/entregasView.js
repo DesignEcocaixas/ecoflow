@@ -485,23 +485,23 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     ${clienteModals.join("")}
 
     ${usuario.tipo_usuario === "admin" ? `
-<div class="modal fade" id="mapaMotoristasModal" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Localização em tempo real — Motoristas</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="mapaMotoristas" style="height: 70vh; width: 100%; border-radius: 12px;"></div>
-        <small class="text-muted d-block mt-2">
-          * Atualiza automaticamente. Se não aparecer, verifique HTTPS e permissões de localização no celular do motorista.
-        </small>
+    <div class="modal fade" id="mapaMotoristasModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Localização em tempo real — Motoristas</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="mapaMotoristas" style="height: 70vh; width: 100%; border-radius: 12px;"></div>
+            <small class="text-muted d-block mt-2">
+              * Atualiza automaticamente. Se não aparecer, verifique HTTPS e permissões de localização no celular do motorista.
+            </small>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
-` : ""}
+    ` : ""}
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

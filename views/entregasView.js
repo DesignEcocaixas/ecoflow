@@ -443,6 +443,11 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         <i class="fa-solid fa-route"></i> Nova Rota
       </button>
 
+      <button id="btnAtivarLocalizacao" class="btn btn-primary">
+        Ativar localização
+      </button>
+
+
       ${usuario.tipo_usuario === "admin" ? `
       <button class="btn btn-outline-primary mb-3" data-bs-toggle="modal" data-bs-target="#mapaMotoristasModal">
         <i class="fa-solid fa-location-dot"></i> Motoristas em tempo real
@@ -575,6 +580,11 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     ${usuario.tipo_usuario === "motorista" ? `
     <script>
       window.NOME_USUARIO = "${usuario.nome}";
+
+      document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {
+        iniciar(); // sua função que chama getCurrentPosition + watchPosition
+      });
+
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/script/motoristaTracker.js"></script>

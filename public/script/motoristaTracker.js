@@ -17,7 +17,22 @@ console.log("motoristaTracker carregou", new Date().toISOString());
 
   console.log("motoristaTracker carregou", new Date().toISOString(), { nome });
 
+  // garante que reenvia online quando reconectar
+  socket.on("connect", () => {
+    socket.emit("motorista:online", { nome });
+  });
+
   socket.emit("motorista:online", { nome });
+
+  let watchId = null;
+  let usandoFallback = false;
+
+  function stopWatch() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  }
 
   function emitPosicao(pos, origem = "watch") {
     const { latitude, longitude, accuracy } = pos.coords || {};
@@ -40,13 +55,16 @@ console.log("motoristaTracker carregou", new Date().toISOString());
   }
 
   function watchHigh() {
-    return navigator.geolocation.watchPosition(
+    stopWatch();
+    usandoFallback = false;
+
+    watchId = navigator.geolocation.watchPosition(
       (pos) => emitPosicao(pos, "watch_high"),
       (err) => {
         logErro("[Geo watch high]", err);
 
-        // code 3 = timeout
-        if (err && err.code === 3) {
+        // code 3 = timeout (muito comum no início)
+        if (err && err.code === 3 && !usandoFallback) {
           console.warn("Timeout (alta precisão). Vou tentar fallback...");
           watchFallback();
         }
@@ -60,7 +78,10 @@ console.log("motoristaTracker carregou", new Date().toISOString());
   }
 
   function watchFallback() {
-    return navigator.geolocation.watchPosition(
+    stopWatch();
+    usandoFallback = true;
+
+    watchId = navigator.geolocation.watchPosition(
       (pos) => emitPosicao(pos, "watch_fallback"),
       (err) => logErro("[Geo watch fallback]", err),
       {
@@ -80,4 +101,12 @@ console.log("motoristaTracker carregou", new Date().toISOString());
 
   // Inicia watch principal
   watchHigh();
+
+  // opcional: se a aba voltar a ficar visível, reinicia o watch (melhora no mobile)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      // reinicia para pegar posição “fresca”
+      watchHigh();
+    }
+  });
 })();

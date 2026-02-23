@@ -31,52 +31,24 @@ const io = new Server(server, {
 
 // Guarda localização em memória (simples e rápido)
 const motoristasOnline = new Map();
-// key: socket.id
-// value: { nome, lat, lng, updatedAt }
+// key: nomeFinal (chave fixa)
+// value: { id, nome, socketId, lat, lng, accuracy, origem, updatedAt, online }
 
 io.on("connection", (socket) => {
     socket.on("motorista:online", ({ nome }) => {
-        socket.data.nome = nome || "Motorista";
-    });
-
-    socket.on("motorista:posicao", ({ nome, lat, lng, accuracy, origem }) => {
-        const nomeFinal = nome || socket.data.nome || "Motorista";
+        const nomeFinal = (nome || socket.data.nome || "Motorista").trim();
         socket.data.nome = nomeFinal;
 
-        if (typeof lat !== "number" || typeof lng !== "number") return;
+        const atual = motoristasOnline.get(nomeFinal) || { id: nomeFinal, nome: nomeFinal };
 
-        motoristasOnline.set(socket.id, {
-            id: socket.id,
-            nome,
-            lat,
-            lng,
-            updatedAt: new Date(),
-            online: true
+        motoristasOnline.set(nomeFinal, {
+            ...atual,
+            id: nomeFinal,          // id fixo para o front
+            nome: nomeFinal,
+            socketId: socket.id,    // guarda o socket atual
+            online: true,
+            updatedAt: new Date()
         });
-
-
-        io.to("admins").emit(
-            "motoristas:update",
-            Array.from(motoristasOnline.entries()).map(([id, v]) => ({ id, ...v }))
-        );
-    });
-
-
-    socket.on("admin:join", () => {
-        socket.join("admins");
-        // manda o snapshot atual quando o admin entrar
-        socket.emit("motoristas:update", Array.from(motoristasOnline.values()));
-    });
-
-    socket.on("disconnect", () => {
-        if (motoristasOnline.has(socket.id)) {
-            const m = motoristasOnline.get(socket.id);
-            motoristasOnline.set(socket.id, {
-                ...m,
-                online: false,
-                updatedAt: new Date()
-            });
-        }
 
         io.to("admins").emit(
             "motoristas:update",
@@ -84,8 +56,64 @@ io.on("connection", (socket) => {
         );
     });
 
+    socket.on("motorista:posicao", ({ nome, lat, lng, accuracy, origem }) => {
+        const nomeFinal = (nome || socket.data.nome || "Motorista").trim();
+        socket.data.nome = nomeFinal;
 
+        if (typeof lat !== "number" || typeof lng !== "number") return;
+
+        const atual = motoristasOnline.get(nomeFinal) || { id: nomeFinal, nome: nomeFinal };
+
+        motoristasOnline.set(nomeFinal, {
+            ...atual,
+            id: nomeFinal,          // id fixo para o front
+            nome: nomeFinal,
+            socketId: socket.id,    // atualiza o socket atual (importante ao reconectar)
+            lat,
+            lng,
+            accuracy,
+            origem,
+            updatedAt: new Date(),
+            online: true
+        });
+
+        io.to("admins").emit(
+            "motoristas:update",
+            Array.from(motoristasOnline.values())
+        );
+    });
+
+    socket.on("admin:join", () => {
+        socket.join("admins");
+        // manda o snapshot atual quando o admin entrar (com id fixo)
+        socket.emit("motoristas:update", Array.from(motoristasOnline.values()));
+    });
+
+    socket.on("disconnect", () => {
+        const nomeFinal = (socket.data.nome || "").trim();
+        if (!nomeFinal) return;
+
+        if (motoristasOnline.has(nomeFinal)) {
+            const m = motoristasOnline.get(nomeFinal);
+
+            // Só marca offline se este disconnect for do socket ATUAL daquele motorista
+            // (evita ficar offline depois que reconectou)
+            if (m && m.socketId === socket.id) {
+                motoristasOnline.set(nomeFinal, {
+                    ...m,
+                    online: false,
+                    updatedAt: new Date()
+                });
+            }
+        }
+
+        io.to("admins").emit(
+            "motoristas:update",
+            Array.from(motoristasOnline.values())
+        );
+    });
 });
+
 
 // configura o multer
 const storage = multer.diskStorage({

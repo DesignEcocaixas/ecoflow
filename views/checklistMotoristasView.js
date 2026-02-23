@@ -235,8 +235,8 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   }).join("");
 
   const paginacaoHtml = totalPages > 1 ? `
-    <nav aria-label="Paginação de checklists" class="mt-3">
-      <ul class="pagination justify-content-center mb-4">
+    <nav aria-label="Paginação de checklists" class="mt-2">
+      <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
           <a class="page-link" href="/checklist-motoristas?page=${page - 1}">&laquo;</a>
         </li>
@@ -330,7 +330,36 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               border-radius: 8px;      /* bordas arredondadas */
               border: 2px solid #0D5749;
             }
+              
+            /* ===== PAGINAÇÃO MINIMAL DARK ===== */
+            .pagination-sm .page-link {
+              background: transparent !important;
+              border: none !important;
+              padding: 4px 8px !important;
+              font-size: 0.85rem;
+              color: #ffffff !important;
+              font-weight: 500;
+            }
 
+            .pagination-sm .page-item.active .page-link {
+              background: transparent !important;
+              border: none !important;
+              font-weight: 700;
+              color: #FF0088 !important;
+            }
+
+            .pagination-sm .page-item.disabled .page-link {
+              opacity: 0.35;
+            }
+
+            .pagination-sm .page-link:hover {
+              color: #ffffff !important;
+              opacity: 0.8;
+            }
+
+            .pagination-sm .page-link:focus {
+              box-shadow: none !important;
+            }
     </style>
   </head>
   <body>

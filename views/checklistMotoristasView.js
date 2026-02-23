@@ -331,13 +331,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               border: 2px solid #0D5749;
             }
               
-            /* ===== PAGINAÇÃO MINIMAL DARK ===== */
+            /* ===== PAGINAÇÃO MINIMAL CLARA ===== */
             .pagination-sm .page-link {
               background: transparent !important;
               border: none !important;
               padding: 4px 8px !important;
               font-size: 0.85rem;
-              color: #ffffff !important;
+              color: #000000 !important;   /* 🔥 números pretos */
               font-weight: 500;
             }
 
@@ -345,7 +345,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               background: transparent !important;
               border: none !important;
               font-weight: 700;
-              color: #FF0088 !important;
+              color: #FF0088 !important;   /* destaque */
             }
 
             .pagination-sm .page-item.disabled .page-link {
@@ -353,8 +353,8 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
             }
 
             .pagination-sm .page-link:hover {
-              color: #ffffff !important;
-              opacity: 0.8;
+              color: #000000 !important;
+              opacity: 0.7;
             }
 
             .pagination-sm .page-link:focus {

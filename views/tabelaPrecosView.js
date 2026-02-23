@@ -68,8 +68,8 @@ function tabelaPrecosView(
 
 
   const paginationHtml = totalPages > 1 ? `
-  <nav aria-label="Paginação de caixas" class="mt-3">
-    <ul class="pagination justify-content-center">
+  <nav aria-label="Paginação de caixas" class="mt-2">
+    <ul class="pagination pagination-sm justify-content-center">
       <!-- Anterior -->
       <li class="page-item ${page <= 1 ? "disabled" : ""}">
         <a class="page-link" href="/tabela-precos?page=${page - 1}${qParam}">&laquo;</a>
@@ -312,6 +312,30 @@ function tabelaPrecosView(
               padding: 3px 12px;
               border-radius: 8px;      /* bordas arredondadas */
               border: 2px solid #0D5749;
+            }
+
+            /* ===== PAGINAÇÃO MINIMAL ===== */
+            .pagination-sm .page-link {
+              background: transparent !important;
+              border: none !important;
+              padding: 4px 6px !important;
+              font-size: 0.8rem;
+              color: #000000;
+            }
+
+            .pagination-sm .page-item.active .page-link {
+              background: transparent !important;
+              border: none !important;
+              font-weight: 600;
+              color: #000000 !important;
+            }
+
+            .pagination-sm .page-item.disabled .page-link {
+              opacity: 0.4;
+            }
+
+            .pagination-sm .page-link:focus {
+              box-shadow: none !important;
             }
     </style>
   </head>

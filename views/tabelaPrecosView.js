@@ -75,14 +75,56 @@ function tabelaPrecosView(
         <a class="page-link" href="/tabela-precos?page=${page - 1}${qParam}">&laquo;</a>
       </li>
 
-      ${Array.from({ length: totalPages }, (_, i) => {
-    const p = i + 1;
-    return `
-          <li class="page-item ${p === page ? "active" : ""}">
-            <a class="page-link" href="/tabela-precos?page=${p}${qParam}">${p}</a>
+      ${(() => {
+      const delta = 2; // quantas páginas ao redor da atual
+      let paginas = [];
+      let ultima;
+      let html = '';
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (
+          i === 1 ||
+          i === totalPages ||
+          (i >= page - delta && i <= page + delta)
+        ) {
+          paginas.push(i);
+        }
+      }
+
+      paginas.forEach(p => {
+        if (ultima) {
+          if (p - ultima === 2) {
+            html += `
+          <li class="page-item">
+            <a class="page-link bg-transparent border-0 px-2"
+               href="/tabela-precos?page=${ultima + 1}${qParam}">
+              ${ultima + 1}
+            </a>
           </li>
         `;
-  }).join("")}
+          } else if (p - ultima > 2) {
+            html += `
+          <li class="page-item disabled">
+            <span class="page-link bg-transparent border-0 px-2">...</span>
+          </li>
+        `;
+          }
+        }
+
+        html += `
+      <li class="page-item ${p === page ? "active" : ""}">
+        <a class="page-link bg-transparent border-0 px-2"
+           href="/tabela-precos?page=${p}${qParam}">
+          ${p}
+        </a>
+      </li>
+    `;
+
+        ultima = p;
+      });
+
+      return html;
+    })()}
 
       <!-- Próxima -->
       <li class="page-item ${page >= totalPages ? "disabled" : ""}">

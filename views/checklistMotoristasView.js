@@ -225,14 +225,56 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   `).join("");
 
   // paginação (somente se tiver mais de 1 página)
-  const pageLinks = Array.from({ length: totalPages }, (_, i) => {
-    const p = i + 1;
-    return `
+  const pageLinks = (() => {
+  const delta = 2; // páginas ao redor da atual
+  let paginas = [];
+  let ultima;
+  let html = '';
+
+  for (let i = 1; i <= totalPages; i++) {
+    if (
+      i === 1 ||
+      i === totalPages ||
+      (i >= page - delta && i <= page + delta)
+    ) {
+      paginas.push(i);
+    }
+  }
+
+  paginas.forEach(p => {
+    if (ultima) {
+      if (p - ultima === 2) {
+        html += `
+          <li class="page-item">
+            <a class="page-link bg-transparent border-0 px-2"
+               href="/checklist-motoristas?page=${ultima + 1}">
+              ${ultima + 1}
+            </a>
+          </li>
+        `;
+      } else if (p - ultima > 2) {
+        html += `
+          <li class="page-item disabled">
+            <span class="page-link bg-transparent border-0 px-2">...</span>
+          </li>
+        `;
+      }
+    }
+
+    html += `
       <li class="page-item ${p === page ? "active" : ""}">
-        <a class="page-link" href="/checklist-motoristas?page=${p}">${p}</a>
+        <a class="page-link bg-transparent border-0 px-2"
+           href="/checklist-motoristas?page=${p}">
+          ${p}
+        </a>
       </li>
     `;
-  }).join("");
+
+    ultima = p;
+  });
+
+  return html;
+})();
 
   const paginacaoHtml = totalPages > 1 ? `
     <nav aria-label="Paginação de checklists" class="mt-2">

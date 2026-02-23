@@ -379,7 +379,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               border: none !important;
               padding: 4px 8px !important;
               font-size: 0.85rem;
-              color: #000000 !important;   /* 🔥 números pretos */
+              color: #202020 !important;   /* 🔥 números pretos */
               font-weight: 500;
             }
 
@@ -387,7 +387,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               background: transparent !important;
               border: none !important;
               font-weight: 700;
-              color: #FF0088 !important;   /* destaque */
+              color: #000000 !important;   /* destaque */
             }
 
             .pagination-sm .page-item.disabled .page-link {

@@ -1,4 +1,6 @@
 // views/veiculosView.js
+const menuLateral = require("./menuLateral");
+
 function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
   const fmtKM = (n) => Number(n || 0).toLocaleString("pt-BR");
   const fmtMoeda = (n) =>
@@ -15,7 +17,6 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
     }
   };
 
-  // Acumuladores de modais (fora dos modais de lista)
   const modaisDetalheEditarExcluir = [];
   const modaisNovoChecklist = [];
   const veiculoIds = [];
@@ -26,86 +27,117 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
         veiculoIds.push(v.id);
         const checks = checklistsMap[v.id] || [];
 
-        // Lista de checklists (somente os cards + botões; sem modais aqui)
         const listaChecks =
           checks.length > 0
             ? checks
               .map((c) => {
                 const servicoTitulo =
-                  (c.servico || "").length > 60
-                    ? `${c.servico.slice(0, 60)}…`
+                  (c.servico || "").length > 50
+                    ? `${c.servico.slice(0, 50)}…`
                     : (c.servico || "");
 
-                // --- Modal de Detalhes (fora do modal de lista) ---
+                // Modal de Detalhes
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="detalheChecklist${c.id}" tabindex="-1">
-                        <div class="modal-dialog">
-                          <div class="modal-content">
+                        <div class="modal-dialog modal-dialog-centered">
+                          <div class="modal-content erp-modal">
                             <div class="modal-header">
-                              <h5 class="modal-title">Checklist — ${v.marca} ${v.modelo} (${v.ano})</h5>
+                              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-list-check me-2 text-primary"></i> Detalhes do Checklist</h6>
                               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body">
-                              <p class="mb-2"><b>Serviço:</b><br>${(c.servico || "").replace(/\n/g, "<br>")}</p>
-                              <p class="mb-1"><b>Oficina:</b> ${c.oficina}</p>
-                              <p class="mb-1"><b>Mecânico:</b> ${c.mecanico}</p>
-                              <p class="mb-1"><b>Valor:</b> R$ ${fmtMoeda(c.valor)}</p>
-                              <p class="mb-1"><b>Data:</b> ${fmtData(c.data_servico)}</p>
-                              <p class="mb-2"><b>KM:</b> ${fmtKM(c.km_servico)}</p>
+                            <div class="modal-body text-sm">
+                              <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                  <span class="text-muted d-block" style="font-size:0.75rem;">Oficina</span>
+                                  <span class="fw-medium">${c.oficina}</span>
+                                </div>
+                                <div class="col-6">
+                                  <span class="text-muted d-block" style="font-size:0.75rem;">Mecânico</span>
+                                  <span class="fw-medium">${c.mecanico}</span>
+                                </div>
+                                <div class="col-6">
+                                  <span class="text-muted d-block" style="font-size:0.75rem;">Data</span>
+                                  <span class="fw-medium">${fmtData(c.data_servico)}</span>
+                                </div>
+                                <div class="col-6">
+                                  <span class="text-muted d-block" style="font-size:0.75rem;">KM</span>
+                                  <span class="fw-medium">${fmtKM(c.km_servico)}</span>
+                                </div>
+                                <div class="col-12">
+                                  <span class="text-muted d-block" style="font-size:0.75rem;">Valor</span>
+                                  <span class="fw-bold text-success">R$ ${fmtMoeda(c.valor)}</span>
+                                </div>
+                              </div>
+                              <div class="p-2 bg-light rounded border">
+                                <span class="text-muted d-block mb-1" style="font-size:0.75rem;">Serviço Realizado</span>
+                                ${(c.servico || "").replace(/\n/g, "<br>")}
+                              </div>
+                              <div class="mt-3">
                               ${c.documento
-                    ? `<a class="btn btn-sm btn-success" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip"></i> Documento</a>`
-                    : `<span class="text-muted">Sem documento</span>`
+                    ? `<a class="btn btn-sm btn-outline-success w-100" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip"></i> Visualizar Documento Anexo</a>`
+                    : `<span class="text-muted" style="font-size:0.8rem;"><i class="fa-solid fa-file-excel me-1"></i> Sem documento anexo</span>`
                   }
+                              </div>
                             </div>
-                            <div class="modal-footer">
-                              <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editarChecklist${c.id}" data-bs-dismiss="modal">
-                                <i class="fa-solid fa-pen-to-square"></i> Editar
+                            <div class="modal-footer bg-light">
+                              <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                              <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarChecklist${c.id}" data-bs-dismiss="modal">
+                                <i class="fa-solid fa-pen"></i> Editar
                               </button>
-                              <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#excluirChecklist${c.id}" data-bs-dismiss="modal">
-                                <i class="fa-solid fa-trash"></i> Excluir
+                              <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#excluirChecklist${c.id}" data-bs-dismiss="modal">
+                                <i class="fa-solid fa-trash"></i>
                               </button>
-                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                             </div>
                           </div>
                         </div>
                       </div>
                     `);
 
-                // --- Modal de Edição (fora do modal de lista) ---
+                // Modal de Edição
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="editarChecklist${c.id}" tabindex="-1">
                         <div class="modal-dialog">
-                          <div class="modal-content">
+                          <div class="modal-content erp-modal">
                             <form method="POST" action="/veiculos/checklists/editar/${c.id}" enctype="multipart/form-data">
                               <div class="modal-header">
-                                <h5 class="modal-title">Editar Checklist</h5>
+                                <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Checklist</h6>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                               </div>
-                              <div class="modal-body">
-                                <label class="form-label">Serviço (descrição)</label>
-                                <textarea name="servico" class="form-control mb-2" rows="3" required>${c.servico || ""}</textarea>
-
-                                <label class="form-label">Oficina</label>
-                                <input type="text" name="oficina" class="form-control mb-2" value="${c.oficina}" required>
-
-                                <label class="form-label">Mecânico</label>
-                                <input type="text" name="mecanico" class="form-control mb-2" value="${c.mecanico}" required>
-
-                                <label class="form-label">Valor do serviço</label>
-                                <input type="number" step="0.01" name="valor" class="form-control mb-2" value="${c.valor}" required>
-
-                                <label class="form-label">Data do serviço</label>
-                                <input type="date" name="data_servico" class="form-control mb-2" value="${String(c.data_servico).slice(0, 10)}" required>
-
-                                <label class="form-label">KM do serviço</label>
-                                <input type="number" name="km_servico" class="form-control mb-3" value="${c.km_servico}" required>
-
-                                <label class="form-label">Substituir documento (opcional)</label>
-                                <input type="file" name="documento" class="form-control">
+                              <div class="modal-body text-sm">
+                                <div class="row g-2">
+                                  <div class="col-12">
+                                    <label class="form-label" style="font-size:0.8rem;">Serviço (descrição)</label>
+                                    <textarea name="servico" class="form-control form-control-sm" rows="3" required>${c.servico || ""}</textarea>
+                                  </div>
+                                  <div class="col-6">
+                                    <label class="form-label" style="font-size:0.8rem;">Oficina</label>
+                                    <input type="text" name="oficina" class="form-control form-control-sm" value="${c.oficina}" required>
+                                  </div>
+                                  <div class="col-6">
+                                    <label class="form-label" style="font-size:0.8rem;">Mecânico</label>
+                                    <input type="text" name="mecanico" class="form-control form-control-sm" value="${c.mecanico}" required>
+                                  </div>
+                                  <div class="col-4">
+                                    <label class="form-label" style="font-size:0.8rem;">Valor (R$)</label>
+                                    <input type="number" step="0.01" name="valor" class="form-control form-control-sm" value="${c.valor}" required>
+                                  </div>
+                                  <div class="col-4">
+                                    <label class="form-label" style="font-size:0.8rem;">Data</label>
+                                    <input type="date" name="data_servico" class="form-control form-control-sm" value="${String(c.data_servico).slice(0, 10)}" required>
+                                  </div>
+                                  <div class="col-4">
+                                    <label class="form-label" style="font-size:0.8rem;">KM</label>
+                                    <input type="number" name="km_servico" class="form-control form-control-sm" value="${c.km_servico}" required>
+                                  </div>
+                                  <div class="col-12 mt-2">
+                                    <label class="form-label" style="font-size:0.8rem;">Substituir doc. (opcional)</label>
+                                    <input type="file" name="documento" class="form-control form-control-sm">
+                                  </div>
+                                </div>
                               </div>
-                              <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary">Salvar</button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                               </div>
                             </form>
                           </div>
@@ -113,22 +145,20 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
-                // --- Modal de Exclusão (fora do modal de lista) ---
+                // Modal de Exclusão
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="excluirChecklist${c.id}" tabindex="-1">
-                        <div class="modal-dialog">
-                          <div class="modal-content">
+                        <div class="modal-dialog modal-sm modal-dialog-centered">
+                          <div class="modal-content erp-modal">
                             <form method="POST" action="/veiculos/checklists/excluir/${c.id}">
-                              <div class="modal-header">
-                                <h5 class="modal-title">Excluir Checklist</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              <div class="modal-body text-center p-4">
+                                <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                                <h6 class="mb-2">Excluir Checklist?</h6>
+                                <p class="text-muted" style="font-size:0.85rem;">Esta ação não pode ser desfeita.</p>
                               </div>
-                              <div class="modal-body">
-                                Tem certeza que deseja excluir este checklist?
-                              </div>
-                              <div class="modal-footer">
-                                <button type="submit" class="btn btn-danger">Excluir</button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <div class="modal-footer justify-content-center bg-light border-0">
+                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-danger">Sim, Excluir</button>
                               </div>
                             </form>
                           </div>
@@ -136,11 +166,14 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
-                // Card da lista de checklists (agora com SERVIÇO no título)
-                // Inclui data-* para a busca
+                // Card da lista de checklists (AGORA CLICÁVEL)
                 return `
                       <div
-                        class="card mb-2 chk-item"
+                        class="card chk-item border-0 shadow-sm mb-2"
+                        style="cursor: pointer;"
+                        data-bs-toggle="modal"
+                        data-bs-target="#detalheChecklist${c.id}"
+                        data-bs-dismiss="modal"
                         data-servico="${(c.servico || "").toLowerCase()}"
                         data-oficina="${(c.oficina || "").toLowerCase()}"
                         data-mecanico="${(c.mecanico || "").toLowerCase()}"
@@ -148,61 +181,72 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                         data-valor="${String(c.valor || "").toLowerCase()}"
                         data-km="${String(c.km_servico || "").toLowerCase()}"
                       >
-                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                          <div>
-                            <strong>${servicoTitulo || "Serviço"}</strong>
-                            <div class="text-muted"><small>${fmtData(c.data_servico)}</small></div>
+                        <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
+                          <div class="text-truncate me-3" style="max-width: 85%;">
+                            <span class="d-block fw-bold text-truncate text-dark" style="font-size: 0.85rem;">${servicoTitulo || "Serviço"}</span>
+                            <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.75rem;">
+                              <span><i class="fa-regular fa-calendar me-1"></i> ${fmtData(c.data_servico)}</span>
+                              <span><i class="fa-solid fa-wrench me-1"></i> ${c.oficina}</span>
+                            </div>
                           </div>
-                          <button
-                            class="btn btn-sm btn-outline-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#detalheChecklist${c.id}"
-                            data-bs-dismiss="modal"
-                            title="Ver detalhes"
-                          >
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
+                          <div>
+                             <i class="fa-solid fa-chevron-right text-muted opacity-50"></i>
+                          </div>
                         </div>
                       </div>
                     `;
               })
               .join("")
-            : `<p class="text-muted mb-0">Nenhum checklist para este veículo.</p>`;
+            : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-50"></i><br>Nenhum checklist para este veículo.</div>`;
 
-        // Modal: Novo Checklist (fora do modal de lista)
+        // Modal: Novo Checklist
         modaisNovoChecklist.push(`
             <div class="modal fade" id="novoChecklistVeiculo${v.id}" tabindex="-1">
               <div class="modal-dialog">
-                <div class="modal-content">
+                <div class="modal-content erp-modal">
                   <form method="POST" action="/veiculos/${v.id}/checklists/novo" enctype="multipart/form-data">
                     <div class="modal-header">
-                      <h5 class="modal-title">Novo Checklist — ${v.marca} ${v.modelo} (${v.ano})</h5>
+                      <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2 text-success"></i> Novo Checklist</h6>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                      <label class="form-label">Serviço (descrição)</label>
-                      <textarea name="servico" class="form-control mb-2" rows="3" required></textarea>
-
-                      <label class="form-label">Oficina</label>
-                      <input type="text" name="oficina" class="form-control mb-2" required>
-
-                      <label class="form-label">Mecânico</label>
-                      <input type="text" name="mecanico" class="form-control mb-2" required>
-
-                      <label class="form-label">Valor do serviço</label>
-                      <input type="number" step="0.01" name="valor" class="form-control mb-2" required>
-
-                      <label class="form-label">Data do serviço</label>
-                      <input type="date" name="data_servico" class="form-control mb-2" required>
-
-                      <label class="form-label">KM do serviço</label>
-                      <input type="number" name="km_servico" class="form-control mb-3" required>
-
-                      <label class="form-label">Anexar documento (opcional)</label>
-                      <input type="file" name="documento" class="form-control">
+                    <div class="modal-body text-sm">
+                      <div class="mb-2 text-muted" style="font-size:0.8rem;">
+                        Veículo: <strong>${v.marca} ${v.modelo} (${v.ano})</strong>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-12">
+                          <label class="form-label" style="font-size:0.8rem;">Serviço (descrição)</label>
+                          <textarea name="servico" class="form-control form-control-sm" rows="2" required></textarea>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label" style="font-size:0.8rem;">Oficina</label>
+                          <input type="text" name="oficina" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label" style="font-size:0.8rem;">Mecânico</label>
+                          <input type="text" name="mecanico" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label" style="font-size:0.8rem;">Valor (R$)</label>
+                          <input type="number" step="0.01" name="valor" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label" style="font-size:0.8rem;">Data</label>
+                          <input type="date" name="data_servico" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label" style="font-size:0.8rem;">KM Serviço</label>
+                          <input type="number" name="km_servico" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-12 mt-2">
+                          <label class="form-label" style="font-size:0.8rem;">Anexar doc. (opcional)</label>
+                          <input type="file" name="documento" class="form-control form-control-sm">
+                        </div>
+                      </div>
                     </div>
-                    <div class="modal-footer">
-                      <button type="submit" class="btn btn-primary">Salvar</button>
+                    <div class="modal-footer bg-light">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar</button>
                     </div>
                   </form>
                 </div>
@@ -210,65 +254,63 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
             </div>
           `);
 
-        // Card do veículo + Modal de Lista (com barra de busca + botões)
+        // Card do veículo (AGORA INTEIRAMENTE CLICÁVEL)
         return `
-            <div class="col-12 col-md-6 col-lg-4">
-              <div class="card shadow-sm mb-3 h-100">
-                <img src="${v.foto ? `/uploads/${v.foto}` : `/img/vehicle_placeholder.png`
-          }" 
-                    alt="${v.marca} ${v.modelo}" class="card-img-top" 
-                    style="max-height:180px; object-fit:cover;">
-                <div class="card-body d-flex flex-column">
-                  <h5 class="card-title mb-1">${v.marca} ${v.modelo} (${v.ano})</h5>
-                  <p class="text-muted mb-3"><small>KM: ${fmtKM(v.km)}</small></p>
-                  <div class="mt-auto d-flex justify-content-between">
-                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#checklistsVeiculo${v.id}" title="Checklists">
-                      <i class="fa-solid fa-clipboard-check"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarVeiculo${v.id}" title="Editar">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#excluirVeiculo${v.id}" title="Excluir">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
+            <div class="col-12 col-md-6 col-lg-3">
+              <div class="card erp-card shadow-sm h-100 border-0" 
+                   style="cursor: pointer;" 
+                   data-bs-toggle="modal" 
+                   data-bs-target="#checklistsVeiculo${v.id}">
+                <div class="img-container">
+                    <img src="${v.foto ? `/uploads/${v.foto}` : `/img/vehicle_placeholder.png`}" 
+                        alt="${v.marca} ${v.modelo}" class="card-img-top vehicle-img">
+                    <span class="badge bg-dark position-absolute top-0 end-0 m-2 shadow-sm">${v.ano}</span>
+                    <span class="badge bg-primary position-absolute top-0 start-0 m-2 shadow-sm"><i class="fa-solid fa-gauge-high"></i> ${fmtKM(v.km)} km</span>
+                </div>
+                <div class="card-body p-3 d-flex flex-column">
+                  <h6 class="card-title fw-bold text-dark mb-3 text-truncate" title="${v.marca} ${v.modelo}">
+                    ${v.marca} ${v.modelo}
+                  </h6>
+                  
+                  <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-success fw-medium" style="font-size:0.85rem;"><i class="fa-solid fa-list-check"></i> Checklists</span>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-light border text-warning" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarVeiculo${v.id}" title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light border text-danger" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirVeiculo${v.id}" title="Excluir">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Modal: Lista de checklists + botão Novo + Busca -->
             <div class="modal fade" id="checklistsVeiculo${v.id}" tabindex="-1">
-              <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title">Checklists — ${v.marca} ${v.modelo} (${v.ano})</h5>
+              <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content erp-modal">
+                  <div class="modal-header bg-light">
+                    <div>
+                        <h6 class="modal-title fw-bold mb-0">Histórico de Checklists</h6>
+                        <span class="text-muted" style="font-size:0.8rem;">${v.marca} ${v.modelo} (${v.ano})</span>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body">
-                    <div class="row g-2 mb-3">
-                      <div class="col-12 col-md">
-                        <input type="text" id="searchInputV${v.id}" class="form-control" placeholder="Pesquisar serviço, oficina, mecânico, data, valor ou KM...">
-                      </div>
-                      <div class="col-auto">
-                        <button class="btn btn-primary" id="searchBtnV${v.id}" data-search-vid="${v.id}">
-                          <i class="fa-solid fa-magnifying-glass"></i> Pesquisar
-                        </button>
-                      </div>
-                      <div class="col-auto">
-                        <button class="btn btn-secondary" id="clearBtnV${v.id}" data-clear-vid="${v.id}">
-                          <i class="fa-solid fa-eraser"></i> Limpar
-                        </button>
-                      </div>
-                      <div class="col ms-auto text-end">
-                        <button
-                          class="btn btn-success"
-                          data-bs-toggle="modal"
-                          data-bs-target="#novoChecklistVeiculo${v.id}"
-                          data-bs-dismiss="modal"
-                        >
-                          <i class="fa-solid fa-plus"></i> Novo checklist
-                        </button>
-                      </div>
+                  <div class="modal-body bg-light p-3">
+                    <div class="card border-0 shadow-sm p-2 mb-3">
+                        <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" id="searchInputV${v.id}" class="form-control border-start-0 ps-0" placeholder="Buscar serviço, mecânico...">
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-primary" id="searchBtnV${v.id}" data-search-vid="${v.id}">Buscar</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearBtnV${v.id}" data-clear-vid="${v.id}">Limpar</button>
+                        </div>
+                        </div>
                     </div>
 
                     <div id="checksListV${v.id}">
@@ -276,38 +318,56 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                     </div>
 
                     <div id="noResultV${v.id}" class="d-none">
-                      <div class="alert alert-warning mb-0">Nenhum resultado encontrado.</div>
+                      <div class="text-center text-muted p-3" style="font-size:0.85rem;">
+                        Nenhum resultado encontrado na busca.
+                      </div>
                     </div>
+                  </div>
+                  <div class="modal-footer border-top-0">
+                    <button class="btn btn-sm btn-success w-100" data-bs-toggle="modal" data-bs-target="#novoChecklistVeiculo${v.id}" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-plus me-1"></i> Novo Checklist
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Modais de editar/excluir veículo (inalterados) -->
             <div class="modal fade" id="editarVeiculo${v.id}" tabindex="-1">
               <div class="modal-dialog">
-                <div class="modal-content">
+                <div class="modal-content erp-modal">
                   <form method="POST" action="/veiculos/editar/${v.id}" enctype="multipart/form-data">
                     <div class="modal-header">
-                      <h5 class="modal-title">Editar Veículo</h5>
+                      <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Veículo</h6>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                      <label class="form-label">Marca</label>
-                      <input type="text" name="marca" class="form-control mb-2" value="${v.marca}" required>
-                      <label class="form-label">Modelo</label>
-                      <input type="text" name="modelo" class="form-control mb-2" value="${v.modelo}" required>
-                      <label class="form-label">Ano</label>
-                      <input type="number" name="ano" class="form-control mb-2" value="${v.ano}" required>
-                      <label class="form-label">KM</label>
-                      <input type="number" name="km" class="form-control mb-2" value="${v.km}" required>
-
-                      <label class="form-label">Foto (opcional)</label>
-                      <input type="file" name="foto" class="form-control">
-                      ${v.foto ? `<small class="text-muted">Foto atual: ${v.foto}</small>` : ""}
+                    <div class="modal-body text-sm">
+                      <div class="row g-2">
+                          <div class="col-6">
+                            <label class="form-label" style="font-size:0.8rem;">Marca</label>
+                            <input type="text" name="marca" class="form-control form-control-sm" value="${v.marca}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label" style="font-size:0.8rem;">Modelo</label>
+                            <input type="text" name="modelo" class="form-control form-control-sm" value="${v.modelo}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label" style="font-size:0.8rem;">Ano</label>
+                            <input type="number" name="ano" class="form-control form-control-sm" value="${v.ano}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label" style="font-size:0.8rem;">KM Atual</label>
+                            <input type="number" name="km" class="form-control form-control-sm" value="${v.km}" required>
+                          </div>
+                          <div class="col-12 mt-2">
+                            <label class="form-label" style="font-size:0.8rem;">Foto (opcional)</label>
+                            <input type="file" name="foto" class="form-control form-control-sm">
+                            ${v.foto ? `<div class="text-muted mt-1" style="font-size:0.75rem;"><i class="fa-solid fa-image"></i> Foto atual: ${v.foto}</div>` : ""}
+                          </div>
+                      </div>
                     </div>
-                    <div class="modal-footer">
-                      <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <div class="modal-footer bg-light">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                     </div>
                   </form>
                 </div>
@@ -315,19 +375,17 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
             </div>
 
             <div class="modal fade" id="excluirVeiculo${v.id}" tabindex="-1">
-              <div class="modal-dialog">
-                <div class="modal-content">
+              <div class="modal-dialog modal-sm modal-dialog-centered">
+                <div class="modal-content erp-modal">
                   <form method="POST" action="/veiculos/excluir/${v.id}">
-                    <div class="modal-header">
-                      <h5 class="modal-title">Excluir Veículo</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-body text-center p-4">
+                      <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                      <h6 class="mb-2">Excluir Veículo?</h6>
+                      <p class="text-muted mb-0" style="font-size:0.85rem;">Deseja excluir <b>${v.marca} ${v.modelo} (${v.ano})</b>?</p>
                     </div>
-                    <div class="modal-body">
-                      Tem certeza que deseja excluir o veículo <b>${v.marca} ${v.modelo} (${v.ano})</b>?
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-danger">Excluir</button>
+                    <div class="modal-footer justify-content-center bg-light border-0">
+                      <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-danger">Sim, Excluir</button>
                     </div>
                   </form>
                 </div>
@@ -336,24 +394,9 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
           `;
       })
       .join("")
-    : `<p class="text-muted">Nenhum veículo cadastrado.</p>`;
+    : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-car-side fa-3x opacity-25 mb-3"></i><p>Nenhum veículo cadastrado na frota.</p></div>`;
 
-  const menu = usuario.tipo_usuario === "motorista"
-    ? `
-        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-  `
-    : usuario.tipo_usuario === "financeiro"
-      ? `<a href="/tabela-precos">Tabela de Preços</a>`
-      : `
-        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-        <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
-        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
-        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-        <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
-        <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
-        <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-  `;
+  const menuHTML = menuLateral(usuario, "/veiculos");
 
   return `
   <!DOCTYPE html>
@@ -361,154 +404,174 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Veículos</title>
+    <title>Veículos | ERP Ecoflow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      body { display: flex; height: 100vh; margin: 0; }
-      .sidebar { width: 220px; background-color: #0D5749; color: white; padding: 20px; }
-      .sidebar a { display: block; padding: 10px; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 10px; }
-      .sidebar a:hover { background-color: #083930ff; }
-      .content { flex: 1; padding: 20px; overflow-y: auto; }
-      .topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
-      .offcanvas { transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out; }
+      body { 
+          display: flex; 
+          height: 100vh; 
+          margin: 0; 
+          background-color: #f4f7f6;
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      }
+      
+      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
+      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
+      .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+      
+      .content { flex: 1; padding: 24px; overflow-y: auto; }
+      
+      .text-sm { font-size: 0.875rem; }
+      
+      .usuario-badge {
+          background-color: white;
+          color: #0D5749;
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid rgba(13,87,73,0.2);
+          font-size: 0.85rem;
+          font-weight: 500;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      }
+      
+      .erp-card {
+          border-radius: 12px;
+          transition: transform 0.2s, box-shadow 0.2s;
+          overflow: hidden;
+      }
+      .erp-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
+      }
+      
+      .img-container { position: relative; height: 130px; background: #e9ecef; }
+      .vehicle-img { width: 100%; height: 100%; object-fit: cover; }
+      
+      .chk-item { border-left: 3px solid #0D5749 !important; transition: background 0.2s; }
+      .chk-item:hover { background-color: #f8f9fa; }
+      
+      .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+      .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
+      .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
+      .form-control-sm, .form-select-sm { border-radius: 6px; }
+
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
         .sidebar { display: none; }
-        .content { width: 100%; padding: 15px; }
+        .content { width: 100%; padding: 16px; }
       }
-        .offcanvas-body a {
-    display: block;             /* garante que cada link ocupe toda a linha */
-    text-align: center;         /* centraliza o texto */
-    text-decoration: none !important;
-    color: inherit;
-    margin: 8px 0;              /* espaço entre os links */
-  }
-
-  .offcanvas-body a:hover {
-    background-color: #495057;  /* opcional: destaca no hover */
-    border-radius: 5px;
-  }
-    .usuario-badge {
-              background-color: #0D5749;
-              color: #ffffff;
-              padding: 3px 12px;
-              border-radius: 8px;      /* bordas arredondadas */
-              border: 2px solid #0D5749;
-            }
+      .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
+      .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
     </style>
   </head>
   <body>
-    <!-- PRELOADER -->
-<div id="preloader" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity .3s ease;
-">
-    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
-        <span class="visually-hidden">Carregando...</span>
+    <div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(4px); background: rgba(244, 247, 246, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity .3s ease;">
+        <div class="spinner-border" style="color: #0D5749; width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
     </div>
-</div>
 
-    <!-- Sidebar desktop -->
-    <div class="sidebar d-none d-md-block">
-      <div class="text-center">
-        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
+    <div class="sidebar d-none d-md-flex">
+      <div class="text-center mb-4 mt-2">
+        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width:130px;">
       </div>
-      <hr>
-      ${menu}
+      <div class="flex-grow-1">
+        ${menuHTML}
+      </div>
     </div>
 
-    <!-- Sidebar mobile -->
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title">Menu</h5>
+      <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
-      <div class="offcanvas-body text-center">
-        <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-4" style="max-width:150px;">
-        <hr class="bg-light">
-        ${menu}
-        <hr class="bg-light">
-        <a href="/logout" class="d-block text-danger">Sair</a>
+      <div class="offcanvas-body">
+        <div class="text-center mb-4 mt-2">
+            <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
+        </div>
+        ${menuHTML}
+        <hr class="bg-secondary mt-4">
+        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between">
-        <button class="btn btn-outline-dark d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">☰ Menu</button>
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-car-side text-muted me-2"></i>Gestão de Frota</h4>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="usuario-badge d-none d-sm-inline-block">
+            <i class="fa-solid fa-user-circle me-1"></i> ${usuario.nome}
+          </span>
+          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
       </div>
 
-      <div class="d-flex align-items-center justify-content-between mb-3">
-            <h2 class="mb-0">Veículos</h2>
-            <div class="mr-2 d-flex align-items-center gap-3">
-              <span class="usuario-badge">
-                <i class="fa-solid fa-user"></i> ${usuario.nome}
-              </span>
-              <a href="/logout" class="text-danger">
-                <i class="fas fa-sign-out-alt me-2"></i>Sair
-              </a>
-            </div>
+      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
+        <div>
+            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total de Veículos: <strong>${veiculos.length}</strong></h6>
         </div>
+        <button class="btn btn-sm btn-success px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#novoVeiculoModal">
+            <i class="fa-solid fa-plus me-1"></i> Novo Veículo
+        </button>
+      </div>
 
-      <hr class="bg-light w-100">
-
-      <!-- Botão: Novo veículo -->
-      <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#novoVeiculoModal">
-        <i class="fa-solid fa-car"></i> Novo Veículo
-      </button>
-
-      <div class="row">
+      <div class="row g-3">
         ${cards}
       </div>
     </div>
 
-    <!-- Modal: Novo Veículo -->
     <div class="modal fade" id="novoVeiculoModal" tabindex="-1">
       <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content erp-modal">
           <form method="POST" action="/veiculos/novo" enctype="multipart/form-data">
             <div class="modal-header">
-              <h5 class="modal-title">Cadastrar Novo Veículo</h5>
+              <h6 class="modal-title fw-bold"><i class="fa-solid fa-car text-success me-2"></i> Cadastrar Novo Veículo</h6>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-              <label class="form-label">Marca</label>
-              <input type="text" name="marca" class="form-control mb-2" required>
-              <label class="form-label">Modelo</label>
-              <input type="text" name="modelo" class="form-control mb-2" required>
-              <label class="form-label">Ano</label>
-              <input type="number" name="ano" class="form-control mb-2" required>
-              <label class="form-label">KM</label>
-              <input type="number" name="km" class="form-control mb-2" required>
-              <label class="form-label">Foto (opcional)</label>
-              <input type="file" name="foto" class="form-control">
+            <div class="modal-body text-sm">
+              <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Marca</label>
+                    <input type="text" name="marca" class="form-control form-control-sm" required placeholder="Ex: Renault">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Modelo</label>
+                    <input type="text" name="modelo" class="form-control form-control-sm" required placeholder="Ex: Master">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Ano de Fabricação</label>
+                    <input type="number" name="ano" class="form-control form-control-sm" required placeholder="Ex: 2022">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Quilometragem (KM)</label>
+                    <input type="number" name="km" class="form-control form-control-sm" required placeholder="Ex: 15000">
+                  </div>
+                  <div class="col-12 mt-2">
+                    <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Foto do Veículo (opcional)</label>
+                    <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
+                  </div>
+              </div>
             </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">Salvar</button>
+            <div class="modal-footer bg-light">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar Veículo</button>
             </div>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- Modais fora dos modais de lista -->
     ${modaisNovoChecklist.join("")}
     ${modaisDetalheEditarExcluir.join("")}
 
-    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script de busca por veículo (Pesquisa/ Limpar) -->
     <script>
       (function() {
         const ids = ${JSON.stringify(veiculoIds)};
@@ -573,7 +636,6 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
             clearSearch();
           });
 
-          // Enter no input -> pesquisar
           input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
               e.preventDefault();

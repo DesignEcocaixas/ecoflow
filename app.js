@@ -15,6 +15,7 @@ const tabelaPrecosView = require("./views/tabelaPrecosView");
 const checklistMotoristasView = require("./views/checklistMotoristasView");
 const veiculosView = require("./views/veiculosView");
 const entregasView = require("./views/entregasView");
+const chapasView = require("./views/chapasView");
 
 const { Server } = require("socket.io");
 const app = express();
@@ -211,14 +212,157 @@ app.get("/home", (req, res) => {
 
     db.query(
         "SELECT id, mensagem, tipo, criado_em FROM notificacoes ORDER BY criado_em DESC",
-        (err, rows) => {
-            if (err) {
-                console.error("Erro ao buscar notificações:", err);
-                // Se der erro, manda a home sem notificações
-                return res.send(homeView(req.session.user, []));
+        (errNotif, notificacoes) => {
+            if (errNotif) {
+                console.error("Erro ao buscar notificações:", errNotif);
+                notificacoes = [];
             }
 
-            res.send(homeView(req.session.user, rows || []));
+            db.query(`
+                SELECT 
+                    v.id,
+                    v.marca,
+                    v.modelo,
+                    v.ano,
+                    v.km,
+                    c.servico,
+                    c.oficina,
+                    c.mecanico,
+                    c.valor,
+                    c.data_servico,
+                    c.km_servico,
+                    c.documento,
+                    c.atualizado_por
+                FROM veiculos v
+                LEFT JOIN veiculo_checklists c 
+                    ON c.id = (
+                        SELECT vc.id
+                        FROM veiculo_checklists vc
+                        WHERE vc.veiculo_id = v.id
+                        ORDER BY vc.data_servico DESC, vc.id DESC
+                        LIMIT 1
+                    )
+                ORDER BY c.data_servico DESC, v.id DESC
+                LIMIT 5
+            `, (errVeiculos, veiculos) => {
+                if (errVeiculos) {
+                    console.error("Erro veículos:", errVeiculos);
+                    veiculos = [];
+                }
+
+                db.query(`
+                    SELECT 
+                        id,
+                        veiculo,
+                        oleo,
+                        agua,
+                        freio,
+                        direcao,
+                        combustivel,
+                        pneu_calibragem,
+                        pneu_estado,
+                        luzes,
+                        ruidos,
+                        lixo,
+                        responsavel,
+                        motorista,
+                        observacao,
+                        foto,
+                        registrado_por,
+                        criado_em,
+                        atualizado_em,
+                        atualizado_por
+                    FROM checklists
+                    ORDER BY criado_em DESC
+                    LIMIT 5
+                `, (errCheck, checklists) => {
+                    if (errCheck) {
+                        console.error("Erro checklists:", errCheck);
+                        checklists = [];
+                    }
+
+                    db.query(`
+                        SELECT 
+                            c.id,
+                            c.codigo,
+                            c.modelo,
+                            c.preco_parda,
+                            c.preco_branca,
+                            c.atualizado_em,
+                            c.atualizado_por,
+                            f.nome AS fornecedor_nome,
+                            f.porcentagem AS fornecedor_pct
+                        FROM caixas c
+                        LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
+                        ORDER BY c.atualizado_em DESC, c.id DESC
+                        LIMIT 5
+                    `, (errPreco, precos) => {
+                        if (errPreco) {
+                            console.error("Erro preços:", errPreco);
+                            precos = [];
+                        }
+
+                        db.query(`
+                            SELECT *
+                            FROM entregas_pedidos
+                            ORDER BY criado_em DESC, id DESC
+                            LIMIT 1
+                        `, (errRota, rotaRows) => {
+                            if (errRota) {
+                                console.error("Erro rota:", errRota);
+                                return res.send(homeView(req.session.user, notificacoes, {
+                                    veiculos,
+                                    checklists,
+                                    precos,
+                                    rota: null
+                                }));
+                            }
+
+                            const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+
+                            if (!rota) {
+                                return res.send(homeView(req.session.user, notificacoes, {
+                                    veiculos,
+                                    checklists,
+                                    precos,
+                                    rota: null
+                                }));
+                            }
+
+                            db.query(`
+                                SELECT 
+                                    id,
+                                    pedido_id,
+                                    cliente_nome,
+                                    status,
+                                    observacao,
+                                    atualizado_por,
+                                    atualizado_em
+                                FROM entregas_clientes
+                                WHERE pedido_id = ?
+                                ORDER BY id DESC
+                            `, [rota.id], (errClientes, clientes) => {
+                                if (errClientes) {
+                                    console.error("Erro clientes da rota:", errClientes);
+                                    clientes = [];
+                                }
+
+                                const dashboard = {
+                                    veiculos,
+                                    checklists,
+                                    precos,
+                                    rota: {
+                                        ...rota,
+                                        clientes
+                                    }
+                                };
+
+                                return res.send(homeView(req.session.user, notificacoes, dashboard));
+                            });
+                        });
+                    });
+                });
+            });
         }
     );
 });
@@ -341,7 +485,7 @@ app.get("/tabela-precos", (req, res) => {
     }
 
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = 7;
+    const limit = 10; // MUDANÇA: AGORA EXIBE 10 CARDS/LINHAS POR PÁGINA
     const offset = (page - 1) * limit;
 
     const q = (req.query.q || "").trim();
@@ -511,10 +655,12 @@ app.get("/checklist-motoristas", (req, res) => {
 
     // página atual vinda da query (?page=2)
     const page = parseInt(req.query.page || "1", 10);
-    const limit = 4;
+    
+    // MUDANÇA AQUI: limite alterado para 8 cards por página
+    const limit = 8; 
+    
     const offset = (page - 1) * limit;
 
-    // Se você quiser que motorista veja só os próprios checklists:
     const where = [];
     const paramsBase = [];
 
@@ -1203,7 +1349,7 @@ app.get("/entregas", (req, res) => {
 
     // Paginação
     const page = parseInt(req.query.page || "1", 10);
-    const limit = 5; // nº de pedidos por página
+    const limit = 6; // nº de pedidos por página
 
     // Monta WHERE dinâmico (título / período)
     const where = [];
@@ -1472,8 +1618,72 @@ app.post("/entregas/clientes/excluir/:cid", /*isLogged*/ /* onlyAdmin, */(req, r
     });
 });
 
+// === ROTAS DE CHAPAS ===
+
+// Listar Chapas
+app.get("/chapas", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
+
+    db.query("SELECT * FROM chapas ORDER BY id DESC", (err, chapas) => {
+        if (err) {
+            console.error("Erro ao buscar chapas:", err);
+            return res.status(500).send("Erro interno");
+        }
+        res.send(chapasView(req.session.user, chapas));
+    });
+});
+
+// Criar Nova Chapa
+app.post("/chapas/novo", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
+
+    const { material, modelo, fornecedor, medida, quantidade } = req.body;
+
+    db.query(
+        "INSERT INTO chapas (material, modelo, fornecedor, medida, quantidade) VALUES (?, ?, ?, ?, ?)",
+        [material, modelo, fornecedor, medida, quantidade],
+        (err) => {
+            if (err) console.error("Erro ao cadastrar chapa:", err);
+            res.redirect("/chapas");
+        }
+    );
+});
+
+// Editar Chapa
+app.post("/chapas/editar/:id", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
+
+    const { id } = req.params;
+    const { material, modelo, fornecedor, medida, quantidade } = req.body;
+
+    db.query(
+        "UPDATE chapas SET material=?, modelo=?, fornecedor=?, medida=?, quantidade=? WHERE id=?",
+        [material, modelo, fornecedor, medida, quantidade, id],
+        (err) => {
+            if (err) console.error("Erro ao editar chapa:", err);
+            res.redirect("/chapas");
+        }
+    );
+});
+
+// Excluir Chapa
+app.post("/chapas/excluir/:id", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
+
+    const { id } = req.params;
+
+    db.query("DELETE FROM chapas WHERE id=?", [id], (err) => {
+        if (err) console.error("Erro ao excluir chapa:", err);
+        res.redirect("/chapas");
+    });
+});
+
 app.get("/health", (req, res) => {
     res.send("OK");
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta}"));
+server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta " + PORT)); 

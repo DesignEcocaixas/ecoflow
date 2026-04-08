@@ -21,17 +21,18 @@ function menuLateral(usuario, rotaAtiva = "") {
   if (tipo === "financeiro") {
     return `
       ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
+      ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
     `;
   }
 
   // --- MENU: ADMIN (Padrão) ---
   return `
     ${renderLink("/home", "fas fa-home me-2", "Home")}
-    ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
-    ${renderLink("/entregas", "fas fa-truck me-2", "Entregas")}
-    ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
-    ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
     ${renderLink("/veiculos", "fas fa-car me-2", "Veículos")}
+    ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
+    ${renderLink("/entregas", "fas fa-truck me-2", "Entregas")}
+    ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
+    ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
     ${renderLink("/cadastro", "fas fa-user-plus me-2", "Cadastro")}
   `;
 }

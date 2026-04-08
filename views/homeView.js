@@ -499,7 +499,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         </div>
         ${menuHTML}
         <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
       </div>
     </div>
 
@@ -560,6 +560,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
           </div>
         </div>
 
+        ${usuario.tipo_usuario !== "motorista" ? `
         <div class="col-12 col-lg-6">
           <div class="card dashboard-section-card h-100 bg-white">
             <div class="card-body p-3">
@@ -568,6 +569,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
             </div>
           </div>
         </div>
+        ` : ""}
 
         <div class="col-12 col-lg-6">
           <div class="card dashboard-section-card h-100 bg-white">

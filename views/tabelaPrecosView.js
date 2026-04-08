@@ -1,41 +1,28 @@
 // views/tabelaPrecosView.js
+const menuLateral = require("./menuLateral");
+
 function tabelaPrecosView(
   usuario,
   caixas = [],
   ultimaAlteracao = null,
   fornecedores = [],
   paginacao = {},
-  filtros = {} // ✅ ADICIONADO (não remove nada, só adiciona)
+  filtros = {} 
 ) {
+  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
-
-  const menu = usuario.tipo_usuario === "motorista"
-    ? `
-        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-  `
-    : usuario.tipo_usuario === "financeiro"
-      ? `<a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>`
-      : `
-        <a href="/home"><i class="fas fa-home me-2"></i>Home</a>
-        <a href="/tabela-precos"><i class="fas fa-tags me-2"></i>Tabela de Preços</a>
-        <a href="/entregas"><i class="fas fa-truck me-2"></i>Entregas</a>
-        <a href="/checklist-motoristas"><i class="fas fa-clipboard-check me-2"></i>Checklist</a>
-        <a href="/catalogo"><i class="fas fa-book-open me-2"></i>Catálogo</a>
-        <a href="/veiculos"><i class="fas fa-car"></i> Veículos</a>
-        <a href="/cadastro"><i class="fas fa-user-plus me-2"></i>Cadastro</a>
-  `;
 
   const dataFormatada = ultimaAlteracao
     ? new Date(ultimaAlteracao.atualizado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
     : null;
 
   const alteracaoTexto = ultimaAlteracao
-    ? `Última alteração: ${dataFormatada} por ${ultimaAlteracao.atualizado_por}`
-    : "Nenhuma alteração registrada ainda";
+    ? `Última atualização: <strong>${dataFormatada}</strong> por <strong>${ultimaAlteracao.atualizado_por}</strong>`
+    : "Nenhuma atualização registrada";
 
   const fmt = (n) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPct = (n) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const linhas = caixas.map(caixa => {
     const pct = caixa.fornecedor_pct ? Number(caixa.fornecedor_pct) : 0;
@@ -45,17 +32,21 @@ function tabelaPrecosView(
     const precoBranca = Number(caixa.preco_branca) * fator;
 
     return `
-    <tr>
-      <td>${caixa.codigo || "-"}</td>
+    <tr class="align-middle">
+      <td class="fw-medium text-dark">${caixa.codigo || "-"}</td>
       <td>${caixa.modelo}</td>
-      <td>R$ ${fmt(precoParda)}</td>
-      <td>R$ ${fmt(precoBranca)}</td>
-      <td>${caixa.fornecedor_nome || "-"}</td>
+      <td class="text-success fw-bold">R$ ${fmt(precoParda)}</td>
+      <td class="text-primary fw-bold">R$ ${fmt(precoBranca)}</td>
       <td>
-        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarModal${caixa.id}">
-          <i class="fa-solid fa-pen-to-square"></i>
+        <span class="badge bg-secondary bg-opacity-75 text-dark fw-medium" style="font-size:0.75rem;">
+          <i class="fa-solid fa-truck-fast me-1 text-white"></i> ${caixa.fornecedor_nome || "Sem Fornecedor"}
+        </span>
+      </td>
+      <td class="text-end text-nowrap">
+        <button class="btn btn-sm btn-light border text-warning" data-bs-toggle="modal" data-bs-target="#editarModal${caixa.id}" title="Editar">
+          <i class="fa-solid fa-pen"></i>
         </button>
-        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#excluirModal${caixa.id}">
+        <button class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#excluirModal${caixa.id}" title="Excluir">
           <i class="fa-solid fa-trash"></i>
         </button>
       </td>
@@ -63,30 +54,24 @@ function tabelaPrecosView(
   `;
   }).join("");
 
-  // ✅ garante que o termo de busca continue nos links da paginação
   const qParam = paginacao.q ? `&q=${encodeURIComponent(paginacao.q)}` : "";
 
-
+  // Paginação minimalista ERP
   const paginationHtml = totalPages > 1 ? `
-  <nav aria-label="Paginação de caixas" class="mt-2">
-    <ul class="pagination pagination-sm justify-content-center">
-      <!-- Anterior -->
+  <nav aria-label="Paginação" class="mt-4">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
       <li class="page-item ${page <= 1 ? "disabled" : ""}">
-        <a class="page-link" href="/tabela-precos?page=${page - 1}${qParam}">&laquo;</a>
+        <a class="page-link text-dark" href="/tabela-precos?page=${page - 1}${qParam}">&laquo;</a>
       </li>
 
       ${(() => {
-      const delta = 2; // quantas páginas ao redor da atual
+      const delta = 2;
       let paginas = [];
       let ultima;
       let html = '';
 
       for (let i = 1; i <= totalPages; i++) {
-        if (
-          i === 1 ||
-          i === totalPages ||
-          (i >= page - delta && i <= page + delta)
-        ) {
+        if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
           paginas.push(i);
         }
       }
@@ -94,93 +79,86 @@ function tabelaPrecosView(
       paginas.forEach(p => {
         if (ultima) {
           if (p - ultima === 2) {
-            html += `
-          <li class="page-item">
-            <a class="page-link bg-transparent border-0 px-2"
-               href="/tabela-precos?page=${ultima + 1}${qParam}">
-              ${ultima + 1}
-            </a>
-          </li>
-        `;
+            html += `<li class="page-item"><a class="page-link text-dark" href="/tabela-precos?page=${ultima + 1}${qParam}">${ultima + 1}</a></li>`;
           } else if (p - ultima > 2) {
-            html += `
-          <li class="page-item disabled">
-            <span class="page-link bg-transparent border-0 px-2">...</span>
-          </li>
-        `;
+            html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
           }
         }
-
-        html += `
-      <li class="page-item ${p === page ? "active" : ""}">
-        <a class="page-link bg-transparent border-0 px-2"
-           href="/tabela-precos?page=${p}${qParam}">
-          ${p}
-        </a>
-      </li>
-    `;
-
+        html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/tabela-precos?page=${p}${qParam}">${p}</a></li>`;
         ultima = p;
       });
 
       return html;
     })()}
 
-      <!-- Próxima -->
       <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-        <a class="page-link" href="/tabela-precos?page=${page + 1}${qParam}">&raquo;</a>
+        <a class="page-link text-dark" href="/tabela-precos?page=${page + 1}${qParam}">&raquo;</a>
       </li>
     </ul>
   </nav>
 ` : "";
 
+  const fornecedoresOptions = (fornecedores && fornecedores.length)
+    ? fornecedores.map(f => `<option value="${f.id}">${f.nome} (${f.porcentagem}%)</option>`).join("")
+    : '<option value="">Nenhum fornecedor cadastrado</option>';
 
   const modais = caixas.map(caixa => `
-    <!-- Modal Editar -->
     <div class="modal fade" id="editarModal${caixa.id}" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form method="POST" action="/tabela-precos/editar/${caixa.id}">
-            <div class="modal-header">
-              <h5 class="modal-title">Editar Caixa</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form method="POST" action="/tabela-precos/editar/${caixa.id}" class="modal-content erp-modal">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Caixa</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-3">
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <label for="codigo${caixa.id}" class="form-label text-muted mb-1" style="font-size:0.8rem;">Código</label>
+                <input type="text" id="codigo${caixa.id}" name="codigo" value="${caixa.codigo || ""}" class="form-control form-control-sm" placeholder="Opcional">
+              </div>
+              <div class="col-12 col-md-8">
+                <label for="modelo${caixa.id}" class="form-label text-muted mb-1" style="font-size:0.8rem;">Modelo</label>
+                <input type="text" id="modelo${caixa.id}" name="modelo" value="${caixa.modelo}" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="parda${caixa.id}" class="form-label text-muted mb-1" style="font-size:0.8rem;">Preço Parda (Base)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" step="0.01" id="parda${caixa.id}" name="preco_parda" value="${caixa.preco_parda}" class="form-control" required>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="branca${caixa.id}" class="form-label text-muted mb-1" style="font-size:0.8rem;">Preço Branca (Base)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" step="0.01" id="branca${caixa.id}" name="preco_branca" value="${caixa.preco_branca}" class="form-control" required>
+                </div>
+              </div>
             </div>
-            <div class="modal-body">
-              <label for="codigo${caixa.id}" class="form-label">Código</label>
-              <input type="text" id="codigo${caixa.id}" name="codigo" value="${caixa.codigo || ""}" class="form-control mb-2" placeholder="Código">
-
-              <label for="modelo${caixa.id}" class="form-label">Modelo</label>
-              <input type="text" id="modelo${caixa.id}" name="modelo" value="${caixa.modelo}" class="form-control mb-2" placeholder="Modelo" required>
-
-              <label for="parda${caixa.id}" class="form-label">Preço Parda</label>
-              <input type="number" step="0.01" id="parda${caixa.id}" name="preco_parda" value="${caixa.preco_parda}" class="form-control mb-2" required>
-
-              <label for="branca${caixa.id}" class="form-label">Preço Branca</label>
-              <input type="number" step="0.01" id="branca${caixa.id}" name="preco_branca" value="${caixa.preco_branca}" class="form-control mb-2" required>
+            <div class="mt-2 text-muted" style="font-size:0.75rem;">
+               <i class="fa-solid fa-circle-info me-1"></i> O preço exibido na tabela será o valor base somado à porcentagem do fornecedor.
             </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">Salvar</button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <!-- Modal Excluir -->
     <div class="modal fade" id="excluirModal${caixa.id}" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal">
           <form method="POST" action="/tabela-precos/excluir/${caixa.id}">
-            <div class="modal-header">
-              <h5 class="modal-title">Confirmar Exclusão</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-body text-center p-4">
+              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+              <h6 class="mb-2">Excluir Caixa?</h6>
+              <p class="text-muted mb-0" style="font-size:0.85rem;">Deseja excluir a caixa modelo <b>${caixa.modelo}</b>?</p>
             </div>
-            <div class="modal-body">
-              <p>Tem certeza que deseja excluir a caixa <b>${caixa.modelo}</b>?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-danger">Excluir</button>
+            <div class="modal-footer justify-content-center bg-light border-0">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-danger">Sim, Excluir</button>
             </div>
           </form>
         </div>
@@ -188,67 +166,66 @@ function tabelaPrecosView(
     </div>
   `).join("");
 
-  // helpers (antes do return)
-  const fmtPct = (n) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   const listaFornecedores = (fornecedores && fornecedores.length)
     ? fornecedores.map(f => `
-      <li class="list-group-item d-flex justify-content-between align-items-center">
+      <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2 border-0 border-bottom">
         <div>
-          <b>${f.nome}</b> — ${fmtPct(f.porcentagem)}%
+          <b class="text-dark" style="font-size:0.9rem;">${f.nome}</b><br>
+          <span class="text-muted" style="font-size:0.75rem;">Taxa / Margem: <strong class="text-success">${fmtPct(f.porcentagem)}%</strong></span>
         </div>
         <div class="btn-group">
-          <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarFornecedorModal${f.id}" title="Editar">
-            <i class="fa-solid fa-pen-to-square"></i>
+          <button class="btn btn-sm btn-light border text-warning" data-bs-toggle="modal" data-bs-target="#editarFornecedorModal${f.id}" title="Editar">
+            <i class="fa-solid fa-pen"></i>
           </button>
-          <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#excluirFornecedorModal${f.id}" title="Excluir">
+          <button class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#excluirFornecedorModal${f.id}" title="Excluir">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
       </li>
     `).join("")
-    : "<li class='list-group-item text-muted'>Nenhum fornecedor cadastrado.</li>";
+    : "<li class='list-group-item text-muted border-0'>Nenhum fornecedor cadastrado no sistema.</li>";
 
   const modaisFornecedores = (fornecedores && fornecedores.length)
     ? fornecedores.map(f => `
-      <!-- Modal Editar Fornecedor -->
       <div class="modal fade" id="editarFornecedorModal${f.id}" tabindex="-1">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <form method="POST" action="/fornecedores/editar/${f.id}">
-              <div class="modal-header">
-                <h5 class="modal-title">Editar Fornecedor</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered">
+          <form method="POST" action="/fornecedores/editar/${f.id}" class="modal-content erp-modal">
+            <div class="modal-header bg-light">
+              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-truck-fast me-2 text-warning"></i> Editar Fornecedor</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-sm p-3">
+              <div class="row g-2">
+                <div class="col-12 col-md-8">
+                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Nome</label>
+                  <input type="text" name="nome" class="form-control form-control-sm" value="${f.nome}" required>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Taxa (%)</label>
+                  <input type="number" step="0.01" name="porcentagem" class="form-control form-control-sm" value="${f.porcentagem}" required>
+                </div>
               </div>
-              <div class="modal-body">
-                <label class="form-label">Nome</label>
-                <input type="text" name="nome" class="form-control mb-2" value="${f.nome}" required>
-                <label class="form-label">Porcentagem (%)</label>
-                <input type="number" step="0.01" name="porcentagem" class="form-control" value="${f.porcentagem}" required>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+            </div>
+          </form>
         </div>
       </div>
 
-      <!-- Modal Excluir Fornecedor -->
       <div class="modal fade" id="excluirFornecedorModal${f.id}" tabindex="-1">
-        <div class="modal-dialog">
-          <div class="modal-content">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+          <div class="modal-content erp-modal">
             <form method="POST" action="/fornecedores/excluir/${f.id}">
-              <div class="modal-header">
-                <h5 class="modal-title">Excluir Fornecedor</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <div class="modal-body text-center p-4">
+                <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                <h6 class="mb-2">Excluir Fornecedor?</h6>
+                <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja remover o fornecedor <b>${f.nome}</b>?</p>
               </div>
-              <div class="modal-body">
-                Tem certeza que deseja excluir o fornecedor <b>${f.nome}</b>?
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-danger">Excluir</button>
+              <div class="modal-footer justify-content-center bg-light border-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-danger">Sim, Excluir</button>
               </div>
             </form>
           </div>
@@ -257,15 +234,21 @@ function tabelaPrecosView(
     `).join("")
     : "";
 
-  const fornecedoresOptions = (fornecedores && fornecedores.length)
-    ? fornecedores.map(f => `<option value="${f.id}">${f.nome} (${f.porcentagem}%)</option>`).join("")
-    : '<option value="">Nenhum fornecedor cadastrado</option>';
+  const opcoes = caixas.map(caixa => {
+    // Calcula já com o imposto pro orçador via data-attributes
+    const pct = caixa.fornecedor_pct ? Number(caixa.fornecedor_pct) : 0;
+    const fator = 1 + pct / 100;
+    const finalParda = Number(caixa.preco_parda) * fator;
+    const finalBranca = Number(caixa.preco_branca) * fator;
 
-  const opcoes = caixas.map(caixa => `
-    <option value="${caixa.id}" data-parda="${caixa.preco_parda}" data-branca="${caixa.preco_branca}">
-      ${caixa.modelo}
-    </option>
-  `).join("");
+    return `
+      <option value="${caixa.id}" data-parda="${finalParda}" data-branca="${finalBranca}">
+        ${caixa.modelo}
+      </option>
+    `;
+  }).join("");
+
+  const menuHTML = menuLateral(user, "/tabela-precos");
 
   return `
   <!DOCTYPE html>
@@ -273,387 +256,382 @@ function tabelaPrecosView(
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tabela de Preços</title>
+    <title>Tabela de Preços | ERP Ecoflow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       body { 
-        display: flex; 
-        height: 100vh; 
-        margin: 0; 
+          display: flex; 
+          height: 100vh; 
+          margin: 0; 
+          background-color: #f4f7f6;
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       }
 
-            .sidebar { 
-              width: 220px; 
-              background-color: #0D5749; 
-              color: white; 
-              padding: 20px; 
-              transition: all 0.3s ease-in-out; /* anima sidebar */
-            }
-            
-            .sidebar a { 
-              display: block; 
-              padding: 10px; 
-              color: white; 
-              text-decoration: none; 
-              border-radius: 5px; 
-              margin-bottom: 10px; 
-              transition: background-color 0.2s ease-in-out; /* hover suave */
-            }
-            
-            .sidebar a:hover { 
-              background-color: #083930ff; 
-            }
+      /* Sidebar */
+      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
+      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
+      .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+      
+      .content { flex: 1; padding: 24px; overflow-y: auto; }
+      
+      /* Utilities */
+      .text-sm { font-size: 0.875rem; }
 
-            .content { 
-              flex: 1; 
-              padding: 20px; 
-            }
+      /* Topbar / Badges */
+      .usuario-badge {
+          background-color: white;
+          color: #0D5749;
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid rgba(13,87,73,0.2);
+          font-size: 0.85rem;
+          font-weight: 500;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      }
 
-            .offcanvas {
-              transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out;
-            }
+      /* ERP Cards & Tables */
+      .erp-card {
+          border-radius: 12px;
+          background: #fff;
+          border: none;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+          overflow: hidden;
+      }
+      
+      .table > :not(caption) > * > * {
+          padding: 6px 16px; /* REDUZIDO PARA LINHAS MAIS COMPACTAS */
+          border-bottom-color: #f0f0f0;
+          vertical-align: middle;
+      }
+      .table thead th {
+          background-color: #fafbfc;
+          color: #6c757d;
+          font-weight: 600;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 2px solid #e9ecef;
+          padding: 10px 16px !important;
+      }
 
-            .table{
-              font-size: small;
-              text-align: center;
-              vertical-align: baseline;
-            }
+      /* Modals */
+      .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+      .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
+      .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
+      .form-control-sm, .form-select-sm { border-radius: 6px; }
 
-            /* No mobile */
-            @media (max-width: 767.98px) {
-            body {
-                flex-direction: column;
-            }
-            .sidebar {
-                display: none; /* sidebar some */
-            }
-            .content {
-                width: 100%;
-                padding: 15px;
-            }
-            }
+      /* Paginação ERP */
+      .pagination-sm .page-link { background: transparent; border: none; font-size: 0.85rem; }
+      .pagination-sm .page-item.active .page-link { background: transparent; border: none; }
+      .pagination-sm .page-link:focus { box-shadow: none; }
 
-            .offcanvas-body a {
-                display: block;
-                text-align: center;
-                width: 100%;
-                padding: 10px;
-                color: white;
-                text-decoration: none;
-                }
-
-                .offcanvas-body a:hover {
-                background-color: #495057;
-                border-radius: 5px;
-            }
-            .usuario-badge {
-              background-color: #0D5749;
-              color: #ffffff;
-              padding: 3px 12px;
-              border-radius: 8px;      /* bordas arredondadas */
-              border: 2px solid #0D5749;
-            }
-
-            /* ===== PAGINAÇÃO MINIMAL ===== */
-            .pagination-sm .page-link {
-              background: transparent !important;
-              border: none !important;
-              padding: 4px 6px !important;
-              font-size: 0.8rem;
-              color: #000000;
-            }
-
-            .pagination-sm .page-item.active .page-link {
-              background: transparent !important;
-              border: none !important;
-              font-weight: 600;
-              color: #000000 !important;
-            }
-
-            .pagination-sm .page-item.disabled .page-link {
-              opacity: 0.4;
-            }
-
-            .pagination-sm .page-link:focus {
-              box-shadow: none !important;
-            }
+      /* Offcanvas Mobile */
+      @media (max-width: 767.98px) {
+        body { flex-direction: column; }
+        .sidebar { display: none; }
+        .content { width: 100%; padding: 16px; }
+      }
+      .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
+      .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
     </style>
   </head>
   <body>
-    <!-- PRELOADER -->
-    <div id="preloader" style="
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        transition: opacity .3s ease;
-    ">
-        <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+    <div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(4px); background: rgba(244, 247, 246, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity .3s ease;">
+        <div class="spinner-border" style="color: #0D5749; width: 3rem; height: 3rem;" role="status">
             <span class="visually-hidden">Carregando...</span>
         </div>
     </div>
 
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <div class="text-center">
-          <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid mb-3" style="max-width:150px;">
-        </div>
-        <hr class="bg-light">
-        ${menu}
+    <div class="sidebar d-none d-md-flex">
+      <div class="text-center mb-4 mt-2">
+        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width: 130px;">
+      </div>
+      <div class="flex-grow-1">
+        ${menuHTML}
+      </div>
     </div>
 
-    <!-- Sidebar mobile -->
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title">Menu</h5>
+      <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body text-center d-flex flex-column align-items-center">
-        <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid mb-4" style="max-width:150px;">
-        <hr class="bg-light w-100">
-        ${menu}
-    </div>
+      </div>
+      <div class="offcanvas-body">
+        <div class="text-center mb-4 mt-2">
+            <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
+        </div>
+        ${menuHTML}
+        <hr class="bg-secondary mt-4">
+        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+      </div>
     </div>
 
-
-      <!-- Conteúdo -->
-      <div class="content">
-      <button class="btn btn-outline-dark d-md-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-            ☰ Menu
-        </button>
-        
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h2 class="mb-0">Tabela de Preços</h2>
-            <div class="mr-2 d-flex align-items-center gap-3">
-              <span class="usuario-badge">
-                <i class="fa-solid fa-user"></i> ${usuario.nome}
-              </span>
-              <a href="/logout" class="text-danger">
-                <i class="fas fa-sign-out-alt me-2"></i>Sair
-              </a>
+    <div class="content">
+      
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+            <div>
+              <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-tags text-muted me-2"></i>Tabela de Preços</h4>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">${alteracaoTexto}</span>
             </div>
         </div>
-
-        <hr class="bg-light w-100">
-
-        <p class="text-muted mb-4"><small>${alteracaoTexto}</small></p>
-
-        <!-- Container que alinha horizontalmente -->
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-
-          <!-- COLUNA ESQUERDA: Botões -->
-          <div class="d-flex align-items-center gap-2">
-
-            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#novaCaixaModal">
-              <i class="fa-solid fa-box"></i> Nova Caixa
-            </button>
-
-            ${caixas.length > 0 ? `
-              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orcamentoModal">
-                <i class="fa-solid fa-file-invoice-dollar"></i> Gerar Orçamento
-              </button>
-            ` : ""}
-
-            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#fornecedoresModal">
-              <i class="fa-solid fa-truck"></i> Fornecedores
-            </button>
-
-          </div>
-
-          <!-- ✅ COLUNA DIREITA: Campo de busca (AGORA ENVIA PRO BACKEND) -->
-          <form class="input-group" style="max-width: 500px; width: 100%;" method="GET" action="/tabela-precos">
-            <input
-              type="text"
-              id="searchInput"
-              name="q"
-              class="form-control"
-              placeholder="Pesquisar por código, modelo ou fornecedor..."
-              value="${(filtros && filtros.q) ? filtros.q : ""}"
-            >
-            <button id="searchBtn" type="submit" class="btn btn-primary">Pesquisar</button>
-            <a id="clearBtn" href="/tabela-precos" class="btn btn-secondary">Limpar</a>
-          </form>
-
+        <div class="d-flex align-items-center gap-3">
+          <span class="usuario-badge d-none d-sm-inline-block">
+            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
+          </span>
+          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
         </div>
-
-        <div class="mb-3">
-        <table class="table table-bordered table-striped" id="caixasTable">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Modelo</th>
-              <th>Preço Parda</th>
-              <th>Preço Branca</th>
-              <th>Fornecedor</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${linhas || "<tr><td colspan='6' class='text-center'>Nenhuma caixa cadastrada</td></tr>"}
-          </tbody>
-        </table>
-
-        ${paginationHtml}
-
-        <!-- Modais Editar/Excluir -->
-        ${modais}
       </div>
 
-      <!-- Modal Nova Caixa -->
-      <div class="modal fade" id="novaCaixaModal" tabindex="-1">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <form method="POST" action="/tabela-precos/nova">
-              <div class="modal-header">
-                <h5 class="modal-title">Nova Caixa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light gap-3">
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#novaCaixaModal">
+            <i class="fa-solid fa-box me-1"></i> Nova Caixa
+          </button>
+
+          ${caixas.length > 0 ? `
+            <button class="btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#orcamentoModal">
+              <i class="fa-solid fa-file-invoice-dollar me-1"></i> Gerar Orçamento
+            </button>
+          ` : ""}
+
+          <button class="btn btn-sm btn-info text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#fornecedoresModal">
+            <i class="fa-solid fa-truck-fast me-1"></i> Fornecedores
+          </button>
+        </div>
+
+        <form class="input-group input-group-sm" style="max-width: 400px; width: 100%;" method="GET" action="/tabela-precos">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+          <input type="text" id="searchInput" name="q" class="form-control border-start-0 ps-0" placeholder="Buscar código, modelo ou fornecedor..." value="${(filtros && filtros.q) ? filtros.q : ""}">
+          <button id="searchBtn" type="submit" class="btn btn-primary">Buscar</button>
+          <a id="clearBtn" href="/tabela-precos" class="btn btn-outline-secondary" title="Limpar Filtros"><i class="fa-solid fa-eraser"></i></a>
+        </form>
+      </div>
+
+      <div class="erp-card">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle text-center mb-0" id="caixasTable">
+            <thead>
+              <tr>
+                <th class="text-start">Código</th>
+                <th class="text-start">Modelo da Caixa</th>
+                <th>Preço Parda</th>
+                <th>Preço Branca</th>
+                <th>Fornecedor Associado</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${linhas || "<tr><td colspan='6' class='text-center text-muted py-4'><i class='fa-solid fa-inbox fa-2x mb-2 opacity-25'></i><br>Nenhuma caixa encontrada</td></tr>"}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      ${paginationHtml}
+
+    </div>
+
+    <div class="modal fade" id="novaCaixaModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form method="POST" action="/tabela-precos/nova" class="modal-content erp-modal">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-box me-2 text-success"></i> Cadastrar Nova Caixa</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-3">
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Código</label>
+                <input type="text" name="codigo" class="form-control form-control-sm" placeholder="Opcional">
               </div>
-              <div class="modal-body">
-                <input type="text" name="codigo" class="form-control mb-2" placeholder="Código (opcional)">
-                <input type="text" name="modelo" class="form-control mb-2" placeholder="Modelo" required>
-                <input type="number" step="0.01" name="preco_parda" class="form-control mb-2" placeholder="Preço Parda" required>
-                <input type="number" step="0.01" name="preco_branca" class="form-control mb-2" placeholder="Preço Branca" required>
-                
-                <label class="form-label">Fornecedor</label>
-                <select name="fornecedor_id" class="form-select mb-2" required>
-                  <option value="">-- Selecione um fornecedor --</option>
+              <div class="col-12 col-md-8">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Modelo</label>
+                <input type="text" name="modelo" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Preço Parda (Base)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" step="0.01" name="preco_parda" class="form-control" required>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Preço Branca (Base)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" step="0.01" name="preco_branca" class="form-control" required>
+                </div>
+              </div>
+              <div class="col-12 mt-2">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Fornecedor Responsável</label>
+                <select name="fornecedor_id" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>-- Selecione um fornecedor --</option>
                   ${fornecedoresOptions}
                 </select>
               </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Salvar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal Orçamento -->
-      <div class="modal fade" id="orcamentoModal" tabindex="-1">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Gerar Orçamento</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-              <label for="selectCaixa" class="form-label">Selecione a Caixa</label>
-              <select id="selectCaixa" class="form-select mb-3">
-                <option value="">-- Escolha uma caixa --</option>
-                ${opcoes}
-              </select>
-
-              <div id="precos" style="display:none;">
-                <p><b>Preço Parda:</b> R$ <span id="precoParda"></span></p>
-                <p><b>Preço Branca:</b> R$ <span id="precoBranca"></span></p>
-              </div>
-
-              <label for="quantidade" class="form-label">Quantidade</label>
-              <input type="number" id="quantidade" class="form-control mb-3" min="1">
-
-              <button id="btnGerar" class="btn btn-success">Gerar Orçamento</button>
-
-              <div id="resultado" class="mt-3" style="display:none;">
-                <hr>
-                <h6>Resultado:</h6>
-                <p><b>Modelo:</b> <span id="modeloSelecionado"></span></p>
-                <p><b>Quantidade:</b> <span id="qtdSelecionada"></span></p>
-                <p><b>Total Parda:</b> R$ <span id="totalParda"></span></p>
-                <p><b>Total Branca:</b> R$ <span id="totalBranca"></span></p>
-                <button id="btnCopiar" class="btn btn-outline-secondary btn-sm mt-2">📋 Copiar Orçamento</button>
-              </div>
+            <div class="mt-3 text-muted" style="font-size:0.75rem;">
+               <i class="fa-solid fa-circle-info me-1"></i> O preço exibido na tabela será o valor base somado à porcentagem de margem do fornecedor selecionado.
             </div>
           </div>
-        </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar Cadastro</button>
+          </div>
+        </form>
       </div>
+    </div>
 
-      <!-- Modal Fornecedores (apenas lista e formulário) -->
-      <div class="modal fade" id="fornecedoresModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Fornecedores</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
+    <div class="modal fade" id="orcamentoModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i> Gerador de Orçamento</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-3">
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="selectCaixa" class="form-label text-muted mb-1" style="font-size:0.8rem;">Selecione a Caixa</label>
+                <select id="selectCaixa" class="form-select form-select-sm">
+                  <option value="" disabled selected>-- Escolha um modelo --</option>
+                  ${opcoes}
+                </select>
+              </div>
 
-              <!-- Formulário para novo fornecedor -->
-              <form method="POST" action="/fornecedores/novo" class="mb-3">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label">Nome do Fornecedor</label>
-                    <input type="text" name="nome" class="form-control" required>
+              <div class="col-12 mt-2">
+                <div id="precos" class="d-none bg-light p-2 rounded border" style="font-size: 0.85rem;">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Valor Unit. Parda:</span>
+                    <strong class="text-success">R$ <span id="precoParda"></span></strong>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Porcentagem (%)</label>
-                    <input type="number" step="0.01" name="porcentagem" class="form-control" required>
+                  <div class="d-flex justify-content-between">
+                    <span class="text-muted">Valor Unit. Branca:</span>
+                    <strong class="text-primary">R$ <span id="precoBranca"></span></strong>
                   </div>
                 </div>
-                <div class="mt-3">
-                  <button type="submit" class="btn btn-primary">Adicionar Fornecedor</button>
+              </div>
+
+              <div class="col-12 mt-3">
+                <label for="quantidade" class="form-label text-muted mb-1" style="font-size:0.8rem;">Quantidade</label>
+                <input type="number" id="quantidade" class="form-control form-control-sm" min="1" placeholder="Ex: 100">
+              </div>
+            </div>
+
+            <button id="btnGerar" class="btn btn-sm btn-primary w-100 mt-3 shadow-sm">Calcular Total</button>
+
+            <div id="resultado" class="mt-4 d-none">
+              <h6 class="fw-bold mb-2" style="font-size:0.85rem; color:#0D5749;">Resumo do Orçamento</h6>
+              <div class="p-3 bg-light rounded border border-primary border-opacity-25" style="font-size:0.85rem;">
+                <p class="mb-1"><span class="text-muted">Modelo:</span> <strong id="modeloSelecionado"></strong></p>
+                <p class="mb-2"><span class="text-muted">Quantidade:</span> <strong id="qtdSelecionada"></strong></p>
+                <hr class="my-2 border-secondary opacity-25">
+                <p class="mb-1 d-flex justify-content-between">
+                   <span class="text-muted">Total Parda:</span> 
+                   <strong class="text-success fs-6">R$ <span id="totalParda"></span></strong>
+                </p>
+                <p class="mb-0 d-flex justify-content-between">
+                   <span class="text-muted">Total Branca:</span> 
+                   <strong class="text-primary fs-6">R$ <span id="totalBranca"></span></strong>
+                </p>
+              </div>
+              <button id="btnCopiar" class="btn btn-sm btn-outline-secondary w-100 mt-2">
+                <i class="fa-regular fa-copy me-1"></i> Copiar para Área de Transferência
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="fornecedoresModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-truck-fast me-2 text-info"></i> Gestão de Fornecedores</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-0">
+            
+            <div class="p-3 bg-white border-bottom">
+              <form method="POST" action="/fornecedores/novo">
+                <h6 class="fw-bold mb-2" style="font-size:0.85rem;">Adicionar Novo Fornecedor</h6>
+                <div class="row g-2">
+                  <div class="col-12 col-md-7">
+                    <input type="text" name="nome" class="form-control form-control-sm" placeholder="Nome do Fornecedor" required>
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <div class="input-group input-group-sm">
+                      <input type="number" step="0.01" name="porcentagem" class="form-control" placeholder="Taxa/Margem" required>
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-info text-white w-100"><i class="fa-solid fa-plus me-1"></i> Salvar Fornecedor</button>
+                  </div>
                 </div>
               </form>
+            </div>
 
-              <hr>
-
-              <!-- Lista de fornecedores -->
-              <h6>Fornecedores cadastrados:</h6>
-              <ul class="list-group">
+            <div class="p-0">
+              <div class="bg-light p-2 border-bottom">
+                 <span class="text-muted fw-bold ms-2" style="font-size:0.75rem;">FORNECEDORES CADASTRADOS</span>
+              </div>
+              <ul class="list-group list-group-flush">
                 ${listaFornecedores}
               </ul>
-
             </div>
+
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
       </div>
-      ${modaisFornecedores}
-      
-      <script>
-  (function () {
-    const input = document.getElementById("searchInput");
-    const btn = document.getElementById("searchBtn");
-    const clear = document.getElementById("clearBtn");
+    </div>
 
-    // mantém o valor do input quando voltar da busca
-    const params = new URLSearchParams(window.location.search);
-    const qAtual = params.get("q") || "";
-    if (input) input.value = qAtual;
+    ${modais}
+    ${modaisFornecedores}
 
-    if (btn) {
-      btn.addEventListener("click", function () {
-        const q = (input?.value || "").trim();
-        const url = new URL(window.location.href);
+    <script>
+      (function () {
+        const input = document.getElementById("searchInput");
+        const btn = document.getElementById("searchBtn");
+        const clear = document.getElementById("clearBtn");
 
-        // sempre volta pra página 1 quando pesquisar
-        url.searchParams.set("page", "1");
+        // mantém o valor do input quando voltar da busca
+        const params = new URLSearchParams(window.location.search);
+        const qAtual = params.get("q") || "";
+        if (input) input.value = qAtual;
 
-        if (q) url.searchParams.set("q", q);
-        else url.searchParams.delete("q");
+        if (btn) {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault(); // Impede o envio padrao se for usar via js, mas como é submit pode deixar nativo 
+            const q = (input?.value || "").trim();
+            const url = new URL(window.location.href);
 
-        window.location.href = url.toString();
-      });
-    }
+            url.searchParams.set("page", "1");
 
-    if (clear) {
-      clear.addEventListener("click", function () {
-        window.location.href = "/tabela-precos";
-      });
-    }
-  })();
-</script>
+            if (q) url.searchParams.set("q", q);
+            else url.searchParams.delete("q");
 
+            window.location.href = url.toString();
+          });
+        }
+      })();
+    </script>
 
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-      <script src="/script/orcamento.js"></script>
-      <script src="./script/checkLogin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script/orcamento.js"></script>
+    <script src="./script/checkLogin.js"></script>
   </body>
   </html>
   `;

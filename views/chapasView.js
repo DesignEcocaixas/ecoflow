@@ -5,7 +5,7 @@ const renderLoaderParticulas = require("./renderLoaderParticulas");
 function chapasView(usuario, chapas = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
-  // --- LÓGICA DE SAÚDE DO ESTOQUE (COM CONTAINER RETRÁTIL E DEGRADÊ) ---
+  // --- LÓGICA DE SAÚDE DO ESTOQUE (COM CONTAINER RETRÁTIL E DEGRADÊ E ÍCONES ANIMADOS) ---
   let containerSaude = "";
   if (chapas.length > 0) {
     const chapasBaixoEstoque = chapas.filter(c => Number(c.quantidade) < 5000);
@@ -46,12 +46,12 @@ function chapasView(usuario, chapas = []) {
         <div class="alert alert-warning alert-dismissible fade show shadow-sm border-warning border-opacity-50 p-3 p-md-4 mb-4 position-relative" role="alert" style="border-radius: 12px; background: linear-gradient(145deg, #fffcf5 0%, #fff8e6 100%);">
           <div class="d-flex flex-column flex-sm-row align-items-start gap-3">
             <div class="bg-warning text-white p-3 rounded-circle d-flex align-items-center justify-content-center shadow-sm d-none d-sm-flex" style="width: 50px; height: 50px; flex-shrink: 0;">
-              <i class="fa-solid fa-triangle-exclamation fa-xl"></i>
+              <i class="fa-solid fa-triangle-exclamation fa-xl anim-pulse"></i>
             </div>
             <div class="flex-grow-1 w-100">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2 pe-4 gap-2">
                 <div class="d-flex align-items-center gap-2">
-                  <i class="fa-solid fa-triangle-exclamation fa-lg text-warning d-sm-none"></i>
+                  <i class="fa-solid fa-triangle-exclamation fa-lg text-warning d-sm-none anim-pulse"></i>
                   <h6 class="alert-heading fw-bold mb-0 text-dark" style="font-size: 1.05rem;">Atenção: Reabastecimento Necessário</h6>
                 </div>
                 <span class="badge bg-warning text-dark shadow-sm border border-warning-subtle">${chapasBaixoEstoque.length} iten(s) em nível crítico</span>
@@ -82,7 +82,7 @@ function chapasView(usuario, chapas = []) {
       containerSaude = `
         <div class="alert alert-success alert-dismissible fade show shadow-sm border-success border-opacity-25 d-flex align-items-center gap-3 mb-4 p-3" role="alert" style="border-radius: 12px; background: linear-gradient(145deg, #f6fdf9 0%, #eefbf3 100%);">
           <div class="bg-success text-white p-2 rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; flex-shrink: 0;">
-            <i class="fa-solid fa-shield-check fa-lg"></i>
+            <i class="fa-solid fa-shield fa-lg anim-pulse"></i>
           </div>
           <div class="pe-4">
             <h6 class="alert-heading fw-bold mb-1 text-success" style="font-size: 0.95rem;">Saúde do Estoque: Excelente</h6>
@@ -217,6 +217,16 @@ function chapasView(usuario, chapas = []) {
           font-size: 0.85rem;
           font-weight: 500;
           box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      }
+
+      /* ANIMAÇÕES DOS ÍCONES DE ALERTA */
+      @keyframes pulseIcon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.15); opacity: 0.8; }
+        100% { transform: scale(1); }
+      }
+      .anim-pulse { 
+        animation: pulseIcon 1.5s infinite ease-in-out; 
       }
 
       /* CLASSES DO ALERTA RETRÁTIL */

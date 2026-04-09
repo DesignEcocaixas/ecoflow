@@ -20,6 +20,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   // --- MENU: FINANCEIRO ---
   if (tipo === "financeiro") {
     return `
+      ${renderLink("/home", "fas fa-home me-2", "Home")}
       ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
       ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
     `;

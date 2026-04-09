@@ -1,5 +1,6 @@
 // views/cadastroView.js
 const menuLateral = require("./menuLateral");
+const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function cadastroView(usuario, usuarios = []) {
   // Fallback seguro
@@ -167,11 +168,7 @@ function cadastroView(usuario, usuarios = []) {
     </style>
   </head>
   <body>
-    <div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(4px); background: rgba(244, 247, 246, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity .3s ease;">
-        <div class="spinner-border" style="color: #0D5749; width: 3rem; height: 3rem;" role="status">
-            <span class="visually-hidden">Carregando...</span>
-        </div>
-    </div>
+    ${renderLoaderParticulas("Listando usuários")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">

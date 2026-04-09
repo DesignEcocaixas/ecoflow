@@ -1,4 +1,6 @@
 // views/loginView.js
+const renderLoaderParticulas = require("./renderLoaderParticulas");
+
 function loginView(msg = "") {
   return `
   <!DOCTYPE html>
@@ -152,22 +154,7 @@ function loginView(msg = "") {
 
   <body class="d-flex align-items-center justify-content-center vh-100">
     
-    <div id="preloader" style="
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        backdrop-filter: blur(4px);
-        background: rgba(244, 247, 246, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        transition: opacity .3s ease;
-    ">
-        <div class="spinner-border" style="color: #0D5749; width: 3rem; height: 3rem;" role="status">
-            <span class="visually-hidden">Carregando...</span>
-        </div>
-    </div>
+    ${renderLoaderParticulas("Preparando Sistema...")}
 
     <video id="bg-video" autoplay muted loop playsinline>
       <source src="/img/bg.mp4" type="video/mp4">

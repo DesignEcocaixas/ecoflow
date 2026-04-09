@@ -311,7 +311,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step active" data-title="Identificação">
               <div class="slide-img-container">
-                <img src="/img/checklist/identificacao.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Veículo+e+Motorista'" alt="Identificação">
+                <img src="/img/motorista.png" onerror="this.src='./img/motorista.png'" alt="Identificação">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Motorista</label>
@@ -344,7 +344,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Nível de Óleo e Água">
               <div class="slide-img-container">
-                <img src="/img/checklist/motor.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Motor+e+Fluidos'" alt="Motor">
+                <img src="./img/oleo-e-agua.png" onerror="this.src='./img/oleo-e-agua.png'" alt="Motor">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Como está o nível do Óleo?</label>
@@ -368,7 +368,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Fluidos Complementares">
               <div class="slide-img-container">
-                <img src="/img/checklist/freio.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Freio+e+Direção'" alt="Fluidos">
+                <img src="./img/freio.png" onerror="this.src='./img/freio.png'" alt="Fluidos">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Fluido de Freio</label>
@@ -392,7 +392,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Pneus">
               <div class="slide-img-container">
-                <img src="/img/checklist/pneus.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Estado+dos+Pneus'" alt="Pneus">
+                <img src="./img/pneus.png" onerror="this.src='./img/pneus.png'" alt="Pneus">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Calibragem dos Pneus</label>
@@ -416,7 +416,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Sinalização e Mecânica">
               <div class="slide-img-container">
-                <img src="/img/checklist/luzes.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Luzes+e+Sinalização'" alt="Luzes e Motor">
+                <img src="/img/luzes-e-ruidos.png" onerror="this.src='./img/luzes-e-ruidos.png'" alt="Luzes e Motor">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Luzes e Lanternas</label>
@@ -442,7 +442,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Interior e Autonomia">
               <div class="slide-img-container">
-                <img src="/img/checklist/interior.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Interior+e+Combustível'" alt="Interior">
+                <img src="/img/limpeza-e-combustivel.png" onerror="this.src='./img/limpeza-e-combustivel.png'" alt="Interior">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Nível de Combustível</label>
@@ -467,11 +467,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
 
             <div class="wizard-step" data-title="Finalização">
               <div class="slide-img-container text-muted bg-light border-0">
-                 <img src="/img/checklist/foto.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Foto+e+Observações'" alt="Foto">
+                 <img src="/img/observacoes.png" onerror="this.src='./img/observacoes.png'" alt="Foto">
               </div>
               <div class="mb-3">
-                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Anexar Foto do Veículo (Obrigatório)</label>
-                <input type="file" name="foto" class="form-control form-control-sm shadow-sm" accept="image/*" required>
+                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Anexar Foto do Veículo</label>
+                <input type="file" name="foto" class="form-control form-control-sm shadow-sm" accept="image/*">
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Observações Extras</label>

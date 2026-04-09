@@ -1,5 +1,6 @@
 // views/checklistMotoristasView.js
 const menuLateral = require("./menuLateral");
+const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -14,6 +15,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     }
   };
 
+  // 1. GERAR OS CARDS
   const cards = itens.map(item => `
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
       <div class="card erp-card shadow-sm border-0 h-100" 
@@ -46,10 +48,10 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
               <i class="fa-solid fa-file-excel"></i> Planilha
             </a>
             <div class="btn-group">
-              <button class="btn btn-sm btn-light border text-warning" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarModal${item.id}" title="Editar">
+              <button type="button" class="btn btn-sm btn-light border text-warning" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarModal${item.id}" title="Editar">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="btn btn-sm btn-light border text-danger" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirModal${item.id}" title="Excluir">
+              <button type="button" class="btn btn-sm btn-light border text-danger" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirModal${item.id}" title="Excluir">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -57,7 +59,10 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         </div>
       </div>
     </div>
+  `).join("");
 
+  // 2. GERAR OS MODAIS (Fora dos cards para evitar bugs visuais)
+  const modais = itens.map(item => `
     <div class="modal fade" id="editarModal${item.id}" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form method="POST" action="/checklist-motoristas/editar/${item.id}" enctype="multipart/form-data" class="modal-content erp-modal">
@@ -65,14 +70,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Checklist</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body text-sm bg-light p-3">
-            <div class="card border-0 shadow-sm p-3 mb-3">
+             <div class="card border-0 shadow-sm p-3 mb-3">
               <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Informações Gerais</h6>
               <div class="row g-2">
                 <div class="col-12 col-md-4">
                   <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Motorista</label>
-                  <select name="motorista" class="form-select form-select-sm" required autocomplete="off">
+                  <select name="motorista" class="form-select form-select-sm" required>
                     <option value="Flávio" ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
                     <option value="Thiago" ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
                   </select>
@@ -96,96 +100,21 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                 </div>
               </div>
             </div>
-
             <div class="card border-0 shadow-sm p-3 mb-3">
-              <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Inspeção do Veículo</h6>
-              <div class="row g-2">
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Óleo</label>
-                  <select name="oleo" class="form-select form-select-sm" required>
-                    <option ${item.oleo === "Baixo" ? "selected" : ""}>Baixo</option>
-                    <option ${item.oleo === "Médio" ? "selected" : ""}>Médio</option>
-                    <option ${item.oleo === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
+                <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Estado do Veículo</h6>
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Óleo</label><select name="oleo" class="form-select form-select-sm"><option ${item.oleo === 'Baixo' ? 'selected' : ''}>Baixo</option><option ${item.oleo === 'Médio' ? 'selected' : ''}>Médio</option><option ${item.oleo === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Água</label><select name="agua" class="form-select form-select-sm"><option ${item.agua === 'Baixo' ? 'selected' : ''}>Baixo</option><option ${item.agua === 'Médio' ? 'selected' : ''}>Médio</option><option ${item.agua === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Freio</label><select name="freio" class="form-select form-select-sm"><option ${item.freio === 'Baixo' ? 'selected' : ''}>Baixo</option><option ${item.freio === 'Médio' ? 'selected' : ''}>Médio</option><option ${item.freio === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Direção</label><select name="direcao" class="form-select form-select-sm"><option ${item.direcao === 'Baixo' ? 'selected' : ''}>Baixo</option><option ${item.direcao === 'Médio' ? 'selected' : ''}>Médio</option><option ${item.direcao === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Combustível</label><select name="combustivel" class="form-select form-select-sm"><option ${item.combustivel === 'Reserva' ? 'selected' : ''}>Reserva</option><option ${item.combustivel === 'Abaixo de meio tanque' ? 'selected' : ''}>Abaixo de meio tanque</option><option ${item.combustivel === 'Meio tanque' ? 'selected' : ''}>Meio tanque</option><option ${item.combustivel === 'Acima de meio tanque' ? 'selected' : ''}>Acima de meio tanque</option><option ${item.combustivel === 'Completo' ? 'selected' : ''}>Completo</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Luzes</label><select name="luzes" class="form-select form-select-sm"><option ${item.luzes === 'Todos Aptos' ? 'selected' : ''}>Todos Aptos</option><option ${item.luzes === 'Defeito pisca' ? 'selected' : ''}>Defeito pisca</option><option ${item.luzes === 'Defeito lanterna' ? 'selected' : ''}>Defeito lanterna</option><option ${item.luzes === 'Defeito farol' ? 'selected' : ''}>Defeito farol</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Pneu Calibragem</label><select name="pneu_calibragem" class="form-select form-select-sm"><option ${item.pneu_calibragem === 'Baixo' ? 'selected' : ''}>Baixo</option><option ${item.pneu_calibragem === 'Médio' ? 'selected' : ''}>Médio</option><option ${item.pneu_calibragem === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Pneu Estado</label><select name="pneu_estado" class="form-select form-select-sm"><option ${item.pneu_estado === 'Desgastado' ? 'selected' : ''}>Desgastado</option><option ${item.pneu_estado === 'Meia vida' ? 'selected' : ''}>Meia vida</option><option ${item.pneu_estado === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Ruídos</label><select name="ruidos" class="form-select form-select-sm"><option ${item.ruidos === 'Sem ruídos anormais' ? 'selected' : ''}>Sem ruídos anormais</option><option ${item.ruidos === 'Ruído motor' ? 'selected' : ''}>Ruído motor</option><option ${item.ruidos === 'Ruído suspensão' ? 'selected' : ''}>Ruído suspensão</option><option ${item.ruidos === 'Ruído portas' ? 'selected' : ''}>Ruído portas</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Lixo Interno</label><select name="lixo" class="form-select form-select-sm"><option ${item.lixo === 'Pendente' ? 'selected' : ''}>Pendente</option><option ${item.lixo === 'Feito' ? 'selected' : ''}>Feito</option></select></div>
                 </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Água Radiador</label>
-                  <select name="agua" class="form-select form-select-sm" required>
-                    <option ${item.agua === "Baixo" ? "selected" : ""}>Baixo</option>
-                    <option ${item.agua === "Médio" ? "selected" : ""}>Médio</option>
-                    <option ${item.agua === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Fluído de Freio</label>
-                  <select name="freio" class="form-select form-select-sm" required>
-                    <option ${item.freio === "Baixo" ? "selected" : ""}>Baixo</option>
-                    <option ${item.freio === "Médio" ? "selected" : ""}>Médio</option>
-                    <option ${item.freio === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Direção Hidráulica</label>
-                  <select name="direcao" class="form-select form-select-sm" required>
-                    <option ${item.direcao === "Baixo" ? "selected" : ""}>Baixo</option>
-                    <option ${item.direcao === "Médio" ? "selected" : ""}>Médio</option>
-                    <option ${item.direcao === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Combustível</label>
-                  <select name="combustivel" class="form-select form-select-sm" required>
-                    <option ${item.combustivel === "Reserva" ? "selected" : ""}>Reserva</option>
-                    <option ${item.combustivel === "Abaixo de meio tanque" ? "selected" : ""}>Abaixo de meio tanque</option>
-                    <option ${item.combustivel === "Meio tanque" ? "selected" : ""}>Meio tanque</option>
-                    <option ${item.combustivel === "Acima de meio tanque" ? "selected" : ""}>Acima de meio tanque</option>
-                    <option ${item.combustivel === "Completo" ? "selected" : ""}>Completo</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Pneus (Calibragem)</label>
-                  <select name="pneu_calibragem" class="form-select form-select-sm" required>
-                    <option ${item.pneu_calibragem === "Baixo" ? "selected" : ""}>Baixo</option>
-                    <option ${item.pneu_calibragem === "Médio" ? "selected" : ""}>Médio</option>
-                    <option ${item.pneu_calibragem === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Pneus (Estado)</label>
-                  <select name="pneu_estado" class="form-select form-select-sm" required>
-                    <option ${item.pneu_estado === "Desgastado" ? "selected" : ""}>Desgastado</option>
-                    <option ${item.pneu_estado === "Meia vida" ? "selected" : ""}>Meia vida</option>
-                    <option ${item.pneu_estado === "Apto" ? "selected" : ""}>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Luzes</label>
-                  <select name="luzes" class="form-select form-select-sm" required>
-                    <option ${item.luzes === "Defeito pisca" ? "selected" : ""}>Defeito pisca</option>
-                    <option ${item.luzes === "Defeito lanterna" ? "selected" : ""}>Defeito lanterna</option>
-                    <option ${item.luzes === "Defeito farol" ? "selected" : ""}>Defeito farol</option>
-                    <option ${item.luzes === "Todos Aptos" ? "selected" : ""}>Todos Aptos</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Ruídos</label>
-                  <select name="ruidos" class="form-select form-select-sm" required>
-                    <option ${item.ruidos === "Sem ruídos anormais" ? "selected" : ""}>Sem ruídos anormais</option>
-                    <option ${item.ruidos === "Ruído motor" ? "selected" : ""}>Ruído motor</option>
-                    <option ${item.ruidos === "Ruído suspensão" ? "selected" : ""}>Ruído suspensão</option>
-                    <option ${item.ruidos === "Ruído portas" ? "selected" : ""}>Ruído portas</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Lixo Interno</label>
-                  <select name="lixo" class="form-select form-select-sm" required>
-                    <option ${item.lixo === "Pendente" ? "selected" : ""}>Pendente</option>
-                    <option ${item.lixo === "Feito" ? "selected" : ""}>Feito</option>
-                  </select>
-                </div>
-              </div>
             </div>
-
             <div class="card border-0 shadow-sm p-3 mb-1">
               <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Observações e Anexos</h6>
               <div class="row g-2">
@@ -194,23 +123,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                   <textarea name="observacao" class="form-control form-control-sm" rows="3" placeholder="Algo a reportar?">${item.observacao || ""}</textarea>
                 </div>
                 <div class="col-12 col-md-5">
-                  <label class="form-label text-muted mb-1 d-block" style="font-size:0.8rem;">Foto em Anexo</label>
-                  ${item.foto
-                    ? `
-                      <a href="/uploads/${item.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100 mb-2">
-                        <i class="fa-solid fa-image me-1"></i> Visualizar Foto Atual
-                      </a>
-                      `
-                    : `<div class="text-muted border rounded p-1 text-center mb-2" style="font-size:0.75rem;"><i class="fa-solid fa-image-slash me-1"></i>Nenhuma foto anexada</div>`
-                  }
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Substituir Foto</label>
+                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Anexar Foto</label><br>
+                  ${item.foto ? `<a href="/uploads/${item.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100 mb-2"><i class="fa-solid fa-image me-1"></i> Ver Foto Atual</a>` : ""}
                   <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
                 </div>
               </div>
             </div>
-
           </div>
-          
           <div class="modal-footer border-top-0 bg-light">
             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
@@ -238,7 +157,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     </div>
   `).join("");
 
-  // Paginação minimalista ERP
   const pageLinks = (() => {
     const delta = 2; // páginas ao redor da atual
     let paginas = [];
@@ -256,7 +174,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         if (p - ultima === 2) {
           html += `<li class="page-item"><a class="page-link text-dark" href="/checklist-motoristas?page=${ultima + 1}">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
-          html += `<li class="page-item disabled"><span class="page-link text-muted">...</span></li>`;
+          html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
         }
       }
       html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/checklist-motoristas?page=${p}">${p}</a></li>`;
@@ -267,7 +185,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   })();
 
   const paginacaoHtml = totalPages > 1 ? `
-    <nav aria-label="Paginação de checklists" class="mt-4">
+    <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
           <a class="page-link text-dark" href="/checklist-motoristas?page=${page - 1}">&laquo;</a>
@@ -280,7 +198,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     </nav>
   ` : "";
 
-  // INTEGRAÇÃO MENU LATERAL
   const menuHTML = menuLateral(user, "/checklist-motoristas");
 
   return `
@@ -288,87 +205,57 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   <html lang="pt-br">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Checklist Motoristas | ERP Ecoflow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      body { 
-          display: flex; 
-          height: 100vh; 
-          margin: 0; 
-          background-color: #f4f7f6;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      }
-
-      /* Sidebar */
-      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
-      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
+      body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
+      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-      
       .content { flex: 1; padding: 24px; overflow-y: auto; }
+      .usuario-badge { background-color: white; color: #0D5749; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+      .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; }
+      .erp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+      .erp-modal { border-radius: 12px; border: none; }
       
-      /* Utilities */
-      .text-sm { font-size: 0.875rem; }
-
-      /* Topbar / Badges */
-      .usuario-badge {
-          background-color: white;
-          color: #0D5749;
-          padding: 6px 14px;
-          border-radius: 20px;
-          border: 1px solid rgba(13,87,73,0.2);
-          font-size: 0.85rem;
-          font-weight: 500;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      /* Wizard Styles */
+      .wizard-step { display: none; animation: slideIn 0.3s ease-out forwards; }
+      .wizard-step.active { display: block; }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
       }
-
-      /* ERP Cards */
-      .erp-card {
-          border-radius: 12px;
-          transition: transform 0.2s, box-shadow 0.2s;
-          overflow: hidden;
+      .slide-img-container {
+        width: 100%;
+        height: 180px;
+        background: #e9ecef;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
       }
-      .erp-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
-      }
+      .slide-img-container img { width: 100%; height: 100%; object-fit: cover; }
+      .wizard-header { background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 15px 20px; border-radius: 12px 12px 0 0; }
+      .wizard-progress { height: 6px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+      .wizard-progress-bar { height: 100%; background-color: #0D5749; width: 0%; transition: width 0.3s ease; }
 
-      /* Modals */
-      .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-      .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
-      .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
-      .form-control-sm, .form-select-sm { border-radius: 6px; }
-
-      /* Paginação ERP */
-      .pagination-sm .page-link { background: transparent; border: none; font-size: 0.85rem; }
-      .pagination-sm .page-item.active .page-link { background: transparent; border: none; }
-      .pagination-sm .page-link:focus { box-shadow: none; }
-
-      /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
-        body { flex-direction: column; }
-        .sidebar { display: none; }
-        .content { width: 100%; padding: 16px; }
+        body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
       }
-      .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
-      .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
     </style>
   </head>
   <body>
-    <div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(4px); background: rgba(244, 247, 246, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity .3s ease;">
-        <div class="spinner-border" style="color: #0D5749; width: 3rem; height: 3rem;" role="status">
-            <span class="visually-hidden">Carregando...</span>
-        </div>
-    </div>
+    
+    ${renderLoaderParticulas("Organizando checklists")}
 
     <div class="sidebar d-none d-md-flex">
-      <div class="text-center mb-4 mt-2">
-        <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width:130px;">
-      </div>
-      <div class="flex-grow-1">
-        ${menuHTML}
-      </div>
+      <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
+      <div class="flex-grow-1">${menuHTML}</div>
     </div>
 
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
@@ -377,9 +264,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
-        <div class="text-center mb-4 mt-2">
-            <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
-        </div>
+        <div class="text-center mb-4 mt-2"><img src="/img/logo.png" class="img-fluid" style="max-width:140px;"></div>
         ${menuHTML}
         <hr class="bg-secondary mt-4">
         <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
@@ -387,195 +272,309 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     </div>
 
     <div class="content">
-      
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i>Checklist Diário</h4>
         </div>
-        <div class="d-flex align-items-center gap-3">
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
-          </span>
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
-        </div>
+        <span class="usuario-badge d-none d-sm-inline-block"><i class="fa-solid fa-user-circle me-1"></i> ${user.nome}</span>
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
-        <div>
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Histórico Recente</h6>
-        </div>
+        <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Histórico de Lançamentos</h6>
         <button class="btn btn-sm btn-success px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
-          <i class="fa-solid fa-plus me-1"></i> Novo Lançamento
+          <i class="fa-solid fa-plus me-1"></i> Iniciar Checklist
         </button>
       </div>
 
       <div class="row g-3">
         ${itens.length > 0 ? cards : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-clipboard fa-3x opacity-25 mb-3"></i><p>Nenhum checklist registrado ainda.</p></div>`}
       </div>
-
       ${paginacaoHtml}
     </div>
 
-    <div class="modal fade" id="novoChecklistModal" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <form method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" autocomplete="off" class="modal-content erp-modal">
-          <div class="modal-header bg-light">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Novo Checklist</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="novoChecklistModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <form id="wizardForm" method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" class="modal-content erp-modal">
+          
+          <div class="wizard-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0 text-dark" id="stepTitle" style="font-size: 0.9rem;">Passo 1</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="resetWizard()"></button>
+            </div>
+            <div class="wizard-progress">
+              <div class="wizard-progress-bar" id="progressBar"></div>
+            </div>
           </div>
           
-          <div class="modal-body text-sm bg-light p-3">
-            
-            <div class="card border-0 shadow-sm p-3 mb-3">
-              <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Informações Gerais</h6>
-              <div class="row g-2">
-                <div class="col-12 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Motorista</label>
-                  <select name="motorista" class="form-select form-select-sm" required autocomplete="off">
-                    <option value="" selected disabled>Selecione...</option>
-                    <option value="Flávio">Flávio</option>
-                    <option value="Thiago">Thiago</option>
-                  </select>
-                </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Veículo</label>
-                  <select name="veiculo" class="form-select form-select-sm" required>
-                    <option value="" selected disabled>Selecione...</option>
-                    <option value="Master">Master</option>
-                    <option value="Strada">Strada</option>
-                    <option value="Fiorino">Fiorino</option>
-                  </select>
-                </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Responsável Logístico</label>
-                  <select name="responsavel" class="form-select form-select-sm" required>
-                    <option value="" selected disabled>Selecione...</option>
-                    <option value="Eliege">Eliege</option>
-                    <option value="Mário">Mário</option>
-                    <option value="Mirna">Mirna</option>
-                    <option value="Renilson">Renilson</option>
-                  </select>
-                </div>
+          <div class="modal-body p-4" style="min-height: 480px;">
+
+            <div class="wizard-step active" data-title="Identificação">
+              <div class="slide-img-container">
+                <img src="/img/checklist/identificacao.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Veículo+e+Motorista'" alt="Identificação">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Motorista</label>
+                <select name="motorista" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Quem está dirigindo?</option>
+                  <option value="Flávio">Flávio</option>
+                  <option value="Thiago">Thiago</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Veículo</label>
+                <select name="veiculo" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Qual veículo?</option>
+                  <option value="Master">Renault Master</option>
+                  <option value="Strada">Fiat Strada</option>
+                  <option value="Fiorino">Fiat Fiorino</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Responsável Logístico</label>
+                <select name="responsavel" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Quem liberou o carro?</option>
+                  <option value="Eliege">Eliege</option>
+                  <option value="Mário">Mário</option>
+                  <option value="Mirna">Mirna</option>
+                  <option value="Renilson">Renilson</option>
+                </select>
               </div>
             </div>
 
-            <div class="card border-0 shadow-sm p-3 mb-3">
-              <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Inspeção do Veículo</h6>
-              <div class="row g-2">
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Óleo</label>
-                  <select name="oleo" class="form-select form-select-sm" required>
-                    <option>Baixo</option>
-                    <option>Médio</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Água Radiador</label>
-                  <select name="agua" class="form-select form-select-sm" required>
-                    <option>Baixo</option>
-                    <option>Médio</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Fluído de Freio</label>
-                  <select name="freio" class="form-select form-select-sm" required>
-                    <option>Baixo</option>
-                    <option>Médio</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Direção Hidráulica</label>
-                  <select name="direcao" class="form-select form-select-sm" required>
-                    <option>Baixo</option>
-                    <option>Médio</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Combustível</label>
-                  <select name="combustivel" class="form-select form-select-sm" required>
-                    <option>Reserva</option>
-                    <option>Abaixo de meio tanque</option>
-                    <option selected>Meio tanque</option>
-                    <option>Acima de meio tanque</option>
-                    <option>Completo</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Pneus (Calibragem)</label>
-                  <select name="pneu_calibragem" class="form-select form-select-sm" required>
-                    <option>Baixo</option>
-                    <option>Médio</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Pneus (Estado)</label>
-                  <select name="pneu_estado" class="form-select form-select-sm" required>
-                    <option>Desgastado</option>
-                    <option>Meia vida</option>
-                    <option selected>Apto</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Luzes</label>
-                  <select name="luzes" class="form-select form-select-sm" required>
-                    <option>Defeito pisca</option>
-                    <option>Defeito lanterna</option>
-                    <option>Defeito farol</option>
-                    <option selected>Todos Aptos</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Ruídos</label>
-                  <select name="ruidos" class="form-select form-select-sm" required>
-                    <option selected>Sem ruídos anormais</option>
-                    <option>Ruído motor</option>
-                    <option>Ruído suspensão</option>
-                    <option>Ruído portas</option>
-                  </select>
-                </div>
-                <div class="col-6 col-md-4">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Lixo Interno</label>
-                  <select name="lixo" class="form-select form-select-sm" required>
-                    <option>Pendente</option>
-                    <option selected>Feito</option>
-                  </select>
-                </div>
+            <div class="wizard-step" data-title="Nível de Óleo e Água">
+              <div class="slide-img-container">
+                <img src="/img/checklist/motor.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Motor+e+Fluidos'" alt="Motor">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Como está o nível do Óleo?</label>
+                <select name="oleo" class="form-select form-select-sm fw-medium" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto (Normal)</option>
+                  <option value="Médio">Médio</option>
+                  <option value="Baixo">Baixo (Crítico)</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Como está a Água do Radiador?</label>
+                <select name="agua" class="form-select form-select-sm fw-medium" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto (Normal)</option>
+                  <option value="Médio">Médio</option>
+                  <option value="Baixo">Baixo (Crítico)</option>
+                </select>
               </div>
             </div>
 
-            <div class="card border-0 shadow-sm p-3 mb-1">
-              <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Observações e Anexos</h6>
-              <div class="row g-2">
-                <div class="col-12 col-md-7">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Observação Extra</label>
-                  <textarea name="observacao" class="form-control form-control-sm" rows="3" placeholder="Algo a reportar?"></textarea>
-                </div>
-                <div class="col-12 col-md-5">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Anexar Foto</label>
-                  <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
-                </div>
+            <div class="wizard-step" data-title="Fluidos Complementares">
+              <div class="slide-img-container">
+                <img src="/img/checklist/freio.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Freio+e+Direção'" alt="Fluidos">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Fluido de Freio</label>
+                <select name="freio" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto</option>
+                  <option value="Médio">Médio</option>
+                  <option value="Baixo">Baixo</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Fluido de Direção Hidráulica</label>
+                <select name="direcao" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto</option>
+                  <option value="Médio">Médio</option>
+                  <option value="Baixo">Baixo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="wizard-step" data-title="Pneus">
+              <div class="slide-img-container">
+                <img src="/img/checklist/pneus.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Estado+dos+Pneus'" alt="Pneus">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Calibragem dos Pneus</label>
+                <select name="pneu_calibragem" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto (Calibrados)</option>
+                  <option value="Médio">Médio</option>
+                  <option value="Baixo">Baixo (Murchos)</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Estado de Conservação</label>
+                <select name="pneu_estado" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Apto">Apto (Bons)</option>
+                  <option value="Meia vida">Meia vida</option>
+                  <option value="Desgastado">Desgastados (Carecas)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="wizard-step" data-title="Sinalização e Mecânica">
+              <div class="slide-img-container">
+                <img src="/img/checklist/luzes.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Luzes+e+Sinalização'" alt="Luzes e Motor">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Luzes e Lanternas</label>
+                <select name="luzes" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Todos Aptos">Todos Aptos (Funcionando)</option>
+                  <option value="Defeito pisca">Defeito no Pisca</option>
+                  <option value="Defeito lanterna">Defeito na Lanterna</option>
+                  <option value="Defeito farol">Defeito no Farol</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Ruídos Anormais no Veículo</label>
+                <select name="ruidos" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Sem ruídos anormais">Sem ruídos (Normal)</option>
+                  <option value="Ruído motor">Barulho no Motor</option>
+                  <option value="Ruído suspensão">Barulho na Suspensão</option>
+                  <option value="Ruído portas">Barulho nas Portas</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="wizard-step" data-title="Interior e Autonomia">
+              <div class="slide-img-container">
+                <img src="/img/checklist/interior.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Interior+e+Combustível'" alt="Interior">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Nível de Combustível</label>
+                <select name="combustivel" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Completo">Tanque Cheio</option>
+                  <option value="Acima de meio tanque">Acima de meio tanque</option>
+                  <option value="Meio tanque">Meio tanque</option>
+                  <option value="Abaixo de meio tanque">Abaixo de meio tanque</option>
+                  <option value="Reserva">Reserva</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Limpeza: Lixo interno removido?</label>
+                <select name="lixo" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Feito">Sim, Feito (Limpo)</option>
+                  <option value="Pendente">Pendente (Sujo)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="wizard-step" data-title="Finalização">
+              <div class="slide-img-container text-muted bg-light border-0">
+                 <img src="/img/checklist/foto.jpg" onerror="this.src='https://placehold.co/600x300/0D5749/ffffff?text=Foto+e+Observações'" alt="Foto">
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Anexar Foto do Veículo (Obrigatório)</label>
+                <input type="file" name="foto" class="form-control form-control-sm shadow-sm" accept="image/*" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Observações Extras</label>
+                <textarea name="observacao" class="form-control form-control-sm" rows="3" placeholder="Algo mais a reportar? Descreva aqui..."></textarea>
               </div>
             </div>
 
           </div>
-          
-          <div class="modal-footer border-top-0 bg-light">
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar Lançamento</button>
+
+          <div class="modal-footer bg-light border-0 d-flex justify-content-between p-3 rounded-bottom-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-1" id="prevBtn" onclick="nextPrev(-1)" style="display:none;">Voltar</button>
+            <button type="button" class="btn btn-sm btn-primary flex-grow-1 ms-2 py-1 fw-bold shadow-sm" id="nextBtn" onclick="nextPrev(1)">Próximo <i class="fa-solid fa-chevron-right ms-1"></i></button>
           </div>
         </form>
       </div>
     </div>
 
+    ${modais}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      let currentTab = 0;
+
+      function showTab(n) {
+        const steps = document.getElementsByClassName("wizard-step");
+        for (let i = 0; i < steps.length; i++) {
+          steps[i].classList.remove("active");
+        }
+        steps[n].classList.add("active");
+        
+        // Atualiza Título
+        const title = steps[n].getAttribute("data-title");
+        document.getElementById("stepTitle").innerText = "Passo " + (n + 1) + " de " + steps.length + " - " + title;
+        
+        // Atualiza Barra de Progresso
+        const progress = ((n + 1) / steps.length) * 100;
+        document.getElementById("progressBar").style.width = progress + "%";
+
+        // Controla Botão Voltar
+        if (n === 0) {
+          document.getElementById("prevBtn").style.display = "none";
+        } else {
+          document.getElementById("prevBtn").style.display = "inline-block";
+        }
+
+        // Controla Botão Avançar/Concluir
+        const nextBtn = document.getElementById("nextBtn");
+        if (n === (steps.length - 1)) {
+          nextBtn.innerHTML = 'Finalizar e Enviar <i class="fa-solid fa-check ms-1"></i>';
+          nextBtn.classList.replace("btn-primary", "btn-success");
+        } else {
+          nextBtn.innerHTML = 'Próximo <i class="fa-solid fa-chevron-right ms-1"></i>';
+          nextBtn.classList.replace("btn-success", "btn-primary");
+        }
+      }
+
+      function validateForm(tabIndex) {
+        const step = document.getElementsByClassName("wizard-step")[tabIndex];
+        const inputs = step.querySelectorAll("input[required], select[required], textarea[required]");
+        let valid = true;
+        for (let i = 0; i < inputs.length; i++) {
+          if (!inputs[i].checkValidity()) {
+            inputs[i].reportValidity();
+            valid = false;
+            break;
+          }
+        }
+        return valid;
+      }
+
+      function nextPrev(n) {
+        const steps = document.getElementsByClassName("wizard-step");
+        
+        // Só valida se for avançar (n === 1)
+        if (n === 1 && !validateForm(currentTab)) return false;
+        
+        currentTab = currentTab + n;
+        
+        // Se chegou ao fim, envia o form
+        if (currentTab >= steps.length) {
+          document.getElementById("wizardForm").submit();
+          return false;
+        }
+        
+        showTab(currentTab);
+      }
+
+      function resetWizard() {
+        currentTab = 0;
+        showTab(0);
+      }
+
+      window.addEventListener('load', () => {
+        const modalEl = document.getElementById('novoChecklistModal');
+        if(modalEl) {
+           modalEl.addEventListener('hidden.bs.modal', function () {
+             document.getElementById("wizardForm").reset();
+             resetWizard();
+           });
+        }
+        resetWizard(); // Inicializa na primeira aba
+      });
+    </script>
     <script src="./script/checkLogin.js"></script>
   </body>
   </html>

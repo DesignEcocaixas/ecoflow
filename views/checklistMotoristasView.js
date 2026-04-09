@@ -78,7 +78,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                   <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Motorista</label>
                   <select name="motorista" class="form-select form-select-sm" required>
                     <option value="Flávio" ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
-                    <option value="Thiago" ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
+                    <option value="Alexandre" ${item.motorista === "Alexandre" ? "selected" : ""}>Alexandre</option>
                   </select>
                 </div>
                 <div class="col-12 col-md-4">
@@ -93,7 +93,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                   <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Responsável Logístico</label>
                   <select name="responsavel" class="form-select form-select-sm" required>
                     <option ${item.responsavel === "Eliege" ? "selected" : ""}>Eliege</option>
-                    <option ${item.responsavel === "Mário" ? "selected" : ""}>Mário</option>
                     <option ${item.responsavel === "Mirna" ? "selected" : ""}>Mirna</option>
                     <option ${item.responsavel === "Renilson" ? "selected" : ""}>Renilson</option>
                   </select>
@@ -158,7 +157,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
   `).join("");
 
   const pageLinks = (() => {
-    const delta = 2; // páginas ao redor da atual
+    const delta = 2; 
     let paginas = [];
     let ultima;
     let html = '';
@@ -215,7 +214,19 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
-      .usuario-badge { background-color: white; color: #0D5749; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+      
+      /* Restauração da borda da badge de usuário */
+      .usuario-badge { 
+          background-color: white; 
+          color: #0D5749; 
+          padding: 6px 14px; 
+          border-radius: 20px; 
+          border: 1px solid rgba(13,87,73,0.2);
+          font-size: 0.85rem; 
+          font-weight: 500; 
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+      }
+      
       .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; }
       .erp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
       .erp-modal { border-radius: 12px; border: none; }
@@ -275,15 +286,25 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
-            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i>Checklist Diário</h4>
+            <div>
+              <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i>Checklist Diário</h4>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle e inspeção de frota</span>
+            </div>
         </div>
-        <span class="usuario-badge d-none d-sm-inline-block"><i class="fa-solid fa-user-circle me-1"></i> ${user.nome}</span>
+        <div class="d-flex align-items-center gap-3">
+          <span class="usuario-badge d-none d-sm-inline-block">
+            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
+          </span>
+          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
         <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Histórico de Lançamentos</h6>
         <button class="btn btn-sm btn-success px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
-          <i class="fa-solid fa-plus me-1"></i> Iniciar Checklist
+          <i class="fa-solid fa-plus me-1"></i> Novo Checklist
         </button>
       </div>
 

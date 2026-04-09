@@ -126,7 +126,10 @@ function chapasView(usuario, chapas = []) {
             <div class="row g-2">
               <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Material</label>
-                <input type="text" name="material" value="${c.material || ""}" class="form-control form-control-sm" required>
+                <select name="material" class="form-select form-select-sm" required>
+                  <option value="Pardo" ${c.material === 'Pardo' ? 'selected' : ''}>Pardo</option>
+                  <option value="Branco" ${c.material === 'Branco' ? 'selected' : ''}>Branco</option>
+                </select>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Modelo</label>
@@ -138,7 +141,7 @@ function chapasView(usuario, chapas = []) {
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Medida da Chapa</label>
-                <input type="text" name="medida" value="${c.medida || ""}" class="form-control form-control-sm" placeholder="Ex: 2000x1000mm" required>
+                <input type="text" name="medida" value="${c.medida || ""}" class="form-control form-control-sm" placeholder="Ex: 2000x1000" required>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Quantidade (Qtd)</label>
@@ -359,9 +362,14 @@ function chapasView(usuario, chapas = []) {
       ${containerSaude}
 
       <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light gap-3">
-        <button class="btn btn-sm btn-success shadow-sm btn-mobile-full" data-bs-toggle="modal" data-bs-target="#novaChapaModal">
-          <i class="fa-solid fa-plus me-1"></i> Cadastrar Nova Chapa
-        </button>
+        <div class="d-flex gap-2 flex-wrap w-100 w-sm-auto">
+          <button class="btn btn-sm btn-success shadow-sm btn-mobile-full" data-bs-toggle="modal" data-bs-target="#novaChapaModal">
+            <i class="fa-solid fa-plus me-1"></i> Cadastrar Nova Chapa
+          </button>
+          <button class="btn btn-sm btn-primary shadow-sm btn-mobile-full" data-bs-toggle="modal" data-bs-target="#calcChapaModal">
+            <i class="fa-solid fa-calculator me-1"></i> Calculadora
+          </button>
+        </div>
         <div class="text-start text-sm-end w-100 w-sm-auto border-top border-sm-0 pt-2 pt-sm-0">
           <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total de Registos: <strong id="totalRegistos">${chapas.length}</strong></h6>
         </div>
@@ -423,7 +431,11 @@ function chapasView(usuario, chapas = []) {
             <div class="row g-3">
               <div class="col-12 col-sm-6">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Material</label>
-                <input type="text" name="material" class="form-control form-control-sm py-2" placeholder="Ex: Pardo/Branco" required>
+                <select name="material" class="form-select form-select-sm py-2" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    <option value="Pardo">Pardo</option>
+                    <option value="Branco">Branco</option>
+                </select>
               </div>
               <div class="col-12 col-sm-6">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Modelos feitos com a chapa</label>
@@ -435,7 +447,7 @@ function chapasView(usuario, chapas = []) {
               </div>
               <div class="col-12 col-sm-6">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Medida da Chapa</label>
-                <input type="text" name="medida" class="form-control form-control-sm py-2" placeholder="Ex: 2000x1000mm" required>
+                <input type="text" name="medida" class="form-control form-control-sm py-2" placeholder="Ex: 2000x1000" required>
               </div>
               <div class="col-12 col-sm-6">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Quantidade Inicial</label>
@@ -451,6 +463,54 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
+    <div class="modal fade" id="calcChapaModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-modal">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-calculator me-2 text-primary"></i> Calculadora de Chapa</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-3">
+            <div class="row g-2 mb-3">
+              <div class="col-4">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Comp. (C)</label>
+                <input type="number" id="calcC" class="form-control form-control-sm" placeholder="mm">
+              </div>
+              <div class="col-4">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Largura (L)</label>
+                <input type="number" id="calcL" class="form-control form-control-sm" placeholder="mm">
+              </div>
+              <div class="col-4">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Altura (A)</label>
+                <input type="number" id="calcA" class="form-control form-control-sm" placeholder="mm">
+              </div>
+            </div>
+            <button type="button" id="btnCalcular" class="btn btn-sm btn-primary w-100 mb-3">Calcular Medidas</button>
+            
+            <div class="p-3 bg-light rounded border">
+                <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;">Resultado:</h6>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Comprimento da Chapa:</span>
+                    <strong class="text-success"><span id="resComp">-</span> mm</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Largura da Chapa:</span>
+                    <strong class="text-success"><span id="resLarg">-</span> mm</strong>
+                </div>
+                <div class="text-muted mt-3" style="font-size: 0.7rem;">
+                    Fórmulas utilizadas:<br>
+                    Comp = (C + L) * 2 + 54<br>
+                    Largura = L + A + 24
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     ${modais}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -459,6 +519,22 @@ function chapasView(usuario, chapas = []) {
     <script>
       document.addEventListener("DOMContentLoaded", function() {
         
+        // Lógica da Calculadora de Chapa
+        const btnCalcular = document.getElementById('btnCalcular');
+        if (btnCalcular) {
+            btnCalcular.addEventListener('click', () => {
+                const c = Number(document.getElementById('calcC').value) || 0;
+                const l = Number(document.getElementById('calcL').value) || 0;
+                const a = Number(document.getElementById('calcA').value) || 0;
+                
+                const comp = (c + l) * 2 + 54;
+                const larg = l + a + 24;
+                
+                document.getElementById('resComp').innerText = comp;
+                document.getElementById('resLarg').innerText = larg;
+            });
+        }
+
         // 1. Lógica do Botão Retrátil (Exibir Tudo)
         const wrapper = document.getElementById('alertContentWrapper');
         const containerCards = document.getElementById('alertCardsContainer');

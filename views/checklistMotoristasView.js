@@ -318,7 +318,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                 <select name="motorista" class="form-select form-select-sm" required>
                   <option value="" disabled selected>Quem está dirigindo?</option>
                   <option value="Flávio">Flávio</option>
-                  <option value="Thiago">Thiago</option>
+                  <option value="Alexandre">Alexandre</option>
                 </select>
               </div>
               <div class="mb-3">

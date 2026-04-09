@@ -416,7 +416,7 @@ function chapasView(usuario, chapas = []) {
                 <input type="text" name="material" class="form-control form-control-sm py-2" placeholder="Ex: Pardo/Branco" required>
               </div>
               <div class="col-12 col-sm-6">
-                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Modelo</label>
+                <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Modelos feitos com a chapa</label>
                 <input type="text" name="modelo" class="form-control form-control-sm py-2" placeholder="Ex: N20 e N26" required>
               </div>
               <div class="col-12">

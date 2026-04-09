@@ -335,7 +335,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                 <select name="responsavel" class="form-select form-select-sm" required>
                   <option value="" disabled selected>Quem liberou o carro?</option>
                   <option value="Eliege">Eliege</option>
-                  <option value="Mário">Mário</option>
                   <option value="Mirna">Mirna</option>
                   <option value="Renilson">Renilson</option>
                 </select>

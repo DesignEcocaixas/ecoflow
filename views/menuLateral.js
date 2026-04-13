@@ -23,6 +23,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       ${renderLink("/home", "fas fa-home me-2", "Home")}
       ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
       ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
+      ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
     `;
   }
 

@@ -13,7 +13,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   if (tipo === "motorista") {
     return `
       ${renderLink("/home", "fas fa-home me-2", "Home")}
-      ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")},
+      ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
       ${renderLink("/entregas", "fas fa-truck me-2", "Entregas")}
     `;
   }

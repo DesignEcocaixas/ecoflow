@@ -14,7 +14,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     return `
       ${renderLink("/home", "fas fa-home me-2", "Home")}
       ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
-      ${renderLink("/entregas", "fas fa-truck me-2", "Entregas")}
+      ${renderLink("/entregas", "fas fa-truck me-2", "Rotas")}
     `;
   }
 
@@ -33,7 +33,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     ${renderLink("/home", "fas fa-home me-2", "Home")}
     ${renderLink("/veiculos", "fas fa-car me-2", "Veículos")}
     ${renderLink("/checklist-motoristas", "fas fa-clipboard-check me-2", "Checklist")}
-    ${renderLink("/entregas", "fas fa-truck me-2", "Entregas")}
+    ${renderLink("/entregas", "fas fa-truck me-2", "Rotas")}
     ${renderLink("/tabela-precos", "fas fa-tags me-2", "Tabela de Preços")}
     ${renderLink("/chapas", "fas fa-layer-group me-2", "Chapas")}
     ${renderLink("/cadastro", "fas fa-user-plus me-2", "Cadastro")}

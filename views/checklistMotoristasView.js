@@ -215,7 +215,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
       
-      /* Restauração da borda da badge de usuário */
       .usuario-badge { 
           background-color: white; 
           color: #0D5749; 
@@ -254,6 +253,14 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       .wizard-header { background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 15px 20px; border-radius: 12px 12px 0 0; }
       .wizard-progress { height: 6px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 10px; }
       .wizard-progress-bar { height: 100%; background-color: #0D5749; width: 0%; transition: width 0.3s ease; }
+
+      /* Animação do Modal de Sucesso */
+      @keyframes pulseIcon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.15); opacity: 0.8; }
+        100% { transform: scale(1); }
+      }
+      .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
 
       @media (max-width: 767.98px) {
         body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
@@ -509,10 +516,23 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       </div>
     </div>
 
+    <div class="modal fade" id="sucessoChecklistModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal border-0">
+          <div class="modal-body text-center p-5">
+            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
+            <h5 class="fw-bold text-dark mb-2">Checklist Concluído!</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">Salvando os dados, por favor aguarde...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     ${modais}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      let isSubmitting = false; // FLAG que previne o reset da form
       let currentTab = 0;
 
       function showTab(n) {
@@ -570,9 +590,22 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         
         currentTab = currentTab + n;
         
-        // Se chegou ao fim, envia o form
+        // Se chegou ao fim, mostra o modal de sucesso e envia o form
         if (currentTab >= steps.length) {
-          document.getElementById("wizardForm").submit();
+          isSubmitting = true; // Impede que o 'hidden.bs.modal' limpe o form
+
+          const wizardEl = document.getElementById('novoChecklistModal');
+          const wizardModal = bootstrap.Modal.getOrCreateInstance(wizardEl);
+          wizardModal.hide();
+
+          const successEl = document.getElementById('sucessoChecklistModal');
+          const successModal = bootstrap.Modal.getOrCreateInstance(successEl);
+          successModal.show();
+
+          setTimeout(() => {
+            document.getElementById("wizardForm").submit();
+          }, 1500);
+
           return false;
         }
         
@@ -588,8 +621,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         const modalEl = document.getElementById('novoChecklistModal');
         if(modalEl) {
            modalEl.addEventListener('hidden.bs.modal', function () {
-             document.getElementById("wizardForm").reset();
-             resetWizard();
+             // Só limpa o form se NÃO estiver a submeter
+             if (!isSubmitting) {
+               document.getElementById("wizardForm").reset();
+               resetWizard();
+             }
            });
         }
         resetWizard(); // Inicializa na primeira aba

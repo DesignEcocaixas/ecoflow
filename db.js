@@ -26,8 +26,8 @@ pool.getConnection((err, conn) => {
 
 module.exports = pool;
 
-/* // db.js
-const mysql = require("mysql2");
+// db.js
+/* const mysql = require("mysql2");
 const pool = mysql.createPool({
   host: "localhost",
   user: "root",

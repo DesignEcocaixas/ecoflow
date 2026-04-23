@@ -117,7 +117,7 @@ function chapasView(usuario, chapas = []) {
   const modais = chapas.map(c => `
     <div class="modal fade" id="editarModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/chapas/editar/${c.id}" class="modal-content erp-modal">
+        <form method="POST" action="/chapas/editar/${c.id}" class="modal-content erp-modal" onsubmit="showSuccessModal(event, this, 'Chapa Atualizada!')">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Chapa</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -222,7 +222,7 @@ function chapasView(usuario, chapas = []) {
           box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
 
-      /* ANIMAÇÕES DOS ÍCONES DE ALERTA */
+      /* ANIMAÇÕES DOS ÍCONES DE ALERTA & SUCESSO */
       @keyframes pulseIcon {
         0% { transform: scale(1); }
         50% { transform: scale(1.15); opacity: 0.8; }
@@ -247,13 +247,12 @@ function chapasView(usuario, chapas = []) {
           left: 0;
           width: 100%;
           height: 60px;
-          /* Degradê transparente para a cor de fundo do alerta warning (#fff8e6) */
           background: linear-gradient(to bottom, rgba(255, 248, 230, 0) 0%, rgba(255, 248, 230, 1) 100%);
           pointer-events: none;
           transition: opacity 0.3s ease;
       }
       .alert-collapse-wrapper.expanded .alert-fade-overlay {
-          opacity: 0; /* Esconde o degradê quando expandido */
+          opacity: 0; 
       }
 
       /* ERP Cards & Tables */
@@ -422,7 +421,7 @@ function chapasView(usuario, chapas = []) {
 
     <div class="modal fade" id="novaChapaModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/chapas/novo" class="modal-content erp-modal">
+        <form method="POST" action="/chapas/novo" class="modal-content erp-modal" onsubmit="showSuccessModal(event, this, 'Chapa Cadastrada!')">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-layer-group me-2 text-success"></i> Cadastrar Nova Chapa</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -511,12 +510,53 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
+    <div class="modal fade" id="sucessoChapaModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal border-0">
+          <div class="modal-body text-center p-5">
+            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
+            <h5 class="fw-bold text-dark mb-2" id="sucessoChapaTitulo">Sucesso!</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">Salvando os dados, por favor aguarde...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     ${modais}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
 
     <script>
+      // Função global para exibir modal animado e submeter form (usado em Novo e Editar)
+      let isSubmitting = false;
+
+      function showSuccessModal(event, formElement, titleMsg) {
+        if (isSubmitting) return; // Evita duplo envio acidental
+        
+        event.preventDefault(); // Segura o envio padrao para mostrar a animação
+        
+        // Esconde o modal de cadastro/edição que está aberto
+        const parentModalEl = formElement.closest('.modal');
+        if (parentModalEl) {
+            const parentModal = bootstrap.Modal.getInstance(parentModalEl) || bootstrap.Modal.getOrCreateInstance(parentModalEl);
+            parentModal.hide();
+        }
+        
+        // Configura título e mostra o modal de sucesso
+        document.getElementById('sucessoChapaTitulo').innerText = titleMsg;
+        const successModalEl = document.getElementById('sucessoChapaModal');
+        const successModal = bootstrap.Modal.getOrCreateInstance(successModalEl);
+        successModal.show();
+        
+        isSubmitting = true;
+
+        // Submete de fato o formulário após 1.5s
+        setTimeout(() => {
+            formElement.submit();
+        }, 1500);
+      }
+
       document.addEventListener("DOMContentLoaded", function() {
         
         // Lógica da Calculadora de Chapa
@@ -535,17 +575,15 @@ function chapasView(usuario, chapas = []) {
             });
         }
 
-        // 1. Lógica do Botão Retrátil (Exibir Tudo)
+        // Lógica do Botão Retrátil (Exibir Tudo)
         const wrapper = document.getElementById('alertContentWrapper');
         const containerCards = document.getElementById('alertCardsContainer');
         const btnToggle = document.getElementById('btnToggleAlert');
         const toggleContainer = document.getElementById('alertToggleContainer');
 
         if (wrapper && containerCards && btnToggle) {
-          // Verifica se o conteúdo real excede a altura máxima do wrapper (aprox 150px)
           if (containerCards.scrollHeight > wrapper.clientHeight) {
-            toggleContainer.style.display = 'block'; // Mostra o botão
-
+            toggleContainer.style.display = 'block'; 
             btnToggle.addEventListener('click', function() {
               wrapper.classList.toggle('expanded');
               if (wrapper.classList.contains('expanded')) {
@@ -555,22 +593,20 @@ function chapasView(usuario, chapas = []) {
               }
             });
           } else {
-            // Se não exceder (ex: só tem 1 ou 2 cards), esconde o degradê
             document.getElementById('alertFadeOverlay').style.display = 'none';
           }
         }
 
-        // 2. Inicializar Tooltips do Bootstrap
+        // Inicializar Tooltips do Bootstrap
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
-        // 3. Lógica de Filtro Multicoluna
+        // Lógica de Filtro Multicoluna
         const filters = document.querySelectorAll('.col-filter');
         const tableRows = document.querySelectorAll('#tabelaChapas tbody tr.chapa-row');
         const counter = document.getElementById('totalRegistos');
 
         filters.forEach(filter => {
-          // Previne que clicar no filtro da tabela abra o modal de edição
           filter.addEventListener('click', function(e) {
             e.stopPropagation();
           });

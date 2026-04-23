@@ -52,7 +52,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                       ? c.observacao.replace(/\n/g, "<br>")
                       : "<em class='text-muted'>Sem observação</em>";
 
-                  // Card do cliente (aparece dentro do modal do pedido)
+                  // Card do cliente real (agora com data-bs-dismiss para evitar conflitos de overlay no Bootstrap)
                   const clienteCard = `
                     <div class="card chk-item border-0 shadow-sm mb-2">
                       <div class="card-body p-2 px-3">
@@ -63,17 +63,21 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                           </div>
                           <div class="btn-group">
                             <button
+                              type="button"
                               class="btn btn-sm btn-light border text-warning"
                               data-bs-toggle="modal"
                               data-bs-target="#editarCliente${c.id}"
+                              data-bs-dismiss="modal"
                               title="Editar"
                             >
                               <i class="fa-solid fa-pen"></i>
                             </button>
                             <button
+                              type="button"
                               class="btn btn-sm btn-light border text-danger"
                               data-bs-toggle="modal"
                               data-bs-target="#excluirCliente${c.id}"
+                              data-bs-dismiss="modal"
                               title="Excluir"
                             >
                               <i class="fa-solid fa-trash"></i>
@@ -90,31 +94,31 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                     </div>
                   `;
 
-                  // Modal EDITAR cliente (fora do modal de pedido)
+                  // Modal EDITAR cliente
                   const modalEditar = `
                     <div class="modal fade" id="editarCliente${c.id}" tabindex="-1">
-                      <div class="modal-dialog">
+                      <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content erp-modal">
                           <form method="POST" action="/entregas/clientes/editar/${c.id}">
-                            <div class="modal-header">
+                            <div class="modal-header bg-light">
                               <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-pen me-2 text-warning"></i> Editar Cliente</h6>
                               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body text-sm">
-                              <label class="form-label" style="font-size:0.8rem;">Nome do Cliente</label>
-                              <input type="text" name="cliente_nome" class="form-control form-control-sm mb-2" value="${c.cliente_nome}" required>
+                            <div class="modal-body text-sm p-3">
+                              <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Nome do Cliente</label>
+                              <input type="text" name="cliente_nome" class="form-control form-control-sm mb-3" value="${c.cliente_nome}" required>
 
-                              <label class="form-label" style="font-size:0.8rem;">Status da Entrega</label>
-                              <select name="status" class="form-select form-select-sm mb-2" required>
+                              <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Status da Entrega</label>
+                              <select name="status" class="form-select form-select-sm mb-3" required>
                                 <option value="ENTREGUE" ${c.status === "ENTREGUE" ? "selected" : ""}>Entregue</option>
                                 <option value="NA_ROTA" ${c.status === "NA_ROTA" ? "selected" : ""}>Na rota para entrega</option>
                                 <option value="NAO_ENTREGUE" ${c.status === "NAO_ENTREGUE" ? "selected" : ""}>Não entregue</option>
                               </select>
 
-                              <label class="form-label" style="font-size:0.8rem;">Observação (opcional)</label>
+                              <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Observação (opcional)</label>
                               <textarea name="observacao" class="form-control form-control-sm" rows="3">${c.observacao || ""}</textarea>
                             </div>
-                            <div class="modal-footer bg-light">
+                            <div class="modal-footer border-top-0 bg-light">
                               <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                               <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                             </div>
@@ -124,15 +128,15 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                     </div>
                   `;
 
-                  // Modal EXCLUIR cliente (fora do modal de pedido)
+                  // Modal EXCLUIR cliente
                   const modalExcluir = `
                     <div class="modal fade" id="excluirCliente${c.id}" tabindex="-1">
                       <div class="modal-dialog modal-sm modal-dialog-centered">
-                        <div class="modal-content erp-modal">
+                        <div class="modal-content erp-modal border-0">
                           <form method="POST" action="/entregas/clientes/excluir/${c.id}">
                             <div class="modal-body text-center p-4">
-                              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                              <h6 class="mb-2">Excluir Cliente?</h6>
+                              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+                              <h6 class="mb-2 fw-bold text-dark">Excluir Cliente?</h6>
                               <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja remover <b>${c.cliente_nome}</b> desta rota?</p>
                             </div>
                             <div class="modal-footer justify-content-center bg-light border-0">
@@ -145,7 +149,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                     </div>
                   `;
 
-                  // Guardamos os modais para renderizar fora do modal de pedido
                   clienteModals.push(modalEditar, modalExcluir);
 
                   return clienteCard;
@@ -155,7 +158,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
 
           return `
               <div class="col-12 col-md-6 col-lg-4">
-                <div class="card erp-card shadow-sm h-100 border-0"
+                <div class="card erp-card shadow-sm h-100 border-0 transition-hover"
                      style="cursor: pointer;"
                      data-bs-toggle="modal" 
                      data-bs-target="#pedidoModal${p.id}"
@@ -208,32 +211,32 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
               </div>
 
               <div class="modal fade" id="novoCliente${p.id}" tabindex="-1">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-dialog-centered">
                   <div class="modal-content erp-modal">
                     <form method="POST" action="/entregas/${p.id}/clientes/novo">
-                      <div class="modal-header">
-                        <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2 text-success"></i> Adicionar Cliente</h6>
+                      <div class="modal-header bg-light">
+                        <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-plus me-2 text-success"></i> Adicionar Cliente</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                       </div>
-                      <div class="modal-body text-sm">
+                      <div class="modal-body text-sm p-3">
                         <div class="mb-3 text-muted" style="font-size:0.8rem;">
                           Rota: <strong>${p.titulo}</strong>
                         </div>
                         
-                        <label class="form-label" style="font-size:0.8rem;">Nome do Cliente</label>
-                        <input type="text" name="cliente_nome" class="form-control form-control-sm mb-2" required>
+                        <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Nome do Cliente</label>
+                        <input type="text" name="cliente_nome" class="form-control form-control-sm mb-3" required>
 
-                        <label class="form-label" style="font-size:0.8rem;">Status da Entrega</label>
-                        <select name="status" class="form-select form-select-sm mb-2" required>
+                        <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Status da Entrega</label>
+                        <select name="status" class="form-select form-select-sm mb-3" required>
                           <option value="NA_ROTA" selected>Na rota para entrega</option>
                           <option value="ENTREGUE">Entregue</option>
                           <option value="NAO_ENTREGUE">Não entregue</option>
                         </select>
 
-                        <label class="form-label" style="font-size:0.8rem;">Observação (opcional)</label>
+                        <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Observação (opcional)</label>
                         <textarea name="observacao" class="form-control form-control-sm" rows="3"></textarea>
                       </div>
-                      <div class="modal-footer bg-light">
+                      <div class="modal-footer border-top-0 bg-light">
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar Cliente</button>
                       </div>
@@ -244,11 +247,11 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
 
               <div class="modal fade" id="excluirPedido${p.id}" tabindex="-1">
                 <div class="modal-dialog modal-sm modal-dialog-centered">
-                  <div class="modal-content erp-modal">
+                  <div class="modal-content erp-modal border-0">
                     <form method="POST" action="/entregas/${p.id}/excluir">
                       <div class="modal-body text-center p-4">
-                        <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                        <h6 class="mb-2">Excluir Rota?</h6>
+                        <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+                        <h6 class="mb-2 fw-bold text-dark">Excluir Rota?</h6>
                         <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja excluir o pedido <b>${p.titulo}</b>? Todos os clientes associados também serão removidos.</p>
                       </div>
                       <div class="modal-footer justify-content-center bg-light border-0">
@@ -264,7 +267,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         .join("")
       : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-map-location-dot fa-3x opacity-25 mb-3"></i><p>Nenhuma rota/pedido cadastrado.</p></div>`;
 
-  // HTML da paginação minimalista
   const paginationHtml = totalPages > 1 ? `
       <nav aria-label="Paginação de pedidos" class="mt-4">
         <ul class="pagination pagination-sm justify-content-center">
@@ -334,16 +336,23 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
       
-      /* ERP Cards */
+      /* ERP Cards e Animações */
       .erp-card {
           border-radius: 12px;
           transition: transform 0.2s, box-shadow 0.2s;
           overflow: hidden;
       }
-      .erp-card:hover {
+      .transition-hover:hover {
           transform: translateY(-3px);
           box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
       }
+
+      @keyframes pulseIcon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.15); opacity: 0.8; }
+        100% { transform: scale(1); }
+      }
+      .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
       
       /* List items (Clientes) */
       .chk-item { border-left: 3px solid #0D5749 !important; transition: background 0.2s; }
@@ -360,6 +369,14 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       .pagination-sm .page-item.active .page-link { background: transparent; border: none; }
       .pagination-sm .page-link:focus { box-shadow: none; }
 
+      /* Wizard Nova Rota Styles */
+      .wizard-step-rota { display: none; animation: slideIn 0.3s ease-out forwards; }
+      .wizard-step-rota.active { display: block; }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
       /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
@@ -371,7 +388,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     </style>
   </head>
   <body>
-    ${renderLoaderParticulas("Organizando rotas")}
+    ${renderLoaderParticulas("Acessando Rotas...")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
@@ -463,29 +480,109 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       ${paginationHtml}
     </div>
 
-    <div class="modal fade" id="novoPedidoModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content erp-modal">
-          <form method="POST" action="/entregas/novo">
-            <div class="modal-header">
-              <h6 class="modal-title fw-bold"><i class="fa-solid fa-route text-success me-2"></i> Criar Nova Rota</h6>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="novoPedidoModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form id="wizardRotaForm" class="modal-content erp-modal" onsubmit="event.preventDefault();">
+          
+          <div class="wizard-header bg-light p-3 border-bottom rounded-top">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0 text-dark" id="stepTitleRota" style="font-size: 0.9rem;">Passo 1</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="resetWizardRota()"></button>
             </div>
-            <div class="modal-body text-sm">
+            <div class="wizard-progress mt-2" style="height: 6px; background-color: #e9ecef; border-radius: 10px;">
+              <div class="wizard-progress-bar" id="progressBarRota" style="height: 100%; background-color: #0D5749; width: 33%; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+          
+          <div class="modal-body p-4" style="min-height: 400px; background: #fcfcfc;">
+
+            <div class="wizard-step-rota active" data-title="Dados Gerais">
+              <div class="text-center mb-4 mt-2">
+                 <i class="fa-solid fa-map-location-dot fa-3x text-primary mb-3 opacity-75"></i>
+                 <h6 class="fw-bold text-dark">Informações da Rota</h6>
+                 <p class="text-muted small">Defina o nome da rota e a data prevista da entrega.</p>
+              </div>
               <div class="mb-3">
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Título/Cidade da Rota</label>
-                  <input type="text" name="titulo" class="form-control form-control-sm" required placeholder="Ex: Rota Centro">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Título/Destino da Rota</label>
+                  <input type="text" id="rotaTitulo" class="form-control form-control-sm py-2" required placeholder="Ex: Rota Centro / Camaçari">
               </div>
-              <div>
-                  <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Data Prevista</label>
-                  <input type="date" name="data_pedido" class="form-control form-control-sm" required>
+              <div class="mb-3">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Data Prevista</label>
+                  <input type="date" id="rotaData" class="form-control form-control-sm py-2" required>
               </div>
             </div>
-            <div class="modal-footer bg-light">
-              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> Salvar Rota</button>
+
+            <div class="wizard-step-rota" data-title="Clientes">
+              <div class="text-center mb-3 mt-1">
+                 <i class="fa-solid fa-users fa-2x text-success mb-2 opacity-75"></i>
+                 <h6 class="fw-bold text-dark">Inserir Clientes na Rota</h6>
+              </div>
+              
+              <div class="bg-white p-3 rounded-3 border mb-3 shadow-sm">
+                <div class="row g-2">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Nome do Cliente</label>
+                    <input type="text" id="tempClienteNome" class="form-control form-control-sm" placeholder="Ex: João da Silva">
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Status da Entrega</label>
+                    <select id="tempClienteStatus" class="form-select form-select-sm">
+                      <option value="NA_ROTA" selected>Na rota para entrega</option>
+                      <option value="ENTREGUE">Entregue</option>
+                      <option value="NAO_ENTREGUE">Não entregue</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Observação (opcional)</label>
+                    <input type="text" id="tempClienteObs" class="form-control form-control-sm" placeholder="Algum detalhe extra sobre a entrega?">
+                  </div>
+                  <div class="col-12 mt-2 text-end">
+                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="addClientToWizard()">
+                      <i class="fa-solid fa-plus me-1"></i> Adicionar Cliente
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </form>
+
+            <div class="wizard-step-rota" data-title="Gerenciar Rota">
+              <div class="text-center mb-3">
+                 <i class="fa-solid fa-route fa-2x text-warning mb-2 opacity-75"></i>
+                 <h6 class="fw-bold text-dark">Revisão Final da Rota</h6>
+              </div>
+              <div class="bg-white p-3 rounded-3 shadow-sm border mb-3">
+                <p class="mb-1" style="font-size:0.85rem;"><span class="text-muted">Rota:</span> <strong id="resumoRotaTitulo">-</strong></p>
+                <p class="mb-0" style="font-size:0.85rem;"><span class="text-muted">Data:</span> <strong id="resumoRotaData">-</strong></p>
+              </div>
+              
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold text-dark mb-0" style="font-size:0.85rem;">Clientes nesta Rota:</h6>
+                  <span id="resumoClientBadge" class="badge bg-success">0</span>
+              </div>
+              
+              <div id="resumoClientList" style="max-height: 280px; overflow-y: auto;">
+                </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer bg-light border-0 d-flex justify-content-between p-3 rounded-bottom-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-4 py-2" id="prevBtnRota" onclick="nextPrevRota(-1)" style="display:none;">Voltar</button>
+            <button type="button" class="btn btn-sm btn-primary flex-grow-1 ms-2 py-2 fw-bold shadow-sm" id="nextBtnRota" onclick="nextPrevRota(1)">Próximo <i class="fa-solid fa-chevron-right ms-1"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="sucessoRotaModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal border-0">
+          <div class="modal-body text-center p-5">
+            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
+            <h5 class="fw-bold text-dark mb-2">Rota Salva!</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">Salvando os dados, por favor aguarde...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -520,6 +617,257 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     <script src="./script/checkLogin.js"></script>
 
     <script>
+      let isSubmittingRota = false;
+      let currentTabRota = 0;
+      let tempClients = [];
+
+      function showTabRota(n) {
+        const steps = document.getElementsByClassName("wizard-step-rota");
+        for (let i = 0; i < steps.length; i++) {
+          steps[i].style.display = "none";
+          steps[i].classList.remove("active");
+        }
+        steps[n].style.display = "block";
+        steps[n].classList.add("active");
+        
+        const title = steps[n].getAttribute("data-title");
+        document.getElementById("stepTitleRota").innerText = "Passo " + (n + 1) + " de " + steps.length + " - " + title;
+        
+        const progress = ((n + 1) / steps.length) * 100;
+        document.getElementById("progressBarRota").style.width = progress + "%";
+
+        document.getElementById("prevBtnRota").style.display = (n === 0) ? "none" : "inline-block";
+
+        const nextBtn = document.getElementById("nextBtnRota");
+        
+        if (n === 1) { 
+            nextBtn.innerHTML = 'Ir para Gerenciar Rota <i class="fa-solid fa-chevron-right ms-1"></i>';
+            nextBtn.classList.replace("btn-success", "btn-primary");
+        }
+        else if (n === (steps.length - 1)) { 
+          nextBtn.innerHTML = 'Salvar Rota Completa <i class="fa-solid fa-save ms-1"></i>';
+          nextBtn.classList.replace("btn-primary", "btn-success");
+          
+          document.getElementById("resumoRotaTitulo").innerText = document.getElementById("rotaTitulo").value;
+          
+          let dataStr = document.getElementById("rotaData").value;
+          if(dataStr) {
+             const dtParts = dataStr.split("-");
+             document.getElementById("resumoRotaData").innerText = dtParts[2] + "/" + dtParts[1] + "/" + dtParts[0];
+          }
+          
+          renderResumoList();
+
+        } else {
+          nextBtn.innerHTML = 'Próximo <i class="fa-solid fa-chevron-right ms-1"></i>';
+          nextBtn.classList.replace("btn-success", "btn-primary");
+        }
+      }
+
+      function validateFormRota(tabIndex) {
+        const step = document.getElementsByClassName("wizard-step-rota")[tabIndex];
+        const inputs = step.querySelectorAll("input[required], select[required], textarea[required]");
+        let valid = true;
+        for (let i = 0; i < inputs.length; i++) {
+          if (!inputs[i].checkValidity()) {
+            inputs[i].reportValidity();
+            valid = false;
+            break;
+          }
+        }
+        return valid;
+      }
+
+      function editClientFromWizard(index) {
+           const c = tempClients[index];
+           document.getElementById("tempClienteNome").value = c.nome;
+           document.getElementById("tempClienteStatus").value = c.status;
+           document.getElementById("tempClienteObs").value = c.obs;
+           removeClientFromWizard(index); 
+           showTabRota(1); 
+      }
+
+      function addClientToWizard() {
+         const nome = document.getElementById("tempClienteNome").value.trim();
+         const status = document.getElementById("tempClienteStatus").value;
+         const statusText = document.getElementById("tempClienteStatus").options[document.getElementById("tempClienteStatus").selectedIndex].text;
+         const obs = document.getElementById("tempClienteObs").value.trim();
+
+         if(!nome) {
+             alert("Por favor, preencha o nome do cliente.");
+             return;
+         }
+
+         tempClients.push({ nome, status, statusText, obs });
+         
+         document.getElementById("tempClienteNome").value = "";
+         document.getElementById("tempClienteObs").value = "";
+         document.getElementById("tempClienteNome").focus();
+         
+         nextPrevRota(1); 
+      }
+
+      function removeClientFromWizard(index) {
+          tempClients.splice(index, 1);
+          renderResumoList(); 
+      }
+
+      function renderResumoList() {
+          const list = document.getElementById("resumoClientList");
+          const badge = document.getElementById("resumoClientBadge");
+          
+          badge.innerText = tempClients.length;
+
+          if(tempClients.length === 0) {
+              list.innerHTML = '<div class="text-center text-muted p-4" style="font-size:0.85rem;"><i class="fa-solid fa-users-slash fa-2x mb-2 opacity-50"></i><br>Nenhum cliente cadastrado nesta rota. Adicione clicando em "Voltar".</div>';
+              return;
+          }
+          
+          let html = '';
+          tempClients.forEach((c, i) => {
+              let bClass = c.status === 'ENTREGUE' ? 'bg-success' : c.status === 'NA_ROTA' ? 'bg-warning text-dark' : 'bg-danger';
+              let obs = c.obs ? c.obs : "<em class='text-muted'>Sem observação</em>";
+
+              html += \`
+                <div class="card chk-item border-0 shadow-sm mb-2">
+                  <div class="card-body p-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                      <div class="text-truncate me-2" style="max-width: 70%;">
+                        <strong class="text-dark d-block text-truncate" style="font-size: 0.85rem;" title="\${c.nome}">\${c.nome}</strong>
+                        <span class="badge \${bClass}" style="font-size:0.7rem;">\${c.statusText}</span>
+                      </div>
+                      <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-light border text-warning" title="Editar Cliente" onclick="editClientFromWizard(\${i})">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border text-danger" title="Remover Cliente" onclick="removeClientFromWizard(\${i})">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="text-muted mb-2" style="font-size: 0.7rem;">
+                      Adicionado agora ao pacote desta rota
+                    </div>
+                    <div class="p-2 bg-light rounded border text-dark" style="font-size: 0.75rem; min-height: 30px;">
+                      \${obs}
+                    </div>
+                  </div>
+                </div>
+              \`;
+          });
+          list.innerHTML = html;
+      }
+
+      function nextPrevRota(n) {
+        const steps = document.getElementsByClassName("wizard-step-rota");
+        
+        if (n === 1 && !validateFormRota(currentTabRota)) return false;
+        
+        currentTabRota = currentTabRota + n;
+        
+        if (currentTabRota >= steps.length) {
+          saveRouteAndClientsViaAjax();
+          return false;
+        }
+        
+        showTabRota(currentTabRota);
+      }
+
+      // Função de Salvamento AJAX
+      function saveRouteAndClientsViaAjax() {
+          isSubmittingRota = true; 
+
+          // Exibe o modal de Sucesso Animado
+          const wizardEl = document.getElementById('novoPedidoModal');
+          const wizardModal = bootstrap.Modal.getOrCreateInstance(wizardEl);
+          wizardModal.hide();
+
+          const successEl = document.getElementById('sucessoRotaModal');
+          const successModal = bootstrap.Modal.getOrCreateInstance(successEl);
+          successModal.show();
+
+          const tituloRota = document.getElementById('rotaTitulo').value;
+          const dataRota = document.getElementById('rotaData').value;
+          
+          const routeData = new URLSearchParams();
+          routeData.append('titulo', tituloRota);
+          routeData.append('data_pedido', dataRota);
+
+          // 1. Cria a rota
+          fetch('/entregas/novo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: routeData.toString()
+          })
+          .then(() => {
+              // 2. Busca a rota recém criada para descobrir o ID gerado pelo banco
+              return fetch('/entregas?titulo=' + encodeURIComponent(tituloRota));
+          })
+          .then(res => res.text())
+          .then(html => {
+              // RegExp segura para capturar os IDs de pedidos retornados na busca
+              const regex = new RegExp('id="pedidoModal(\\\\\\d+)"', 'g');
+              const matches = [...html.matchAll(regex)];
+              
+              if (matches.length > 0) {
+                  const ids = matches.map(m => parseInt(m[1]));
+                  const newId = Math.max(...ids);
+                  
+                  if (tempClients.length > 0) {
+                      // 3. Cadastra os clientes 1 a 1 na nova rota usando o endpoint nativo
+                      const promises = tempClients.map(c => {
+                          const cData = new URLSearchParams();
+                          cData.append('cliente_nome', c.nome);
+                          cData.append('status', c.status);
+                          cData.append('observacao', c.obs);
+                          
+                          return fetch('/entregas/' + newId + '/clientes/novo', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                              body: cData.toString()
+                          });
+                      });
+                      
+                      Promise.all(promises).then(() => {
+                          setTimeout(() => window.location.reload(), 600);
+                      }).catch(err => {
+                          console.error(err);
+                          window.location.reload();
+                      });
+                  } else {
+                      setTimeout(() => window.location.reload(), 600);
+                  }
+              } else {
+                  window.location.reload();
+              }
+          })
+          .catch(err => {
+              console.error(err);
+              window.location.reload();
+          });
+      }
+
+      function resetWizardRota() {
+        currentTabRota = 0;
+        tempClients = [];
+        showTabRota(0);
+      }
+
+      window.addEventListener('load', () => {
+        const modalEl = document.getElementById('novoPedidoModal');
+        if(modalEl) {
+           modalEl.addEventListener('hidden.bs.modal', function () {
+             if (!isSubmittingRota) {
+               document.getElementById("wizardRotaForm").reset();
+               resetWizardRota();
+             }
+           });
+        }
+        resetWizardRota();
+      });
+    </script>
+
+    <script>
       window.NOME_USUARIO = "${usuario.nome}";
     </script>
     <script src="/socket.io/socket.io.js"></script>
@@ -529,7 +877,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       <script>
       (() => {
         let map;
-        let markers = new Map(); // key = id do motorista (socket.id) ou nome (fallback)
+        let markers = new Map(); 
         let ultimaLista = [];
         const socket = io();
 

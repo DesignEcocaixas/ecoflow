@@ -2,10 +2,27 @@
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 
-function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
+function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
+  
+  // Parâmetros de Filtro
+  const data_inicio = paginacao.data_inicio || "";
+  const data_fim = paginacao.data_fim || "";
+  
+  // Constrói a string de query parameters para não perder o filtro na paginação
+  const qParam = (data_inicio ? `&data_inicio=${encodeURIComponent(data_inicio)}` : "") + 
+                 (data_fim ? `&data_fim=${encodeURIComponent(data_fim)}` : "");
+
+  // Extrai os filtros vindos do banco de dados (ou usa array vazio se não houver)
+  const { motoristasDb = [], mesesDb = [], anosDb = [] } = filtrosDb;
+  
+  // Nomes dos meses para exibir formatado no select
+  const nomesMeses = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
 
   const fmtDataHora = (d) => {
     try {
@@ -15,47 +32,45 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     }
   };
 
-  // 1. GERAR OS CARDS
+  // 1. GERAR OS CARDS COMPACTOS
   const cards = itens.map(item => `
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
-      <div class="card erp-card shadow-sm border-0 h-100" 
+      <div class="card erp-card shadow-sm border-0 h-100 transition-hover" 
            style="cursor: pointer;" 
            data-bs-toggle="modal" 
            data-bs-target="#editarModal${item.id}"
            title="Clique para editar este checklist">
-        <div class="card-body p-3 d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div class="text-truncate">
-              <h6 class="fw-bold text-dark mb-0 text-truncate" title="${item.motorista || "Motorista não informado"}">
-                <i class="fa-solid fa-id-card text-primary me-2"></i>${item.motorista || "Motorista não informado"}
-              </h6>
-              <small class="text-muted" style="font-size:0.75rem;">
-                <i class="fa-regular fa-clock me-1"></i> ${fmtDataHora(item.criado_em)}
-              </small>
-            </div>
+        <div class="card-body p-2 d-flex flex-column">
+          
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <h6 class="fw-bold text-dark mb-0 text-truncate" style="font-size:0.9rem;" title="${item.motorista || "Não informado"}">
+              <i class="fa-solid fa-id-card text-primary me-1"></i> ${item.motorista || "Não informado"}
+            </h6>
+            <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.7rem;"><i class="fa-solid fa-car-side text-muted me-1"></i> ${item.veiculo || "-"}</span>
           </div>
           
-          <div class="mb-3 mt-1 text-muted" style="font-size:0.8rem;">
-            <div class="mb-1 text-truncate" title="Veículo: ${item.veiculo}"><i class="fa-solid fa-car-side me-2"></i> ${item.veiculo || "-"}</div>
-            <div class="text-truncate" title="Registrado por: ${item.registrado_por}"><i class="fa-solid fa-user-pen me-2"></i> ${item.registrado_por || "Desconhecido"}</div>
+          <div class="text-muted mb-2" style="font-size:0.75rem;">
+            <div class="text-truncate mb-1"><i class="fa-regular fa-clock me-1"></i> ${fmtDataHora(item.criado_em)}</div>
+            <div class="text-truncate"><i class="fa-solid fa-user-pen me-1"></i> Por: ${item.registrado_por || "-"}</div>
           </div>
 
-          <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+          <div class="mt-auto border-top pt-2 d-flex justify-content-between align-items-center gap-2">
             <a href="/checklist-motoristas/download/${item.id}" 
-               class="btn btn-sm btn-light border text-success fw-medium flex-grow-1 me-2 d-flex justify-content-center align-items-center gap-2" 
+               class="btn btn-sm btn-light border text-success fw-medium flex-grow-1 d-flex justify-content-center align-items-center py-1" 
                title="Baixar Planilha Excel"
                onclick="event.stopPropagation();">
-              <i class="fa-solid fa-file-excel"></i> Planilha
+              <i class="fa-solid fa-file-excel me-1"></i> Planilha
             </a>
             <div class="btn-group">
-              <button type="button" class="btn btn-sm btn-light border text-warning" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarModal${item.id}" title="Editar">
+              <button type="button" class="btn btn-sm btn-light border text-warning py-1" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarModal${item.id}" title="Editar">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button type="button" class="btn btn-sm btn-light border text-danger" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirModal${item.id}" title="Excluir">
+              <button type="button" class="btn btn-sm btn-light border text-danger py-1" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirModal${item.id}" title="Excluir">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
           </div>
+          
         </div>
       </div>
     </div>
@@ -79,6 +94,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                   <select name="motorista" class="form-select form-select-sm" required>
                     <option value="Flávio" ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
                     <option value="Alexandre" ${item.motorista === "Alexandre" ? "selected" : ""}>Alexandre</option>
+                    <option value="Thiago" ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
                   </select>
                 </div>
                 <div class="col-12 col-md-4">
@@ -171,12 +187,12 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     paginas.forEach(p => {
       if (ultima) {
         if (p - ultima === 2) {
-          html += `<li class="page-item"><a class="page-link text-dark" href="/checklist-motoristas?page=${ultima + 1}">${ultima + 1}</a></li>`;
+          html += `<li class="page-item"><a class="page-link text-dark" href="/checklist-motoristas?page=${ultima + 1}${qParam}">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
           html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
         }
       }
-      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/checklist-motoristas?page=${p}">${p}</a></li>`;
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/checklist-motoristas?page=${p}${qParam}">${p}</a></li>`;
       ultima = p;
     });
 
@@ -187,11 +203,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
     <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/checklist-motoristas?page=${page - 1}">&laquo;</a>
+          <a class="page-link text-dark" href="/checklist-motoristas?page=${page - 1}${qParam}">&laquo;</a>
         </li>
         ${pageLinks}
         <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/checklist-motoristas?page=${page + 1}">&raquo;</a>
+          <a class="page-link text-dark" href="/checklist-motoristas?page=${page + 1}${qParam}">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -215,6 +231,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
       
+      /* Restauração da borda da badge de usuário */
       .usuario-badge { 
           background-color: white; 
           color: #0D5749; 
@@ -227,7 +244,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       }
       
       .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; }
-      .erp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+      .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
       .erp-modal { border-radius: 12px; border: none; }
       
       /* Wizard Styles */
@@ -308,19 +325,49 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
-        <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Histórico de Lançamentos</h6>
-        <button class="btn btn-sm btn-success px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
-          <i class="fa-solid fa-plus me-1"></i> Novo Checklist
-        </button>
+      <!-- BARRA DE FERRAMENTAS INTEGRADA (Filtros + Botões) -->
+      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">
+        <div class="row g-3 align-items-end">
+          
+          <!-- FILTROS -->
+          <div class="col-12 col-lg-8">
+            <form method="GET" action="/checklist-motoristas" class="row g-2 align-items-end">
+              <div class="col-12 col-sm-5">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Data Inicial (De:)</label>
+                <input type="date" name="data_inicio" class="form-control form-control-sm" value="${data_inicio}">
+              </div>
+              <div class="col-12 col-sm-5">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Data Final (Até:)</label>
+                <input type="date" name="data_fim" class="form-control form-control-sm" value="${data_fim}">
+              </div>
+              <div class="col-12 col-sm-2 d-flex gap-2 mt-2 mt-sm-0">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm px-0">Buscar</button>
+                <a href="/checklist-motoristas" class="btn btn-sm btn-light border text-secondary px-2" title="Limpar Filtros"><i class="fa-solid fa-eraser"></i></a>
+              </div>
+            </form>
+          </div>
+
+          <!-- BOTÕES DE AÇÃO -->
+          <div class="col-12 col-lg-4 d-flex justify-content-lg-end gap-2">
+              <button class="btn btn-sm btn-success shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
+                <i class="fa-solid fa-plus me-1"></i> Novo Checklist
+              </button>
+              <button class="btn btn-sm btn-primary shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#relatorioModal">
+                <i class="fa-solid fa-file-excel me-1"></i> Relatório
+              </button>
+          </div>
+
+        </div>
       </div>
 
       <div class="row g-3">
-        ${itens.length > 0 ? cards : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-clipboard fa-3x opacity-25 mb-3"></i><p>Nenhum checklist registrado ainda.</p></div>`}
+        ${itens.length > 0 ? cards : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-clipboard fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhum checklist encontrado.</p></div>`}
       </div>
+      
       ${paginacaoHtml}
     </div>
 
+    <!-- MODAL NOVO CHECKLIST (WIZARD) -->
     <div class="modal fade" id="novoChecklistModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <form id="wizardForm" method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" class="modal-content erp-modal">
@@ -347,6 +394,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
                   <option value="" disabled selected>Quem está dirigindo?</option>
                   <option value="Flávio">Flávio</option>
                   <option value="Alexandre">Alexandre</option>
+                  <option value="Thiago">Thiago</option>
                 </select>
               </div>
               <div class="mb-3">
@@ -516,6 +564,56 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}) {
       </div>
     </div>
 
+    <!-- MODAL DE RELATÓRIO -->
+    <div class="modal fade" id="relatorioModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content erp-modal border-0">
+          <form method="GET" action="/checklist-motoristas/relatorio" target="_blank">
+            <div class="modal-header bg-light border-bottom-0 pb-0">
+              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-excel text-success me-2"></i> Relatório Mensal</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+              <p class="text-muted mb-3" style="font-size:0.8rem;">Filtre os dados para gerar a planilha consolidada.</p>
+              
+              <div class="mb-3">
+                <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Motorista</label>
+                <select name="motorista" class="form-select form-select-sm">
+                  <option value="">Todos os Motoristas</option>
+                  ${motoristasDb.map(m => `<option value="${m}">${m}</option>`).join("")}
+                </select>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Mês</label>
+                  <select name="mes" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    ${mesesDb.map(m => {
+                       const mStr = String(m).padStart(2, '0');
+                       return `<option value="${mStr}">${nomesMeses[m - 1]}</option>`;
+                    }).join("")}
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
+                  <select name="ano" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    ${anosDb.map(a => `<option value="${a}">${a}</option>`).join("")}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer bg-light border-0 d-flex justify-content-between">
+              <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-success w-100 mt-2 m-0"><i class="fa-solid fa-download me-1"></i> Gerar Excel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE SUCESSO AO CONCLUIR -->
     <div class="modal fade" id="sucessoChecklistModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0">

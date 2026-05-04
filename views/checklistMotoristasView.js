@@ -7,18 +7,18 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
   
-  // Parâmetros de Filtro
+  // Parâmetros de Filtro (Data)
   const data_inicio = paginacao.data_inicio || "";
   const data_fim = paginacao.data_fim || "";
   
-  // Constrói a string de query parameters para não perder o filtro na paginação
+  // Mantém os filtros na paginação
   const qParam = (data_inicio ? `&data_inicio=${encodeURIComponent(data_inicio)}` : "") + 
                  (data_fim ? `&data_fim=${encodeURIComponent(data_fim)}` : "");
 
-  // Extrai os filtros vindos do banco de dados (ou usa array vazio se não houver)
+  // Extrai os filtros dinâmicos vindos do banco de dados (enviados pelo app.js)
   const { motoristasDb = [], mesesDb = [], anosDb = [] } = filtrosDb;
   
-  // Nomes dos meses para exibir formatado no select
+  // Tradutor de meses para o select dinâmico
   const nomesMeses = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
@@ -76,7 +76,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     </div>
   `).join("");
 
-  // 2. GERAR OS MODAIS (Fora dos cards para evitar bugs visuais)
+  // 2. GERAR OS MODAIS DE EDIÇÃO E EXCLUSÃO
   const modais = itens.map(item => `
     <div class="modal fade" id="editarModal${item.id}" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -231,7 +231,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
       
-      /* Restauração da borda da badge de usuário */
       .usuario-badge { 
           background-color: white; 
           color: #0D5749; 
@@ -271,7 +270,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .wizard-progress { height: 6px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 10px; }
       .wizard-progress-bar { height: 100%; background-color: #0D5749; width: 0%; transition: width 0.3s ease; }
 
-      /* Animação do Modal de Sucesso */
       @keyframes pulseIcon {
         0% { transform: scale(1); }
         50% { transform: scale(1.15); opacity: 0.8; }

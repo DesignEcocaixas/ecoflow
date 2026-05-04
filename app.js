@@ -645,88 +645,74 @@ app.post("/tabela-precos/excluir/:id", (req, res) => {
 
 app.get("/checklist-motoristas", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-
     if (req.session.user.tipo_usuario !== "admin" &&
+
         req.session.user.tipo_usuario !== "motorista") {
+
         return res.status(403).send("Acesso negado.");
     }
-
     const usuario = req.session.user;
-
     // página atual vinda da query (?page=2)
     const page = parseInt(req.query.page || "1", 10);
     const limit = 12;
     const offset = (page - 1) * limit;
-
     // Filtros de Data
     const { data_inicio, data_fim } = req.query;
-
     const where = [];
     const paramsBase = [];
-
     if (data_inicio && data_inicio.trim() !== "") {
         where.push("DATE(criado_em) >= ?");
         paramsBase.push(data_inicio.trim());
     }
-
     if (data_fim && data_fim.trim() !== "") {
         where.push("DATE(criado_em) <= ?");
         paramsBase.push(data_fim.trim());
     }
-
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-
     // 1ª consulta: total de registros (pra calcular páginas)
     const sqlCount = `
     SELECT COUNT(*) AS total
     FROM checklists
     ${whereSql}
-  `;
+
+    `;
 
     db.query(sqlCount, paramsBase, (errCount, rowsCount) => {
         if (errCount) {
             console.error("Erro ao contar checklists:", errCount);
             return res.status(500).send("Erro ao carregar checklists.");
         }
-
         const total = rowsCount[0].total || 0;
         const totalPages = Math.max(1, Math.ceil(total / limit));
-
         // Garante que page não passe do limite
         const currentPage = Math.min(Math.max(page, 1), totalPages);
         const currentOffset = (currentPage - 1) * limit;
-
         // 2ª consulta: lista paginada filtrada
         const sqlLista = `
-      SELECT *
-      FROM checklists
-      ${whereSql}
-      ORDER BY id DESC
-      LIMIT ? OFFSET ?
-    `;
+            SELECT *
+            FROM checklists
+            ${whereSql}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+            `;
 
         const paramsLista = paramsBase.concat([limit, currentOffset]);
-
         db.query(sqlLista, paramsLista, (errLista, checklists) => {
             if (errLista) {
                 console.error("Erro ao buscar checklists:", errLista);
                 return res.status(500).send("Erro ao carregar checklists.");
             }
-
             // BUSCA DADOS DISTINTOS PARA OS FILTROS DE RELATÓRIO
             db.query("SELECT DISTINCT motorista FROM checklists WHERE motorista IS NOT NULL AND motorista != '' ORDER BY motorista", (errMot, rowsMot) => {
                 db.query("SELECT DISTINCT YEAR(criado_em) AS ano, MONTH(criado_em) AS mes FROM checklists WHERE criado_em IS NOT NULL ORDER BY ano DESC, mes DESC", (errPeriodo, rowsPeriodo) => {
-                    
                     const motoristasDb = rowsMot && !errMot ? rowsMot.map(r => r.motorista) : [];
                     const periodosDb = rowsPeriodo && !errPeriodo ? rowsPeriodo : [];
-
                     // extrai os anos únicos para o select inicial de anos
                     const anosUnicos = [...new Set(periodosDb.map(p => p.ano))];
-
                     res.send(
                         checklistMotoristasView(
-                            usuario, 
-                            checklists, 
+                            usuario,
+                            checklists,
                             { page: currentPage, totalPages, total, data_inicio, data_fim },
                             { motoristasDb, periodosDb, anosUnicos }
                         )
@@ -736,7 +722,6 @@ app.get("/checklist-motoristas", (req, res) => {
         });
     });
 });
-
 
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -1730,7 +1715,7 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
             return res.send("Erro ao gerar relatório.");
         }
 
-        if(results.length === 0){
+        if (results.length === 0) {
             return res.send("<script>alert('Nenhum dado encontrado para os filtros selecionados.'); window.close();</script>");
         }
 

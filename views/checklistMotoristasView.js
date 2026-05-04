@@ -7,23 +7,17 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
   
-  // Parâmetros de Filtro (Data)
+  // Parâmetros de Filtro
   const data_inicio = paginacao.data_inicio || "";
   const data_fim = paginacao.data_fim || "";
   
-  // Mantém os filtros na paginação
+  // Constrói a string de query parameters para não perder o filtro na paginação
   const qParam = (data_inicio ? `&data_inicio=${encodeURIComponent(data_inicio)}` : "") + 
                  (data_fim ? `&data_fim=${encodeURIComponent(data_fim)}` : "");
 
-  // Extrai os filtros dinâmicos vindos do banco de dados (enviados pelo app.js)
-  const { motoristasDb = [], mesesDb = [], anosDb = [] } = filtrosDb;
+  // Extrai os filtros dinâmicos vindos do banco de dados
+  const { motoristasDb = [], periodosDb = [], anosUnicos = [] } = filtrosDb;
   
-  // Tradutor de meses para o select dinâmico
-  const nomesMeses = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-  ];
-
   const fmtDataHora = (d) => {
     try {
       return new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -562,7 +556,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       </div>
     </div>
 
-    <!-- MODAL DE RELATÓRIO -->
+    <!-- MODAL DE RELATÓRIO (COM SELECTS DINÂMICOS) -->
     <div class="modal fade" id="relatorioModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content erp-modal border-0">
@@ -584,20 +578,17 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
               <div class="row g-2 mb-2">
                 <div class="col-6">
-                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Mês</label>
-                  <select name="mes" class="form-select form-select-sm">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
+                  <select id="relatorioAno" name="ano" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    ${mesesDb.map(m => {
-                       const mStr = String(m).padStart(2, '0');
-                       return `<option value="${mStr}">${nomesMeses[m - 1]}</option>`;
-                    }).join("")}
+                    ${anosUnicos.map(a => `<option value="${a}">${a}</option>`).join("")}
                   </select>
                 </div>
                 <div class="col-6">
-                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
-                  <select name="ano" class="form-select form-select-sm">
+                  <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Mês</label>
+                  <select id="relatorioMes" name="mes" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    ${anosDb.map(a => `<option value="${a}">${a}</option>`).join("")}
+                    <!-- Preenchido via JavaScript -->
                   </select>
                 </div>
               </div>
@@ -628,6 +619,50 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      
+      // ==========================================
+      // LÓGICA DO FILTRO DE MESES DINÂMICOS
+      // ==========================================
+      const periodos = ${JSON.stringify(periodosDb)};
+      const nomesMesesJs = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+      ];
+
+      const selectAno = document.getElementById('relatorioAno');
+      const selectMes = document.getElementById('relatorioMes');
+
+      function atualizaMeses() {
+          if(!selectAno || !selectMes) return;
+          
+          const anoSelecionado = selectAno.value;
+          selectMes.innerHTML = '<option value="">Todos</option>';
+          
+          let mesesDisponiveis = [];
+          if (anoSelecionado === "") {
+              // Todos os anos -> Pega todos os meses que tem algum dado geral
+              mesesDisponiveis = [...new Set(periodos.map(p => p.mes))].sort((a,b) => a - b);
+          } else {
+              // Ano específico -> Pega os meses apenas daquele ano
+              mesesDisponiveis = periodos.filter(p => p.ano == anoSelecionado).map(p => p.mes).sort((a,b) => a - b);
+          }
+
+          // Preenche o Select de Mês
+          mesesDisponiveis.forEach(m => {
+              const valStr = String(m).padStart(2, '0');
+              const nomeM = nomesMesesJs[m - 1];
+              selectMes.innerHTML += \`<option value="\${valStr}">\${nomeM}</option>\`;
+          });
+      }
+
+      if (selectAno && selectMes) {
+          selectAno.addEventListener('change', atualizaMeses);
+          atualizaMeses(); // Inicializa o estado assim que a página carrega
+      }
+
+      // ==========================================
+      // LÓGICA DO WIZARD ANIMADO
+      // ==========================================
       let isSubmitting = false; // FLAG que previne o reset da form
       let currentTab = 0;
 
@@ -681,14 +716,12 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       function nextPrev(n) {
         const steps = document.getElementsByClassName("wizard-step");
         
-        // Só valida se for avançar (n === 1)
         if (n === 1 && !validateForm(currentTab)) return false;
         
         currentTab = currentTab + n;
         
-        // Se chegou ao fim, mostra o modal de sucesso e envia o form
         if (currentTab >= steps.length) {
-          isSubmitting = true; // Impede que o 'hidden.bs.modal' limpe o form
+          isSubmitting = true; 
 
           const wizardEl = document.getElementById('novoChecklistModal');
           const wizardModal = bootstrap.Modal.getOrCreateInstance(wizardEl);
@@ -717,14 +750,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         const modalEl = document.getElementById('novoChecklistModal');
         if(modalEl) {
            modalEl.addEventListener('hidden.bs.modal', function () {
-             // Só limpa o form se NÃO estiver a submeter
              if (!isSubmitting) {
                document.getElementById("wizardForm").reset();
                resetWizard();
              }
            });
         }
-        resetWizard(); // Inicializa na primeira aba
+        resetWizard(); 
       });
     </script>
     <script src="./script/checkLogin.js"></script>

@@ -715,30 +715,27 @@ app.get("/checklist-motoristas", (req, res) => {
 
             // BUSCA DADOS DISTINTOS PARA OS FILTROS DE RELATÓRIO
             db.query("SELECT DISTINCT motorista FROM checklists WHERE motorista IS NOT NULL AND motorista != '' ORDER BY motorista", (errMot, rowsMot) => {
-                db.query("SELECT DISTINCT MONTH(criado_em) AS mes FROM checklists WHERE criado_em IS NOT NULL ORDER BY mes", (errMes, rowsMes) => {
-                    db.query("SELECT DISTINCT YEAR(criado_em) AS ano FROM checklists WHERE criado_em IS NOT NULL ORDER BY ano", (errAno, rowsAno) => {
-                        
-                        const motoristasDb = rowsMot && !errMot ? rowsMot.map(r => r.motorista) : [];
-                        const mesesDb = rowsMes && !errMes ? rowsMes.map(r => r.mes) : [];
-                        const anosDb = rowsAno && !errAno ? rowsAno.map(r => r.ano) : [];
+                db.query("SELECT DISTINCT YEAR(criado_em) AS ano, MONTH(criado_em) AS mes FROM checklists WHERE criado_em IS NOT NULL ORDER BY ano DESC, mes DESC", (errPeriodo, rowsPeriodo) => {
+                    
+                    const motoristasDb = rowsMot && !errMot ? rowsMot.map(r => r.motorista) : [];
+                    const periodosDb = rowsPeriodo && !errPeriodo ? rowsPeriodo : [];
 
-                        // Envia pra view, incluindo os parâmetros de filtro na paginação
-                        res.send(
-                            checklistMotoristasView(
-                                usuario, 
-                                checklists, 
-                                { page: currentPage, totalPages, total, data_inicio, data_fim },
-                                { motoristasDb, mesesDb, anosDb }
-                            )
-                        );
-                    });
+                    // extrai os anos únicos para o select inicial de anos
+                    const anosUnicos = [...new Set(periodosDb.map(p => p.ano))];
+
+                    res.send(
+                        checklistMotoristasView(
+                            usuario, 
+                            checklists, 
+                            { page: currentPage, totalPages, total, data_inicio, data_fim },
+                            { motoristasDb, periodosDb, anosUnicos }
+                        )
+                    );
                 });
             });
         });
     });
 });
-
-
 
 
 app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {

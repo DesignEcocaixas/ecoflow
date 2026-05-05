@@ -1696,7 +1696,6 @@ app.post("/chapas/excluir/:id", (req, res) => {
     });
 });
 
-// Adicione esta rota no seu app.js
 app.get("/checklist-motoristas/relatorio", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
@@ -1739,6 +1738,7 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet("Relatório Geral");
 
+        // 1. Define as colunas primeiro (gera os cabeçalhos inicialmente na linha 1)
         sheet.columns = [
             { header: "Data/Hora", key: "data", width: 20 },
             { header: "Motorista", key: "motorista", width: 25 },
@@ -1758,9 +1758,52 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
             { header: "Observação", key: "obs", width: 40 }
         ];
 
-        // Preencher linhas
+        // Formata os cabeçalhos das colunas
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Fonte branca
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF0D5749' } // Fundo Verde padrão do sistema
+            };
+            cell.border = {
+                top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+        });
+
+        // 2. Adiciona uma nova linha no topo (empurrando o cabeçalho para a linha 2)
+        sheet.spliceRows(1, 0, []);
+
+        // 3. Formata e mescla a primeira linha (agora em branco) para o título
+        sheet.mergeCells('A1:P1');
+        const tituloRow = sheet.getCell('A1');
+
+        // Cria o título dinâmico com Mês e Ano
+        const nomesMesesJs = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        let periodoStr = "";
+        if (mes && ano) {
+            periodoStr = ` - ${nomesMesesJs[parseInt(mes) - 1]} de ${ano}`;
+        } else if (mes) {
+            periodoStr = ` - ${nomesMesesJs[parseInt(mes) - 1]}`;
+        } else if (ano) {
+            periodoStr = ` - ${ano}`;
+        }
+
+        tituloRow.value = `RELATÓRIO DE CHECKLISTS${periodoStr.toUpperCase()}`;
+        tituloRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        tituloRow.font = { bold: true, size: 16, color: { argb: 'FF0D5749' } };
+        tituloRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF4F7F6' } // Fundo cinza claro
+        };
+        sheet.getRow(1).height = 35; // Aumenta a altura da linha do título
+
+        // 4. Preencher as linhas de dados com cores diferentes por veículo
         results.forEach(c => {
-            sheet.addRow({
+            const row = sheet.addRow({
                 data: new Date(c.criado_em).toLocaleString("pt-BR"),
                 motorista: c.motorista || "-",
                 veiculo: c.veiculo || "-",
@@ -1777,6 +1820,32 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
                 responsavel: c.responsavel || "-",
                 registrado_por: c.registrado_por || "-",
                 obs: c.observacao || ""
+            });
+
+            // Determina a cor de fundo com base no veículo
+            let corFundo = 'FFFFFFFF'; // Padrão: Branco
+            if (c.veiculo === 'Master') {
+                corFundo = 'FFE9F2FE'; // Azul Claro
+            } else if (c.veiculo === 'Strada') {
+                corFundo = 'FFFFF4CC'; // Amarelo Claro
+            } else if (c.veiculo === 'Fiorino') {
+                corFundo = 'FFFDE2E2'; // Vermelho Claro
+            }
+
+            // Aplica o estilo em cada célula da linha inserida
+            row.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: corFundo }
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
+                    left: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
+                    bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
+                    right: { style: 'thin', color: { argb: 'FFDDDDDD' } }
+                };
+                cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
             });
         });
 

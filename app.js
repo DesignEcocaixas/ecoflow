@@ -723,13 +723,13 @@ app.get("/checklist-motoristas", (req, res) => {
                 WHERE motorista IS NOT NULL AND motorista != '' AND criado_em IS NOT NULL 
                 ORDER BY motorista ASC, ano DESC, mes DESC
             `, (errFiltros, rowsFiltros) => {
-                
+
                 const filtrosData = rowsFiltros && !errFiltros ? rowsFiltros : [];
 
                 res.send(
                     checklistMotoristasView(
-                        usuario, 
-                        checklists, 
+                        usuario,
+                        checklists,
                         { page: currentPage, totalPages, total, data_inicio, data_fim },
                         filtrosData // Passando os dados exatos de relacionamento para a View
                     )
@@ -1840,18 +1840,22 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
                     fgColor: { argb: corFundo }
                 };
                 cell.border = {
-                    top: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
-                    left: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
-                    bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } }, 
+                    top: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+                    left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+                    bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } },
                     right: { style: 'thin', color: { argb: 'FFDDDDDD' } }
                 };
                 cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
             });
         });
 
-        // Nome do arquivo
-        const dataAgora = new Date().toLocaleString("pt-BR").replace(/[\\/:]/g, "-").replace(" ", "_");
-        const nomeArquivo = `Relatorio_Checklists_${dataAgora}.xlsx`;
+        // Nome do arquivo com base no mês escolhido no relatório
+        const mesNumero = parseInt(mes, 10);
+        let mesNomeArquivo = "Geral";
+        if (!isNaN(mesNumero) && mesNumero >= 1 && mesNumero <= 12) {
+            mesNomeArquivo = nomesMesesJs[mesNumero - 1];
+        }
+        const nomeArquivo = `relatorio_checklist_${mesNomeArquivo}.xlsx`;
 
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename="${nomeArquivo}"`);

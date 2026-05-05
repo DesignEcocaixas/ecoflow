@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 
-function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = {}) {
+function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
@@ -15,9 +15,10 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
   const qParam = (data_inicio ? `&data_inicio=${encodeURIComponent(data_inicio)}` : "") + 
                  (data_fim ? `&data_fim=${encodeURIComponent(data_fim)}` : "");
 
-  // Extrai os filtros dinâmicos vindos do banco de dados
-  const { motoristasDb = [], periodosDb = [], anosUnicos = [] } = filtrosDb;
-  
+  // Recebe os dados de relacionamento unificado do banco de dados
+  const filtrosData = Array.isArray(filtrosDb) ? filtrosDb : [];
+  const motoristasUnicos = [...new Set(filtrosData.map(f => f.motorista))].sort();
+
   const fmtDataHora = (d) => {
     try {
       return new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -26,8 +27,24 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     }
   };
 
-  // 1. GERAR OS CARDS COMPACTOS
-  const cards = itens.map(item => `
+  // 1. GERAR OS CARDS COMPACTOS COM CORES DINÂMICAS POR VEÍCULO
+  const cards = itens.map(item => {
+    // Lógica para definir cores diferentes para cada tipo de veículo
+    let badgeClass = "bg-light text-dark border shadow-sm";
+    let iconClass = "text-muted";
+    
+    if (item.veiculo === "Master") {
+        badgeClass = "bg-primary text-white shadow-sm border-0";
+        iconClass = "text-white-50";
+    } else if (item.veiculo === "Strada") {
+        badgeClass = "bg-warning text-dark shadow-sm border-0";
+        iconClass = "text-dark-50";
+    } else if (item.veiculo === "Fiorino") {
+        badgeClass = "bg-danger text-white shadow-sm border-0";
+        iconClass = "text-white-50";
+    }
+
+    return `
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
       <div class="card erp-card shadow-sm border-0 h-100 transition-hover" 
            style="cursor: pointer;" 
@@ -40,7 +57,9 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
             <h6 class="fw-bold text-dark mb-0 text-truncate" style="font-size:0.9rem;" title="${item.motorista || "Não informado"}">
               <i class="fa-solid fa-id-card text-primary me-1"></i> ${item.motorista || "Não informado"}
             </h6>
-            <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.7rem;"><i class="fa-solid fa-car-side text-muted me-1"></i> ${item.veiculo || "-"}</span>
+            <span class="badge ${badgeClass}" style="font-size:0.7rem;">
+              <i class="fa-solid fa-car-side ${iconClass} me-1"></i> ${item.veiculo || "-"}
+            </span>
           </div>
           
           <div class="text-muted mb-2" style="font-size:0.75rem;">
@@ -68,7 +87,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         </div>
       </div>
     </div>
-  `).join("");
+  `}).join("");
 
   // 2. GERAR OS MODAIS DE EDIÇÃO E EXCLUSÃO
   const modais = itens.map(item => `
@@ -225,6 +244,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
       
+      /* Restauração da borda da badge de usuário */
       .usuario-badge { 
           background-color: white; 
           color: #0D5749; 
@@ -264,6 +284,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .wizard-progress { height: 6px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 10px; }
       .wizard-progress-bar { height: 100%; background-color: #0D5749; width: 0%; transition: width 0.3s ease; }
 
+      /* Animação do Modal de Sucesso */
       @keyframes pulseIcon {
         0% { transform: scale(1); }
         50% { transform: scale(1.15); opacity: 0.8; }
@@ -556,7 +577,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       </div>
     </div>
 
-    <!-- MODAL DE RELATÓRIO (COM SELECTS DINÂMICOS) -->
+    <!-- MODAL DE RELATÓRIO (COM SELECTS DINÂMICOS CASCATA) -->
     <div class="modal fade" id="relatorioModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content erp-modal border-0">
@@ -570,9 +591,9 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               
               <div class="mb-3">
                 <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Motorista</label>
-                <select name="motorista" class="form-select form-select-sm">
+                <select id="relatorioMotorista" name="motorista" class="form-select form-select-sm">
                   <option value="">Todos os Motoristas</option>
-                  ${motoristasDb.map(m => `<option value="${m}">${m}</option>`).join("")}
+                  ${motoristasUnicos.map(m => `<option value="${m}">${m}</option>`).join("")}
                 </select>
               </div>
 
@@ -581,7 +602,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
                   <select id="relatorioAno" name="ano" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    ${anosUnicos.map(a => `<option value="${a}">${a}</option>`).join("")}
+                    <!-- Preenchido via JavaScript -->
                   </select>
                 </div>
                 <div class="col-6">
@@ -621,49 +642,73 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     <script>
       
       // ==========================================
-      // LÓGICA DO FILTRO DE MESES DINÂMICOS
+      // LÓGICA CASCATA DO FILTRO (MOTORISTA -> ANO -> MÊS)
       // ==========================================
-      const periodos = ${JSON.stringify(periodosDb)};
+      const filtrosData = ${JSON.stringify(filtrosData)};
       const nomesMesesJs = [
         "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
         "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
       ];
 
+      const selectMot = document.getElementById('relatorioMotorista');
       const selectAno = document.getElementById('relatorioAno');
       const selectMes = document.getElementById('relatorioMes');
 
-      function atualizaMeses() {
-          if(!selectAno || !selectMes) return;
-          
-          const anoSelecionado = selectAno.value;
-          selectMes.innerHTML = '<option value="">Todos</option>';
-          
-          let mesesDisponiveis = [];
-          if (anoSelecionado === "") {
-              // Todos os anos -> Pega todos os meses que tem algum dado geral
-              mesesDisponiveis = [...new Set(periodos.map(p => p.mes))].sort((a,b) => a - b);
-          } else {
-              // Ano específico -> Pega os meses apenas daquele ano
-              mesesDisponiveis = periodos.filter(p => p.ano == anoSelecionado).map(p => p.mes).sort((a,b) => a - b);
+      function atualizaFiltros(e) {
+          if(!selectMot || !selectAno || !selectMes) return;
+
+          const changedElement = e ? e.target.id : null;
+          const motSel = selectMot.value;
+          const anoSel = selectAno.value;
+          const mesSel = selectMes.value;
+
+          // 1. Dados filtrados pelo Motorista
+          let dadosFiltradosMot = filtrosData;
+          if (motSel) {
+              dadosFiltradosMot = filtrosData.filter(f => f.motorista === motSel);
           }
 
-          // Preenche o Select de Mês
+          // 2. Atualiza Select de Ano se a mudança foi no motorista ou na inicialização
+          if (changedElement === 'relatorioMotorista' || !changedElement) {
+              const anosDisponiveis = [...new Set(dadosFiltradosMot.map(f => f.ano))].sort((a,b) => b - a);
+              const keepsAno = anosDisponiveis.includes(Number(anoSel));
+              
+              selectAno.innerHTML = '<option value="">Todos</option>';
+              anosDisponiveis.forEach(a => {
+                  selectAno.innerHTML += \`<option value="\${a}" \${keepsAno && anoSel == a ? 'selected' : ''}>\${a}</option>\`;
+              });
+          }
+
+          // 3. Dados filtrados pelo Ano 
+          const anoAtualizado = selectAno.value;
+          let dadosFiltradosAno = dadosFiltradosMot;
+          if (anoAtualizado) {
+              dadosFiltradosAno = dadosFiltradosMot.filter(f => f.ano == anoAtualizado);
+          }
+
+          // 4. Atualizar select de Mês sempre
+          const mesesDisponiveis = [...new Set(dadosFiltradosAno.map(f => f.mes))].sort((a,b) => a - b);
+          const keepsMes = mesesDisponiveis.includes(Number(mesSel));
+
+          selectMes.innerHTML = '<option value="">Todos</option>';
           mesesDisponiveis.forEach(m => {
               const valStr = String(m).padStart(2, '0');
               const nomeM = nomesMesesJs[m - 1];
-              selectMes.innerHTML += \`<option value="\${valStr}">\${nomeM}</option>\`;
+              selectMes.innerHTML += \`<option value="\${valStr}" \${keepsMes && Number(mesSel) == m ? 'selected' : ''}>\${nomeM}</option>\`;
           });
       }
 
-      if (selectAno && selectMes) {
-          selectAno.addEventListener('change', atualizaMeses);
-          atualizaMeses(); // Inicializa o estado assim que a página carrega
+      if (selectMot && selectAno && selectMes) {
+          selectMot.addEventListener('change', atualizaFiltros);
+          selectAno.addEventListener('change', atualizaFiltros);
+          atualizaFiltros(); // Inicializa o estado assim que a página carrega
       }
+
 
       // ==========================================
       // LÓGICA DO WIZARD ANIMADO
       // ==========================================
-      let isSubmitting = false; // FLAG que previne o reset da form
+      let isSubmitting = false; 
       let currentTab = 0;
 
       function showTab(n) {

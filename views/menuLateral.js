@@ -60,16 +60,18 @@ function menuLateral(usuario, rotaAtiva = "") {
   // RODAPÉ DO MENU (71dev)
   // ==========================================
   const footerHTML = `
-    <div class="mt-auto pt-4 pb-2 text-center" style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-      <hr class="border-light border-opacity-25 mb-3">
-      <div class="mb-2">Desenvolvido por <strong class="text-white">71dev</strong></div>
-      <div class="d-flex justify-content-center gap-3">
-        <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="Instagram">
-          <i class="fa-brands fa-instagram"></i>
-        </a>
-        <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="WhatsApp (+55 71 8317-4920)">
-          <i class="fa-brands fa-whatsapp"></i>
-        </a>
+    <div class="mt-auto pt-3 pb-0 text-center w-100" style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+      <hr class="border-light border-opacity-25 mb-2 mt-2">
+      <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+        <span>Desenvolvido por <strong class="text-white">71dev</strong></span>
+        <div class="d-flex align-items-center gap-2">
+          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.1rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="Instagram">
+            <i class="fa-brands fa-instagram"></i>
+          </a>
+          <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.1rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="WhatsApp (+55 71 8317-4920)">
+            <i class="fa-brands fa-whatsapp"></i>
+          </a>
+        </div>
       </div>
     </div>
   `;

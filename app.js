@@ -1,5 +1,6 @@
 // app.js
 const express = require("express");
+const { exec } = require('child_process');
 const http = require("http");
 const bodyParser = require("body-parser");
 const session = require("express-session");
@@ -16,6 +17,8 @@ const checklistMotoristasView = require("./views/checklistMotoristasView");
 const veiculosView = require("./views/veiculosView");
 const entregasView = require("./views/entregasView");
 const chapasView = require("./views/chapasView");
+const entradasSaidasView = require("./views/entradasSaidasView");
+const ordemProducaoView = require('./views/ordemProducaoView');
 
 const { Server } = require("socket.io");
 const app = express();
@@ -1863,6 +1866,911 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
         await workbook.xlsx.write(res);
         res.end();
     });
+});
+
+// =======================================================
+// ROTAS DE ENTRADAS E SAÍDAS (FINANCEIRO / PORTARIA)
+// =======================================================
+
+// 1. Rota principal - Listagem com Paginação (Grid 4x5 = 20 cards)
+app.get("/entradas-saidas", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    // Controle de acesso (ajuste conforme os tipos de usuário do seu sistema)
+    if (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const usuario = req.session.user;
+    
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = 20; // 20 cards por página para preencher a grade 4x5
+    const offset = (page - 1) * limit;
+
+    // Conta o total para a paginação
+    db.query("SELECT COUNT(*) AS total FROM movimentacoes", (errCount, rowsCount) => {
+        if (errCount) {
+            console.error("Erro ao contar movimentações:", errCount);
+            return res.status(500).send("Erro interno do servidor.");
+        }
+
+        const total = rowsCount[0].total || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        const currentOffset = (currentPage - 1) * limit;
+
+        // Busca os registos paginados
+        db.query("SELECT * FROM movimentacoes ORDER BY data DESC, id DESC LIMIT ? OFFSET ?", 
+        [limit, currentOffset], 
+        (errMov, movimentacoes) => {
+            if (errMov) {
+                console.error("Erro ao buscar movimentações:", errMov);
+                return res.status(500).send("Erro interno do servidor.");
+            }
+
+            res.send(entradasSaidasView(usuario, movimentacoes, { page: currentPage, totalPages, total }));
+        });
+    });
+});
+
+// 1. SALVAR NOVO REGISTO
+app.post('/movimentacoes/novo', async (req, res) => {
+    // Agora capturamos o 'nome_assinante' do formulário
+    const { tipo, data, valor, descricao, observacao, assinatura_base64, nome_assinante } = req.body;
+    // O responsavel real é extraído de quem está logado no sistema
+    const responsavel = req.session.user ? req.session.user.nome : "Sistema";
+
+    try {
+        await db.promise().query(`
+            INSERT INTO movimentacoes (tipo, data, valor, descricao, observacao, assinatura_base64, responsavel, nome_assinante)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [tipo, data, valor, descricao, observacao, assinatura_base64, responsavel, nome_assinante]);
+        
+        res.redirect('/entradas-saidas');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao salvar movimentação');
+    }
+});
+
+// 2. EDITAR REGISTO
+app.post('/movimentacoes/editar/:id', async (req, res) => {
+    const { id } = req.params;
+    const { data, valor, descricao, observacao, nome_assinante } = req.body;
+
+    try {
+        await db.promise().query(`
+            UPDATE movimentacoes 
+            SET data = ?, valor = ?, descricao = ?, observacao = ?, nome_assinante = ?
+            WHERE id = ?
+        `, [data, valor, descricao, observacao, nome_assinante, id]);
+        
+        res.redirect('/entradas-saidas');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao atualizar movimentação');
+    }
+});
+
+// 4. Rota para EXCLUIR registro
+app.post("/movimentacoes/excluir/:id", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    if (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro") {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    const { id } = req.params;
+
+    db.query("DELETE FROM movimentacoes WHERE id = ?", [id], (err) => {
+        if (err) {
+            console.error("Erro ao excluir movimentação:", err);
+            return res.status(500).send("Erro ao excluir movimentação.");
+        }
+        res.redirect("/entradas-saidas");
+    });
+});
+
+// 1. ROTA PRINCIPAL (Filtrando apenas ordens ATIVAS para o painel)
+app.get('/producao', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
+
+    try {
+        // Busca apenas o que está ATIVO (ativo = 1) para os modais de produção
+        const [rotativa] = await db.promise().query('SELECT * FROM pedidos_rotativa WHERE ativo = 1 ORDER BY status_producao ASC, created_at DESC');
+        const [flexo] = await db.promise().query('SELECT * FROM pedidos_flexografica WHERE ativo = 1 ORDER BY status_producao ASC, created_at DESC');
+        
+        const [[rotativaNovas]] = await db.promise().query('SELECT COUNT(*) as total FROM pedidos_rotativa WHERE notificado = 1 AND ativo = 1');
+        const [[flexoNovas]] = await db.promise().query('SELECT COUNT(*) as total FROM pedidos_flexografica WHERE notificado = 1 AND ativo = 1');
+
+        const page = parseInt(req.query.page || "1", 10);
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        // Contagem agora baseada em lotes únicos
+        const queryHistoricoCount = `
+            SELECT COUNT(DISTINCT lote) AS total_datas FROM (
+                SELECT lote FROM pedidos_rotativa WHERE lote IS NOT NULL
+                UNION ALL
+                SELECT lote FROM pedidos_flexografica WHERE lote IS NOT NULL
+            ) AS t
+        `;
+        const [[countResult]] = await db.promise().query(queryHistoricoCount);
+        const total = countResult.total_datas || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        const currentOffset = (currentPage - 1) * limit;
+
+        // O histórico agora agrupa por LOTE (geração única) e mostra a hora exata
+        const queryHistoricoList = `
+            SELECT lote as lote_id, 
+                   DATE_FORMAT(MAX(created_at), '%d/%m/%Y %H:%i') as data_formatada,
+                   COUNT(*) as total_pedidos
+            FROM (
+                SELECT lote, created_at FROM pedidos_rotativa WHERE lote IS NOT NULL
+                UNION ALL
+                SELECT lote, created_at FROM pedidos_flexografica WHERE lote IS NOT NULL
+            ) AS t
+            GROUP BY lote
+            ORDER BY lote DESC
+            LIMIT ? OFFSET ?
+        `;
+        
+        const [historico] = await db.promise().query(queryHistoricoList, [limit, currentOffset]);
+
+        res.send(require('./views/ordemProducaoView')(
+            req.session.user, 
+            rotativa, 
+            flexo, 
+            req.query, 
+            rotativaNovas.total, 
+            flexoNovas.total,
+            historico,
+            { page: currentPage, totalPages }
+        ));
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao carregar produção');
+    }
+});
+
+// ADICIONE ESTA NOVA ROTA PARA EXPORTAR PELO HISTÓRICO
+app.get('/exportar/historico', async (req, res) => {
+    const loteAlvo = req.query.lote; // agora recebe o ID do lote
+    
+    if (!loteAlvo) return res.status(400).send("Lote não especificado.");
+
+    try {
+        const [rotativa] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
+            FROM pedidos_rotativa 
+            WHERE lote = ? 
+            ORDER BY 
+                modelo,
+                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
+                cliente`, [loteAlvo]
+        );
+        
+        const [flexo] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
+            FROM pedidos_flexografica 
+            WHERE lote = ? 
+            ORDER BY cliente`, [loteAlvo]
+        );
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        
+        // Transforma o timestamp do lote numa data legível para os títulos do Excel
+        const dataDoLote = new Date(parseInt(loteAlvo));
+        const dataFormatadaStr = isNaN(dataDoLote) ? loteAlvo : dataDoLote.toLocaleDateString('pt-BR');
+
+        // ==========================================
+        // ABA 1: ROTATIVA / PLANA
+        // ==========================================
+        if (rotativa.length > 0) {
+            const sheetRot = workbook.addWorksheet('Rotativa');
+            
+            sheetRot.pageSetup = {
+                orientation: 'landscape',
+                scale: 95,
+                fitToPage: false,
+                margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+            };
+
+            sheetRot.columns = [
+                { header: 'MODELO', key: 'modelo', width: 25 },
+                { header: 'TAMANHO', key: 'tamanho', width: 12 },
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
+                { header: 'DATA', key: 'previsao_faturamento', width: 15 },
+                { header: 'OPERADOR', key: 'operador', width: 20 },
+                { header: 'STATUS', key: 'status', width: 15 }
+            ];
+            
+            sheetRot.insertRow(1, []);
+            sheetRot.mergeCells(1, 1, 1, sheetRot.columns.length);
+
+            const tituloCell = sheetRot.getCell('A1');
+            tituloCell.value = `ROTATIVA/PLANA (HISTÓRICO) - ${dataFormatadaStr}`;
+            tituloCell.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+            tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            sheetRot.getRow(1).height = 25;
+
+            const headerRow = sheetRot.getRow(2);
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            let modeloAtual = null;
+            let tamanhoAtual = null;
+
+            rotativa.forEach(d => {
+                if (modeloAtual !== null && modeloAtual !== d.modelo) {
+                    sheetRot.addRow({});
+                    sheetRot.addRow({});
+                }
+
+                if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+                    sheetRot.addRow({});
+                }
+
+                sheetRot.addRow({
+                    modelo: modeloAtual === d.modelo ? '' : d.modelo,
+                    tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                    cliente: d.cliente,
+                    quantidade: d.quantidade,
+                    vendedor: d.vendedor,
+                    previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                    operador: '',
+                    status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+                });
+
+                modeloAtual = d.modelo;
+                tamanhoAtual = d.tamanho;
+            });
+
+            sheetRot.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheetRot.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('modelo').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('tamanho').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('quantidade').alignment = { horizontal: 'center' };
+
+            sheetRot.eachRow((row) => {
+                row.eachCell((cell) => {
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                });
+            });
+        }
+
+        // ==========================================
+        // ABA 2: FLEXOGRÁFICA
+        // ==========================================
+        if (flexo.length > 0) {
+            const sheetFlexo = workbook.addWorksheet('Flexográfica');
+            
+            sheetFlexo.pageSetup = {
+                orientation: 'landscape',
+                scale: 70,
+                fitToPage: false,
+                margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+            };
+
+            sheetFlexo.columns = [
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+                { header: 'MODELO', key: 'modelo', width: 20 },
+                { header: 'TAMANHO', key: 'tamanho', width: 10 },
+                { header: 'MATERIAL', key: 'material', width: 12 },
+                { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
+                { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
+                { header: 'QTD', key: 'quantidade', width: 10 },
+                { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
+                { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
+                { header: 'OPERADOR', key: 'operador', width: 20 },
+                { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+            ];
+            
+            sheetFlexo.insertRow(1, []);
+            sheetFlexo.mergeCells(1, 1, 1, sheetFlexo.columns.length);
+            const tituloCellFlexo = sheetFlexo.getCell('A1');
+            tituloCellFlexo.value = `FLEXOGRÁFICA (HISTÓRICO) - ${dataFormatadaStr}`;
+            tituloCellFlexo.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+            tituloCellFlexo.alignment = { horizontal: 'center', vertical: 'middle' };
+            sheetFlexo.getRow(1).height = 25;
+
+            const headerRowFlexo = sheetFlexo.getRow(2);
+            headerRowFlexo.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            let clienteAnterior = null;
+
+            flexo.forEach(d => {
+                if (clienteAnterior && d.cliente !== clienteAnterior) {
+                    sheetFlexo.addRow({});
+                }
+
+                sheetFlexo.addRow({
+                    ...d,
+                    previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                    status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
+                    operador: ''
+                });
+
+                clienteAnterior = d.cliente;
+            });
+
+            sheetFlexo.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheetFlexo.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+            sheetFlexo.getColumn('quantidade').alignment = { horizontal: 'center' };
+            sheetFlexo.getColumn('qtd_cores').alignment = { horizontal: 'center' };
+
+            sheetFlexo.eachRow((row) => {
+                row.eachCell(cell => {
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                });
+            });
+        }
+
+        if (rotativa.length === 0 && flexo.length === 0) {
+            return res.status(404).send("Nenhum dado encontrado para a geração especificada.");
+        }
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Historico_Producao_Lote_${loteAlvo}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao exportar histórico');
+    }
+});
+
+// ADICIONE ESTA NOVA ROTA PARA EXPORTAR PELO HISTÓRICO
+app.get('/exportar/historico', async (req, res) => {
+    const dataAlvo = req.query.data; // formato YYYY-MM-DD
+    
+    if (!dataAlvo) return res.status(400).send("Data não especificada.");
+
+    try {
+        const [rotativa] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
+            FROM pedidos_rotativa 
+            WHERE DATE(created_at) = ? 
+            ORDER BY 
+                modelo,
+                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
+                cliente`, [dataAlvo]
+        );
+        
+        const [flexo] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
+            FROM pedidos_flexografica 
+            WHERE DATE(created_at) = ? 
+            ORDER BY cliente`, [dataAlvo]
+        );
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const dataFormatadaStr = dataAlvo.split('-').reverse().join('-');
+
+        // ==========================================
+        // ABA 1: ROTATIVA / PLANA
+        // ==========================================
+        if (rotativa.length > 0) {
+            const sheetRot = workbook.addWorksheet('Rotativa');
+            
+            sheetRot.pageSetup = {
+                orientation: 'landscape',
+                scale: 95,
+                fitToPage: false,
+                margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+            };
+
+            sheetRot.columns = [
+                { header: 'MODELO', key: 'modelo', width: 25 },
+                { header: 'TAMANHO', key: 'tamanho', width: 12 },
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
+                { header: 'DATA', key: 'previsao_faturamento', width: 15 },
+                { header: 'OPERADOR', key: 'operador', width: 20 },
+                { header: 'STATUS', key: 'status', width: 15 }
+            ];
+            
+            sheetRot.insertRow(1, []);
+            sheetRot.mergeCells(1, 1, 1, sheetRot.columns.length);
+
+            const tituloCell = sheetRot.getCell('A1');
+            tituloCell.value = `ROTATIVA/PLANA (HISTÓRICO) - ${dataFormatadaStr}`;
+            tituloCell.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+            tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            sheetRot.getRow(1).height = 25;
+
+            const headerRow = sheetRot.getRow(2);
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            let modeloAtual = null;
+            let tamanhoAtual = null;
+
+            rotativa.forEach(d => {
+                if (modeloAtual !== null && modeloAtual !== d.modelo) {
+                    sheetRot.addRow({});
+                    sheetRot.addRow({});
+                }
+
+                if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+                    sheetRot.addRow({});
+                }
+
+                sheetRot.addRow({
+                    modelo: modeloAtual === d.modelo ? '' : d.modelo,
+                    tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                    cliente: d.cliente,
+                    quantidade: d.quantidade,
+                    vendedor: d.vendedor,
+                    previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                    operador: '',
+                    status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+                });
+
+                modeloAtual = d.modelo;
+                tamanhoAtual = d.tamanho;
+            });
+
+            sheetRot.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheetRot.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('modelo').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('tamanho').alignment = { horizontal: 'center' };
+            sheetRot.getColumn('quantidade').alignment = { horizontal: 'center' };
+
+            sheetRot.eachRow((row) => {
+                row.eachCell((cell) => {
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                });
+            });
+        }
+
+        // ==========================================
+        // ABA 2: FLEXOGRÁFICA
+        // ==========================================
+        if (flexo.length > 0) {
+            const sheetFlexo = workbook.addWorksheet('Flexográfica');
+            
+            sheetFlexo.pageSetup = {
+                orientation: 'landscape',
+                scale: 70,
+                fitToPage: false,
+                margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+            };
+
+            sheetFlexo.columns = [
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+                { header: 'MODELO', key: 'modelo', width: 20 },
+                { header: 'TAMANHO', key: 'tamanho', width: 10 },
+                { header: 'MATERIAL', key: 'material', width: 12 },
+                { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
+                { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
+                { header: 'QTD', key: 'quantidade', width: 10 },
+                { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
+                { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
+                { header: 'OPERADOR', key: 'operador', width: 20 },
+                { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+            ];
+            
+            sheetFlexo.insertRow(1, []);
+            sheetFlexo.mergeCells(1, 1, 1, sheetFlexo.columns.length);
+            const tituloCellFlexo = sheetFlexo.getCell('A1');
+            tituloCellFlexo.value = `FLEXOGRÁFICA (HISTÓRICO) - ${dataFormatadaStr}`;
+            tituloCellFlexo.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+            tituloCellFlexo.alignment = { horizontal: 'center', vertical: 'middle' };
+            sheetFlexo.getRow(1).height = 25;
+
+            const headerRowFlexo = sheetFlexo.getRow(2);
+            headerRowFlexo.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            let clienteAnterior = null;
+
+            flexo.forEach(d => {
+                if (clienteAnterior && d.cliente !== clienteAnterior) {
+                    sheetFlexo.addRow({});
+                }
+
+                sheetFlexo.addRow({
+                    ...d,
+                    previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                    status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
+                    operador: ''
+                });
+
+                clienteAnterior = d.cliente;
+            });
+
+            sheetFlexo.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheetFlexo.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+            sheetFlexo.getColumn('quantidade').alignment = { horizontal: 'center' };
+            sheetFlexo.getColumn('qtd_cores').alignment = { horizontal: 'center' };
+
+            sheetFlexo.eachRow((row) => {
+                row.eachCell(cell => {
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                });
+            });
+        }
+
+        // Se por algum motivo a data não tiver registros nas duas tabelas (caso raro), previne corrupção de excel vazio
+        if (rotativa.length === 0 && flexo.length === 0) {
+            return res.status(404).send("Nenhum dado encontrado para a data especificada.");
+        }
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Historico_Producao_${dataFormatadaStr}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao exportar histórico');
+    }
+});
+
+// =======================================================
+// ROTA IMPORTAR CORRIGIDA (ARQUIVA DADOS ANTERIORES)
+// =======================================================
+app.post('/importar', upload.single('planilha'), async (req, res) => {
+    if (!req.file) return res.redirect('/producao?erro=arquivo');
+    
+    const caminhoArquivo = req.file.path;
+    const lote = Date.now(); // Gera o ID único da importação
+    const pythonPath = process.platform === "win32" ? `"C:\\Python313\\python.exe"` : "python3";
+
+    exec(`${pythonPath} app.py "${caminhoArquivo}" ${lote}`, async (error, stdout, stderr) => {
+        console.log('----- OUTPUT DO PYTHON -----');
+        console.log(stdout);
+
+        // Verifica se houve erro de execução ou erro tratado pelo Python
+        if (error || stdout.includes("Erro:")) {
+            console.error('----- ERRO DO PYTHON -----');
+            console.error(error || stdout);
+            
+            // Em caso de erro, removemos apenas a "metade" que tentou entrar
+            await db.promise().query('DELETE FROM pedidos_rotativa WHERE lote = ?', [lote]);
+            await db.promise().query('DELETE FROM pedidos_flexografica WHERE lote = ?', [lote]);
+            
+            return res.redirect('/producao?erro=planilha');
+        }
+        
+        try {
+            // MÁGICA AQUI: Arquiva (limpa do painel) todos os dados que estavam ativos antes desta importação
+            await db.promise().query('UPDATE pedidos_rotativa SET ativo = 0 WHERE ativo = 1 AND lote != ?', [lote]);
+            await db.promise().query('UPDATE pedidos_flexografica SET ativo = 0 WHERE ativo = 1 AND lote != ?', [lote]);
+            
+            // Redireciona com sucesso
+            res.redirect('/producao?sucesso=1');
+        } catch (dbErr) {
+            console.error('[ERRO DB UPDATE ATIVO]', dbErr);
+            res.redirect('/producao?erro=planilha');
+        }
+    });
+});
+
+// ALTERAR STATUS (AJAX)
+app.post('/status/:tipo/:id', isLogged, async (req, res) => {
+    const { tipo, id } = req.params;
+    const tabela = tipo === 'rotativa' ? 'pedidos_rotativa' : 'pedidos_flexografica';
+    try {
+        await db.promise().query(`UPDATE ${tabela} SET status_producao = CASE WHEN status_producao = 'pendente' THEN 'concluido' ELSE 'pendente' END WHERE id = ?`, [id]);
+        const [rows] = await db.promise().query(`SELECT status_producao FROM ${tabela} WHERE id = ?`, [id]);
+        res.json({ success: true, status: rows[0].status_producao });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
+// 2. ROTA LIMPAR (Agora ela apenas "desativa" as ordens, não apaga)
+app.post('/limpar', async (req, res) => {
+    try {
+        // Em vez de TRUNCATE, marcamos como inativo
+        await db.promise().query('UPDATE pedidos_rotativa SET ativo = 0 WHERE ativo = 1');
+        await db.promise().query('UPDATE pedidos_flexografica SET ativo = 0 WHERE ativo = 1');
+
+        res.redirect('/producao?limpo=1');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erro ao limpar os dados');
+    }
+});
+
+// =======================================================
+// EXPORTAÇÃO PARA EXCEL (PRODUÇÃO)
+// =======================================================
+
+// Exportar Rotativa / Plana
+app.get('/exportar/rotativa', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const [dados] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
+            FROM pedidos_rotativa
+            WHERE ativo = 1
+            ORDER BY 
+                modelo,
+                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
+                cliente
+        `);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Rotativa');
+        const hoje = new Date();
+        const dataFormatada = hoje.toLocaleDateString('pt-BR');
+
+        sheet.pageSetup = {
+            orientation: 'landscape',
+            scale: 95,
+            fitToPage: false,
+            margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+        };
+
+        sheet.columns = [
+            { header: 'MODELO', key: 'modelo', width: 25 },
+            { header: 'TAMANHO', key: 'tamanho', width: 12 },
+            { header: 'CLIENTE', key: 'cliente', width: 30 },
+            { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
+            { header: 'VENDEDOR', key: 'vendedor', width: 25 },
+            { header: 'DATA', key: 'previsao_faturamento', width: 15 },
+            { header: 'OPERADOR', key: 'operador', width: 20 },
+            { header: 'STATUS', key: 'status', width: 15 }
+        ];
+
+        sheet.insertRow(1, []);
+        sheet.mergeCells(1, 1, 1, sheet.columns.length);
+
+        const tituloCell = sheet.getCell('A1');
+        tituloCell.value = `ROTATIVA/PLANA - ${dataFormatada}`;
+        tituloCell.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+        tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet.getRow(1).height = 25;
+
+        const headerRow = sheet.getRow(2);
+        headerRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        let modeloAtual = null;
+        let tamanhoAtual = null;
+
+        dados.forEach(d => {
+            if (modeloAtual !== null && modeloAtual !== d.modelo) {
+                sheet.addRow({});
+                sheet.addRow({});
+            }
+
+            if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+                sheet.addRow({});
+            }
+
+            sheet.addRow({
+                modelo: modeloAtual === d.modelo ? '' : d.modelo,
+                tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                cliente: d.cliente,
+                quantidade: d.quantidade,
+                vendedor: d.vendedor,
+                previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                operador: '',
+                status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+            });
+
+            modeloAtual = d.modelo;
+            tamanhoAtual = d.tamanho;
+        });
+
+        sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+        sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+        sheet.getColumn('modelo').alignment = { horizontal: 'center' };
+        sheet.getColumn('tamanho').alignment = { horizontal: 'center' };
+        sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
+
+        sheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=rotativa_plana_${dataFormatada.replace(/\//g, '-')}.xlsx`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error('[ERRO EXPORTAR ROTATIVA]', err);
+        res.status(500).send('Erro ao gerar planilha');
+    }
+});
+
+// Exportar Flexográfica
+app.get('/exportar/flexografica', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const [dados] = await db.promise().query(`
+            SELECT cliente, vendedor, modelo, tamanho, material,
+                   qtd_cores, cor_personalizacao, quantidade,
+                   status_pedido, previsao_faturamento, status_producao
+            FROM pedidos_flexografica
+            WHERE ativo = 1
+            ORDER BY cliente
+        `);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Flexografica');
+        const hoje = new Date();
+        const dataFormatada = hoje.toLocaleDateString('pt-BR');
+
+        sheet.pageSetup = {
+            orientation: 'landscape',
+            scale: 70,
+            fitToPage: false,
+            margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
+        };
+
+        sheet.columns = [
+            { header: 'CLIENTE', key: 'cliente', width: 30 },
+            { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+            { header: 'MODELO', key: 'modelo', width: 20 },
+            { header: 'TAMANHO', key: 'tamanho', width: 10 },
+            { header: 'MATERIAL', key: 'material', width: 12 },
+            { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
+            { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
+            { header: 'QTD', key: 'quantidade', width: 10 },
+            { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
+            { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
+            { header: 'OPERADOR', key: 'operador', width: 20 },
+            { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+        ];
+
+        sheet.insertRow(1, []);
+        sheet.mergeCells(1, 1, 1, sheet.columns.length);
+        const tituloCell = sheet.getCell('A1');
+        tituloCell.value = `FLEXOGRÁFICA - ${dataFormatada}`;
+        tituloCell.font = { bold: true, size: 14, color: { argb: 'FF0D5749' } };
+        tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet.getRow(1).height = 25;
+
+        const headerRow = sheet.getRow(2);
+        headerRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        let clienteAnterior = null;
+
+        dados.forEach(d => {
+            if (clienteAnterior && d.cliente !== clienteAnterior) {
+                sheet.addRow({});
+            }
+
+            sheet.addRow({
+                ...d,
+                previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
+                status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
+                operador: ''
+            });
+
+            clienteAnterior = d.cliente;
+        });
+
+        sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+        sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+        sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
+        sheet.getColumn('qtd_cores').alignment = { horizontal: 'center' };
+
+        sheet.eachRow((row) => {
+            row.eachCell(cell => {
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=flexografica_${dataFormatada.replace(/\//g, '-')}.xlsx`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error('[ERRO EXPORTAR FLEXO]', err);
+        res.status(500).send('Erro ao gerar planilha');
+    }
+});
+
+// 3. EXPORTAR RELATÓRIO EXCEL
+app.get('/exportar/movimentacoes', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const [dados] = await db.promise().query(`
+            SELECT data, tipo, valor, responsavel, nome_assinante, descricao, observacao 
+            FROM movimentacoes 
+            ORDER BY data DESC, id DESC
+        `);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Movimentações de Caixa');
+
+        // Duas colunas para as duas pessoas envolvidas
+        sheet.columns = [
+            { header: 'DATA', key: 'data', width: 15 },
+            { header: 'TIPO', key: 'tipo', width: 12 },
+            { header: 'VALOR (R$)', key: 'valor', width: 15 },
+            { header: 'REGISTRADO POR (SISTEMA)', key: 'responsavel', width: 25 },
+            { header: 'ASSINANTE (QUEM MOVIMENTOU)', key: 'nome_assinante', width: 30 },
+            { header: 'DESCRIÇÃO', key: 'descricao', width: 35 },
+            { header: 'OBSERVAÇÕES', key: 'observacao', width: 35 }
+        ];
+
+        sheet.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center' };
+        });
+
+        dados.forEach(m => {
+            const row = sheet.addRow({
+                data: new Date(m.data),
+                tipo: m.tipo.toUpperCase(),
+                valor: parseFloat(m.valor),
+                responsavel: m.responsavel || '-',
+                nome_assinante: m.nome_assinante || 'Não informado',
+                descricao: m.descricao,
+                observacao: m.observacao || '-'
+            });
+
+            const corStatus = m.tipo === 'entrada' ? 'FF28A745' : 'FFDC3545';
+            row.getCell('tipo').font = { color: { argb: corStatus }, bold: true };
+        });
+
+        sheet.getColumn('valor').numFmt = '"R$ " #,##0.00';
+        sheet.getColumn('data').numFmt = 'dd/mm/yyyy';
+
+        sheet.eachRow(row => {
+            row.eachCell(cell => {
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            });
+        });
+
+        const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caixa_${dataHoje}.xlsx`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error('[ERRO EXPORTAR CAIXA]', err);
+        res.status(500).send('Erro ao gerar relatório');
+    }
 });
 
 app.get("/health", (req, res) => {

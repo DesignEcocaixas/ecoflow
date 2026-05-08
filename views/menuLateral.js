@@ -44,7 +44,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   // DEFINIÇÃO DOS LINKS POR CATEGORIA
   // ==========================================
   const logisticaLinks = {
-    producao: { href: "/producao", icone: "fas fa-industry", texto: "Ordens" }, // <-- NOVO LINK DE PRODUÇÃO
+    producao: { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     veiculos: { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
     checklist: { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     rotas: { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
@@ -56,14 +56,32 @@ function menuLateral(usuario, rotaAtiva = "") {
     entradasSaidas: { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
   };
 
+  // ==========================================
+  // RODAPÉ DO MENU (71dev)
+  // ==========================================
+  const footerHTML = `
+    <div class="mt-auto pt-4 pb-2 text-center" style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+      <hr class="border-light border-opacity-25 mb-3">
+      <div class="mb-2">Desenvolvido por <strong class="text-white">71dev</strong></div>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="Instagram">
+          <i class="fa-brands fa-instagram"></i>
+        </a>
+        <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="WhatsApp (+55 71 8317-4920)">
+          <i class="fa-brands fa-whatsapp"></i>
+        </a>
+      </div>
+    </div>
+  `;
 
   // ==========================================
   // RENDERIZAÇÃO DO MENU POR TIPO DE USUÁRIO
   // ==========================================
+  let menuLinks = '';
 
   // --- MENU: MOTORISTA ---
   if (tipo === "motorista") {
-    return `
+    menuLinks = `
       ${renderLink("/home", "fas fa-home me-2", "Home")}
       ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
         logisticaLinks.checklist,
@@ -71,14 +89,13 @@ function menuLateral(usuario, rotaAtiva = "") {
       ])}
     `;
   }
-
   // --- MENU: FINANCEIRO ---
-  if (tipo === "financeiro") {
-    return `
+  else if (tipo === "financeiro") {
+    menuLinks = `
       ${renderLink("/home", "fas fa-home me-2", "Home")}
       
       ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
-        logisticaLinks.producao, // Adicionado aqui
+        logisticaLinks.producao, 
         logisticaLinks.checklist
       ])}
       
@@ -89,25 +106,36 @@ function menuLateral(usuario, rotaAtiva = "") {
       ])}
     `;
   }
-
   // --- MENU: ADMIN (Padrão Completo) ---
+  else {
+    menuLinks = `
+      ${renderLink("/home", "fas fa-home me-2", "Home")}
+      
+      ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
+        logisticaLinks.producao, 
+        logisticaLinks.veiculos,
+        logisticaLinks.checklist,
+        logisticaLinks.rotas
+      ])}
+      
+      ${renderCollapse("collapseFinanceiro", "fa-solid fa-wallet", "Financeiro", [
+        financeiroLinks.tabela,
+        financeiroLinks.chapas,
+        financeiroLinks.entradasSaidas
+      ])}
+      
+      ${renderLink("/cadastro", "fas fa-user-plus me-2", "Cadastro de Usuários")}
+    `;
+  }
+
+  // Retorna a estrutura flexível garantindo que o footer vá para a parte inferior
   return `
-    ${renderLink("/home", "fas fa-home me-2", "Home")}
-    
-    ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
-      logisticaLinks.producao, // Adicionado aqui
-      logisticaLinks.veiculos,
-      logisticaLinks.checklist,
-      logisticaLinks.rotas
-    ])}
-    
-    ${renderCollapse("collapseFinanceiro", "fa-solid fa-wallet", "Financeiro", [
-      financeiroLinks.tabela,
-      financeiroLinks.chapas,
-      financeiroLinks.entradasSaidas
-    ])}
-    
-    ${renderLink("/cadastro", "fas fa-user-plus me-2", "Cadastro de Usuários")}
+    <div class="d-flex flex-column h-100">
+      <div>
+        ${menuLinks}
+      </div>
+      ${footerHTML}
+    </div>
   `;
 }
 

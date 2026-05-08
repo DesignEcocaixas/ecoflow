@@ -1,0 +1,479 @@
+// views/ordemProducaoView.js
+const menuLateral = require("./menuLateral");
+
+module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], query = {}, rotativaNovas = 0, flexoNovas = 0, historico = [], paginacao = {}) {
+  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+  const menuHTML = menuLateral(user, "/producao");
+
+  // Captura estados da query para disparar os modais
+  const estadoSucesso = query.sucesso ? 'true' : 'false';
+  const estadoLimpo = query.limpo ? 'true' : 'false';
+  const estadoErro = query.erro === 'planilha' ? 'true' : 'false';
+
+  function formatarCor(cor) {
+    if (!cor || cor === 'N/D') return 'Não definida';
+    return cor.replace(/personalização/i, '').trim();
+  }
+
+  const badgeStatus = status =>
+    status === 'concluido'
+      ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Concluído</span>'
+      : '<span class="badge bg-light text-muted border">Pendente</span>';
+
+  // Lógica de Paginação Inteligente
+  const page = paginacao.page || 1;
+  const totalPages = paginacao.totalPages || 1;
+  const pageLinks = (() => {
+    const delta = 2; 
+    let paginas = [];
+    let ultima;
+    let html = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+        paginas.push(i);
+      }
+    }
+
+    paginas.forEach(p => {
+      if (ultima) {
+        if (p - ultima === 2) {
+          html += `<li class="page-item"><a class="page-link text-dark" href="/producao?page=${ultima + 1}">${ultima + 1}</a></li>`;
+        } else if (p - ultima > 2) {
+          html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
+        }
+      }
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/producao?page=${p}">${p}</a></li>`;
+      ultima = p;
+    });
+
+    return html;
+  })();
+
+  const paginacaoHtml = totalPages > 1 ? `
+    <nav aria-label="Paginação" class="mt-3">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        <li class="page-item ${page <= 1 ? "disabled" : ""}">
+          <a class="page-link text-dark" href="/producao?page=${page - 1}">&laquo;</a>
+        </li>
+        ${pageLinks}
+        <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+          <a class="page-link text-dark" href="/producao?page=${page + 1}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  ` : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produção | ERP Ecoflow</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+    .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
+    .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
+    .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+    .content { flex: 1; padding: 24px; overflow-y: auto; }
+    .usuario-badge { background-color: white; color: #0D5749; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(13,87,73,0.2); font-size: 0.85rem; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    
+    .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; border: none; cursor: pointer; }
+    .erp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+    .card-concluido { background-color: #f0fff4 !important; border-left: 5px solid #28a745 !important; }
+    .card-pendente { border-left: 5px solid #6c757d !important; border-bottom: 1px solid #eee; }
+    .info-sm { font-size: 0.8rem; }
+
+    /* Estilização para barra de progresso e modais de sucesso */
+    .sucesso-icone { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: #e6f4ea; display: flex; align-items: center; justify-content: center; }
+    .sucesso-icone i { font-size: 40px; color: #1e7e34; }
+    .erro-icone { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: #fce8e6; display: flex; align-items: center; justify-content: center; }
+    .erro-icone i { font-size: 40px; color: #d93025; }
+    
+    .progress { height: 12px; border-radius: 10px; background-color: #eee; overflow: hidden; }
+    .progress-bar { background-color: #0D5749; transition: width 0.4s ease; }
+    
+    @keyframes pulseIcon {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(1); }
+    }
+    .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+
+    /* Divisória apenas no desktop */
+    @media (min-width: 992px) {
+      .border-lg-end { border-right: 1px solid #e9ecef; }
+    }
+    
+    /* Estilos do Histórico */
+    .table-hover tbody tr:hover { background-color: rgba(13, 87, 73, 0.05); }
+    .pagination .page-link { color: #0D5749; border: none; background: transparent; font-weight: 600; }
+    .pagination .page-item.active .page-link { background-color: #0D5749; color: white; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar d-none d-md-flex">
+    <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
+    <div class="flex-grow-1">${menuHTML}</div>
+  </div>
+
+  <div class="content">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-industry text-muted me-2"></i>Ordens de Produção</h4>
+      <div class="d-flex align-items-center gap-3">
+        <span class="usuario-badge"><i class="fa-solid fa-user-circle me-1"></i> ${user.nome}</span>
+        <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i></a>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-3 shadow-sm mb-4 border border-light">
+      <div class="row g-4 align-items-center">
+        
+        <div class="col-lg-6 border-lg-end pe-lg-4">
+          <h6 class="text-muted fw-bold small mb-3">IMPORTAR PLANILHA EXCEL</h6>
+          <form action="/importar" method="POST" enctype="multipart/form-data" class="row g-2 align-items-end" id="formImportacao">
+            <div class="col-12 col-xl-8">
+              <input type="file" name="planilha" accept=".xlsx,.xls" class="form-control form-control-sm shadow-sm" required>
+            </div>
+            <div class="col-12 col-xl-4 d-flex gap-2">
+              <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm">Gerar Ordens</button>
+              <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" data-bs-toggle="modal" data-bs-target="#modalLimpar" title="Limpar Tudo"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-lg-6 ps-lg-4">
+          <h6 class="text-muted fw-bold small mb-3">ACOMPANHAMENTO DA PRODUÇÃO</h6>
+          <div class="row g-3">
+            
+            <div class="col-sm-6">
+              <button class="btn btn-outline-primary w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalRotativa"
+                      onclick="marcarVisualizado('rotativa', this)">
+                <div class="d-flex align-items-center">
+                  <i class="fa-solid fa-gear me-2"></i> Rotativa / Plana
+                  <span class="badge bg-primary ms-2">${rotativa.length}</span>
+                </div>
+                ${rotativaNovas > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">${rotativaNovas}</span>` : ''}
+              </button>
+            </div>
+
+            <div class="col-sm-6">
+              <button class="btn btn-outline-success w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalFlexo"
+                      onclick="marcarVisualizado('flexografica', this)">
+                <div class="d-flex align-items-center">
+                  <i class="fa-solid fa-layer-group me-2"></i> Flexográfica
+                  <span class="badge bg-success ms-2">${flexo.length}</span>
+                </div>
+                ${flexoNovas > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">${flexoNovas}</span>` : ''}
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-3 shadow-sm border border-light">
+      <h6 class="text-muted fw-bold small mb-3"><i class="fa-solid fa-clock-rotate-left me-2"></i>HISTÓRICO DE IMPORTAÇÕES GERADAS</h6>
+      
+      <div class="table-responsive">
+        <table class="table table-hover align-middle border mb-0" style="font-size: 0.9rem;">
+          <thead class="table-light">
+            <tr>
+              <th>Data de Geração das Ordens</th>
+              <th class="text-center">Ordens Geradas Neste Dia</th>
+              <th class="text-end">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${historico.length === 0 ? '<tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x d-block mb-2 opacity-25"></i>Nenhum histórico encontrado.</td></tr>' : historico.map(h => `
+              <tr style="cursor: pointer;" onclick="window.open('/exportar/historico?lote=${h.lote_id}', '_blank')" title="Clique para baixar esta geração específica">
+                <td class="fw-bold text-dark"><i class="fa-regular fa-clock text-muted me-2"></i> ${h.data_formatada}</td>
+                <td class="text-center text-muted">${h.total_pedidos} registros nesta geração</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-light border text-success fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Histórico</button>
+                </td>
+                </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      ${paginacaoHtml}
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalRotativa" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light border-0">
+          <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-gear text-primary me-2"></i> Produção Rotativa / Plana</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4 bg-light-subtle">
+          
+          <div class="d-flex flex-column flex-sm-row gap-2 mb-4">
+            <div class="input-group flex-fill shadow-sm">
+              <input type="text" class="form-control bg-white" placeholder="Buscar por cliente, vendedor, modelo..." oninput="filtrarCards(this, 'rotativa')" id="buscaRotativa">
+              <button class="btn btn-white border bg-white text-secondary" type="button" onclick="limparBusca('rotativa')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <a href="/exportar/rotativa" target="_blank" class="btn btn-success fw-bold text-nowrap shadow-sm"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
+          </div>
+
+          <div style="padding-right: 5px;">
+            ${rotativa.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-2 opacity-25"></i>Nenhuma ordem carregada</div>' : rotativa.map(r => `
+              <div class="card erp-card shadow-sm mb-2 ${r.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
+                   onclick="alterarStatus('rotativa', ${r.id}, this)"
+                   data-search="${r.cliente} ${r.vendedor} ${r.modelo} ${r.tamanho} ${r.status_producao === 'concluido' ? 'concluído' : 'pendente'}">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong class="d-block text-dark">${r.cliente}</strong>
+                      <div class="info-sm text-muted mt-1">
+                        Mod: ${r.modelo} | Tam: ${r.tamanho} | <b>Qtd: ${r.quantidade}</b>
+                      </div>
+                    </div>
+                    ${badgeStatus(r.status_producao)}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalFlexo" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light border-0">
+          <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-layer-group text-success me-2"></i> Produção Flexográfica</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4 bg-light-subtle">
+          
+          <div class="d-flex flex-column flex-sm-row gap-2 mb-4">
+            <div class="input-group flex-fill shadow-sm">
+              <input type="text" class="form-control bg-white" placeholder="Buscar por cliente, modelo, cor..." oninput="filtrarCards(this, 'flexo')" id="buscaFlexo">
+              <button class="btn btn-white border bg-white text-secondary" type="button" onclick="limparBusca('flexo')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <a href="/exportar/flexografica" target="_blank" class="btn btn-success fw-bold text-nowrap shadow-sm"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
+          </div>
+
+          <div style="padding-right: 5px;">
+            ${flexo.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-2 opacity-25"></i>Nenhuma ordem carregada</div>' : flexo.map(f => `
+              <div class="card erp-card shadow-sm mb-2 ${f.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
+                   onclick="alterarStatus('flexografica', ${f.id}, this)"
+                   data-search="${f.cliente} ${f.vendedor} ${f.modelo} ${f.tamanho} ${f.material} ${f.cor_personalizacao} ${f.status_producao === 'concluido' ? 'concluído' : 'pendente'}">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong class="d-block text-dark">${f.cliente}</strong>
+                      <div class="info-sm text-muted mt-1">
+                        Mat: ${f.material} | Cor: ${formatarCor(f.cor_personalizacao)} | <b>Qtd: ${f.quantidade}</b>
+                      </div>
+                    </div>
+                    ${badgeStatus(f.status_producao)}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalLimpar" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-body text-center p-4">
+          <i class="fa-solid fa-trash-can fa-3x text-danger mb-3"></i>
+          <h6 class="fw-bold">Limpar tudo?</h6>
+          <p class="text-muted small">Esta ação removerá todas as ordens permanentemente.</p>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-secondary flex-grow-1" data-bs-dismiss="modal">Não</button>
+            <form action="/limpar" method="POST" class="flex-grow-1 m-0"><button type="submit" class="btn btn-sm btn-danger w-100">Sim, Limpar</button></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalProcessamento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-body p-5 text-center">
+          <i class="fa-solid fa-gear fa-spin fa-3x text-primary mb-4"></i>
+          <h5 class="fw-bold mb-2">Processando Planilha</h5>
+          <p id="textoEtapa" class="text-muted small mb-4">Iniciando leitura dos dados...</p>
+          <div class="progress">
+            <div id="barraProgresso" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSucessoImport" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-body text-center p-4">
+          <div class="sucesso-icone"><i class="fa-solid fa-check"></i></div>
+          <h6 class="fw-bold mb-1">Importação Concluída</h6>
+          <p class="text-muted small mb-3">As ordens foram geradas com sucesso.</p>
+          <button class="btn btn-sm btn-success w-100" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSucessoLimpo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-body text-center p-4">
+          <div class="sucesso-icone"><i class="fa-solid fa-broom"></i></div>
+          <h6 class="fw-bold mb-1">Painel Limpo</h6>
+          <p class="text-muted small mb-3">Todos os dados foram removidos.</p>
+          <button class="btn btn-sm btn-success w-100" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalErroPlanilha" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-body text-center p-4">
+          <div class="erro-icone"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h6 class="fw-bold mb-1">Erro na Planilha</h6>
+          <p class="text-muted small mb-3">O arquivo enviado é incompatível ou está corrompido.</p>
+          <button class="btn btn-sm btn-danger w-100" data-bs-dismiss="modal">Entendi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.addEventListener('load', () => {
+        if (${estadoSucesso}) {
+            new bootstrap.Modal(document.getElementById('modalSucessoImport')).show();
+        } else if (${estadoLimpo}) {
+            new bootstrap.Modal(document.getElementById('modalSucessoLimpo')).show();
+        } else if (${estadoErro}) {
+            new bootstrap.Modal(document.getElementById('modalErroPlanilha')).show();
+        }
+        
+        if (window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete('sucesso');
+            url.searchParams.delete('limpo');
+            url.searchParams.delete('erro');
+            window.history.replaceState({}, document.title, url.pathname);
+        }
+    });
+
+    const formImportar = document.getElementById('formImportacao');
+    if (formImportar) {
+        formImportar.addEventListener('submit', () => {
+            const modalProc = new bootstrap.Modal(document.getElementById('modalProcessamento'));
+            modalProc.show();
+
+            const barra = document.getElementById('barraProgresso');
+            const texto = document.getElementById('textoEtapa');
+
+            const etapas = [
+                { v: 30, t: "Limpando registros antigos..." },
+                { v: 60, t: "Executando script de processamento Python..." },
+                { v: 90, t: "Separando flexo e rotativa/plana..." },
+                { v: 98, t: "Finalizando importação..." }
+            ];
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= etapas.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                barra.style.width = etapas[i].v + "%";
+                texto.innerText = etapas[i].t;
+                i++;
+            }, 1200);
+        });
+    }
+
+    function alterarStatus(tipo, id, card) {
+      fetch(\`/status/\${tipo}/\${id}\`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) return;
+          const badge = card.querySelector('.badge');
+          if (data.status === 'concluido') {
+            badge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+            badge.innerText = 'Concluído';
+            card.classList.add('card-concluido');
+            card.classList.remove('card-pendente');
+          } else {
+            badge.className = 'badge bg-light text-muted border';
+            badge.innerText = 'Pendente';
+            card.classList.remove('card-concluido');
+            card.classList.add('card-pendente');
+          }
+          
+          let search = card.dataset.search || '';
+          search = search.replace(/pendente|concluido|concluído/gi, '').trim();
+          const novoStatus = data.status === 'concluido' ? 'concluído' : 'pendente';
+          card.dataset.search = \`\${search} \${novoStatus}\`;
+        });
+    }
+
+    function marcarVisualizado(tipo, botao) {
+      const badge = botao.querySelector('.bg-danger');
+      if (!badge) return; 
+      
+      fetch(\`/notificacao/\${tipo}\`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) badge.remove();
+        })
+        .catch(err => console.error(err));
+    }
+
+    function normalizarTexto(texto) {
+      return texto.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+    }
+
+    function filtrarCards(input, tipo) {
+      const termo = normalizarTexto(input.value);
+      const modalId = tipo === 'rotativa' ? 'modalRotativa' : 'modalFlexo';
+      const modal = document.getElementById(modalId);
+      const cards = modal.querySelectorAll('.card');
+
+      cards.forEach(card => {
+        const texto = normalizarTexto(card.dataset.search || '');
+        card.style.display = texto.includes(termo) ? '' : 'none';
+      });
+    }
+
+    function limparBusca(tipo) {
+      const inputId = tipo === 'rotativa' ? 'buscaRotativa' : 'buscaFlexo';
+      const input = document.getElementById(inputId);
+      input.value = '';
+      filtrarCards(input, tipo);
+    }
+  </script>
+</body>
+</html>
+`;
+};

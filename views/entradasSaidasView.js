@@ -26,54 +26,52 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
   const corTotal = totalCaixa >= 0 ? 'success' : 'danger';
   const sinalTotal = totalCaixa >= 0 ? '+' : '-';
 
-  const cards = movimentacoes.map(m => {
+  // GERAR AS LINHAS DA TABELA EM VEZ DE CARDS
+  const linhasTabela = movimentacoes.map(m => {
     const isEntrada = m.tipo === 'entrada';
     const corClass = isEntrada ? 'success' : 'danger';
     const sinal = isEntrada ? '+' : '-';
     const icone = isEntrada ? 'fa-arrow-down' : 'fa-arrow-up';
 
     return `
-    <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-3">
-      <div class="card erp-card shadow-sm border-0 h-100 transition-hover" 
-           style="cursor: pointer; border-left: 4px solid var(--bs-${corClass}) !important;" 
-           onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
-        <div class="card-body p-3 d-flex flex-column">
-          
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="badge bg-${corClass} text-white shadow-sm" style="font-size:0.7rem;">
-              <i class="fa-solid ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
-            </span>
-            <small class="text-muted" style="font-size:0.75rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</small>
-          </div>
-          
-          <h5 class="fw-bold text-${corClass} mb-2">
-             ${sinal} R$ ${fmtMoeda(m.valor)}
-          </h5>
-          
-          <div class="text-truncate text-muted mb-3" style="font-size:0.85rem;" title="${m.descricao}">
-            ${m.descricao || "Sem descrição"}
-          </div>
-
-          <div class="mt-auto border-top pt-2 d-flex justify-content-between align-items-center">
-            <div class="text-truncate text-muted" style="font-size:0.75rem;" title="Registrado no sistema por: ${m.responsavel}">
-              <i class="fa-solid fa-user-pen me-1"></i> ${m.responsavel ? m.responsavel.split(' ')[0] : 'Desconhecido'}
-            </div>
-            <div class="btn-group">
-              <button type="button" class="btn btn-sm btn-light border text-warning py-1 px-2" 
-                      onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${m.id}')).show();" title="Editar">
-                <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2" 
-                      onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirModal${m.id}')).show();" title="Excluir">
-                <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
-              </button>
-            </div>
-          </div>
-          
+    <tr style="cursor: pointer;" class="align-middle" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
+      <td class="text-muted fw-medium"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
+      <td>
+        <span class="badge bg-${corClass}-subtle text-${corClass} border border-${corClass}-subtle px-2 py-1">
+          <i class="fa-solid ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
+        </span>
+      </td>
+      <td>
+        <div class="text-truncate text-dark fw-medium" style="max-width: 250px;" title="${m.descricao}">
+          ${m.descricao || "Sem descrição"}
         </div>
-      </div>
-    </div>
-  `}).join("");
+      </td>
+      <td>
+        <div class="text-truncate text-dark" style="max-width: 180px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
+          <i class="fa-solid fa-pen-nib text-muted me-1"></i> ${m.nome_assinante || 'Não informado'}
+        </div>
+        <div class="text-muted" style="font-size: 0.75rem;" title="Registrado no sistema por: ${m.responsavel}">
+          Resp: ${m.responsavel ? m.responsavel.split(' ')[0] : 'Desconhecido'}
+        </div>
+      </td>
+      <td class="text-end fw-bold text-${corClass}">
+         ${sinal} R$ ${fmtMoeda(m.valor)}
+      </td>
+      <td class="text-center">
+        <div class="btn-group">
+          <button type="button" class="btn btn-sm btn-light border text-warning py-1 px-2 shadow-sm" 
+                  onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${m.id}')).show();" title="Editar">
+            <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2 shadow-sm" 
+                  onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirModal${m.id}')).show();" title="Excluir">
+            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+    `;
+  }).join("");
 
   const modais = movimentacoes.map(m => {
     const isEntrada = m.tipo === 'entrada';
@@ -239,7 +237,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
       .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
       .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-      .content { flex: 1; padding: 24px; overflow-y: auto; }
+      .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; }
       
       .usuario-badge { 
           background-color: white; 
@@ -252,8 +250,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
           box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
       }
       
-      .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; }
-      .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
       .erp-modal { border-radius: 12px; border: none; }
       
       .signature-pad {
@@ -266,12 +262,44 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
           touch-action: none;
       }
 
+      /* Hover para as linhas da tabela */
+      .table-hover tbody tr:hover {
+          background-color: rgba(13, 87, 73, 0.03);
+          transition: background-color 0.2s;
+      }
+
       @keyframes pulseIcon {
         0% { transform: scale(1); }
         50% { transform: scale(1.15); opacity: 0.8; }
         100% { transform: scale(1); }
       }
       .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+
+      /* Botão Flutuante de Ajuda */
+      .btn-flutuante {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background-color: #0D5749;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        z-index: 1050;
+        transition: all 0.3s ease;
+      }
+      .btn-flutuante:hover {
+        transform: scale(1.1);
+        background-color: #0a4338;
+        color: white;
+        box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6);
+      }
 
       @media (max-width: 767.98px) {
         body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
@@ -306,7 +334,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <div>
               <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer text-muted me-2"></i>Entradas e Saídas</h4>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controlo financeiro e assinaturas</span>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
             </div>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -347,11 +375,72 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
         </div>
       </div>
 
-      <div class="row">
-        ${movimentacoes.length > 0 ? cards : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada.</p></div>`}
-      </div>
+      ${movimentacoes.length > 0 
+        ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+             <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+               <thead class="table-light">
+                 <tr>
+                   <th class="py-3 px-3">Data</th>
+                   <th class="py-3">Tipo</th>
+                   <th class="py-3">Descrição</th>
+                   <th class="py-3">Assinante / Resp.</th>
+                   <th class="py-3 text-end">Valor (R$)</th>
+                   <th class="py-3 text-center">Ações</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 ${linhasTabela}
+               </tbody>
+             </table>
+           </div>` 
+        : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada.</p></div>`
+      }
 
       ${paginacaoHtml}
+    </div>
+
+    <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
+      <i class="fa-solid fa-question"></i>
+    </button>
+
+    <div class="modal fade" id="modalInstrucoes" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-light border-0">
+            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> Como usar este módulo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 text-muted" style="font-size: 0.95rem;">
+            <p class="mb-4">Bem-vindo ao módulo de <strong>Entradas e Saídas</strong>. Siga as orientações abaixo para um controle financeiro eficaz:</p>
+            
+            <ul class="list-group list-group-flush mb-4">
+              <li class="list-group-item bg-transparent px-0 border-light pb-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Registar Movimentação</strong>
+                Clique em "Entrada" ou "Retirada" para adicionar um novo registo. É obrigatório informar o valor, a descrição, o nome de quem entregou/retirou o valor e <strong>recolher a assinatura na tela</strong>.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light py-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-wallet text-primary me-2"></i> 2. Saldo em Caixa</strong>
+                O painel superior exibe o "Total em Caixa". Este valor é calculado automaticamente, somando todas as entradas e subtraindo todas as retiradas presentes no sistema.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light py-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-magnifying-glass text-dark me-2"></i> 3. Detalhes e Ações</strong>
+                Clique em cima de qualquer registo na tabela para ver os detalhes completos e confirmar a <strong>assinatura salva</strong>. Caso note algum erro, pode usar os botões de editar (<i class="fa-solid fa-pen text-warning mx-1"></i>) ou excluir (<i class="fa-solid fa-trash text-danger mx-1"></i>) na respetiva linha da tabela.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light pt-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 4. Exportar Relatório</strong>
+                Clique em "Relatório" para fazer o download imediato de uma planilha Excel com todo o histórico de caixa e as informações dos assinantes.
+              </li>
+            </ul>
+
+            <div class="alert alert-info border-0 shadow-sm mb-0">
+              <i class="fa-solid fa-lightbulb me-2"></i> <strong>Dica de Assinatura:</strong> Caso a assinatura não fique legível à primeira tentativa, basta clicar em "Limpar Assinatura" logo abaixo do quadro e desenhar de novo antes de guardar.
+            </div>
+          </div>
+          <div class="modal-footer border-0 bg-light">
+            <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal fade" id="novaEntradaModal" tabindex="-1" data-bs-backdrop="static">
@@ -376,7 +465,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
                 <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" required placeholder="0,00">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem retirou?</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou o valor?</label>
                 <input type="text" name="nome_assinante" class="form-control form-control-sm" required placeholder="Ex: João Silva">
               </div>
               <div class="col-12">

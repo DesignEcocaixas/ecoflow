@@ -35,24 +35,24 @@ if not os.path.exists(arquivo_excel):
 # ===============================
 # CONEXÃO COM BANCO (ECOFLOW)
 # ===============================
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="1234",
-    database="sistema_gestao"
-)
-cursor = conn.cursor()
+#conn = mysql.connector.connect(
+#    host="localhost",
+#    user="root",
+#    password="1234",
+#    database="sistema_gestao"
+#)
+#cursor = conn.cursor()
 
 # ===============================
 # CONEXÃO COM BANCO (ECOFLOW)
 # ===============================
-#conn = mysql.connector.connect(
-#    host="localhost",
-#    user="appuser",
-#    password="23!Bestdavidx",
-#    database="sistema_gestao"
-#)
-#cursor = conn.cursor()
+conn = mysql.connector.connect(
+    host="localhost",
+    user="appuser",
+    password="23!Bestdavidx",
+    database="sistema_gestao"
+)
+cursor = conn.cursor()
 
 def log(tipo, msg, linha=None):
     cursor.execute(

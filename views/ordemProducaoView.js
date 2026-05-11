@@ -78,7 +78,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
     .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
     .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-    .content { flex: 1; padding: 24px; overflow-y: auto; }
+    .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; }
     .usuario-badge { background-color: white; color: #0D5749; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(13,87,73,0.2); font-size: 0.85rem; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     
     .erp-card { border-radius: 12px; transition: transform 0.2s; overflow: hidden; border: none; cursor: pointer; }
@@ -112,6 +112,32 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .table-hover tbody tr:hover { background-color: rgba(13, 87, 73, 0.05); }
     .pagination .page-link { color: #0D5749; border: none; background: transparent; font-weight: 600; }
     .pagination .page-item.active .page-link { background-color: #0D5749; color: white; border-radius: 6px; }
+
+    /* Botão Flutuante de Ajuda */
+    .btn-flutuante {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background-color: #0D5749;
+      color: white;
+      border: none;
+      box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      z-index: 1050;
+      transition: all 0.3s ease;
+    }
+    .btn-flutuante:hover {
+      transform: scale(1.1);
+      background-color: #0a4338;
+      color: white;
+      box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6);
+    }
   </style>
 </head>
 <body>
@@ -209,6 +235,54 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       </div>
       
       ${paginacaoHtml}
+    </div>
+  </div>
+
+  <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
+    <i class="fa-solid fa-question"></i>
+  </button>
+
+  <div class="modal fade" id="modalInstrucoes" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light border-0">
+          <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> Como usar este módulo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 text-muted" style="font-size: 0.95rem;">
+          <p class="mb-4">Bem-vindo ao módulo de <strong>Ordens de Produção</strong>. Siga os passos abaixo para o funcionamento correto do sistema:</p>
+          
+          <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item bg-transparent px-0 border-light pb-3">
+              <strong class="text-dark d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 1. Importar Planilha</strong>
+              Selecione o seu ficheiro Excel (.xlsx) de ordens e clique em "Gerar Ordens". O sistema vai analisar e separar tudo automaticamente em "Rotativa / Plana" e "Flexográfica". <em>Nota: Importar uma nova planilha arquiva automaticamente a anterior no Histórico.</em>
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-light py-3">
+              <strong class="text-dark d-block mb-1"><i class="fa-solid fa-bars-progress text-primary me-2"></i> 2. Acompanhamento & Status</strong>
+              Abra os painéis (Rotativa ou Flexográfica). Pode clicar diretamente em qualquer cartão para alterar o estado do pedido entre <span class="badge bg-light text-muted border">Pendente</span> e <span class="badge bg-success-subtle text-success border border-success-subtle">Concluído</span>.
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-light py-3">
+              <strong class="text-dark d-block mb-1"><i class="fa-solid fa-download text-dark me-2"></i> 3. Exportar Planilhas</strong>
+              Dentro dos modais de produção, o botão "Baixar Todas" faz o download do que está visível naquele exato momento.
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-light py-3">
+              <strong class="text-dark d-block mb-1"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> 4. Histórico de Importações</strong>
+              No final da página, todas as gerações passadas (Lotes) ficam salvas. Clicar em qualquer linha baixa o relatório com os dados exatos daquele momento.
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-light pt-3">
+              <strong class="text-dark d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 5. Limpar Tudo</strong>
+              Remove as ordens atuais do ecrã e transfere-as para o painel de Histórico, deixando o sistema em branco para o próximo turno/semana.
+            </li>
+          </ul>
+
+          <div class="alert alert-info border-0 shadow-sm mb-0">
+            <i class="fa-solid fa-lightbulb me-2"></i> <strong>Dica de Pesquisa:</strong> Utilize as barras de pesquisa dentro dos modais para filtrar instantaneamente por Cliente, Vendedor, Modelo ou Status (digite "concluído").
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+        </div>
+      </div>
     </div>
   </div>
 

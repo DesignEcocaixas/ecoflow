@@ -35,9 +35,11 @@ function cadastroView(usuario, usuarios = []) {
                         <div class="col-12 col-md-6">
                           <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Tipo de Usuário</label>
                           <select name="tipo_usuario" class="form-select form-select-sm">
-                            <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Admin</option>
+                            <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
                             <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista</option>
                             <option value="financeiro" ${u.tipo_usuario === "financeiro" ? "selected" : ""}>Financeiro</option>
+                            <option value="design" ${u.tipo_usuario === "design" ? "selected" : ""}>Design</option>
+                            <option value="logistica" ${u.tipo_usuario === "logistica" ? "selected" : ""}>Logística</option>
                           </select>
                         </div>
                         <div class="col-12 col-md-6">
@@ -82,8 +84,11 @@ function cadastroView(usuario, usuarios = []) {
                 <td class="text-muted" style="font-size: 0.85rem;">${u.email}</td>
                 <td>
                   <span class="badge ${
-                    u.tipo_usuario === 'admin' ? 'bg-danger' : 
-                    u.tipo_usuario === 'financeiro' ? 'bg-success' : 'bg-primary'
+                    u.tipo_usuario === 'admin' ? 'bg-danger text-white' : 
+                    u.tipo_usuario === 'financeiro' ? 'bg-success text-white' : 
+                    u.tipo_usuario === 'design' ? 'bg-info text-dark' :
+                    u.tipo_usuario === 'logistica' ? 'bg-warning text-dark' :
+                    'bg-primary text-white'
                   } bg-opacity-75" style="font-size:0.7rem; letter-spacing: 0.5px;">
                     ${(u.tipo_usuario || "admin").toUpperCase()}
                   </span>
@@ -262,9 +267,11 @@ function cadastroView(usuario, usuarios = []) {
               <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Perfil / Tipo de Usuário</label>
                 <select name="tipo_usuario" class="form-select form-select-sm" required>
-                  <option value="motorista" selected>Motorista</option>
-                  <option value="financeiro">Financeiro</option>
                   <option value="admin">Administrador</option>
+                  <option value="financeiro">Financeiro</option>
+                  <option value="motorista" selected>Motorista</option>
+                  <option value="design">Design</option>
+                  <option value="logistica">Logística</option>
                 </select>
               </div>
             </div>

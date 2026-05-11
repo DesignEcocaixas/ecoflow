@@ -1,22 +1,17 @@
 // views/menuLateral.js
 function menuLateral(usuario, rotaAtiva = "") {
-  // Define o tipo de usuário (com fallback para admin por segurança)
   const tipo = usuario && usuario.tipo_usuario ? usuario.tipo_usuario : "admin";
 
-  // Helper simples para gerar o link superior padrão (Home, Cadastro, etc)
   const renderLink = (href, icone, texto) => {
     const activeClass = rotaAtiva === href ? "active" : "";
     return `<a href="${href}" class="${activeClass}"><i class="${icone}" style="width: 20px; text-align: center;"></i> ${texto}</a>`;
   };
 
-  // Helper para gerar um grupo em Sanfona (Accordion / Collapse)
   const renderCollapse = (id, icone, titulo, linksArray) => {
-    // Verifica se alguma das rotas internas está ativa para manter a sanfona aberta
     const isActive = linksArray.some(link => rotaAtiva === link.href);
     const showClass = isActive ? "show" : "";
     const expanded = isActive ? "true" : "false";
 
-    // Gera os links internos
     let linksHtml = linksArray.map(l => {
       const activeClass = rotaAtiva === l.href ? "active" : "";
       return `
@@ -40,105 +35,64 @@ function menuLateral(usuario, rotaAtiva = "") {
     `;
   };
 
-  // ==========================================
-  // DEFINIÇÃO DOS LINKS POR CATEGORIA
-  // ==========================================
-  const logisticaLinks = {
-    producao: { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
-    veiculos: { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
-    checklist: { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
-    rotas: { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
-  };
+  // Definições de links por categoria
+  const logLinks = [
+    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
+    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
+    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
+    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
+  ];
 
-  const financeiroLinks = {
-    tabela: { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
-    chapas: { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
-    entradasSaidas: { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
-  };
+  const finLinks = [
+    { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
+    { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
+  ];
 
-  // ==========================================
-  // RODAPÉ DO MENU (71dev)
-  // ==========================================
+  const desLinks = [
+    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
+    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" }
+  ];
+
   const footerHTML = `
     <div class="mt-auto pt-3 pb-0 text-center w-100" style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
       <hr class="border-light border-opacity-25 mb-2 mt-2">
       <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
         <span>Desenvolvido por <strong class="text-white">71dev</strong></span>
         <div class="d-flex align-items-center gap-2">
-          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.1rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="Instagram">
-            <i class="fa-brands fa-instagram"></i>
-          </a>
-          <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6); font-size: 1.1rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" title="WhatsApp (+55 71 8317-4920)">
-            <i class="fa-brands fa-whatsapp"></i>
-          </a>
+          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
       </div>
     </div>
   `;
 
-  // ==========================================
-  // RENDERIZAÇÃO DO MENU POR TIPO DE USUÁRIO
-  // ==========================================
-  let menuLinks = '';
+  // Lógica de Renderização por Perfil (Hierarquia Rígida)
+  let menuLinks = renderLink("/home", "fas fa-home me-2", "Home");
 
-  // --- MENU: MOTORISTA ---
   if (tipo === "motorista") {
-    menuLinks = `
-      ${renderLink("/home", "fas fa-home me-2", "Home")}
-      ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
-        logisticaLinks.checklist,
-        logisticaLinks.rotas
-      ])}
-    `;
+    menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", [logLinks[2], logLinks[3]]);
+  } 
+  else if (tipo === "logistica") {
+    menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
   }
-  // --- MENU: FINANCEIRO ---
+  else if (tipo === "design") {
+    // Designer vê APENAS o menu de Design
+    menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
+  }
   else if (tipo === "financeiro") {
-    menuLinks = `
-      ${renderLink("/home", "fas fa-home me-2", "Home")}
-      
-      ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
-        logisticaLinks.producao, 
-        logisticaLinks.checklist
-      ])}
-      
-      ${renderCollapse("collapseFinanceiro", "fa-solid fa-wallet", "Financeiro", [
-        financeiroLinks.tabela,
-        financeiroLinks.chapas,
-        financeiroLinks.entradasSaidas
-      ])}
-    `;
+    // Financeiro vê APENAS o menu Financeiro
+    menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
   }
-  // --- MENU: ADMIN (Padrão Completo) ---
   else {
-    menuLinks = `
-      ${renderLink("/home", "fas fa-home me-2", "Home")}
-      
-      ${renderCollapse("collapseLogistica", "fas fa-boxes-packing", "Logística", [
-        logisticaLinks.producao, 
-        logisticaLinks.veiculos,
-        logisticaLinks.checklist,
-        logisticaLinks.rotas
-      ])}
-      
-      ${renderCollapse("collapseFinanceiro", "fa-solid fa-wallet", "Financeiro", [
-        financeiroLinks.tabela,
-        financeiroLinks.chapas,
-        financeiroLinks.entradasSaidas
-      ])}
-      
-      ${renderLink("/cadastro", "fas fa-user-plus me-2", "Cadastro de Usuários")}
-    `;
+    // ADMIN: Acesso Total
+    menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
+    menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
+    menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
+    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Usuários");
   }
 
-  // Retorna a estrutura flexível garantindo que o footer vá para a parte inferior
-  return `
-    <div class="d-flex flex-column h-100">
-      <div>
-        ${menuLinks}
-      </div>
-      ${footerHTML}
-    </div>
-  `;
+  return `<div class="d-flex flex-column h-100"><div class="flex-grow-1">${menuLinks}</div>${footerHTML}</div>`;
 }
 
 module.exports = menuLateral;

@@ -101,7 +101,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   else {
     // ADMIN: Acesso Total a todas as categorias reorganizadas
     menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
-    menuLinks += renderCollapse("collMot", "fas fa-truck-moving", "Motorista", motLinks);
+    menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);  
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
     menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Gestão de Usuários");

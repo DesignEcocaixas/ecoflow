@@ -37,13 +37,13 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   // Definições de links por categoria
   const logLinks = [
-    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
     { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
   ];
 
   const finLinks = [
+    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
     { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }

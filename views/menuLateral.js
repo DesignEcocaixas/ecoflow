@@ -35,23 +35,33 @@ function menuLateral(usuario, rotaAtiva = "") {
     `;
   };
 
-  // Definições de links por categoria
+  // ==========================================
+  // DEFINIÇÕES DOS LINKS POR CATEGORIA (REORGANIZADO)
+  // ==========================================
+  
+  // 1. Logística (Foco em Gestão e Produção)
   const logLinks = [
-    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
-    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
-    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
+    { href: "/producao", icone: "fas fa-industry", texto: "Ordens de Produção" },
+    { href: "/veiculos", icone: "fas fa-car", texto: "Frota de Veículos" }
   ];
 
+  // 2. Motorista (Operacional de Campo)
+  const motLinks = [
+    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist Diário" },
+    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas de Entrega" }
+  ];
+
+  // 3. Financeiro
   const finLinks = [
-    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
-    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Estoque de Chapas" },
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
   ];
 
+  // 4. Design
   const desLinks = [
-    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
-    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" }
+    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas e Clichês" },
+    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Biblioteca de Gabaritos" }
   ];
 
   const footerHTML = `
@@ -67,29 +77,34 @@ function menuLateral(usuario, rotaAtiva = "") {
     </div>
   `;
 
-  // Lógica de Renderização por Perfil (Hierarquia Rígida)
+  // ==========================================
+  // LÓGICA DE RENDERIZAÇÃO POR PERFIL
+  // ==========================================
   let menuLinks = renderLink("/home", "fas fa-home me-2", "Home");
 
   if (tipo === "motorista") {
-    menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", [logLinks[2], logLinks[3]]);
+    // Perfil Motorista vê apenas a categoria Motorista
+    menuLinks += renderCollapse("collMot", "fas fa-steering-wheel", "Motorista", motLinks);
   } 
   else if (tipo === "logistica") {
+    // Perfil Logística vê apenas a categoria Logística
     menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
   }
   else if (tipo === "design") {
-    // Designer vê APENAS o menu de Design
+    // Perfil Design vê apenas a categoria Design
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
   }
   else if (tipo === "financeiro") {
-    // Financeiro vê APENAS o menu Financeiro
+    // Perfil Financeiro vê apenas a categoria Financeiro
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
   }
   else {
-    // ADMIN: Acesso Total
-    menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
+    // ADMIN: Acesso Total a todas as categorias reorganizadas
+    menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
+    menuLinks += renderCollapse("collMot", "fas fa-truck-moving", "Motorista", motLinks);
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
-    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Usuários");
+    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Gestão de Usuários");
   }
 
   return `<div class="d-flex flex-column h-100"><div class="flex-grow-1">${menuLinks}</div>${footerHTML}</div>`;

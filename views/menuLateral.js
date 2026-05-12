@@ -41,27 +41,27 @@ function menuLateral(usuario, rotaAtiva = "") {
   
   // 1. Logística (Foco em Gestão e Produção)
   const logLinks = [
-    { href: "/producao", icone: "fas fa-industry", texto: "Ordens de Produção" },
-    { href: "/veiculos", icone: "fas fa-car", texto: "Frota de Veículos" }
+    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
+    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" }
   ];
 
   // 2. Motorista (Operacional de Campo)
   const motLinks = [
-    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist Diário" },
-    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas de Entrega" }
+    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
+    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
   ];
 
   // 3. Financeiro
   const finLinks = [
     { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
-    { href: "/chapas", icone: "fas fa-layer-group", texto: "Estoque de Chapas" },
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
   ];
 
   // 4. Design
   const desLinks = [
-    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas e Clichês" },
-    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Biblioteca de Gabaritos" }
+    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
+    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" }
   ];
 
   const footerHTML = `

@@ -94,20 +94,20 @@ function chapasView(usuario, chapas = []) {
     }
   }
 
-  // --- GERADOR DE LINHAS DA TABELA ---
+  // --- GERADOR DE LINHAS DA TABELA (COMPACTA) ---
   const linhas = chapas.map(c => {
     const qtd = Number(c.quantidade) || 0;
 
     return `
-    <tr class="align-middle chapa-row" style="cursor: pointer; transition: background-color 0.2s;" data-bs-toggle="modal" data-bs-target="#editarModal${c.id}" title="Clique na linha para editar">
-      <td class="fw-medium text-dark text-nowrap">${c.material || "-"}</td>
-      <td class="text-nowrap">${c.modelo || "-"}</td>
-      <td class="text-muted text-nowrap"><i class="fa-solid fa-truck-fast me-1" style="font-size: 0.75rem;"></i> ${c.fornecedor || "-"}</td>
-      <td class="text-nowrap">${c.medida || "-"}</td>
-      <td class="text-center fw-medium ${qtd < 5000 ? 'text-danger' : 'text-dark'}">${qtd}</td>
-      <td class="text-end text-nowrap">
-        <button class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#excluirModal${c.id}" title="Excluir" onclick="event.stopPropagation();">
-          <i class="fa-solid fa-trash"></i>
+    <tr class="align-middle chapa-row table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${c.id}')).show();" title="Clique na linha para editar">
+      <td class="text-dark py-1 px-3 text-nowrap">${c.material || "-"}</td>
+      <td class="text-dark py-1 px-3 text-nowrap">${c.modelo || "-"}</td>
+      <td class="text-dark py-1 px-3 text-nowrap"><i class="fa-solid fa-truck-fast text-muted me-1" style="font-size: 0.75rem;"></i> ${c.fornecedor || "-"}</td>
+      <td class="text-dark py-1 px-3 text-nowrap">${c.medida || "-"}</td>
+      <td class="text-center py-1 px-3 ${qtd < 5000 ? 'text-danger fw-bold' : 'text-dark'}">${qtd}</td>
+      <td class="text-end text-nowrap py-1 px-3">
+        <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#excluirModal${c.id}" title="Excluir" onclick="event.stopPropagation();">
+          <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
         </button>
       </td>
     </tr>
@@ -265,7 +265,6 @@ function chapasView(usuario, chapas = []) {
       }
       
       .table > :not(caption) > * > * {
-          padding: 10px 16px;
           border-bottom-color: #f0f0f0;
           vertical-align: middle;
       }
@@ -277,11 +276,13 @@ function chapasView(usuario, chapas = []) {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           border-bottom: 2px solid #e9ecef;
-          padding: 12px 16px !important;
           white-space: nowrap;
       }
-      .table tbody tr.chapa-row:hover {
-          background-color: #f8f9fa;
+      
+      /* Hover forcado para as linhas da tabela (Ignora estilos do Bootstrap padrão) */
+      .table-hover-row { transition: background-color 0.2s; }
+      .table-hover-row:hover > td {
+          background-color: rgba(13, 87, 73, 0.06) !important;
       }
 
       .col-min-md { min-width: 140px; }
@@ -368,6 +369,9 @@ function chapasView(usuario, chapas = []) {
           <button class="btn btn-sm btn-primary shadow-sm btn-mobile-full" data-bs-toggle="modal" data-bs-target="#calcChapaModal">
             <i class="fa-solid fa-calculator me-1"></i> Calculadora
           </button>
+          <a href="/exportar/chapas" target="_blank" class="btn btn-sm btn-outline-success shadow-sm btn-mobile-full" title="Exportar para Excel">
+            <i class="fa-solid fa-file-excel me-1"></i> Relatório
+          </a>
         </div>
         <div class="text-start text-sm-end w-100 w-sm-auto border-top border-sm-0 pt-2 pt-sm-0">
           <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total de Registos: <strong id="totalRegistos">${chapas.length}</strong></h6>
@@ -376,41 +380,41 @@ function chapasView(usuario, chapas = []) {
 
       <div class="erp-card">
         <div class="table-responsive" style="min-height: 350px;">
-          <table class="table table-hover align-middle mb-0" id="tabelaChapas">
-            <thead>
+          <table class="table table-sm align-middle mb-0" id="tabelaChapas" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
+            <thead class="table-light">
               <tr>
-                <th class="text-start col-min-md">
+                <th class="text-start col-min-md py-2 px-3 border-0">
                   Material 
                   <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Pardo ou branco"></i>
                 </th>
-                <th class="text-start col-min-md">
+                <th class="text-start col-min-md py-2 px-3 border-0">
                   Modelo
                   <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Modelo ou modelos de caixas que são feitos com a chapa"></i>
                 </th>
-                <th class="col-min-md">
+                <th class="col-min-md py-2 px-3 border-0">
                   Fornecedor
                   <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Nome da empresa que distribui a chapa."></i>
                 </th>
-                <th class="col-min-sm">
+                <th class="col-min-sm py-2 px-3 border-0">
                   Medida
                   <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimensões (comprimento x largura) da chapa."></i>
                 </th>
-                <th class="text-center col-min-sm">
+                <th class="text-center col-min-sm py-2 px-3 border-0">
                   Qtd. Chapa
                   <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Quantidade física atual existente em estoque."></i>
                 </th>
-                <th class="text-end">Ações</th>
+                <th class="text-end py-2 px-3 border-0">Ações</th>
               </tr>
               <tr class="bg-light">
-                <th class="p-2"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="0" placeholder="Pesquisar material..."></th>
-                <th class="p-2"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="1" placeholder="Pesquisar modelo..."></th>
-                <th class="p-2"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="2" placeholder="Pesquisar fornecedor..."></th>
-                <th class="p-2"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="3" placeholder="Ex: 2000x1000..."></th>
-                <th class="p-2"><input type="number" class="form-control form-control-sm col-filter fw-normal text-center" data-col="4" placeholder="Filtrar Qtd..."></th>
-                <th class="p-2"></th>
+                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="0" placeholder="Pesquisar material..."></th>
+                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="1" placeholder="Pesquisar modelo..."></th>
+                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="2" placeholder="Pesquisar fornecedor..."></th>
+                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal" data-col="3" placeholder="Ex: 2000x1000..."></th>
+                <th class="py-1 px-3 border-0"><input type="number" class="form-control form-control-sm col-filter fw-normal text-center" data-col="4" placeholder="Filtrar Qtd..."></th>
+                <th class="py-1 px-3 border-0"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="border-top-0">
               ${linhas || "<tr><td colspan='6' class='text-center text-muted py-5'><i class='fa-solid fa-layer-group fa-2x mb-3 opacity-25'></i><br>Nenhuma chapa cadastrada no sistema.</td></tr>"}
             </tbody>
           </table>

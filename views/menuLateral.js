@@ -53,6 +53,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   // 3. Financeiro
   const finLinks = [
+    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
     { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }

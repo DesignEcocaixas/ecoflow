@@ -105,7 +105,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);  
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
-    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Gestão de Usuários");
+    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Usuários");
   }
 
   return `<div class="d-flex flex-column h-100"><div class="flex-grow-1">${menuLinks}</div>${footerHTML}</div>`;

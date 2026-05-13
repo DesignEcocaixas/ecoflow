@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 
-function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
+function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
@@ -19,14 +19,29 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
     }
   };
 
-  const totalCaixa = movimentacoes.reduce((acc, m) => {
+  // Badge de Mês Atual
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const dataAtual = new Date();
+  const mesAtualStr = meses[dataAtual.getMonth()] + ' de ' + dataAtual.getFullYear();
+
+  // Cálculo do Total em Caixa
+  const totalCaixaCalc = movimentacoes.reduce((acc, m) => {
     const val = parseFloat(m.valor) || 0;
     return m.tipo === 'entrada' ? acc + val : acc - val;
   }, 0);
-  const corTotal = totalCaixa >= 0 ? 'success' : 'danger';
-  const sinalTotal = totalCaixa >= 0 ? '+' : '-';
 
-  // GERAR AS LINHAS DA TABELA EM VEZ DE CARDS
+  // Cálculo do Total de Saídas
+  const totalSaidas = movimentacoes.reduce((acc, m) => {
+    const val = parseFloat(m.valor) || 0;
+    return m.tipo === 'saida' ? acc + val : acc;
+  }, 0);
+
+  // Se o caixa for menor que 0, trava em 0
+  const displayTotalCaixa = totalCaixaCalc < 0 ? 0 : totalCaixaCalc;
+  const corTotal = displayTotalCaixa > 0 ? 'success' : 'secondary';
+  const sinalTotal = displayTotalCaixa > 0 ? '+' : '';
+
+  // GERAR AS LINHAS DA TABELA
   const linhasTabela = movimentacoes.map(m => {
     const isEntrada = m.tipo === 'entrada';
     const corClass = isEntrada ? 'success' : 'danger';
@@ -34,30 +49,27 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
     const icone = isEntrada ? 'fa-arrow-down' : 'fa-arrow-up';
 
     return `
-    <tr style="cursor: pointer;" class="align-middle" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
-      <td class="text-muted fw-medium"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
-      <td>
-        <span class="badge bg-${corClass}-subtle text-${corClass} border border-${corClass}-subtle px-2 py-1">
+    <tr style="cursor: pointer;" class="align-middle table-hover-row" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
+      <td class="text-muted fw-medium py-1 px-3"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
+      <td class="py-1 px-3">
+        <span class="badge bg-${corClass}-subtle text-${corClass} border border-${corClass}-subtle px-2 py-1" style="width: 85px; display: inline-block; text-align: center;">
           <i class="fa-solid ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
         </span>
       </td>
-      <td>
+      <td class="py-1 px-3">
         <div class="text-truncate text-dark fw-medium" style="max-width: 250px;" title="${m.descricao}">
           ${m.descricao || "Sem descrição"}
         </div>
       </td>
-      <td>
-        <div class="text-truncate text-dark" style="max-width: 180px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
+      <td class="py-1 px-3">
+        <div class="text-truncate text-dark" style="max-width: 200px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
           <i class="fa-solid fa-pen-nib text-muted me-1"></i> ${m.nome_assinante || 'Não informado'}
         </div>
-        <div class="text-muted" style="font-size: 0.75rem;" title="Registrado no sistema por: ${m.responsavel}">
-          Resp: ${m.responsavel ? m.responsavel.split(' ')[0] : 'Desconhecido'}
-        </div>
       </td>
-      <td class="text-end fw-bold text-${corClass}">
+      <td class="text-end fw-bold text-${corClass} py-1 px-3">
          ${sinal} R$ ${fmtMoeda(m.valor)}
       </td>
-      <td class="text-center">
+      <td class="text-center py-1 px-3">
         <div class="btn-group">
           <button type="button" class="btn btn-sm btn-light border text-warning py-1 px-2 shadow-sm" 
                   onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${m.id}')).show();" title="Editar">
@@ -180,6 +192,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
     </div>
   `}).join("");
 
+  // Montagem da query string para a paginação
+  const qsParams = [];
+  if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
+  if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
+  if (filtros.tipo) qsParams.push(`tipo=${filtros.tipo}`);
+  const baseQueryString = qsParams.length > 0 ? '&' + qsParams.join('&') : '';
+
   const pageLinks = (() => {
     const delta = 2; 
     let paginas = [];
@@ -195,12 +214,12 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
     paginas.forEach(p => {
       if (ultima) {
         if (p - ultima === 2) {
-          html += `<li class="page-item"><a class="page-link text-dark" href="/entradas-saidas?page=${ultima + 1}">${ultima + 1}</a></li>`;
+          html += `<li class="page-item"><a class="page-link text-dark" href="/entradas-saidas?page=${ultima + 1}${baseQueryString}">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
           html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
         }
       }
-      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entradas-saidas?page=${p}">${p}</a></li>`;
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entradas-saidas?page=${p}${baseQueryString}">${p}</a></li>`;
       ultima = p;
     });
 
@@ -211,11 +230,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
     <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page - 1}">&laquo;</a>
+          <a class="page-link text-dark" href="/entradas-saidas?page=${page - 1}${baseQueryString}">&laquo;</a>
         </li>
         ${pageLinks}
         <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page + 1}">&raquo;</a>
+          <a class="page-link text-dark" href="/entradas-saidas?page=${page + 1}${baseQueryString}">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -262,10 +281,10 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
           touch-action: none;
       }
 
-      /* Hover para as linhas da tabela */
-      .table-hover tbody tr:hover {
-          background-color: rgba(13, 87, 73, 0.03);
-          transition: background-color 0.2s;
+      /* Hover forcado para as linhas da tabela (Ignora estilos do Bootstrap padrão) */
+      .table-hover-row { transition: background-color 0.2s; }
+      .table-hover-row:hover > td {
+          background-color: rgba(13, 87, 73, 0.06) !important;
       }
 
       @keyframes pulseIcon {
@@ -351,16 +370,19 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
           
           <div class="d-flex align-items-center gap-2">
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Histórico de Movimentações</h6>
-            <a href="/exportar/movimentacoes" target="_blank" class="btn btn-sm btn-outline-success shadow-sm ms-2" style="font-size: 0.75rem;" title="Exportar para Excel">
-              <i class="fa-solid fa-file-excel me-1"></i> Relatório
-            </a>
+            <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Histórico de Movimentações</h6>
+            <span class="badge bg-success-subtle text-success border border-success-subtle shadow-sm">${mesAtualStr}</span>
           </div>
           
           <div class="d-flex gap-4 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
-            <div class="text-end border-end pe-3 d-none d-sm-block">
-               <span class="text-muted" style="font-size: 0.75rem;">Total em Caixa</span><br>
-               <strong class="text-${corTotal}" style="font-size: 1.05rem;">${sinalTotal} R$ ${fmtMoeda(Math.abs(totalCaixa))}</strong>
+            <div class="text-end border-end pe-4 d-none d-sm-block">
+               <span class="text-muted fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
+               <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
+            </div>
+          
+            <div class="text-end border-end pe-4 d-none d-sm-block pt-2">
+               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Total Saídas</span><br>
+               <strong class="text-danger" style="font-size: 1.1rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
             </div>
 
             <div class="d-flex gap-2">
@@ -368,35 +390,84 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
                     <i class="fa-solid fa-arrow-down me-1"></i> Entrada
                 </button>
                 <button class="btn btn-sm btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 px-3" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
-                <i class="fa-solid fa-arrow-up me-1"></i> Retirada
-              </button>
+                    <i class="fa-solid fa-arrow-up me-1"></i> Retirada
+                </button>
+                <button class="btn btn-sm btn-outline-success shadow-sm px-3 flex-grow-1 flex-sm-grow-0" onclick="abrirModalRelatorio()" title="Exportar para Excel">
+                    <i class="fa-solid fa-file-excel me-1"></i> Relatório
+                </button>
             </div>
           </div>
         </div>
+
+        <form class="row g-2 align-items-end mt-2 border-top pt-3" method="GET" action="/entradas-saidas">
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
+                <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
+                <input type="date" name="data_fim" class="form-control form-control-sm" value="${filtros.data_fim || ''}">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo de Movimentação</label>
+                <select name="tipo" class="form-select form-select-sm">
+                    <option value="">Tudo (Entradas e Saídas)</option>
+                    <option value="entrada" ${filtros.tipo === 'entrada' ? 'selected' : ''}>Apenas Entradas</option>
+                    <option value="saida" ${filtros.tipo === 'saida' ? 'selected' : ''}>Apenas Saídas</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <a href="/entradas-saidas" class="btn btn-sm btn-light border flex-grow-1 text-center shadow-sm"><i class="fa-solid fa-xmark"></i></a>
+            </div>
+        </form>
+
       </div>
 
       ${movimentacoes.length > 0 
         ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
-             <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+             <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
                <thead class="table-light">
                  <tr>
-                   <th class="py-3 px-3">Data</th>
-                   <th class="py-3">Tipo</th>
-                   <th class="py-3">Descrição</th>
-                   <th class="py-3">Assinante / Resp.</th>
-                   <th class="py-3 text-end">Valor (R$)</th>
-                   <th class="py-3 text-center">Ações</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
                  </tr>
                </thead>
-               <tbody>
+               <tbody class="border-top-0">
                  ${linhasTabela}
                </tbody>
              </table>
            </div>` 
-        : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada.</p></div>`
+        : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada para este filtro.</p></div>`
       }
 
       ${paginacaoHtml}
+    </div>
+
+    <div class="modal fade" id="modalRelatorio" tabindex="-1">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar Relatório</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label text-muted fw-bold small mb-1">Ano Base</label>
+              <select id="relatorioAno" class="form-select form-select-sm"></select>
+            </div>
+            <div class="mb-4">
+              <label class="form-label text-muted fw-bold small mb-1">Mês Base</label>
+              <select id="relatorioMes" class="form-select form-select-sm"></select>
+            </div>
+            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
@@ -697,6 +768,62 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}) {
 
           isSubmitting = true;
           setTimeout(() => { form.submit(); }, 1500);
+      }
+
+      // ==========================================
+      // LÓGICA DE EXPORTAÇÃO EXCEL
+      // ==========================================
+      async function fetchSeguro(url, options = {}) {
+          const res = await fetch(url, options);
+          if (res.status === 401) {
+              window.location.href = '/login';
+              return null; 
+          }
+          return res;
+      }
+
+      let periodosMovCache = [];
+
+      async function abrirModalRelatorio() {
+          const anoSelect = document.getElementById('relatorioAno');
+          const mesSelect = document.getElementById('relatorioMes');
+          
+          try {
+              const res = await fetchSeguro('/api/movimentacoes/periodos');
+              if(!res) return;
+              periodosMovCache = await res.json();
+              
+              if (periodosMovCache.length === 0) {
+                  anoSelect.innerHTML = '<option value="">Sem dados</option>';
+                  mesSelect.innerHTML = '<option value="">Sem dados</option>';
+              } else {
+                  const anos = [...new Set(periodosMovCache.map(p => p.ano))];
+                  anoSelect.innerHTML = anos.map(a => \`<option value="\${a}">\${a}</option>\`).join('');
+                  
+                  anoSelect.onchange = () => {
+                      const anoAtual = parseInt(anoSelect.value);
+                      const meses = periodosMovCache.filter(p => p.ano === anoAtual).map(p => p.mes);
+                      const nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                      mesSelect.innerHTML = meses.map(m => \`<option value="\${m}">\${nomes[m-1]}</option>\`).join('');
+                  };
+                  anoSelect.onchange(); 
+              }
+          } catch(e) { console.error(e); }
+          
+          new bootstrap.Modal(document.getElementById('modalRelatorio')).show();
+      }
+
+      function baixarRelatorioExcel() {
+          const mes = document.getElementById('relatorioMes').value;
+          const ano = document.getElementById('relatorioAno').value;
+          
+          if(mes && ano) {
+              window.open(\`/exportar/movimentacoes?mes=\${mes}&ano=\${ano}\`, '_blank');
+              bootstrap.Modal.getInstance(document.getElementById('modalRelatorio')).hide();
+          } else {
+              window.open('/exportar/movimentacoes', '_blank');
+              bootstrap.Modal.getInstance(document.getElementById('modalRelatorio')).hide();
+          }
       }
     </script>
     <script src="./script/checkLogin.js"></script>

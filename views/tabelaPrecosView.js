@@ -33,22 +33,20 @@ function tabelaPrecosView(
     const precoBranca = Number(caixa.preco_branca) * fator;
 
     return `
-    <tr class="align-middle">
-      <td class="fw-medium text-dark">${caixa.codigo || "-"}</td>
-      <td>${caixa.modelo}</td>
-      <td class="text-success fw-bold">R$ ${fmt(precoParda)}</td>
-      <td class="text-primary fw-bold">R$ ${fmt(precoBranca)}</td>
-      <td>
-        <span class="badge bg-secondary bg-opacity-75 text-dark fw-medium" style="font-size:0.75rem;">
+    <tr style="cursor: pointer;" class="align-middle table-hover-row" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${caixa.id}')).show();">
+      <td class="text-dark py-1 px-3 text-start">${caixa.codigo || "-"}</td>
+      <td class="text-dark py-1 px-3 text-start">${caixa.modelo}</td>
+      <td class="text-dark py-1 px-3">R$ ${fmt(precoParda)}</td>
+      <td class="text-dark py-1 px-3">R$ ${fmt(precoBranca)}</td>
+      <td class="py-1 px-3">
+        <span class="badge bg-secondary bg-opacity-75 text-dark" style="font-size:0.75rem;">
           <i class="fa-solid fa-truck-fast me-1 text-white"></i> ${caixa.fornecedor_nome || "Sem Fornecedor"}
         </span>
       </td>
-      <td class="text-end text-nowrap">
-        <button class="btn btn-sm btn-light border text-warning" data-bs-toggle="modal" data-bs-target="#editarModal${caixa.id}" title="Editar">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#excluirModal${caixa.id}" title="Excluir">
-          <i class="fa-solid fa-trash"></i>
+      <td class="text-end text-nowrap py-1 px-3">
+        <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2 shadow-sm" 
+                onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirModal${caixa.id}')).show();" title="Excluir">
+          <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
         </button>
       </td>
     </tr>
@@ -291,31 +289,6 @@ function tabelaPrecosView(
           box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
 
-      /* ERP Cards & Tables */
-      .erp-card {
-          border-radius: 12px;
-          background: #fff;
-          border: none;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-          overflow: hidden;
-      }
-      
-      .table > :not(caption) > * > * {
-          padding: 6px 16px; /* REDUZIDO PARA LINHAS MAIS COMPACTAS */
-          border-bottom-color: #f0f0f0;
-          vertical-align: middle;
-      }
-      .table thead th {
-          background-color: #fafbfc;
-          color: #6c757d;
-          font-weight: 600;
-          font-size: 0.8rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          border-bottom: 2px solid #e9ecef;
-          padding: 10px 16px !important;
-      }
-
       /* Modals */
       .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
       .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
@@ -326,6 +299,12 @@ function tabelaPrecosView(
       .pagination-sm .page-link { background: transparent; border: none; font-size: 0.85rem; }
       .pagination-sm .page-item.active .page-link { background: transparent; border: none; }
       .pagination-sm .page-link:focus { box-shadow: none; }
+
+      /* Hover forcado para as linhas da tabela */
+      .table-hover-row { transition: background-color 0.2s; }
+      .table-hover-row:hover > td {
+          background-color: rgba(13, 87, 73, 0.06) !important;
+      }
 
       /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
@@ -410,24 +389,22 @@ function tabelaPrecosView(
         </form>
       </div>
 
-      <div class="erp-card">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle text-center mb-0" id="caixasTable">
-            <thead>
-              <tr>
-                <th class="text-start">Código</th>
-                <th class="text-start">Modelo da Caixa</th>
-                <th>Preço Parda</th>
-                <th>Preço Branca</th>
-                <th>Fornecedor Associado</th>
-                <th class="text-end">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${linhas || "<tr><td colspan='6' class='text-center text-muted py-4'><i class='fa-solid fa-inbox fa-2x mb-2 opacity-25'></i><br>Nenhuma caixa encontrada</td></tr>"}
-            </tbody>
-          </table>
-        </div>
+      <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+        <table class="table table-hover table-sm align-middle text-center mb-0" id="caixasTable" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
+          <thead class="table-light">
+            <tr>
+              <th class="py-2 px-3 fw-bold text-muted border-0 text-start">Código</th>
+              <th class="py-2 px-3 fw-bold text-muted border-0 text-start">Modelo da Caixa</th>
+              <th class="py-2 px-3 fw-bold text-muted border-0">Preço Parda</th>
+              <th class="py-2 px-3 fw-bold text-muted border-0">Preço Branca</th>
+              <th class="py-2 px-3 fw-bold text-muted border-0">Fornecedor Associado</th>
+              <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="border-top-0">
+            ${linhas || "<tr><td colspan='6' class='text-center text-muted py-4'><i class='fa-solid fa-inbox fa-2x mb-2 opacity-25'></i><br>Nenhuma caixa encontrada</td></tr>"}
+          </tbody>
+        </table>
       </div>
 
       ${paginationHtml}

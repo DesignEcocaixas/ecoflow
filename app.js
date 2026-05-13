@@ -1873,11 +1873,10 @@ app.get("/checklist-motoristas/relatorio", async (req, res) => {
 // ROTAS DE ENTRADAS E SAÍDAS (FINANCEIRO / PORTARIA)
 // =======================================================
 
-// 1. Rota principal - Listagem com Paginação (Grid 4x5 = 20 cards)
+// 1. Rota principal - Listagem com Paginação e Filtro (Data e Tipo)
 app.get("/entradas-saidas", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
-    // Controle de acesso (ajuste conforme os tipos de usuário do seu sistema)
     if (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro") {
         return res.status(403).send("Acesso negado.");
     }
@@ -1885,11 +1884,28 @@ app.get("/entradas-saidas", (req, res) => {
     const usuario = req.session.user;
     
     const page = parseInt(req.query.page || "1", 10);
-    const limit = 20; // 20 cards por página para preencher a grade 4x5
-    const offset = (page - 1) * limit;
+    const limit = 20; 
+    
+    const { data_inicio, data_fim, tipo } = req.query; // <- Novo filtro "tipo"
+    let where = [];
+    let params = [];
 
-    // Conta o total para a paginação
-    db.query("SELECT COUNT(*) AS total FROM movimentacoes", (errCount, rowsCount) => {
+    if (data_inicio) {
+        where.push("data >= ?");
+        params.push(data_inicio);
+    }
+    if (data_fim) {
+        where.push("data <= ?");
+        params.push(data_fim);
+    }
+    if (tipo === "entrada" || tipo === "saida") {
+        where.push("tipo = ?");
+        params.push(tipo);
+    }
+
+    const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+    db.query(`SELECT COUNT(*) AS total FROM movimentacoes ${whereSql}`, params, (errCount, rowsCount) => {
         if (errCount) {
             console.error("Erro ao contar movimentações:", errCount);
             return res.status(500).send("Erro interno do servidor.");
@@ -1900,16 +1916,23 @@ app.get("/entradas-saidas", (req, res) => {
         const currentPage = Math.min(Math.max(page, 1), totalPages);
         const currentOffset = (currentPage - 1) * limit;
 
-        // Busca os registos paginados
-        db.query("SELECT * FROM movimentacoes ORDER BY data DESC, id DESC LIMIT ? OFFSET ?", 
-        [limit, currentOffset], 
+        const queryParams = [...params, limit, currentOffset];
+
+        db.query(`SELECT * FROM movimentacoes ${whereSql} ORDER BY data DESC, id DESC LIMIT ? OFFSET ?`, 
+        queryParams, 
         (errMov, movimentacoes) => {
             if (errMov) {
                 console.error("Erro ao buscar movimentações:", errMov);
                 return res.status(500).send("Erro interno do servidor.");
             }
 
-            res.send(entradasSaidasView(usuario, movimentacoes, { page: currentPage, totalPages, total }));
+            // Repassando os filtros para a view
+            res.send(require('./views/entradasSaidasView')(
+                usuario, 
+                movimentacoes, 
+                { page: currentPage, totalPages, total }, 
+                { data_inicio, data_fim, tipo }
+            ));
         });
     });
 });
@@ -2705,25 +2728,56 @@ app.get('/exportar/flexografica', async (req, res) => {
     }
 });
 
-// 3. EXPORTAR RELATÓRIO EXCEL
+// ==========================================
+// API PARA BUSCAR PERÍODOS DE MOVIMENTAÇÕES
+// ==========================================
+app.get('/api/movimentacoes/periodos', async (req, res) => {
+    if (!req.session.user) return res.status(401).json([]);
+    try {
+        const [rows] = await db.promise().query(`
+            SELECT DISTINCT YEAR(data) as ano, MONTH(data) as mes 
+            FROM movimentacoes 
+            ORDER BY ano DESC, mes DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error("Erro ao buscar períodos:", error);
+        res.status(500).json([]);
+    }
+});
+
+// ==========================================
+// EXPORTAR RELATÓRIO EXCEL (Atualizado com Filtro e Ordem Crescente)
+// ==========================================
 app.get('/exportar/movimentacoes', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
+        const { mes, ano } = req.query;
+        let whereClause = '';
+        const queryParams = [];
+
+        // Filtra por mês e ano se o usuário selecionar no Modal
+        if (mes && ano) {
+            whereClause = 'WHERE MONTH(data) = ? AND YEAR(data) = ?';
+            queryParams.push(mes, ano);
+        }
+
+        // Alterado ORDER BY para ASC (Crescente: do dia 1 ao último dia)
         const [dados] = await db.promise().query(`
             SELECT data, tipo, valor, responsavel, nome_assinante, descricao, observacao 
             FROM movimentacoes 
-            ORDER BY data DESC, id DESC
-        `);
+            ${whereClause}
+            ORDER BY data ASC, id ASC
+        `, queryParams);
 
         const ExcelJS = require('exceljs');
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Movimentações de Caixa');
 
-        // Duas colunas para as duas pessoas envolvidas
         sheet.columns = [
             { header: 'DATA', key: 'data', width: 15 },
-            { header: 'TIPO', key: 'tipo', width: 12 },
+            { header: 'TIPO', key: 'tipo', width: 18 },
             { header: 'VALOR (R$)', key: 'valor', width: 15 },
             { header: 'REGISTRADO POR (SISTEMA)', key: 'responsavel', width: 25 },
             { header: 'ASSINANTE (QUEM MOVIMENTOU)', key: 'nome_assinante', width: 30 },
@@ -2737,11 +2791,22 @@ app.get('/exportar/movimentacoes', async (req, res) => {
             cell.alignment = { horizontal: 'center' };
         });
 
+        let totalEntradas = 0;
+        let totalSaidas = 0;
+
         dados.forEach(m => {
+            const valorCalculo = parseFloat(m.valor) || 0;
+            
+            if (m.tipo === 'entrada') {
+                totalEntradas += valorCalculo;
+            } else if (m.tipo === 'saida') {
+                totalSaidas += valorCalculo;
+            }
+
             const row = sheet.addRow({
                 data: new Date(m.data),
                 tipo: m.tipo.toUpperCase(),
-                valor: parseFloat(m.valor),
+                valor: valorCalculo,
                 responsavel: m.responsavel || '-',
                 nome_assinante: m.nome_assinante || 'Não informado',
                 descricao: m.descricao,
@@ -2761,9 +2826,30 @@ app.get('/exportar/movimentacoes', async (req, res) => {
             });
         });
 
+        sheet.addRow([]); 
+
+        const saldoFinal = totalEntradas - totalSaidas;
+
+        const rowEntradas = sheet.addRow({ tipo: 'TOTAL ENTRADAS:', valor: totalEntradas });
+        const rowSaidas = sheet.addRow({ tipo: 'TOTAL SAÍDAS:', valor: totalSaidas });
+        const rowSaldo = sheet.addRow({ tipo: 'SALDO FINAL:', valor: saldoFinal });
+
+        [rowEntradas, rowSaidas, rowSaldo].forEach(row => {
+            row.getCell('tipo').font = { bold: true };
+            row.getCell('tipo').alignment = { horizontal: 'right' };
+            row.getCell('tipo').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            row.getCell('valor').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        });
+
+        rowEntradas.getCell('valor').font = { bold: true, color: { argb: 'FF28A745' } }; 
+        rowSaidas.getCell('valor').font = { bold: true, color: { argb: 'FFDC3545' } }; 
+        rowSaldo.getCell('valor').font = { bold: true, color: { argb: saldoFinal >= 0 ? 'FF000000' : 'FFDC3545' } }; 
+
+        const compNome = (mes && ano) ? `${mes}_${ano}` : `Geral`;
         const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caixa_${dataHoje}.xlsx`);
+        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caixa_${compNome}_${dataHoje}.xlsx`);
 
         await workbook.xlsx.write(res);
         res.end();

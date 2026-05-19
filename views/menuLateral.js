@@ -15,16 +15,16 @@ function menuLateral(usuario, rotaAtiva = "") {
     let linksHtml = linksArray.map(l => {
       const activeClass = rotaAtiva === l.href ? "active" : "";
       return `
-        <a href="${l.href}" class="${activeClass} py-2 mb-1" style="font-size: 0.85rem;">
+        <a href="${l.href}" class="${activeClass} py-2 mb-1 menu-link-item" style="font-size: 0.85rem;">
           <i class="${l.icone} me-2 text-white-50" style="width: 16px; text-align: center;"></i> ${l.texto}
         </a>`;
     }).join('');
 
     return `
       <div class="nav-accordion">
-        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="${expanded}" aria-controls="${id}" class="d-flex justify-content-between align-items-center text-nowrap">
+        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="${expanded}" aria-controls="${id}" class="d-flex justify-content-between align-items-center text-nowrap nav-accordion-btn">
           <span><i class="${icone} me-2" style="width: 20px; text-align: center;"></i> ${titulo}</span>
-          <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.7;"></i>
+          <i class="fa-solid fa-chevron-down chevron-icon" style="font-size: 0.7rem; opacity: 0.7;"></i>
         </a>
         <div class="collapse ${showClass}" id="${id}">
           <div class="border-start border-light border-opacity-25 ms-3 ps-2 mt-1 mb-2">
@@ -84,23 +84,18 @@ function menuLateral(usuario, rotaAtiva = "") {
   let menuLinks = renderLink("/home", "fas fa-home me-2", "Home");
 
   if (tipo === "motorista") {
-    // Perfil Motorista vê apenas a categoria Motorista
-    menuLinks += renderCollapse("collMot", "fas fa-steering-wheel", "Motorista", motLinks);
+    menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);
   } 
   else if (tipo === "logistica") {
-    // Perfil Logística vê apenas a categoria Logística
     menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
   }
   else if (tipo === "design") {
-    // Perfil Design vê apenas a categoria Design
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
   }
   else if (tipo === "financeiro") {
-    // Perfil Financeiro vê apenas a categoria Financeiro
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
   }
   else {
-    // ADMIN: Acesso Total a todas as categorias reorganizadas
     menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);  
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
@@ -108,7 +103,38 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Usuários");
   }
 
-  return `<div class="d-flex flex-column h-100"><div class="flex-grow-1">${menuLinks}</div>${footerHTML}</div>`;
+  // O bloco <style> injeta a animação na hora em que o menu é renderizado
+  return `
+    <style>
+      /* Animação de rotação da setinha (Chevron) */
+      .nav-accordion-btn .chevron-icon {
+        transition: transform 0.35s ease;
+      }
+      .nav-accordion-btn[aria-expanded="true"] .chevron-icon {
+        transform: rotate(-180deg);
+      }
+      
+      /* Garante a transição suave de abertura/fechamento do Bootstrap */
+      .nav-accordion .collapse {
+        transition: height 0.35s ease;
+      }
+      
+      /* Efeito suave ao passar o mouse por cima dos links internos */
+      .menu-link-item {
+        transition: padding-left 0.2s ease, background-color 0.2s ease;
+      }
+      .menu-link-item:hover {
+        padding-left: 20px !important;
+      }
+    </style>
+
+    <div class="d-flex flex-column h-100">
+      <div class="flex-grow-1">
+        ${menuLinks}
+      </div>
+      ${footerHTML}
+    </div>
+  `;
 }
 
 module.exports = menuLateral;

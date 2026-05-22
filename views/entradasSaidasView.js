@@ -374,12 +374,12 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           
             <div class="text-end border-end pe-3 d-none d-lg-block pt-2">
                <span class="text-muted fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
-               <strong class="text-success" style="font-size: 1.1rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+               <strong class="text-success" style="font-size: 0.70rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
             </div>
 
             <div class="text-end border-end pe-3 d-none d-sm-block pt-2">
                <span class="text-muted fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
-               <strong class="text-danger" style="font-size: 1.1rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
+               <strong class="text-danger" style="font-size: 0.70rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
             </div>
 
             <div class="d-flex gap-2">

@@ -19,22 +19,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     }
   };
 
-  // Badge de Mês Atual
   const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const dataAtual = new Date();
   const mesAtualStr = meses[dataAtual.getMonth()] + ' de ' + dataAtual.getFullYear();
 
-  // Cálculo do Total em Caixa
-  const totalCaixaCalc = movimentacoes.reduce((acc, m) => {
-    const val = parseFloat(m.valor) || 0;
-    return m.tipo === 'entrada' ? acc + val : acc - val;
-  }, 0);
-
-  // Cálculo do Total de Saídas
-  const totalSaidas = movimentacoes.reduce((acc, m) => {
-    const val = parseFloat(m.valor) || 0;
-    return m.tipo === 'saida' ? acc + val : acc;
-  }, 0);
+  // Valores reais vindos diretamente do banco de dados (ignorando a paginação)
+  const totalEntradas = paginacao.totalEntradas || 0;
+  const totalSaidas = paginacao.totalSaidas || 0;
+  const totalCaixaCalc = paginacao.totalCaixa || 0;
 
   // Se o caixa for menor que 0, trava em 0
   const displayTotalCaixa = totalCaixaCalc < 0 ? 0 : totalCaixaCalc;
@@ -281,7 +273,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           touch-action: none;
       }
 
-      /* Hover forcado para as linhas da tabela (Ignora estilos do Bootstrap padrão) */
+      /* Hover forcado para as linhas da tabela */
       .table-hover-row { transition: background-color 0.2s; }
       .table-hover-row:hover > td {
           background-color: rgba(13, 87, 73, 0.06) !important;
@@ -375,13 +367,18 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           </div>
           
           <div class="d-flex gap-4 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
-            <div class="text-end border-end pe-4 d-none d-sm-block">
+            <div class="text-end pe-2 d-none d-sm-block">
                <span class="text-muted fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
                <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
             </div>
           
-            <div class="text-end border-end pe-4 d-none d-sm-block pt-2">
-               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Total Saídas</span><br>
+            <div class="text-end border-end pe-3 d-none d-lg-block pt-2">
+               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
+               <strong class="text-success" style="font-size: 1.1rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+            </div>
+
+            <div class="text-end border-end pe-3 d-none d-sm-block pt-2">
+               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
                <strong class="text-danger" style="font-size: 1.1rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
             </div>
 

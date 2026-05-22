@@ -1948,15 +1948,21 @@ app.get("/entradas-saidas", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     if (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro") {
+        console.warn(`[Segurança] Usuário ${req.session.user.nome} tentou acessar /entradas-saidas sem permissão.`);
         return res.status(403).send("Acesso negado.");
     }
 
     const usuario = req.session.user;
     
-    const page = parseInt(req.query.page || "1", 10);
+    let page = parseInt(req.query.page || "1", 10);
+    if (isNaN(page) || page < 1) {
+        console.warn(`[Aviso] Parâmetro 'page' inválido recebido: ${req.query.page}. Revertendo para página 1.`);
+        page = 1;
+    }
+    
     const limit = 20; 
     
-    const { data_inicio, data_fim, tipo } = req.query; // <- Novo filtro "tipo"
+    const { data_inicio, data_fim, tipo } = req.query; 
     let where = [];
     let params = [];
 
@@ -1974,17 +1980,38 @@ app.get("/entradas-saidas", (req, res) => {
     }
 
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+    
+    console.log(`[Filtros] SQL Dinâmico: ${whereSql || "Nenhum filtro aplicado"} | Parâmetros:`, params);
 
-    db.query(`SELECT COUNT(*) AS total FROM movimentacoes ${whereSql}`, params, (errCount, rowsCount) => {
+    // NOVO: Query para buscar a SOMA TOTAL REAL do banco, ignorando a paginação!
+    db.query(`
+        SELECT 
+            COUNT(*) AS total,
+            SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END) AS total_entradas,
+            SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END) AS total_saidas
+        FROM movimentacoes ${whereSql}
+    `, params, (errCount, rowsCount) => {
         if (errCount) {
-            console.error("Erro ao contar movimentações:", errCount);
+            console.error("[Erro Banco de Dados] Falha ao contar movimentações e somar totais:", errCount);
             return res.status(500).send("Erro interno do servidor.");
         }
 
-        const total = rowsCount[0].total || 0;
+        if (!rowsCount || rowsCount.length === 0) {
+            console.warn("[Aviso] A consulta de totais retornou indefinida ou vazia.");
+        }
+
+        const total = rowsCount[0]?.total || 0;
+        const totalEntradas = rowsCount[0]?.total_entradas || 0;
+        const totalSaidas = rowsCount[0]?.total_saidas || 0;
+        const totalCaixa = totalEntradas - totalSaidas;
+
+        console.log(`[Cálculos de Caixa] Entradas: ${totalEntradas} | Saídas: ${totalSaidas} | Saldo: ${totalCaixa}`);
+
         const totalPages = Math.max(1, Math.ceil(total / limit));
         const currentPage = Math.min(Math.max(page, 1), totalPages);
         const currentOffset = (currentPage - 1) * limit;
+
+        console.log(`[Paginação] Total Itens: ${total} | Páginas: ${totalPages} | Atual: ${currentPage} | Offset: ${currentOffset}`);
 
         const queryParams = [...params, limit, currentOffset];
 
@@ -1992,17 +2019,23 @@ app.get("/entradas-saidas", (req, res) => {
         queryParams, 
         (errMov, movimentacoes) => {
             if (errMov) {
-                console.error("Erro ao buscar movimentações:", errMov);
+                console.error("[Erro Banco de Dados] Falha ao buscar as movimentações paginadas:", errMov);
                 return res.status(500).send("Erro interno do servidor.");
             }
 
-            // Repassando os filtros para a view
-            res.send(require('./views/entradasSaidasView')(
-                usuario, 
-                movimentacoes, 
-                { page: currentPage, totalPages, total }, 
-                { data_inicio, data_fim, tipo }
-            ));
+            try {
+                console.log(`[Sucesso] Renderizando view com ${movimentacoes.length} registros para o usuário ${usuario.nome}.`);
+                // Repassando os valores corretos calculados no banco para a view
+                res.send(require('./views/entradasSaidasView')(
+                    usuario, 
+                    movimentacoes, 
+                    { page: currentPage, totalPages, total, totalEntradas, totalSaidas, totalCaixa }, 
+                    { data_inicio, data_fim, tipo }
+                ));
+            } catch (renderError) {
+                console.error("[Erro Crítico] Falha na renderização da View 'entradasSaidasView':", renderError);
+                res.status(500).send("Ocorreu um erro interno ao tentar exibir a interface.");
+            }
         });
     });
 });

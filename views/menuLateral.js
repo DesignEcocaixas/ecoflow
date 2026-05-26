@@ -2,32 +2,75 @@
 function menuLateral(usuario, rotaAtiva = "") {
   const tipo = usuario && usuario.tipo_usuario ? usuario.tipo_usuario : "admin";
 
+  // Variável inteligente para garantir que apenas UMA sanfona abra ao mesmo tempo
+  let menuJaExpandido = false;
+
+  const logLinks = [
+    { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
+    { href: "/veiculos", icone: "fas fa-car", texto: "Frota de Veículos" },
+    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
+    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas de Entrega" },
+    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno de Entregas" }
+  ];
+
+  const motLinks = [
+    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist Diário" },
+    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas de Entrega" },
+    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno de Entregas" }
+  ];
+
+  const finLinks = [
+    { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Estoque de Chapas" },
+    { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
+  ];
+
+  const desLinks = [
+    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas e Clichês" },
+    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Biblioteca de Gabaritos" }
+  ];
+
   const renderLink = (href, icone, texto) => {
     const activeClass = rotaAtiva === href ? "active" : "";
-    return `<a href="${href}" class="${activeClass}"><i class="${icone}" style="width: 20px; text-align: center;"></i> ${texto}</a>`;
+    return `
+      <a href="${href}" class="${activeClass} d-flex align-items-center text-white text-decoration-none py-2 px-3">
+        <i class="${icone} menu-icone" style="width: 24px; text-align: center;"></i> 
+        <span class="sidebar-text ms-2">${texto}</span>
+      </a>`;
   };
 
   const renderCollapse = (id, icone, titulo, linksArray) => {
     const isActive = linksArray.some(link => rotaAtiva === link.href);
-    const showClass = isActive ? "show" : "";
-    const expanded = isActive ? "true" : "false";
+    
+    // Lógica: Se a rota pertence a este menu E nenhum outro abriu ainda -> ABRE!
+    const deveAbrir = isActive && !menuJaExpandido;
+    if (deveAbrir) {
+        menuJaExpandido = true;
+    }
+
+    const showClass = deveAbrir ? "show" : "";
+    const expanded = deveAbrir ? "true" : "false";
 
     let linksHtml = linksArray.map(l => {
       const activeClass = rotaAtiva === l.href ? "active" : "";
       return `
-        <a href="${l.href}" class="${activeClass} py-2 mb-1 menu-link-item" style="font-size: 0.85rem;">
-          <i class="${l.icone} me-2 text-white-50" style="width: 16px; text-align: center;"></i> ${l.texto}
+        <a href="${l.href}" class="${activeClass} py-2 mb-1 menu-link-item d-flex align-items-center text-white-50 text-decoration-none" style="font-size: 0.85rem;">
+          <i class="${l.icone} menu-icone" style="width: 20px; text-align: center;"></i> 
+          <span class="sidebar-text ms-2">${l.texto}</span>
         </a>`;
     }).join('');
 
     return `
       <div class="nav-accordion">
-        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="${expanded}" aria-controls="${id}" class="d-flex justify-content-between align-items-center text-nowrap nav-accordion-btn">
-          <span><i class="${icone} me-2" style="width: 20px; text-align: center;"></i> ${titulo}</span>
-          <i class="fa-solid fa-chevron-down chevron-icon" style="font-size: 0.7rem; opacity: 0.7;"></i>
+        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="${expanded}" aria-controls="${id}" class="d-flex justify-content-between align-items-center nav-accordion-btn text-white text-decoration-none py-2 px-3">
+          <span class="d-flex align-items-center">
+            <i class="${icone} menu-icone" style="width: 24px; text-align: center;"></i> 
+            <span class="sidebar-text ms-2">${titulo}</span>
+          </span>
+          <i class="fa-solid fa-chevron-down chevron-icon sidebar-text" style="font-size: 0.7rem; opacity: 0.7;"></i>
         </a>
         <div class="collapse ${showClass}" id="${id}">
-          <div class="border-start border-light border-opacity-25 ms-3 ps-2 mt-1 mb-2">
+          <div class="border-start border-light border-opacity-25 ms-4 ps-2 mt-1 mb-2 sidebar-submenu">
             ${linksHtml}
           </div>
         </div>
@@ -35,107 +78,68 @@ function menuLateral(usuario, rotaAtiva = "") {
     `;
   };
 
-  // ==========================================
-  // DEFINIÇÕES DOS LINKS POR CATEGORIA (REORGANIZADO)
-  // ==========================================
-  
-  // 1. Logística (Foco em Gestão e Produção)
-  const logLinks = [
-    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
-    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
-    { href: "/caderno-entregas", icone: "fas fa-book", texto: "Caderno de Entregas" }
-  ];
-
-  // 2. Motorista (Operacional de Campo)
-  const motLinks = [
-    { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
-    { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" }
-  ];
-
-  // 3. Financeiro
-  const finLinks = [
-    { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
-    { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
-    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
-    { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
-    { href: "/caderno-entregas", icone: "fas fa-book", texto: "Caderno de Entregas" }
-  ];
-
-  // 4. Design
-  const desLinks = [
-    { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
-    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" }
-  ];
-
-  const footerHTML = `
-    <div class="mt-auto pt-3 pb-0 text-center w-100" style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-      <hr class="border-light border-opacity-25 mb-2 mt-2">
-      <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-        <span>Desenvolvido por <strong class="text-white">71dev</strong></span>
-        <div class="d-flex align-items-center gap-2">
-          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);"><i class="fa-brands fa-whatsapp"></i></a>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // ==========================================
-  // LÓGICA DE RENDERIZAÇÃO POR PERFIL
-  // ==========================================
-  let menuLinks = renderLink("/home", "fas fa-home me-2", "Home");
+  let menuLinks = renderLink("/home", "fas fa-home", "Home");
 
   if (tipo === "motorista") {
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);
-  } 
-  else if (tipo === "logistica") {
+  } else if (tipo === "logistica") {
     menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
-  }
-  else if (tipo === "design") {
+  } else if (tipo === "design") {
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
-  }
-  else if (tipo === "financeiro") {
+  } else if (tipo === "financeiro") {
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
-  }
-  else {
+  } else {
     menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);  
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
-    menuLinks += renderLink("/cadastro", "fas fa-user-plus me-2", "Usuários");
+    menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Gestão de Usuários");
   }
 
-  // O bloco <style> injeta a animação na hora em que o menu é renderizado
   return `
     <style>
-      /* Animação de rotação da setinha (Chevron) */
-      .nav-accordion-btn .chevron-icon {
-        transition: transform 0.35s ease;
-      }
-      .nav-accordion-btn[aria-expanded="true"] .chevron-icon {
-        transform: rotate(-180deg);
-      }
+      .sidebar { transition: width 0.3s ease; overflow-x: hidden; }
       
-      /* Garante a transição suave de abertura/fechamento do Bootstrap */
-      .nav-accordion .collapse {
-        transition: height 0.35s ease;
-      }
+      body.sidebar-collapsed .sidebar { width: 70px !important; }
+      body.sidebar-collapsed .sidebar-text { display: none !important; }
+      body.sidebar-collapsed .nav-accordion-btn, 
+      body.sidebar-collapsed .sidebar a { justify-content: center !important; }
+      body.sidebar-collapsed .sidebar .chevron-icon { display: none !important; }
+      body.sidebar-collapsed .sidebar .sidebar-submenu { border: none !important; margin: 0 !important; }
+      body.sidebar-collapsed .sidebar .collapse { display: none !important; }
       
-      /* Efeito suave ao passar o mouse por cima dos links internos */
-      .menu-link-item {
-        transition: padding-left 0.2s ease, background-color 0.2s ease;
-      }
-      .menu-link-item:hover {
-        padding-left: 20px !important;
-      }
+      .chevron-icon { transition: transform 0.35s ease; }
+      .nav-accordion-btn[aria-expanded="true"] .chevron-icon { transform: rotate(-180deg); }
+      .transition-btn:hover { background: rgba(255,255,255,0.1); }
     </style>
 
     <div class="d-flex flex-column h-100">
+      <button id="toggleSidebarBtn" class="btn text-white w-100 transition-btn border-0 py-2 mb-2">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
       <div class="flex-grow-1">
         ${menuLinks}
       </div>
-      ${footerHTML}
     </div>
+
+    <script>
+      (function() {
+        if (localStorage.getItem('sidebarState') === 'collapsed') {
+          document.body.classList.add('sidebar-collapsed');
+        }
+
+        const btn = document.getElementById('toggleSidebarBtn');
+        if (btn) {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.toggle('sidebar-collapsed');
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebarState', isCollapsed ? 'collapsed' : 'expanded');
+          });
+        }
+      })();
+    </script>
   `;
 }
 

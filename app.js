@@ -1,5 +1,7 @@
 // app.js
 const express = require("express");
+const pdfkit = require("pdfkit");
+const axios = require("axios");
 const { exec } = require('child_process');
 const http = require("http");
 const bodyParser = require("body-parser");
@@ -1752,12 +1754,12 @@ app.get('/exportar/chapas', async (req, res) => {
         // Aplica bordas em todas as células
         sheet.eachRow(row => {
             row.eachCell(cell => {
-                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
             });
         });
 
         const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Estoque_Chapas_${dataHoje}.xlsx`);
 
@@ -1953,16 +1955,16 @@ app.get("/entradas-saidas", (req, res) => {
     }
 
     const usuario = req.session.user;
-    
+
     let page = parseInt(req.query.page || "1", 10);
     if (isNaN(page) || page < 1) {
         console.warn(`[Aviso] Parâmetro 'page' inválido recebido: ${req.query.page}. Revertendo para página 1.`);
         page = 1;
     }
-    
-    const limit = 20; 
-    
-    const { data_inicio, data_fim, tipo } = req.query; 
+
+    const limit = 20;
+
+    const { data_inicio, data_fim, tipo } = req.query;
     let where = [];
     let params = [];
 
@@ -1980,7 +1982,7 @@ app.get("/entradas-saidas", (req, res) => {
     }
 
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-    
+
     console.log(`[Filtros] SQL Dinâmico: ${whereSql || "Nenhum filtro aplicado"} | Parâmetros:`, params);
 
     // NOVO: Query para buscar a SOMA TOTAL REAL do banco, ignorando a paginação!
@@ -2015,28 +2017,28 @@ app.get("/entradas-saidas", (req, res) => {
 
         const queryParams = [...params, limit, currentOffset];
 
-        db.query(`SELECT * FROM movimentacoes ${whereSql} ORDER BY data DESC, id DESC LIMIT ? OFFSET ?`, 
-        queryParams, 
-        (errMov, movimentacoes) => {
-            if (errMov) {
-                console.error("[Erro Banco de Dados] Falha ao buscar as movimentações paginadas:", errMov);
-                return res.status(500).send("Erro interno do servidor.");
-            }
+        db.query(`SELECT * FROM movimentacoes ${whereSql} ORDER BY data DESC, id DESC LIMIT ? OFFSET ?`,
+            queryParams,
+            (errMov, movimentacoes) => {
+                if (errMov) {
+                    console.error("[Erro Banco de Dados] Falha ao buscar as movimentações paginadas:", errMov);
+                    return res.status(500).send("Erro interno do servidor.");
+                }
 
-            try {
-                console.log(`[Sucesso] Renderizando view com ${movimentacoes.length} registros para o usuário ${usuario.nome}.`);
-                // Repassando os valores corretos calculados no banco para a view
-                res.send(require('./views/entradasSaidasView')(
-                    usuario, 
-                    movimentacoes, 
-                    { page: currentPage, totalPages, total, totalEntradas, totalSaidas, totalCaixa }, 
-                    { data_inicio, data_fim, tipo }
-                ));
-            } catch (renderError) {
-                console.error("[Erro Crítico] Falha na renderização da View 'entradasSaidasView':", renderError);
-                res.status(500).send("Ocorreu um erro interno ao tentar exibir a interface.");
-            }
-        });
+                try {
+                    console.log(`[Sucesso] Renderizando view com ${movimentacoes.length} registros para o usuário ${usuario.nome}.`);
+                    // Repassando os valores corretos calculados no banco para a view
+                    res.send(require('./views/entradasSaidasView')(
+                        usuario,
+                        movimentacoes,
+                        { page: currentPage, totalPages, total, totalEntradas, totalSaidas, totalCaixa },
+                        { data_inicio, data_fim, tipo }
+                    ));
+                } catch (renderError) {
+                    console.error("[Erro Crítico] Falha na renderização da View 'entradasSaidasView':", renderError);
+                    res.status(500).send("Ocorreu um erro interno ao tentar exibir a interface.");
+                }
+            });
     });
 });
 
@@ -2052,7 +2054,7 @@ app.post('/movimentacoes/novo', async (req, res) => {
             INSERT INTO movimentacoes (tipo, data, valor, descricao, observacao, assinatura_base64, responsavel, nome_assinante)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [tipo, data, valor, descricao, observacao, assinatura_base64, responsavel, nome_assinante]);
-        
+
         res.redirect('/entradas-saidas');
     } catch (err) {
         console.error(err);
@@ -2071,7 +2073,7 @@ app.post('/movimentacoes/editar/:id', async (req, res) => {
             SET data = ?, valor = ?, descricao = ?, observacao = ?, nome_assinante = ?
             WHERE id = ?
         `, [data, valor, descricao, observacao, nome_assinante, id]);
-        
+
         res.redirect('/entradas-saidas');
     } catch (err) {
         console.error(err);
@@ -2098,6 +2100,464 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
     });
 });
 
+// ==========================================
+// MÓDULO: CADERNO DE ENTREGAS (ATUALIZADO)
+// ==========================================
+
+// 1. Listar Cadernos (Com Filtro por Período)
+app.get("/caderno-entregas", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const page = parseInt(req.query.page || "1", 10);
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const { data_inicio, data_fim } = req.query;
+        let where = [];
+        let params = [];
+
+        if (data_inicio) {
+            where.push("DATE(data_criacao) >= ?");
+            params.push(data_inicio);
+        }
+        if (data_fim) {
+            where.push("DATE(data_criacao) <= ?");
+            params.push(data_fim);
+        }
+
+        const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+        const [countResult] = await db.promise().query(`SELECT COUNT(*) AS total FROM caderno_entregas ${whereSql}`, params);
+        const total = countResult[0].total;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+
+        const queryParams = [...params, limit, offset];
+        const [cadernos] = await db.promise().query(`
+            SELECT c.*, v.modelo as veiculo_modelo 
+            FROM caderno_entregas c
+            LEFT JOIN veiculos v ON c.veiculo_id = v.id
+            ${whereSql}
+            ORDER BY c.data_criacao DESC LIMIT ? OFFSET ?
+        `, queryParams);
+
+        for (let c of cadernos) {
+            const [itens] = await db.promise().query("SELECT * FROM caderno_entregas_itens WHERE caderno_id = ?", [c.id]);
+            c.entregas = itens;
+        }
+
+        const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
+
+        res.send(require('./views/cadernoEntregasView')(req.session.user, cadernos, veiculos, { page, totalPages, total }, { data_inicio, data_fim }));
+    } catch (error) {
+        console.error("Erro no Caderno de Entregas:", error);
+        res.status(500).send("Erro interno ao carregar cadernos.");
+    }
+});
+
+// ==========================================
+// SALVAR NOVO CADERNO E SUAS ENTREGAS
+// ==========================================
+app.post("/caderno-entregas/novo", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
+
+    try {
+        // 1. Salva a capa do caderno
+        const [result] = await db.promise().query(
+            "INSERT INTO caderno_entregas (motorista, ajudante, veiculo_id, status) VALUES (?, ?, ?, 'Pendente')",
+            [motorista, ajudante || null, veiculo_id || null]
+        );
+
+        const cadernoId = result.insertId;
+
+        // 2. Verifica se existem itens de entrega e os salva
+        if (local) {
+            const locais = Array.isArray(local) ? local : [local];
+            const links = Array.isArray(link) ? link : [link];
+            const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
+            const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
+            const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
+
+            for (let i = 0; i < locais.length; i++) {
+                if (locais[i].trim() !== '') {
+                    // Trata os valores numéricos e monetários
+                    const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
+                    const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
+
+                    await db.promise().query(
+                        "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
+                        [cadernoId, locais[i], links[i] || null, itens[i] || null, qtd, valAberto]
+                    );
+                }
+            }
+        }
+
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO NOVO CADERNO]:", error);
+        res.status(500).send("Erro interno ao salvar o caderno de entregas.");
+    }
+});
+
+// ==========================================
+// EDITAR CADERNO EXISTENTE E SUAS ENTREGAS
+// ==========================================
+app.post("/caderno-entregas/editar/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { id } = req.params;
+    const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
+
+    try {
+        // 1. Atualiza os dados principais da capa do caderno
+        await db.promise().query(
+            "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?",
+            [motorista, ajudante || null, veiculo_id || null, id]
+        );
+
+        // 2. Apaga os itens antigos para reescrever os novos (garante que linhas removidas na View saiam do DB)
+        await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [id]);
+
+        // 3. Insere a lista atualizada de entregas
+        if (local) {
+            const locais = Array.isArray(local) ? local : [local];
+            const links = Array.isArray(link) ? link : [link];
+            const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
+            const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
+            const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
+
+            for (let i = 0; i < locais.length; i++) {
+                if (locais[i].trim() !== '') {
+                    // Trata os valores numéricos e monetários (A View já removeu os pontos via JS)
+                    const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
+                    const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
+
+                    await db.promise().query(
+                        "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
+                        [id, locais[i], links[i] || null, itens[i] || null, qtd, valAberto]
+                    );
+                }
+            }
+        }
+
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO EDITAR CADERNO]:", error);
+        res.status(500).send("Erro interno ao atualizar o caderno de entregas.");
+    }
+});
+
+// 3. EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS
+app.get('/exportar/caderno-entregas', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const { data_inicio, data_fim } = req.query;
+        let where = [];
+        let params = [];
+
+        if (data_inicio) { where.push("DATE(c.data_criacao) >= ?"); params.push(data_inicio); }
+        if (data_fim) { where.push("DATE(c.data_criacao) <= ?"); params.push(data_fim); }
+        const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+        const [dados] = await db.promise().query(`
+            SELECT c.id, c.data_criacao, c.motorista, c.ajudante, v.modelo AS veiculo,
+                   i.local_entrega, i.link_endereco, i.status AS item_status
+            FROM caderno_entregas c
+            LEFT JOIN veiculos v ON c.veiculo_id = v.id
+            LEFT JOIN caderno_entregas_itens i ON i.caderno_id = c.id
+            ${whereSql}
+            ORDER BY c.data_criacao ASC, c.id ASC
+        `, params);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Caderno de Entregas');
+
+        sheet.columns = [
+            { header: 'ID CADERNO', key: 'id', width: 12 },
+            { header: 'DATA/HORA CRIAÇÃO', key: 'data_criacao', width: 22 },
+            { header: 'MOTORISTA', key: 'motorista', width: 25 },
+            { header: 'AJUDANTE', key: 'ajudante', width: 25 },
+            { header: 'VEÍCULO', key: 'veiculo', width: 20 },
+            { header: 'LOCAL / PIZZARIA', key: 'local_entrega', width: 30 },
+            { header: 'STATUS ENTREGA', key: 'item_status', width: 18 },
+            { header: 'LINK ENDEREÇO (MAPS)', key: 'link_endereco', width: 45 }
+        ];
+
+        sheet.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        dados.forEach(m => {
+            sheet.addRow({
+                id: m.id,
+                data_criacao: new Date(m.data_criacao).toLocaleString('pt-BR'),
+                motorista: m.motorista,
+                ajudante: m.ajudante || '-',
+                veiculo: m.veiculo || '-',
+                local_entrega: m.local_entrega || 'Nenhum local atribuído',
+                item_status: m.item_status || '-',
+                link_endereco: m.link_endereco || '-'
+            });
+        });
+
+        sheet.eachRow(row => {
+            row.eachCell(cell => {
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caderno_Entregas_${dataHoje}.xlsx`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error('[ERRO EXPORTAR CADERNOS]', err);
+        res.status(500).send('Erro ao gerar relatório');
+    }
+});
+
+// =======================================================
+// 3. EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS
+// =======================================================
+app.get('/exportar/caderno-entregas', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const { data_inicio, data_fim } = req.query;
+        let where = [];
+        let params = [];
+
+        if (data_inicio) { where.push("DATE(c.data_criacao) >= ?"); params.push(data_inicio); }
+        if (data_fim) { where.push("DATE(c.data_criacao) <= ?"); params.push(data_fim); }
+        const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+
+        const [dados] = await db.promise().query(`
+            SELECT c.id, c.data_criacao, c.motorista, c.ajudante, v.modelo AS veiculo,
+                   i.local_entrega, i.link_endereco, i.status AS item_status,
+                   i.itens_pedido, i.quantidade, i.valor_aberto
+            FROM caderno_entregas c
+            LEFT JOIN veiculos v ON c.veiculo_id = v.id
+            LEFT JOIN caderno_entregas_itens i ON i.caderno_id = c.id
+            ${whereSql}
+            ORDER BY c.data_criacao ASC, c.id ASC
+        `, params);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Caderno de Entregas');
+
+        // Adicionadas as novas colunas
+        sheet.columns = [
+            { header: 'ID CADERNO', key: 'id', width: 12 },
+            { header: 'DATA/HORA CRIAÇÃO', key: 'data_criacao', width: 22 },
+            { header: 'MOTORISTA', key: 'motorista', width: 25 },
+            { header: 'AJUDANTE', key: 'ajudante', width: 25 },
+            { header: 'VEÍCULO', key: 'veiculo', width: 20 },
+            { header: 'LOCAL / PIZZARIA', key: 'local_entrega', width: 30 },
+            { header: 'ITENS DO PEDIDO', key: 'itens_pedido', width: 35 },
+            { header: 'QTD', key: 'quantidade', width: 10 },
+            { header: 'VALOR EM ABERTO', key: 'valor_aberto', width: 20 },
+            { header: 'STATUS ENTREGA', key: 'item_status', width: 18 },
+            { header: 'LINK ENDEREÇO (MAPS)', key: 'link_endereco', width: 45 }
+        ];
+
+        sheet.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        dados.forEach(m => {
+            sheet.addRow({
+                id: m.id,
+                data_criacao: new Date(m.data_criacao).toLocaleString('pt-BR'),
+                motorista: m.motorista,
+                ajudante: m.ajudante || '-',
+                veiculo: m.veiculo || '-',
+                local_entrega: m.local_entrega || 'Nenhum local atribuído',
+                itens_pedido: m.itens_pedido || '-',
+                quantidade: m.quantidade || '-',
+                valor_aberto: m.valor_aberto ? parseFloat(m.valor_aberto) : '',
+                item_status: m.item_status || '-',
+                link_endereco: m.link_endereco || '-'
+            });
+        });
+
+        // Aplica a formatação de Moeda na coluna de Valor
+        sheet.getColumn('valor_aberto').numFmt = '"R$ " #,##0.00';
+
+        sheet.eachRow(row => {
+            row.eachCell(cell => {
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caderno_Entregas_${dataHoje}.xlsx`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error('[ERRO EXPORTAR CADERNOS]', err);
+        res.status(500).send('Erro ao gerar relatório');
+    }
+});
+
+// =======================================================
+// EXPORTAR CADERNO DE ENTREGAS EM PDF PARA IMPRESSÃO
+// =======================================================
+app.get("/caderno-entregas/pdf/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { id } = req.params;
+
+    try {
+        // 1. Busca os dados principais do caderno (capa)
+        const [cadernoRows] = await db.promise().query(`
+            SELECT c.*, v.modelo as veiculo_modelo 
+            FROM caderno_entregas c
+            LEFT JOIN veiculos v ON c.veiculo_id = v.id
+            WHERE c.id = ?
+        `, [id]);
+
+        if (cadernoRows.length === 0) {
+            return res.status(404).send("Caderno não encontrado.");
+        }
+        const caderno = cadernoRows[0];
+
+        // 2. Busca todos os locais de entrega associados ao caderno
+        const [itens] = await db.promise().query(
+            "SELECT * FROM caderno_entregas_itens WHERE caderno_id = ? ORDER BY id ASC",
+            [id]
+        );
+
+        const PDFDocument = require('pdfkit');
+        const axios = require('axios');
+        const fs = require('fs');
+        const path = require('path');
+
+        // Inicializa o documento em tamanho A4 com margens
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+
+        // Gera o nome do ficheiro dinâmico com a data
+        const dataGerado = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        
+        // Configura os cabeçalhos para o browser abrir o PDF diretamente (facilita a impressão)
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=caderno(${dataGerado}).pdf`);
+        doc.pipe(res);
+
+        // --- DESIGN DO MANIFESTO (Estilo Ecoflow) ---
+        // Barra Superior Decorativa
+        doc.rect(0, 0, 600, 15).fill('#0D5749');
+
+        // Inserção da Logo da Ecocaixas
+        const logoPath = path.join(process.cwd(), 'public', 'img', 'logo-ecocaixas.png');
+        let titleX = 40; // Posição padrão do título
+        if (fs.existsSync(logoPath)) {
+            doc.image(logoPath, 40, 25, { width: 110 });
+            titleX = 170; // Desloca o título para o lado se a imagem for renderizada
+        }
+
+        // Título Principal
+        doc.fillColor('#222222').font('Helvetica-Bold').fontSize(16).text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
+        doc.font('Helvetica').fontSize(9).fillColor('#666666').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 58);
+        doc.moveTo(40, 80).lineTo(555, 80).stroke('#eeeeee');
+
+        // Quadro Informativo (Motorista e Veículo)
+        doc.rect(40, 95, 515, 55).fill('#f8f9fa');
+        doc.fillColor('#333333').font('Helvetica-Bold').fontSize(10)
+            .text('MOTORISTA:', 55, 105)
+            .text('AJUDANTE:', 215, 105)
+            .text('VEÍCULO / FROTA:', 375, 105);
+
+        doc.font('Helvetica').fontSize(11).fillColor('#444444')
+            .text((caderno.motorista || '').toUpperCase(), 55, 122)
+            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 122)
+            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 122);
+
+        // Subtítulo da Lista de Entregas
+        doc.moveTo(40, 170).lineTo(555, 170).stroke('#dddddd');
+        doc.fillColor('#0D5749').font('Helvetica-Bold').fontSize(13).text('RELAÇÃO ORDENADA DE ENTREGAS (PIZZARIAS / CLIENTES)', 40, 185);
+
+        let yPosition = 215;
+
+        // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code
+        for (let i = 0; i < itens.length; i++) {
+            const item = itens[i];
+
+            // Proteção de Quebra de Página (se o box atual for cortar, vai pra próxima folha)
+            if (yPosition > 690) {
+                doc.addPage();
+                doc.rect(0, 0, 600, 12).fill('#0D5749'); // Barra no topo da nova página
+                yPosition = 40;
+            }
+
+            // Caixa delimitadora da entrega (Aumentada para 95px de altura para acomodar os novos dados)
+            doc.rect(40, yPosition, 515, 95).stroke('#e5e5e5');
+
+            // Textos da Entrega: Cliente/Localização (Com Box para visto do motorista)
+            doc.fillColor('#111111').font('Helvetica-Bold').fontSize(11).text(`[   ]  ${i + 1}. ${(item.local_entrega || '').toUpperCase()}`, 55, yPosition + 15);
+            
+            // Novos Dados: Itens, Qtd e Valor
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#444444').text('Itens:', 55, yPosition + 35);
+            doc.font('Helvetica').text((item.itens_pedido || '-'), 90, yPosition + 35, { width: 330, lineBreak: false });
+
+            doc.font('Helvetica-Bold').text('Qtd Total:', 55, yPosition + 52);
+            doc.font('Helvetica').text((item.quantidade || '-'), 110, yPosition + 52);
+
+            if (item.valor_aberto && parseFloat(item.valor_aberto) > 0) {
+                const valorFormatado = parseFloat(item.valor_aberto).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                doc.font('Helvetica-Bold').text('A Receber:', 180, yPosition + 52);
+                doc.font('Helvetica-Bold').fillColor('#0D5749').text(`R$ ${valorFormatado}`, 240, yPosition + 52);
+            }
+
+            // Informações de ID
+            doc.font('Helvetica').fontSize(8).fillColor('#999999').text(`ID Registo: #${item.id}  |  Manifesto Base: #${id}`, 55, yPosition + 75);
+
+            // Tratamento do QR Code
+            if (item.link_endereco) {
+                doc.font('Helvetica-Bold').fontSize(8).fillColor('#0D5749').text('QR Code GPS  ->', 385, yPosition + 45);
+
+                try {
+                    // Faz o download do QR Code
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.link_endereco)}`;
+                    const response = await axios.get(qrUrl, { responseType: 'arraybuffer' });
+                    const qrBuffer = Buffer.from(response.data, 'binary');
+
+                    // Posiciona o QR Code ajustado à direita da box
+                    doc.image(qrBuffer, 470, yPosition + 12, { width: 70, height: 70 });
+                } catch (errorQr) {
+                    console.error("Falha ao injetar QR Code no PDF:", errorQr.message);
+                    doc.fillColor('#dc3545').text('[Erro ao processar QR Code]', 430, yPosition + 32);
+                }
+            } else {
+                doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#999999').text('Nenhum link ou rota GPS associada a este destino.', 55, yPosition + 75, { align: 'right', width: 490 });
+            }
+
+            yPosition += 110; // Avança a posição Y para o próximo quadro
+        }
+
+        // Finaliza o documento
+        doc.end();
+
+    } catch (error) {
+        console.error('[ERRO PDF MANIFESTO]', error);
+        if (!res.headersSent) {
+            res.status(500).send('Erro crítico interno ao processar o PDF de impressão. Verifique os logs.');
+        }
+    }
+});
+
 // 1. ROTA PRINCIPAL (Filtrando apenas ordens ATIVAS para o painel)
 app.get('/producao', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -2107,7 +2567,7 @@ app.get('/producao', async (req, res) => {
         // Busca apenas o que está ATIVO (ativo = 1) para os modais de produção
         const [rotativa] = await db.promise().query('SELECT * FROM pedidos_rotativa WHERE ativo = 1 ORDER BY status_producao ASC, created_at DESC');
         const [flexo] = await db.promise().query('SELECT * FROM pedidos_flexografica WHERE ativo = 1 ORDER BY status_producao ASC, created_at DESC');
-        
+
         const [[rotativaNovas]] = await db.promise().query('SELECT COUNT(*) as total FROM pedidos_rotativa WHERE notificado = 1 AND ativo = 1');
         const [[flexoNovas]] = await db.promise().query('SELECT COUNT(*) as total FROM pedidos_flexografica WHERE notificado = 1 AND ativo = 1');
 
@@ -2143,15 +2603,15 @@ app.get('/producao', async (req, res) => {
             ORDER BY lote DESC
             LIMIT ? OFFSET ?
         `;
-        
+
         const [historico] = await db.promise().query(queryHistoricoList, [limit, currentOffset]);
 
         res.send(require('./views/ordemProducaoView')(
-            req.session.user, 
-            rotativa, 
-            flexo, 
-            req.query, 
-            rotativaNovas.total, 
+            req.session.user,
+            rotativa,
+            flexo,
+            req.query,
+            rotativaNovas.total,
             flexoNovas.total,
             historico,
             { page: currentPage, totalPages }
@@ -2165,7 +2625,7 @@ app.get('/producao', async (req, res) => {
 // ADICIONE ESTA NOVA ROTA PARA EXPORTAR PELO HISTÓRICO
 app.get('/exportar/historico', async (req, res) => {
     const loteAlvo = req.query.lote; // agora recebe o ID do lote
-    
+
     if (!loteAlvo) return res.status(400).send("Lote não especificado.");
 
     try {
@@ -2178,7 +2638,7 @@ app.get('/exportar/historico', async (req, res) => {
                 CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
                 cliente`, [loteAlvo]
         );
-        
+
         const [flexo] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica 
@@ -2188,7 +2648,7 @@ app.get('/exportar/historico', async (req, res) => {
 
         const ExcelJS = require('exceljs');
         const workbook = new ExcelJS.Workbook();
-        
+
         // Transforma o timestamp do lote numa data legível para os títulos do Excel
         const dataDoLote = new Date(parseInt(loteAlvo));
         const dataFormatadaStr = isNaN(dataDoLote) ? loteAlvo : dataDoLote.toLocaleDateString('pt-BR');
@@ -2198,7 +2658,7 @@ app.get('/exportar/historico', async (req, res) => {
         // ==========================================
         if (rotativa.length > 0) {
             const sheetRot = workbook.addWorksheet('Rotativa');
-            
+
             sheetRot.pageSetup = {
                 orientation: 'landscape',
                 scale: 95,
@@ -2216,7 +2676,7 @@ app.get('/exportar/historico', async (req, res) => {
                 { header: 'OPERADOR', key: 'operador', width: 20 },
                 { header: 'STATUS', key: 'status', width: 15 }
             ];
-            
+
             sheetRot.insertRow(1, []);
             sheetRot.mergeCells(1, 1, 1, sheetRot.columns.length);
 
@@ -2279,7 +2739,7 @@ app.get('/exportar/historico', async (req, res) => {
         // ==========================================
         if (flexo.length > 0) {
             const sheetFlexo = workbook.addWorksheet('Flexográfica');
-            
+
             sheetFlexo.pageSetup = {
                 orientation: 'landscape',
                 scale: 70,
@@ -2301,7 +2761,7 @@ app.get('/exportar/historico', async (req, res) => {
                 { header: 'OPERADOR', key: 'operador', width: 20 },
                 { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
             ];
-            
+
             sheetFlexo.insertRow(1, []);
             sheetFlexo.mergeCells(1, 1, 1, sheetFlexo.columns.length);
             const tituloCellFlexo = sheetFlexo.getCell('A1');
@@ -2364,7 +2824,7 @@ app.get('/exportar/historico', async (req, res) => {
 // ADICIONE ESTA NOVA ROTA PARA EXPORTAR PELO HISTÓRICO
 app.get('/exportar/historico', async (req, res) => {
     const dataAlvo = req.query.data; // formato YYYY-MM-DD
-    
+
     if (!dataAlvo) return res.status(400).send("Data não especificada.");
 
     try {
@@ -2377,7 +2837,7 @@ app.get('/exportar/historico', async (req, res) => {
                 CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
                 cliente`, [dataAlvo]
         );
-        
+
         const [flexo] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica 
@@ -2394,7 +2854,7 @@ app.get('/exportar/historico', async (req, res) => {
         // ==========================================
         if (rotativa.length > 0) {
             const sheetRot = workbook.addWorksheet('Rotativa');
-            
+
             sheetRot.pageSetup = {
                 orientation: 'landscape',
                 scale: 95,
@@ -2412,7 +2872,7 @@ app.get('/exportar/historico', async (req, res) => {
                 { header: 'OPERADOR', key: 'operador', width: 20 },
                 { header: 'STATUS', key: 'status', width: 15 }
             ];
-            
+
             sheetRot.insertRow(1, []);
             sheetRot.mergeCells(1, 1, 1, sheetRot.columns.length);
 
@@ -2475,7 +2935,7 @@ app.get('/exportar/historico', async (req, res) => {
         // ==========================================
         if (flexo.length > 0) {
             const sheetFlexo = workbook.addWorksheet('Flexográfica');
-            
+
             sheetFlexo.pageSetup = {
                 orientation: 'landscape',
                 scale: 70,
@@ -2497,7 +2957,7 @@ app.get('/exportar/historico', async (req, res) => {
                 { header: 'OPERADOR', key: 'operador', width: 20 },
                 { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
             ];
-            
+
             sheetFlexo.insertRow(1, []);
             sheetFlexo.mergeCells(1, 1, 1, sheetFlexo.columns.length);
             const tituloCellFlexo = sheetFlexo.getCell('A1');
@@ -2563,7 +3023,7 @@ app.get('/exportar/historico', async (req, res) => {
 // =======================================================
 app.post('/importar', upload.single('planilha'), async (req, res) => {
     if (!req.file) return res.redirect('/producao?erro=arquivo');
-    
+
     const caminhoArquivo = req.file.path;
     const lote = Date.now(); // Gera o ID único da importação
     const pythonPath = process.platform === "win32" ? `"C:\\Python313\\python.exe"` : "python3";
@@ -2576,19 +3036,19 @@ app.post('/importar', upload.single('planilha'), async (req, res) => {
         if (error || stdout.includes("Erro:")) {
             console.error('----- ERRO DO PYTHON -----');
             console.error(error || stdout);
-            
+
             // Em caso de erro, removemos apenas a "metade" que tentou entrar
             await db.promise().query('DELETE FROM pedidos_rotativa WHERE lote = ?', [lote]);
             await db.promise().query('DELETE FROM pedidos_flexografica WHERE lote = ?', [lote]);
-            
+
             return res.redirect('/producao?erro=planilha');
         }
-        
+
         try {
             // MÁGICA AQUI: Arquiva (limpa do painel) todos os dados que estavam ativos antes desta importação
             await db.promise().query('UPDATE pedidos_rotativa SET ativo = 0 WHERE ativo = 1 AND lote != ?', [lote]);
             await db.promise().query('UPDATE pedidos_flexografica SET ativo = 0 WHERE ativo = 1 AND lote != ?', [lote]);
-            
+
             // Redireciona com sucesso
             res.redirect('/producao?sucesso=1');
         } catch (dbErr) {
@@ -2899,7 +3359,7 @@ app.get('/exportar/movimentacoes', async (req, res) => {
 
         dados.forEach(m => {
             const valorCalculo = parseFloat(m.valor) || 0;
-            
+
             if (m.tipo === 'entrada') {
                 totalEntradas += valorCalculo;
             } else if (m.tipo === 'saida') {
@@ -2925,11 +3385,11 @@ app.get('/exportar/movimentacoes', async (req, res) => {
 
         sheet.eachRow(row => {
             row.eachCell(cell => {
-                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
             });
         });
 
-        sheet.addRow([]); 
+        sheet.addRow([]);
 
         const saldoFinal = totalEntradas - totalSaidas;
 
@@ -2940,17 +3400,17 @@ app.get('/exportar/movimentacoes', async (req, res) => {
         [rowEntradas, rowSaidas, rowSaldo].forEach(row => {
             row.getCell('tipo').font = { bold: true };
             row.getCell('tipo').alignment = { horizontal: 'right' };
-            row.getCell('tipo').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-            row.getCell('valor').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            row.getCell('tipo').border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            row.getCell('valor').border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        rowEntradas.getCell('valor').font = { bold: true, color: { argb: 'FF28A745' } }; 
-        rowSaidas.getCell('valor').font = { bold: true, color: { argb: 'FFDC3545' } }; 
-        rowSaldo.getCell('valor').font = { bold: true, color: { argb: saldoFinal >= 0 ? 'FF000000' : 'FFDC3545' } }; 
+        rowEntradas.getCell('valor').font = { bold: true, color: { argb: 'FF28A745' } };
+        rowSaidas.getCell('valor').font = { bold: true, color: { argb: 'FFDC3545' } };
+        rowSaldo.getCell('valor').font = { bold: true, color: { argb: saldoFinal >= 0 ? 'FF000000' : 'FFDC3545' } };
 
         const compNome = (mes && ano) ? `${mes}_${ano}` : `Geral`;
         const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caixa_${compNome}_${dataHoje}.xlsx`);
 
@@ -2988,7 +3448,7 @@ app.post('/propostas', async (req, res) => {
         const propostaId = result.insertId;
 
         for (const m of modificacoes) {
-            if(m.descricao) {
+            if (m.descricao) {
                 await db.promise().query(
                     `INSERT INTO proposta_modificacoes (proposta_id, descricao, data_modificacao) VALUES (?, ?, ?)`,
                     [propostaId, m.descricao, tratarData(m.data_modificacao)]
@@ -3071,9 +3531,9 @@ app.put('/propostas/:id', async (req, res) => {
 
         await db.promise().query('DELETE FROM proposta_modificacoes WHERE proposta_id = ?', [id]);
         for (const m of modificacoes) {
-             if(m.descricao) {
+            if (m.descricao) {
                 await db.promise().query(`INSERT INTO proposta_modificacoes (proposta_id, descricao, data_modificacao) VALUES (?, ?, ?)`, [id, m.descricao, tratarData(m.data_modificacao)]);
-             }
+            }
         }
         return res.json({ success: true });
     } catch (err) {
@@ -3145,7 +3605,7 @@ app.get('/propostas/exportar/excel', async (req, res) => {
             { header: 'Status', key: 'status', width: 20 }
         ];
 
-        const borderStyle = { top: { style:'thin' }, left: { style:'thin' }, bottom: { style:'thin' }, right: { style:'thin' } };
+        const borderStyle = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
 
         worksheet.getRow(1).eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
@@ -3199,8 +3659,8 @@ app.get('/propostas/exportar/excel', async (req, res) => {
                 let corFundo = null;
                 // Se algum estourar 2 dias, mantém a linha branca (null)
                 if (diasArteNum > 2 || diasClicheNum > 2) {
-                    corFundo = null; 
-                } 
+                    corFundo = null;
+                }
                 // Se não estourou, e algum tem pelo menos 1 dia (até 2), fica verde
                 else if ((diasArteNum > 0 && diasArteNum <= 2) || (diasClicheNum > 0 && diasClicheNum <= 2)) {
                     corFundo = 'FFE2EFDA'; // Verde claro
@@ -3225,10 +3685,10 @@ app.get('/propostas/exportar/excel', async (req, res) => {
             });
 
             rowMedia.eachCell((cell) => {
-                cell.font = { bold: true, color: { argb: 'FF1E293B' } }; 
+                cell.font = { bold: true, color: { argb: 'FF1E293B' } };
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
                 cell.alignment = { horizontal: 'center' };
-                cell.border = borderStyle; 
+                cell.border = borderStyle;
             });
         }
 
@@ -3292,7 +3752,7 @@ app.post('/admin/gabaritos/delete/:id', (req, res) => {
 
     db.query("SELECT url FROM gabaritos WHERE id = ?", [id], (err, results) => {
         if (err || results.length === 0) return res.redirect('/admin/gabaritos');
-        
+
         const urlArquivo = results[0].url;
         const filename = urlArquivo.replace('/uploads/', '');
         const filepath = path.join(__dirname, 'uploads', filename);

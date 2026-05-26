@@ -42,7 +42,8 @@ function menuLateral(usuario, rotaAtiva = "") {
   // 1. Logística (Foco em Gestão e Produção)
   const logLinks = [
     { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
-    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" }
+    { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
+    { href: "/caderno-entregas", icone: "fas fa-book", texto: "Caderno de Entregas" }
   ];
 
   // 2. Motorista (Operacional de Campo)
@@ -56,7 +57,8 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/producao", icone: "fas fa-industry", texto: "Ordens" },
     { href: "/tabela-precos", icone: "fas fa-tags", texto: "Tabela de Preços" },
     { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
-    { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" }
+    { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
+    { href: "/caderno-entregas", icone: "fas fa-book", texto: "Caderno de Entregas" }
   ];
 
   // 4. Design

@@ -2104,31 +2104,26 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
 // MÓDULO: CADERNO DE ENTREGAS (ATUALIZADO)
 // ==========================================
 
-// 1. Listar Cadernos (Com Filtro por Período)
+// 1. Listar Cadernos (Agora busca o histórico fixo de clientes)
 app.get("/caderno-entregas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-
+    
     try {
         const page = parseInt(req.query.page || "1", 10);
         const limit = 20;
         const offset = (page - 1) * limit;
-
         const { data_inicio, data_fim } = req.query;
+
         let where = [];
         let params = [];
 
-        if (data_inicio) {
-            where.push("DATE(data_criacao) >= ?");
-            params.push(data_inicio);
-        }
-        if (data_fim) {
-            where.push("DATE(data_criacao) <= ?");
-            params.push(data_fim);
-        }
-
+        if (data_inicio) { where.push("DATE(data_criacao) >= ?"); params.push(data_inicio); }
+        if (data_fim) { where.push("DATE(data_criacao) <= ?"); params.push(data_fim); }
+        
         const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-
-        const [countResult] = await db.promise().query(`SELECT COUNT(*) AS total FROM caderno_entregas ${whereSql}`, params);
+        const countQuery = `SELECT COUNT(*) AS total FROM caderno_entregas ${whereSql}`;
+        const [countResult] = await db.promise().query(countQuery, params);
+        
         const total = countResult[0].total;
         const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -2147,32 +2142,32 @@ app.get("/caderno-entregas", async (req, res) => {
         }
 
         const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
+        
+        // NOVO: Busca o histórico fixo de clientes imune à exclusão
+        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco FROM clientes_historico ORDER BY nome ASC");
 
-        res.send(require('./views/cadernoEntregasView')(req.session.user, cadernos, veiculos, { page, totalPages, total }, { data_inicio, data_fim }));
+        res.send(require('./views/cadernoEntregasView')(
+            req.session.user, cadernos, veiculos, clientesDB, 
+            { page, totalPages, total }, { data_inicio, data_fim }
+        ));
     } catch (error) {
         console.error("Erro no Caderno de Entregas:", error);
         res.status(500).send("Erro interno ao carregar cadernos.");
     }
 });
 
-// ==========================================
-// SALVAR NOVO CADERNO E SUAS ENTREGAS
-// ==========================================
+// 2. Salvar Novo Caderno
 app.post("/caderno-entregas/novo", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-
     const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
 
     try {
-        // 1. Salva a capa do caderno
         const [result] = await db.promise().query(
             "INSERT INTO caderno_entregas (motorista, ajudante, veiculo_id, status) VALUES (?, ?, ?, 'Pendente')",
             [motorista, ajudante || null, veiculo_id || null]
         );
-
         const cadernoId = result.insertId;
 
-        // 2. Verifica se existem itens de entrega e os salva
         if (local) {
             const locais = Array.isArray(local) ? local : [local];
             const links = Array.isArray(link) ? link : [link];
@@ -2181,46 +2176,47 @@ app.post("/caderno-entregas/novo", async (req, res) => {
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
 
             for (let i = 0; i < locais.length; i++) {
-                if (locais[i].trim() !== '') {
-                    // Trata os valores numéricos e monetários
+                const nomeCli = locais[i].trim();
+                const linkCli = links[i] || null;
+
+                if (nomeCli !== '') {
+                    // NOVO: Salva/Atualiza o cliente na tabela fixa de histórico
+                    await db.promise().query(`
+                        INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
+                        ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
+                    `, [nomeCli, linkCli, linkCli]);
+
                     const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
                     const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
-
+                    
                     await db.promise().query(
                         "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
-                        [cadernoId, locais[i], links[i] || null, itens[i] || null, qtd, valAberto]
+                        [cadernoId, nomeCli, linkCli, itens[i] || null, qtd, valAberto]
                     );
                 }
             }
         }
-
         res.redirect("/caderno-entregas");
     } catch (error) {
-        console.error("[ERRO NOVO CADERNO]:", error);
-        res.status(500).send("Erro interno ao salvar o caderno de entregas.");
+        console.error("Erro ao salvar caderno:", error);
+        res.status(500).send("Erro ao salvar.");
     }
 });
 
-// ==========================================
-// EDITAR CADERNO EXISTENTE E SUAS ENTREGAS
-// ==========================================
+// 3. Editar Caderno
 app.post("/caderno-entregas/editar/:id", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-
     const { id } = req.params;
     const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
 
     try {
-        // 1. Atualiza os dados principais da capa do caderno
         await db.promise().query(
             "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?",
             [motorista, ajudante || null, veiculo_id || null, id]
         );
 
-        // 2. Apaga os itens antigos para reescrever os novos (garante que linhas removidas na View saiam do DB)
         await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [id]);
 
-        // 3. Insere a lista atualizada de entregas
         if (local) {
             const locais = Array.isArray(local) ? local : [local];
             const links = Array.isArray(link) ? link : [link];
@@ -2229,23 +2225,50 @@ app.post("/caderno-entregas/editar/:id", async (req, res) => {
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
 
             for (let i = 0; i < locais.length; i++) {
-                if (locais[i].trim() !== '') {
-                    // Trata os valores numéricos e monetários (A View já removeu os pontos via JS)
+                const nomeCli = locais[i].trim();
+                const linkCli = links[i] || null;
+
+                if (nomeCli !== '') {
+                    // NOVO: Atualiza a tabela fixa de clientes
+                    await db.promise().query(`
+                        INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
+                        ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
+                    `, [nomeCli, linkCli, linkCli]);
+
                     const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
                     const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
 
                     await db.promise().query(
                         "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
-                        [id, locais[i], links[i] || null, itens[i] || null, qtd, valAberto]
+                        [id, nomeCli, linkCli, itens[i] || null, qtd, valAberto]
                     );
                 }
             }
         }
-
         res.redirect("/caderno-entregas");
     } catch (error) {
-        console.error("[ERRO EDITAR CADERNO]:", error);
-        res.status(500).send("Erro interno ao atualizar o caderno de entregas.");
+        console.error("Erro editar caderno:", error);
+        res.status(500).send("Erro ao editar.");
+    }
+});
+// ==========================================
+// EXCLUIR CADERNO DE ENTREGAS
+// ==========================================
+app.post("/caderno-entregas/excluir/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    
+    const { id } = req.params;
+
+    try {
+        // Deleta o caderno principal.
+        // Nota: Se você usou "ON DELETE CASCADE" na criação da tabela de itens, 
+        // os locais de entrega vinculados a este caderno serão apagados automaticamente pelo banco!
+        await db.promise().query("DELETE FROM caderno_entregas WHERE id = ?", [id]);
+        
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO AO EXCLUIR CADERNO]:", error);
+        res.status(500).send("Erro interno ao tentar excluir o caderno de entregas.");
     }
 });
 

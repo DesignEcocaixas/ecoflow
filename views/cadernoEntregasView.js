@@ -2,12 +2,12 @@
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 
-function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = {}, filtros = {}) {
+// ATENÇÃO: Adicionado o parâmetro clientesHistorico na função
+function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
-  // Ajuste fino do fuso horário para exibição
   const fmtData = (d) => {
     try {
       if(!d) return "-";
@@ -21,38 +21,20 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // =========================================================================
-  // LÓGICA DE INTELIGÊNCIA: Extrair clientes e links únicos do histórico
+  // LÓGICA DE INTELIGÊNCIA: Montagem do dicionário de clientes fixos
   // =========================================================================
   const historicoClientes = {};
   
-  // Pega clientes que têm um link associado
-  cadernos.forEach(c => {
-    if (c.entregas) {
-      c.entregas.forEach(e => {
-        if (e.local_entrega && e.link_endereco && !historicoClientes[e.local_entrega]) {
-            historicoClientes[e.local_entrega] = e.link_endereco;
-        }
+  if (clientesHistorico && clientesHistorico.length > 0) {
+      clientesHistorico.forEach(c => {
+          historicoClientes[c.nome] = c.link_endereco || "";
       });
-    }
-  });
-  
-  // Pega clientes que não têm link, apenas para sugerir o nome
-  cadernos.forEach(c => {
-    if (c.entregas) {
-      c.entregas.forEach(e => {
-        if (e.local_entrega && typeof historicoClientes[e.local_entrega] === 'undefined') {
-            historicoClientes[e.local_entrega] = "";
-        }
-      });
-    }
-  });
+  }
 
-  // Opções em HTML para os Selects
   const optionsClientesHtml = Object.keys(historicoClientes)
       .map(cliente => `<option value="${cliente}">${cliente}</option>`)
       .join('');
 
-  // Lógica para montar os inputs na hora de EDITAR um card existente
   const renderClienteField = (clienteAtual = "") => {
       const isCustom = clienteAtual && !historicoClientes.hasOwnProperty(clienteAtual);
       const isNewMode = isCustom || !clienteAtual;
@@ -80,7 +62,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
   };
   // =========================================================================
 
-  // Função auxiliar para re-popular múltiplos itens salvos no banco de dados na hora de editar
   const renderSubItensEdicao = (itensStr, totalQtd) => {
     if (!itensStr) {
       return `
@@ -166,7 +147,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
             </div>
             <div class="col-12 col-md-6">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
-                <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" value="${e.link_endereco || ''}" placeholder="Cole o link do Google Maps">
+                <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" value="${e.link_endereco || ''}" placeholder="Link do Google Maps">
             </div>
             
             <div class="col-12 col-md-8 mt-2">
@@ -190,7 +171,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-    `).join('') : ''; // Fallback removido pois se edita precisa ter os atuais corretos
+    `).join('') : ''; 
 
     return `
     <div class="modal fade" id="detalheModal${c.id}" tabindex="-1">
@@ -295,7 +276,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
             <div class="modal-body text-center p-4">
               <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
               <h6 class="mb-2 fw-bold text-dark">Excluir Caderno?</h6>
-              <p class="text-muted mb-0" style="font-size:0.85rem;">Todos os endereços desta rota também serão apagados permanentemente.</p>
+              <p class="text-muted mb-0" style="font-size:0.85rem;">As entregas vinculadas serão apagadas, mas o histórico de clientes continuará salvo.</p>
             </div>
             <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
               <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
@@ -352,6 +333,33 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
       .table-hover-row:hover > td { background-color: rgba(13, 87, 73, 0.06) !important; }
       @keyframes pulseIcon { 0% { transform: scale(1); } 50% { transform: scale(1.15); opacity: 0.8; } 100% { transform: scale(1); } }
       .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+      
+      /* Estilos para o Botão Flutuante */
+      .btn-flutuante {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background-color: #0D5749;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        z-index: 1050;
+        transition: all 0.3s ease;
+      }
+      .btn-flutuante:hover {
+        transform: scale(1.1);
+        background-color: #0a4338;
+        color: white;
+        box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6);
+      }
+
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
     </style>
   </head>
@@ -372,8 +380,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
       <div class="offcanvas-body">
         <div class="text-center mb-4 mt-2"><img src="/img/logo.png" class="img-fluid" style="max-width:140px;"></div>
         ${menuHTML}
-        <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
@@ -383,16 +389,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <div>
               <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-book-open-reader text-muted me-2"></i>Caderno de Entregas</h4>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Crie e gerencie as rotas com QR Code dinâmico</span>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Crie e gerencie as rotas com histórico protegido</span>
             </div>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
-          </span>
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
         </div>
       </div>
 
@@ -445,6 +443,49 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
       }
 
       ${paginacaoHtml}
+    </div>
+
+    <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
+      <i class="fa-solid fa-question"></i>
+    </button>
+
+    <div class="modal fade" id="modalInstrucoes" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg erp-modal">
+          <div class="modal-header bg-light border-0">
+            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> Como usar o Caderno</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 text-muted" style="font-size: 0.95rem;">
+            <p class="mb-4">Bem-vindo ao <strong>Caderno de Entregas</strong>. Siga as orientações abaixo para gerenciar as rotas:</p>
+            <ul class="list-group list-group-flush mb-4">
+              <li class="list-group-item bg-transparent px-0 border-light pb-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Criar um Novo Caderno</strong>
+                Clique em "Novo Caderno" para registrar uma saída. Preencha os dados do motorista, ajudante e veículo.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light py-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i> 2. Adicionar Entregas e Itens</strong>
+                Ao adicionar um cliente, você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light py-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-magnifying-glass text-info me-2"></i> 3. Clientes Salvos</strong>
+                O sistema guarda o histórico de clientes e o respectivo link do Maps. Em rotas futuras, basta selecionar o cliente na lista suspensa para auto-completar os dados.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light py-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-print text-dark me-2"></i> 4. Imprimir Manifesto PDF</strong>
+                Para cada caderno registrado, você pode gerar um PDF para o motorista contendo a rota e os <strong>QR Codes</strong> de navegação GPS ativos de cada local.
+              </li>
+              <li class="list-group-item bg-transparent px-0 border-light pt-3">
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> 5. Edição</strong>
+                Você pode editar os cadernos ou excluir entradas sem afetar a base de clientes já armazenada no histórico.
+              </li>
+            </ul>
+          </div>
+          <div class="modal-footer border-0 bg-light">
+            <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal fade" id="novoCadernoModal" tabindex="-1" data-bs-backdrop="static">
@@ -555,14 +596,12 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
           const linkInput = container.querySelector('.link-maps-input');
           
           if (selectEl.value === 'NOVO_CLIENTE') {
-              // Modo Cadastrar Novo
               inputEl.style.display = 'block';
               inputEl.disabled = false;
               inputEl.setAttribute('name', 'local[]');
               selectEl.removeAttribute('name');
               linkInput.value = '';
           } else {
-              // Modo Selecionar Existente
               inputEl.style.display = 'none';
               inputEl.disabled = true;
               inputEl.removeAttribute('name');
@@ -661,7 +700,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
       }
 
       function limparMoedas(form) {
-          // 1. Limpa os valores monetários
           const inputs = form.querySelectorAll('.mask-moeda');
           inputs.forEach(i => {
               if(i.value) {
@@ -669,7 +707,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], paginacao = 
               }
           });
 
-          // 2. Concatena os múltiplos sub-itens de cada cliente para preencher os inputs ocultos lidos pelo Backend
           const cards = form.querySelectorAll('.entrega-item');
           cards.forEach(card => {
               const rows = card.querySelectorAll('.sub-item-row');

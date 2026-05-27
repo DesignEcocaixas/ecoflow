@@ -66,8 +66,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   // TABELA E MODAIS DE GESTÃO DE CLIENTES (DENTRO DO MODAL CLIENTE)
   // =========================================================================
   const listaClientesTabela = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
-      <tr>
-          <td class="fw-bold text-dark py-2">${c.nome}</td>
+      <tr class="cliente-row-filtro">
+          <td class="fw-bold text-dark py-2 cliente-nome-filtro">${c.nome}</td>
           <td class="py-2">${c.link_endereco ? `<a href="${c.link_endereco}" target="_blank" class="text-truncate d-inline-block text-primary" style="max-width: 200px; font-size: 0.8rem;">${c.link_endereco}</a>` : '<span class="text-muted small">Sem link</span>'}</td>
           <td class="text-end py-2">
               <div class="btn-group">
@@ -237,8 +237,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     return `
     <div class="modal fade" id="detalheModal${c.id}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content erp-modal border-0 shadow">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content erp-modal border-0 shadow">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-route text-primary me-2"></i> Detalhes da Rota</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -246,9 +245,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           <div class="modal-body p-4 bg-light">
             <div class="bg-white p-3 rounded shadow-sm border border-light mb-3" style="font-size: 0.85rem;">
                 <div class="row">
-                    <div class="col-6 mb-2"><span class="text-muted">Motorista:</span><br><strong>${c.motorista}</strong></div>
-                    <div class="col-6 mb-2"><span class="text-muted">Ajudante:</span><br><strong>${c.ajudante || '-'}</strong></div>
-                    <div class="col-12"><span class="text-muted">Veículo:</span><br><strong><i class="fa-solid fa-car me-1 text-muted"></i> ${c.veiculo_modelo || 'Não informado'}</strong></div>
+                    <div class="col-6 col-md-4 mb-2"><span class="text-muted">Motorista:</span><br><strong>${c.motorista}</strong></div>
+                    <div class="col-6 col-md-4 mb-2"><span class="text-muted">Ajudante:</span><br><strong>${c.ajudante || '-'}</strong></div>
+                    <div class="col-12 col-md-4"><span class="text-muted">Veículo:</span><br><strong><i class="fa-solid fa-car me-1 text-muted"></i> ${c.veiculo_modelo || 'Não informado'}</strong></div>
                 </div>
             </div>
 
@@ -576,6 +575,15 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </form>
 
             <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;"><i class="fa-solid fa-list me-1"></i> Histórico de Clientes Cadastrados</h6>
+            
+            <div class="input-group input-group-sm mb-2 shadow-sm">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="searchInputClientes" class="form-control border-start-0 border-end-0" placeholder="Pesquisar cliente por nome..." onkeyup="filtrarClientes()">
+                <button class="btn btn-outline-secondary bg-white border-start-0 text-danger" type="button" onclick="limparBuscaClientes()" title="Limpar pesquisa">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
             <div class="table-responsive bg-white rounded border border-light shadow-sm" style="max-height: 250px; overflow-y: auto;">
                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
                     <thead class="table-light position-sticky top-0" style="z-index: 1;">
@@ -585,7 +593,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                             <th class="py-2 px-3 text-end text-muted">Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tabelaClientesBody">
                         ${listaClientesTabela}
                     </tbody>
                 </table>
@@ -726,6 +734,37 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
           isSubmitting = true;
           setTimeout(() => { form.submit(); }, 1500);
+      }
+
+      // =======================================================================
+      // LÓGICA DO FILTRO DE PESQUISA DE CLIENTES
+      // =======================================================================
+      function filtrarClientes() {
+          const input = document.getElementById("searchInputClientes");
+          const filter = input.value.toLowerCase();
+          const tbody = document.getElementById("tabelaClientesBody");
+          const trs = tbody.getElementsByTagName("tr");
+
+          for (let i = 0; i < trs.length; i++) {
+              if (trs[i].cells.length === 1) continue; // Ignora a linha de "Nenhum cliente"
+
+              const tdNome = trs[i].getElementsByTagName("td")[0];
+              if (tdNome) {
+                  const txtValue = tdNome.textContent || tdNome.innerText;
+                  if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                      trs[i].style.display = "";
+                  } else {
+                      trs[i].style.display = "none";
+                  }
+              }
+          }
+      }
+
+      function limparBuscaClientes() {
+          const input = document.getElementById("searchInputClientes");
+          input.value = "";
+          filtrarClientes(); // Re-exibe tudo
+          input.focus();
       }
 
       // =======================================================================

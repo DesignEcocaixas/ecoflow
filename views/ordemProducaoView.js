@@ -150,10 +150,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   <div class="content">
     <div class="d-flex align-items-center justify-content-between mb-4">
       <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-industry text-muted me-2"></i>Ordens de Produção</h4>
-      <div class="d-flex align-items-center gap-3">
-        <span class="usuario-badge"><i class="fa-solid fa-user-circle me-1"></i> ${user.nome}</span>
-        <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i></a>
-      </div>
     </div>
 
     <div class="bg-white p-4 rounded-3 shadow-sm mb-4 border border-light">

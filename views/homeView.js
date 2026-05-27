@@ -513,30 +513,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
               <span class="text-muted d-none d-sm-block" style="font-size:0.85rem;">Sistema de gestão Ecocaixas</span>
             </div>
         </div>
-        
-        <div class="d-flex align-items-center gap-3">
-          <button type="button"
-            class="btn btn-sm notificacao-btn position-relative"
-            data-bs-toggle="modal"
-            data-bs-target="#notificacoesModal"
-            title="Notificações"
-          >
-            <i class="fas fa-bell"></i>
-            ${qtdNotificacoes > 0 ? `
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;">
-                ${qtdNotificacoes}
-              </span>
-            ` : ""}
-          </button>
-
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${usuario.nome}
-          </span>
-          
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
-        </div>
       </div>
 
       <div class="row g-3">

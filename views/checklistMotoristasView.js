@@ -328,14 +328,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle e inspeção de frota</span>
             </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
-          </span>
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
-        </div>
       </div>
 
       <!-- BARRA DE FERRAMENTAS INTEGRADA (Filtros + Botões) -->

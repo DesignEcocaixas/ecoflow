@@ -421,14 +421,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-truck-fast text-muted me-2"></i>Gestão de Rotas</h4>
         </div>
-        <div class="d-flex align-items-center gap-3">
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${usuario.nome}
-          </span>
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
-        </div>
       </div>
 
       <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">

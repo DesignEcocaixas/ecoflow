@@ -1092,31 +1092,61 @@ app.post("/fornecedores/editar/:id", (req, res) => {
 
 /*------------------------SISTEMA DE NOTIFICAÇÕES---------------------------------*/
 
-// Remover uma notificação
 app.post("/notificacoes/:id/excluir", (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+    if (!req.session.user) {
+        return res.status(401).json({ sucesso: false, erro: "Não autorizado" });
+    }
 
     const { id } = req.params;
+
     db.query("DELETE FROM notificacoes WHERE id = ?", [id], (err) => {
         if (err) {
             console.error("Erro ao remover notificação:", err);
+            return res.status(500).json({
+                sucesso: false,
+                erro: "Erro ao remover notificação"
+            });
         }
-        res.redirect("/home");
+
+        res.json({ sucesso: true });
     });
 });
 
-// Limpar todas as notificações
 app.post("/notificacoes/limpar", (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+    if (!req.session.user) {
+        return res.status(401).json({ sucesso: false, erro: "Não autorizado" });
+    }
 
     db.query("DELETE FROM notificacoes", (err) => {
         if (err) {
             console.error("Erro ao limpar notificações:", err);
+            return res.status(500).json({
+                sucesso: false,
+                erro: "Erro ao limpar notificações"
+            });
         }
-        res.redirect("/home");
+
+        res.json({ sucesso: true });
     });
 });
 
+app.get("/notificacoes", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ erro: "Não autorizado" });
+    }
+
+    db.query(
+        "SELECT id, mensagem, tipo, criado_em FROM notificacoes ORDER BY criado_em DESC LIMIT 20",
+        (err, results) => {
+            if (err) {
+                console.error("Erro ao buscar notificações:", err);
+                return res.status(500).json({ erro: "Erro ao buscar notificações" });
+            }
+
+            res.json(results || []);
+        }
+    );
+});
 
 /*app.get("/notificacoes", (req, res) => {
     if (!req.session.user) return res.redirect("/login");

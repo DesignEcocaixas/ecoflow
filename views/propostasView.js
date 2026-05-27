@@ -95,14 +95,6 @@ module.exports = function propostasView(usuario) {
             <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Acompanhamento de Design e Clichês</span>
           </div>
       </div>
-      <div class="d-flex align-items-center gap-3">
-        <span class="usuario-badge d-none d-sm-inline-block">
-          <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
-        </span>
-        <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-          <i class="fas fa-sign-out-alt"></i>
-        </a>
-      </div>
     </div>
 
     <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">

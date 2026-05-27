@@ -2137,7 +2137,7 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
 // 1. Listar Cadernos (Agora busca o histórico fixo de clientes)
 app.get("/caderno-entregas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    
+
     try {
         const page = parseInt(req.query.page || "1", 10);
         const limit = 20;
@@ -2149,11 +2149,11 @@ app.get("/caderno-entregas", async (req, res) => {
 
         if (data_inicio) { where.push("DATE(data_criacao) >= ?"); params.push(data_inicio); }
         if (data_fim) { where.push("DATE(data_criacao) <= ?"); params.push(data_fim); }
-        
+
         const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
         const countQuery = `SELECT COUNT(*) AS total FROM caderno_entregas ${whereSql}`;
         const [countResult] = await db.promise().query(countQuery, params);
-        
+
         const total = countResult[0].total;
         const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -2172,12 +2172,12 @@ app.get("/caderno-entregas", async (req, res) => {
         }
 
         const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
-        
+
         // NOVO: Busca o histórico fixo de clientes imune à exclusão
         const [clientesDB] = await db.promise().query("SELECT nome, link_endereco FROM clientes_historico ORDER BY nome ASC");
 
         res.send(require('./views/cadernoEntregasView')(
-            req.session.user, cadernos, veiculos, clientesDB, 
+            req.session.user, cadernos, veiculos, clientesDB,
             { page, totalPages, total }, { data_inicio, data_fim }
         ));
     } catch (error) {
@@ -2218,7 +2218,7 @@ app.post("/caderno-entregas/novo", async (req, res) => {
 
                     const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
                     const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
-                    
+
                     await db.promise().query(
                         "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
                         [cadernoId, nomeCli, linkCli, itens[i] || null, qtd, valAberto]
@@ -2286,7 +2286,7 @@ app.post("/caderno-entregas/editar/:id", async (req, res) => {
 // ==========================================
 app.post("/caderno-entregas/excluir/:id", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    
+
     const { id } = req.params;
 
     try {
@@ -2294,11 +2294,85 @@ app.post("/caderno-entregas/excluir/:id", async (req, res) => {
         // Nota: Se você usou "ON DELETE CASCADE" na criação da tabela de itens, 
         // os locais de entrega vinculados a este caderno serão apagados automaticamente pelo banco!
         await db.promise().query("DELETE FROM caderno_entregas WHERE id = ?", [id]);
-        
+
         res.redirect("/caderno-entregas");
     } catch (error) {
         console.error("[ERRO AO EXCLUIR CADERNO]:", error);
         res.status(500).send("Erro interno ao tentar excluir o caderno de entregas.");
+    }
+});
+
+// ==========================================
+// CADASTRAR NOVO CLIENTE / LINK MAPS INDIVIDUALMENTE
+// ==========================================
+app.post("/caderno-entregas/clientes/novo", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { nome, link_endereco } = req.body;
+
+    try {
+        if (nome && nome.trim() !== '') {
+            // Insere na tabela clientes_historico e se já existir atualiza o link (blindagem de erros)
+            await db.promise().query(`
+                INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
+                ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
+            `, [nome.trim(), link_endereco || null, link_endereco || null]);
+        }
+
+        // Redireciona de volta. Ao recarregar a página, o novo cliente já é processado no SELECT!
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO AO CADASTRAR CLIENTE]:", error);
+        res.status(500).send("Erro interno ao tentar salvar o cliente.");
+    }
+});
+
+// ==========================================
+// EDITAR CLIENTE DO HISTÓRICO
+// ==========================================
+app.post("/caderno-entregas/clientes/editar", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const { nomeOriginal, nomeNovo, link_endereco } = req.body;
+
+    try {
+        if (nomeOriginal && nomeNovo) {
+            // Atualiza o nome e o link na tabela de histórico
+            await db.promise().query(`
+                UPDATE clientes_historico 
+                SET nome = ?, link_endereco = ? 
+                WHERE nome = ?
+            `, [nomeNovo.trim(), link_endereco || null, nomeOriginal.trim()]);
+
+            // Opcional: Se desejar que a alteração de nome reflita também nos cadernos ANTIGOS.
+            // Se preferir manter o passado intacto, pode remover esta query.
+            await db.promise().query(`
+                UPDATE caderno_entregas_itens 
+                SET local_entrega = ? 
+                WHERE local_entrega = ?
+            `, [nomeNovo.trim(), nomeOriginal.trim()]);
+        }
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO AO EDITAR CLIENTE]:", error);
+        res.status(500).send("Erro interno ao tentar atualizar o cliente.");
+    }
+});
+
+// ==========================================
+// EXCLUIR CLIENTE DO HISTÓRICO
+// ==========================================
+app.post("/caderno-entregas/clientes/excluir", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const { nome } = req.body;
+
+    try {
+        if (nome) {
+            await db.promise().query("DELETE FROM clientes_historico WHERE nome = ?", [nome.trim()]);
+        }
+        res.redirect("/caderno-entregas");
+    } catch (error) {
+        console.error("[ERRO AO EXCLUIR CLIENTE]:", error);
+        res.status(500).send("Erro interno ao tentar excluir o cliente.");
     }
 });
 
@@ -2485,6 +2559,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         if (cadernoRows.length === 0) {
             return res.status(404).send("Caderno não encontrado.");
         }
+
         const caderno = cadernoRows[0];
 
         // 2. Busca todos os locais de entrega associados ao caderno
@@ -2498,49 +2573,148 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         const fs = require('fs');
         const path = require('path');
 
+        // =======================================================
+        // FUNÇÕES AUXILIARES PARA ORGANIZAR ITENS POR TAMANHO
+        // =======================================================
+        function extrairTamanhoDoItem(texto = '') {
+            const item = String(texto).toUpperCase();
+
+            const match = item.match(/\b(N\d{1,3}|PP\d*|P\d*|M\d*|G\d*|GG|C\d+|A\d+|L\d+|\d+\s*CM|\d+\s*MM|\d+)\b/);
+
+            return match ? match[0].replace(/\s+/g, '') : '';
+        }
+
+        function pesoTamanho(tamanho = '') {
+            const t = String(tamanho).toUpperCase().replace(/\s+/g, '');
+
+            const ordemLetras = {
+                'MINI': 1,
+                'PP': 2,
+                'PP1': 3,
+                'PP2': 4,
+                'PP3': 5,
+                'P': 10,
+                'M': 20,
+                'G': 30,
+                'GG': 40
+            };
+
+            if (ordemLetras[t]) return ordemLetras[t];
+
+            const numero = t.match(/\d+/);
+            if (numero) return parseInt(numero[0], 10);
+
+            return 9999;
+        }
+
+        function organizarItensPorTamanho(itensPedido = '') {
+            if (!itensPedido || String(itensPedido).trim() === '') {
+                return ['-'];
+            }
+
+            let texto = String(itensPedido)
+                .replace(/\r/g, '')
+                .replace(/\n+/g, ';')
+                .replace(/\s+\+\s+/g, ';')
+                .replace(/\s+\/\s+/g, ';')
+                .replace(/\s*\|\s*/g, ';');
+
+            // Se vier tudo separado por vírgula, também quebra.
+            // Ex.: N30 - 10, N35 - 20, N40 - 5
+            texto = texto.replace(/,\s*(?=(CX|CAIXA|PIZZA|N\d{1,3}|PP|P\b|M\b|G\b|GG\b|RETANGULAR|QUADRADA|SMART|OITAVADA))/gi, ';');
+
+            const lista = texto
+                .split(';')
+                .map(item => item.trim())
+                .filter(Boolean);
+
+            return lista.sort((a, b) => {
+                const tamanhoA = extrairTamanhoDoItem(a);
+                const tamanhoB = extrairTamanhoDoItem(b);
+
+                const pesoA = pesoTamanho(tamanhoA);
+                const pesoB = pesoTamanho(tamanhoB);
+
+                if (pesoA !== pesoB) return pesoA - pesoB;
+
+                return a.localeCompare(b, 'pt-BR');
+            });
+        }
+
+        // =======================================================
+        // FUNÇÃO AUXILIAR PARA CAMPO DE RECEBIMENTO
+        // =======================================================
+        function desenharCamposRecebimento(doc, x, y) {
+            doc.font('Helvetica-Bold')
+                .fontSize(6.8)
+                .fillColor('#333333');
+                //.text('Pago [   ]', x, y, { lineBreak: false });
+
+            doc.text('Dinheiro [   ]', x + 42, y, { lineBreak: false });
+            doc.text('Pix [   ]', x + 100, y, { lineBreak: false });
+            doc.text('Cartão [   ]', x + 138, y, { lineBreak: false });
+        }
+
         // Inicializa o documento em tamanho A4 com margens
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
         // Gera o nome do ficheiro dinâmico com a data
         const dataGerado = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        
-        // Configura os cabeçalhos para o browser abrir o PDF diretamente (facilita a impressão)
+
+        // Configura os cabeçalhos para o browser abrir o PDF diretamente
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=caderno(${dataGerado}).pdf`);
         doc.pipe(res);
 
         // --- DESIGN DO MANIFESTO (Estilo Ecoflow) ---
-        // Barra Superior Decorativa
         doc.rect(0, 0, 600, 15).fill('#0D5749');
 
         // Inserção da Logo da Ecocaixas
         const logoPath = path.join(process.cwd(), 'public', 'img', 'logo-ecocaixas.png');
-        let titleX = 40; // Posição padrão do título
+        let titleX = 40;
+
         if (fs.existsSync(logoPath)) {
             doc.image(logoPath, 40, 25, { width: 110 });
-            titleX = 170; // Desloca o título para o lado se a imagem for renderizada
+            titleX = 170;
         }
 
         // Título Principal
-        doc.fillColor('#222222').font('Helvetica-Bold').fontSize(16).text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
-        doc.font('Helvetica').fontSize(9).fillColor('#666666').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 58);
+        doc.fillColor('#222222')
+            .font('Helvetica-Bold')
+            .fontSize(16)
+            .text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
+
+        doc.font('Helvetica')
+            .fontSize(9)
+            .fillColor('#666666')
+            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 58);
+
         doc.moveTo(40, 80).lineTo(555, 80).stroke('#eeeeee');
 
-        // Quadro Informativo (Motorista e Veículo)
+        // Quadro Informativo
         doc.rect(40, 95, 515, 55).fill('#f8f9fa');
-        doc.fillColor('#333333').font('Helvetica-Bold').fontSize(10)
+
+        doc.fillColor('#333333')
+            .font('Helvetica-Bold')
+            .fontSize(10)
             .text('MOTORISTA:', 55, 105)
             .text('AJUDANTE:', 215, 105)
             .text('VEÍCULO / FROTA:', 375, 105);
 
-        doc.font('Helvetica').fontSize(11).fillColor('#444444')
+        doc.font('Helvetica')
+            .fontSize(11)
+            .fillColor('#444444')
             .text((caderno.motorista || '').toUpperCase(), 55, 122)
             .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 122)
             .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 122);
 
         // Subtítulo da Lista de Entregas
         doc.moveTo(40, 170).lineTo(555, 170).stroke('#dddddd');
-        doc.fillColor('#0D5749').font('Helvetica-Bold').fontSize(13).text('RELAÇÃO ORDENADA DE ENTREGAS (PIZZARIAS / CLIENTES)', 40, 185);
+
+        doc.fillColor('#0D5749')
+            .font('Helvetica-Bold')
+            .fontSize(13)
+            .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 185);
 
         let yPosition = 215;
 
@@ -2548,56 +2722,130 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         for (let i = 0; i < itens.length; i++) {
             const item = itens[i];
 
-            // Proteção de Quebra de Página (se o box atual for cortar, vai pra próxima folha)
-            if (yPosition > 690) {
+            const itensOrganizados = organizarItensPorTamanho(item.itens_pedido);
+
+            const alturaLinhaItem = 11;
+            const alturaItens = Math.max(14, itensOrganizados.length * alturaLinhaItem);
+
+            const qtdY = yPosition + 43 + alturaItens;
+            const idY = qtdY + 30;
+
+            // Altura dinâmica da caixa para acomodar vários itens um abaixo do outro
+            const boxHeight = Math.max(108, idY - yPosition + 22);
+
+            // Proteção de Quebra de Página
+            if (yPosition + boxHeight > doc.page.height - 45) {
                 doc.addPage();
-                doc.rect(0, 0, 600, 12).fill('#0D5749'); // Barra no topo da nova página
+                doc.rect(0, 0, 600, 12).fill('#0D5749');
                 yPosition = 40;
             }
 
-            // Caixa delimitadora da entrega (Aumentada para 95px de altura para acomodar os novos dados)
-            doc.rect(40, yPosition, 515, 95).stroke('#e5e5e5');
+            // Recalcula posições após possível quebra de página
+            const itensStartY = yPosition + 35;
+            const qtdStartY = yPosition + 43 + alturaItens;
+            const idStartY = qtdStartY + 30;
 
-            // Textos da Entrega: Cliente/Localização (Com Box para visto do motorista)
-            doc.fillColor('#111111').font('Helvetica-Bold').fontSize(11).text(`[   ]  ${i + 1}. ${(item.local_entrega || '').toUpperCase()}`, 55, yPosition + 15);
-            
-            // Novos Dados: Itens, Qtd e Valor
-            doc.font('Helvetica-Bold').fontSize(9).fillColor('#444444').text('Itens:', 55, yPosition + 35);
-            doc.font('Helvetica').text((item.itens_pedido || '-'), 90, yPosition + 35, { width: 330, lineBreak: false });
+            // Caixa delimitadora da entrega
+            doc.rect(40, yPosition, 515, boxHeight).stroke('#e5e5e5');
 
-            doc.font('Helvetica-Bold').text('Qtd Total:', 55, yPosition + 52);
-            doc.font('Helvetica').text((item.quantidade || '-'), 110, yPosition + 52);
+            // Cliente / Localização
+            doc.fillColor('#111111')
+                .font('Helvetica-Bold')
+                .fontSize(11)
+                .text(`[   ]  ${i + 1}. ${(item.local_entrega || '').toUpperCase()}`, 55, yPosition + 15, {
+                    width: 390,
+                    lineBreak: false
+                });
 
+            // Itens do pedido
+            doc.font('Helvetica-Bold')
+                .fontSize(9)
+                .fillColor('#444444')
+                .text('Itens:', 55, itensStartY);
+
+            // Itens um embaixo do outro, ordenados por tamanho
+            doc.font('Helvetica')
+                .fontSize(8.7)
+                .fillColor('#333333');
+
+            itensOrganizados.forEach((linha, index) => {
+                doc.text(`• ${linha}`, 90, itensStartY + (index * alturaLinhaItem), {
+                    width: 330,
+                    lineBreak: false
+                });
+            });
+
+            // Qtd Total
+            doc.font('Helvetica-Bold')
+                .fontSize(9)
+                .fillColor('#444444')
+                .text('Qtd Total:', 55, qtdStartY);
+
+            doc.font('Helvetica')
+                .fillColor('#333333')
+                .text((item.quantidade || '-'), 110, qtdStartY);
+
+            // Valor em aberto + campo de marcação de recebimento
             if (item.valor_aberto && parseFloat(item.valor_aberto) > 0) {
-                const valorFormatado = parseFloat(item.valor_aberto).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                doc.font('Helvetica-Bold').text('A Receber:', 180, yPosition + 52);
-                doc.font('Helvetica-Bold').fillColor('#0D5749').text(`R$ ${valorFormatado}`, 240, yPosition + 52);
+                const valorFormatado = parseFloat(item.valor_aberto).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                doc.font('Helvetica-Bold')
+                    .fontSize(9)
+                    .fillColor('#444444')
+                    .text('A Receber:', 145, qtdStartY);
+
+                doc.font('Helvetica-Bold')
+                    .fontSize(9)
+                    .fillColor('#0D5749')
+                    .text(`R$ ${valorFormatado}`, 202, qtdStartY);
+
+                // Campo manual para o motorista marcar como recebeu
+                desenharCamposRecebimento(doc, 270, qtdStartY + 1);
             }
 
             // Informações de ID
-            doc.font('Helvetica').fontSize(8).fillColor('#999999').text(`ID Registo: #${item.id}  |  Manifesto Base: #${id}`, 55, yPosition + 75);
+            doc.font('Helvetica')
+                .fontSize(8)
+                .fillColor('#999999')
+                .text(`ID Registo: #${item.id}  |  Manifesto Base: #${id}`, 55, idStartY);
 
             // Tratamento do QR Code
             if (item.link_endereco) {
-                doc.font('Helvetica-Bold').fontSize(8).fillColor('#0D5749').text('QR Code GPS  ->', 385, yPosition + 45);
+                doc.font('Helvetica-Bold')
+                    .fontSize(8)
+                    .fillColor('#0D5749')
+                    .text('Endereço ->', 385, yPosition + 45);
 
                 try {
-                    // Faz o download do QR Code
                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.link_endereco)}`;
                     const response = await axios.get(qrUrl, { responseType: 'arraybuffer' });
                     const qrBuffer = Buffer.from(response.data, 'binary');
 
-                    // Posiciona o QR Code ajustado à direita da box
-                    doc.image(qrBuffer, 470, yPosition + 12, { width: 70, height: 70 });
+                    doc.image(qrBuffer, 470, yPosition + 12, {
+                        width: 70,
+                        height: 70
+                    });
                 } catch (errorQr) {
                     console.error("Falha ao injetar QR Code no PDF:", errorQr.message);
-                    doc.fillColor('#dc3545').text('[Erro ao processar QR Code]', 430, yPosition + 32);
+
+                    doc.fillColor('#dc3545')
+                        .fontSize(8)
+                        .text('[Erro ao processar QR Code]', 430, yPosition + 32);
                 }
             } else {
-                doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#999999').text('Nenhum link ou rota GPS associada a este destino.', 55, yPosition + 75, { align: 'right', width: 490 });
+                doc.font('Helvetica-Oblique')
+                    .fontSize(8.5)
+                    .fillColor('#999999')
+                    .text('Nenhum link ou rota GPS associada a este destino.', 55, idStartY, {
+                        align: 'right',
+                        width: 490
+                    });
             }
 
-            yPosition += 110; // Avança a posição Y para o próximo quadro
+            yPosition += boxHeight + 15;
         }
 
         // Finaliza o documento
@@ -2605,6 +2853,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
     } catch (error) {
         console.error('[ERRO PDF MANIFESTO]', error);
+
         if (!res.headersSent) {
             res.status(500).send('Erro crítico interno ao processar o PDF de impressão. Verifique os logs.');
         }

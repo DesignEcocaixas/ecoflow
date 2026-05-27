@@ -62,6 +62,68 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   };
   // =========================================================================
 
+  // =========================================================================
+  // TABELA E MODAIS DE GESTÃO DE CLIENTES (DENTRO DO MODAL CLIENTE)
+  // =========================================================================
+  const listaClientesTabela = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
+      <tr>
+          <td class="fw-bold text-dark py-2">${c.nome}</td>
+          <td class="py-2">${c.link_endereco ? `<a href="${c.link_endereco}" target="_blank" class="text-truncate d-inline-block text-primary" style="max-width: 200px; font-size: 0.8rem;">${c.link_endereco}</a>` : '<span class="text-muted small">Sem link</span>'}</td>
+          <td class="text-end py-2">
+              <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-light border text-warning shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#editarClienteModal${i}" title="Editar Cliente"><i class="fa-solid fa-pen" style="font-size:0.75rem;"></i></button>
+                  <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#excluirClienteModal${i}" title="Excluir Cliente"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></button>
+              </div>
+          </td>
+      </tr>
+  `).join('') : `<tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-users-slash fa-2x opacity-25 mb-2"></i><br>Nenhum cliente cadastrado no histórico.</td></tr>`;
+
+  const modaisEdicaoExclusaoClientes = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
+      <div class="modal fade" id="editarClienteModal${i}" tabindex="-1" style="z-index: 1060;">
+          <div class="modal-dialog modal-dialog-centered">
+              <form method="POST" action="/caderno-entregas/clientes/editar" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Atualizado!')">
+                  <input type="hidden" name="nomeOriginal" value="${c.nome}">
+                  <div class="modal-header bg-warning text-dark border-0">
+                      <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Dados do Cliente</h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body p-4 bg-light">
+                      <div class="mb-3">
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Nome do Cliente / Pizzaria</label>
+                          <input type="text" name="nomeNovo" class="form-control form-control-sm shadow-sm" value="${c.nome}" required>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Link do Google Maps</label>
+                          <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}">
+                      </div>
+                  </div>
+                  <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#novoClienteModal">Voltar à Lista</button>
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Alteração</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+
+      <div class="modal fade" id="excluirClienteModal${i}" tabindex="-1" style="z-index: 1060;">
+          <div class="modal-dialog modal-sm modal-dialog-centered">
+              <form method="POST" action="/caderno-entregas/clientes/excluir" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Excluído!')">
+                  <input type="hidden" name="nome" value="${c.nome}">
+                  <div class="modal-body text-center p-4">
+                      <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+                      <h6 class="mb-2 fw-bold text-dark">Excluir Cliente?</h6>
+                      <p class="text-muted mb-0" style="font-size:0.85rem;"><strong>${c.nome}</strong> será removido permanentemente do histórico de preenchimento automático.</p>
+                  </div>
+                  <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
+                      <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#novoClienteModal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-danger w-100">Sim, Excluir</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  `).join('') : '';
+  // =========================================================================
+
   const renderSubItensEdicao = (itensStr, totalQtd) => {
     if (!itensStr) {
       return `
@@ -398,8 +460,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Rotas Registradas</h6>
         
         <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
+                <i class="fa-solid fa-users me-1"></i> Clientes
+            </button>
             <button class="btn btn-sm btn-success shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
-                <i class="fa-solid fa-plus me-1"></i> Novo Caderno
+                <i class="fa-solid fa-plus me-1"></i> Caderno
             </button>
             <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel">
                 <i class="fa-solid fa-file-excel me-1"></i> Relatório
@@ -460,29 +525,75 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <p class="mb-4">Bem-vindo ao <strong>Caderno de Entregas</strong>. Siga as orientações abaixo para gerenciar as rotas:</p>
             <ul class="list-group list-group-flush mb-4">
               <li class="list-group-item bg-transparent px-0 border-light pb-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Criar um Novo Caderno</strong>
-                Clique em "Novo Caderno" para registrar uma saída. Preencha os dados do motorista, ajudante e veículo.
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-user-plus text-primary me-2"></i> 1. Gerir Clientes</strong>
+                Utilize o botão "Clientes" para gerenciar o histórico. Você pode editar os links do Maps para mantê-los atualizados ou excluir os que não usa mais.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i> 2. Adicionar Entregas e Itens</strong>
-                Ao adicionar um cliente, você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber.
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 2. Criar um Novo Caderno</strong>
+                Clique em "Caderno" para registrar uma saída. Preencha os dados do motorista e selecione os clientes na lista suspensa (o link do mapa será preenchido sozinho).
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-magnifying-glass text-info me-2"></i> 3. Clientes Salvos</strong>
-                O sistema guarda o histórico de clientes e o respectivo link do Maps. Em rotas futuras, basta selecionar o cliente na lista suspensa para auto-completar os dados.
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-boxes-stacked text-info me-2"></i> 3. Adicionar Entregas e Itens</strong>
+                Você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
                 <strong class="text-dark d-block mb-1"><i class="fa-solid fa-print text-dark me-2"></i> 4. Imprimir Manifesto PDF</strong>
                 Para cada caderno registrado, você pode gerar um PDF para o motorista contendo a rota e os <strong>QR Codes</strong> de navegação GPS ativos de cada local.
               </li>
-              <li class="list-group-item bg-transparent px-0 border-light pt-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> 5. Edição</strong>
-                Você pode editar os cadernos ou excluir entradas sem afetar a base de clientes já armazenada no histórico.
-              </li>
             </ul>
           </div>
           <div class="modal-footer border-0 bg-light">
             <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="novoClienteModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg">
+          <div class="modal-header bg-primary text-white border-0">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-users me-2"></i> Gerenciamento de Clientes (Maps)</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-light">
+            
+            <form method="POST" action="/caderno-entregas/clientes/novo" class="bg-white p-3 rounded border border-light shadow-sm mb-4" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')">
+              <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente</h6>
+              <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-5">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome do Cliente / Pizzaria</label>
+                      <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
+                  </div>
+                  <div class="col-12 col-md-5">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
+                      <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link de localização aqui">
+                  </div>
+                  <div class="col-12 col-md-2">
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                  </div>
+              </div>
+            </form>
+
+            <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;"><i class="fa-solid fa-list me-1"></i> Histórico de Clientes Cadastrados</h6>
+            <div class="table-responsive bg-white rounded border border-light shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                        <tr>
+                            <th class="py-2 px-3 text-muted">Nome do Cliente</th>
+                            <th class="py-2 px-3 text-muted">Link Cadastrado</th>
+                            <th class="py-2 px-3 text-end text-muted">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${listaClientesTabela}
+                    </tbody>
+                </table>
+            </div>
+
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
       </div>
@@ -580,10 +691,43 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       </div>
     </div>
 
+    <div class="modal fade" id="sucessoModal" tabindex="-1" style="z-index: 1070;">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal border-0 shadow-lg">
+          <div class="modal-body text-center p-5">
+            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
+            <h5 class="fw-bold text-dark mb-2" id="sucessoTitulo">Concluído!</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">A processar...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     ${modais}
+    ${modaisEdicaoExclusaoClientes}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      let isSubmitting = false;
+
+      function prepararSubmissaoSimples(event, form, titleMsg) {
+          event.preventDefault();
+          if (isSubmitting) return;
+
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.hide();
+          }
+
+          document.getElementById('sucessoTitulo').innerText = titleMsg;
+          const successModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
+          successModal.show();
+
+          isSubmitting = true;
+          setTimeout(() => { form.submit(); }, 1500);
+      }
+
       // =======================================================================
       // LÓGICA DO SELECT INTELIGENTE DE CLIENTES
       // =======================================================================

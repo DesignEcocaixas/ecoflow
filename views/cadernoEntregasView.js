@@ -92,6 +92,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           <td class="fw-bold text-dark py-2 cliente-nome-filtro">
              ${c.nome} 
              ${c.coordenadas ? '<span class="badge bg-success ms-1" style="font-size:0.6rem;" title="Coordenadas cadastradas">GPS</span>' : ''}
+             ${c.cidade ? `<span class="badge bg-info ms-1 text-dark" style="font-size:0.6rem;" title="Cidade Vinculada">${c.cidade}</span>` : ''}
           </td>
           <td class="py-2">${c.link_endereco ? `<a href="${c.link_endereco}" target="_blank" class="text-truncate d-inline-block text-primary" style="max-width: 200px; font-size: 0.8rem;">${c.link_endereco}</a>` : '<span class="text-muted small">Sem link</span>'}</td>
           <td class="text-end py-2">
@@ -122,7 +123,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                           <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" oninput="extrairCoordenadasAoColar(this)">
                       </div>
                       <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> Coordenadas(Opcional)</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> Coordenadas (Opcional)</label>
                           <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
                           <div class="form-text" style="font-size:0.7rem;">Se preenchido, o sistema usará isto para criar a rota perfeita.</div>
                       </div>
@@ -236,13 +237,17 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <input type="hidden" name="itens_pedido[]" class="hidden-itens">
             <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-5">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
                 ${renderClienteField(e.local_entrega)}
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
-                <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" value="${e.link_endereco || ''}" placeholder="Link do Google Maps">
+                <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" value="${e.link_endereco || ''}" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm shadow-sm coord-input" value="${e.coordenadas || ''}" placeholder="Lat, Lng">
             </div>
             
             <div class="col-12 col-md-8 mt-2">
@@ -610,7 +615,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <form method="POST" action="/caderno-entregas/clientes/novo" class="bg-white p-3 rounded border border-light shadow-sm mb-4" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')">
               <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente</h6>
               <div class="row g-2 align-items-end">
-                  <div class="col-12 col-md-4">
+                  <div class="col-12 col-md-5">
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome / Pizzaria</label>
                       <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
                   </div>
@@ -619,11 +624,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
                   </div>
                   <div class="col-12 col-md-3">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas(Opcional)</label>
-                      <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" placeholder="Ex: -12.12, -38.12">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coord. (Opcional)</label>
+                      <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm coord-input" placeholder="Lat, Lng">
                   </div>
-                  <div class="col-12 col-md-1">
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm" title="Salvar"><i class="fa-solid fa-save"></i></button>
+                  <div class="col-12 mt-2 text-end">
+                      <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" title="Salvar"><i class="fa-solid fa-save me-1"></i> Salvar Cliente</button>
                   </div>
               </div>
             </form>
@@ -698,7 +703,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                     <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-5">
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
                         <select class="form-select form-select-sm mb-1 client-select shadow-sm" onchange="handleClientSelect(this)" required>
                             <option value="" disabled selected>-- Selecionar Cliente --</option>
@@ -707,9 +712,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                         </select>
                         <input type="text" class="form-control form-control-sm client-input shadow-sm" style="display:none;" placeholder="Digite o nome do novo cliente" disabled required>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
-                        <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" placeholder="Cole o link aqui">
+                        <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                        <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm coord-input shadow-sm" placeholder="Lat, Lng">
                     </div>
                     
                     <div class="col-12 col-md-8 mt-2">
@@ -775,21 +784,14 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <script>
       let isSubmitting = false;
 
-      // =======================================================================
-      // LÓGICA DO MODAL DE MIGRAÇÃO (SINCRONIZAÇÃO GPS)
-      // =======================================================================
       function iniciarMigracao() {
           document.getElementById('migracaoStartScreen').style.display = 'none';
           document.getElementById('migracaoProcessScreen').style.display = 'block';
-          
-          // O iframe carrega a rota backend e o backend jorra o progresso linha a linha para dentro dele
           document.getElementById('iframeMigracao').src = '/caderno-entregas/migrar-coordenadas';
       }
 
       function fecharMigracao() {
           const iframe = document.getElementById('iframeMigracao');
-          // Se o iframe chegou a ser iniciado, nós damos reload na página ao fechar
-          // para que a tabela atualize mostrando as tags "GPS" nos clientes recém atualizados.
           if (iframe.src !== "about:blank" && !iframe.src.endsWith("about:blank")) {
               window.location.reload();
           } else {
@@ -798,29 +800,24 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       }
 
       function extrairCoordenadasAoColar(inputElement) {
-          const form = inputElement.closest('form');
-          if (!form) return;
+          // Busca o contentor pai: ou a linha do Novo Caderno ou o formulário do Novo Cliente
+          const container = inputElement.closest('.entrega-item') || inputElement.closest('form');
+          if (!container) return;
           
-          const inputCoords = form.querySelector('input[name="coordenadas"]');
+          // Procura a caixa de coordenadas correta para aquela linha/form
+          const inputCoords = container.querySelector('input[name="coordenadas"]') || container.querySelector('input[name="coordenadas_rota[]"]');
           if (!inputCoords) return;
 
           const url = inputElement.value;
           if (!url) return;
 
-          // 1. Busca primeiro o pino EXATO (!3d e !4d) - Precisão Máxima
+          // Extração super precisa baseada no pino ou query
           let match = url.match(/!3d(-?\\d+\\.\\d+)!4d(-?\\d+\\.\\d+)/);
-          
-          // 2. Busca por query exata
           if (!match) match = url.match(/query=(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
-          
-          // 3. Em último caso, busca o centro da tela (@lat, lng) - Menos preciso
           if (!match) match = url.match(/@(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
 
           if (match && match.length >= 3) {
-              // Preenche automaticamente o campo de coordenadas
               inputCoords.value = match[1] + ", " + match[2];
-              
-              // Dá um feedback visual rápido de sucesso (Piscadela Verde)
               inputCoords.style.transition = "all 0.3s";
               inputCoords.style.backgroundColor = "#e2efda";
               setTimeout(() => {
@@ -852,12 +849,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const successModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
           successModal.show();
 
-          // Executa a formatação dos campos de moeda/texto escondidos antes do submit oficial
           limparMoedas(form);
-
           isSubmitting = true;
 
-          // Se for otimização de rota, mostra barra de progresso animada simulando a resposta da API do backend
           if (titleMsg.toLowerCase().includes('otimizar')) {
               sucessoIcon.className = "fa-solid fa-satellite-dish fa-3x text-success mb-3 anim-pulse";
               progressoContainer.style.display = 'flex';
@@ -868,21 +862,19 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               let progresso = 0;
               const intervalo = setInterval(() => {
                   if (progresso < 98) {
-                      progresso += Math.floor(Math.random() * 8) + 2; // Incremento aleatório
+                      progresso += Math.floor(Math.random() * 8) + 2;
                       if (progresso > 98) progresso = 98;
                       barraProgresso.style.width = progresso + '%';
                       barraProgresso.innerText = progresso + '%';
                       
                       if (progresso > 20 && progresso < 50) sucessoSub.innerText = "Consultando Google Maps API...";
                       if (progresso >= 50 && progresso < 80) sucessoSub.innerText = "Traçando rota inteligente...";
-                      if (progresso >= 80) sucessoSub.innerText = "Gerando caderno e finalizando...";
+                      if (progresso >= 80) sucessoSub.innerText = "Gerando caderno e salvando dados da cidade...";
                   }
               }, 400);
 
-              // Submete rapidamente, o navegador continua rodando o JS até receber a resposta do backend
               setTimeout(() => { form.submit(); }, 500); 
           } else {
-              // Comportamento normal para formulários menores (ex: Cadastro de cliente único)
               sucessoIcon.className = "fa-solid fa-circle-check fa-3x text-success mb-3 anim-pulse";
               progressoContainer.style.display = 'none';
               sucessoSub.innerText = "Por favor, aguarde...";
@@ -890,9 +882,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // =======================================================================
-      // LÓGICA DO FILTRO DE PESQUISA DE CLIENTES
-      // =======================================================================
       function filtrarClientes() {
           const input = document.getElementById("searchInputClientes");
           const filter = input.value.toLowerCase();
@@ -901,15 +890,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
           for (let i = 0; i < trs.length; i++) {
               if (trs[i].cells.length === 1) continue; 
-
               const tdNome = trs[i].getElementsByTagName("td")[0];
               if (tdNome) {
                   const txtValue = tdNome.textContent || tdNome.innerText;
-                  if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                      trs[i].style.display = "";
-                  } else {
-                      trs[i].style.display = "none";
-                  }
+                  if (txtValue.toLowerCase().indexOf(filter) > -1) trs[i].style.display = "";
+                  else trs[i].style.display = "none";
               }
           }
       }
@@ -921,9 +906,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           input.focus();
       }
 
-      // =======================================================================
-      // LÓGICA DO SELECT INTELIGENTE DE CLIENTES
-      // =======================================================================
       const dictClientes = ${JSON.stringify(historicoClientes)};
       const optionsClientesGeral = \`${optionsClientesHtml}\`;
       
@@ -931,13 +913,15 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const container = selectEl.closest('.entrega-item');
           const inputEl = container.querySelector('.client-input');
           const linkInput = container.querySelector('.link-maps-input');
+          const coordInput = container.querySelector('.coord-input');
           
           if (selectEl.value === 'NOVO_CLIENTE') {
               inputEl.style.display = 'block';
               inputEl.disabled = false;
               inputEl.setAttribute('name', 'local[]');
               selectEl.removeAttribute('name');
-              linkInput.value = '';
+              if (linkInput) linkInput.value = '';
+              if (coordInput) coordInput.value = '';
           } else {
               inputEl.style.display = 'none';
               inputEl.disabled = true;
@@ -945,9 +929,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               selectEl.setAttribute('name', 'local[]');
               
               if (dictClientes[selectEl.value]) {
-                  linkInput.value = dictClientes[selectEl.value];
+                  if (linkInput) linkInput.value = dictClientes[selectEl.value];
+                  // Opcionalmente poderia preencher as coordenadas se quiséssemos injetar no dicionário
               } else {
-                  linkInput.value = '';
+                  if (linkInput) linkInput.value = '';
+                  if (coordInput) coordInput.value = '';
               }
           }
       }
@@ -959,7 +945,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                   <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
-                  <div class="col-12 col-md-6">
+                  <div class="col-12 col-md-5">
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
                       <select class="form-select form-select-sm mb-1 client-select shadow-sm" onchange="handleClientSelect(this)" required>
                           <option value="" disabled selected>-- Selecionar Cliente --</option>
@@ -968,9 +954,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       </select>
                       <input type="text" class="form-control form-control-sm client-input shadow-sm" style="display:none;" placeholder="Digite o nome do novo cliente" disabled required>
                   </div>
-                  <div class="col-12 col-md-6">
+                  <div class="col-12 col-md-4">
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
-                      <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" placeholder="Cole o link aqui">
+                      <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
+                  </div>
+                  <div class="col-12 col-md-3">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                      <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm coord-input shadow-sm" placeholder="Lat, Lng">
                   </div>
                   
                   <div class="col-12 col-md-8 mt-2">

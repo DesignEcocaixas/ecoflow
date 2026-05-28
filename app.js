@@ -271,6 +271,34 @@ async function otimizarRotaGoogleAPI(entregas) {
         return entregas; // Em caso de falha, salva na ordem original inserida
     }
 }
+
+// =======================================================
+// NOVA FUNÇÃO: DESCOBRIR CIDADE PELAS COORDENADAS
+// =======================================================
+async function obterCidadeDasCoordenadas(coordenadas) {
+    if (!coordenadas || !coordenadas.includes(',')) return null;
+    try {
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordenadas.replace(/\s/g, '')}&key=${GOOGLE_MAPS_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data.status === 'OK') {
+            for (let result of response.data.results) {
+                for (let component of result.address_components) {
+                    // Procura o tipo 'locality' (Cidade) ou 'administrative_area_level_2' (Município)
+                    if (component.types.includes('administrative_area_level_2') || component.types.includes('locality')) {
+                        return component.long_name;
+                    }
+                }
+            }
+        } else {
+            // Se o Google bloquear, ele vai gritar aqui no seu VS Code!
+            console.error("⚠️ [GEOCODING API BLOQUEADA]:", response.data.status, response.data.error_message);
+        }
+    } catch (e) {
+        console.error("❌ Erro interno ao buscar cidade:", e.message);
+    }
+    return null;
+}
 // =======================================================
 // =======================================================
 
@@ -2328,29 +2356,44 @@ app.post("/caderno-entregas/novo", async (req, res) => {
         const cadernoId = result.insertId;
 
         if (local) {
+            // O QUE MUDA NAS ROTAS POST /novo e POST /editar/:id
             const locais = Array.isArray(local) ? local : [local];
             const links = Array.isArray(link) ? link : [link];
             const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
             const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
+            // NOVO: Puxa o array de coordenadas preenchido dinamicamente na tela
+            const coordsForm = Array.isArray(req.body.coordenadas_rota) ? req.body.coordenadas_rota : [req.body.coordenadas_rota];
 
             let entregasParaProcessar = [];
             for (let i = 0; i < locais.length; i++) {
                 const nomeCli = locais[i].trim();
                 const linkCli = links[i] || null;
+                let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
 
                 if (nomeCli !== '') {
-                    // Busca as coordenadas salvas (PLANO A)
-                    const [cliRows] = await db.promise().query("SELECT coordenadas FROM clientes_historico WHERE nome = ?", [nomeCli]);
-                    const coordsDB = cliRows.length > 0 ? cliRows[0].coordenadas : null;
+                    // Se não preencheu coordenada na tela, mas tem link, o servidor caça a coordenada sozinho
+                    if (!coordCli && linkCli) {
+                        const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
+                        if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                            coordCli = localizacaoResolvida.trim();
+                        }
+                    }
 
-                    db.promise().query(`
-                        INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
-                        ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
-                    `, [nomeCli, linkCli, linkCli]).catch(e => console.error(e));
+                    // Se encontrou a coordenada, descobre a CIDADE na hora
+                    let cidadeCli = null;
+                    if (coordCli) {
+                        cidadeCli = await obterCidadeDasCoordenadas(coordCli);
+                    }
 
-                    // Se tiver coordenada salva, usa. Se não, manda a função extrair ou pesquisar
-                    const queryLocation = (coordsDB && coordsDB.trim() !== '') ? coordsDB.trim() : await obterLocalizacao(nomeCli, linkCli);
+                    // Salva no banco de dados o Cliente + Link + Coordenadas + Cidade Automática
+                    await db.promise().query(`
+                        INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE 
+                            link_endereco = COALESCE(?, link_endereco),
+                            coordenadas = COALESCE(?, coordenadas),
+                            cidade = COALESCE(?, cidade)
+                    `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
 
                     entregasParaProcessar.push({
                         nome: nomeCli,
@@ -2358,7 +2401,7 @@ app.post("/caderno-entregas/novo", async (req, res) => {
                         itens: itens[i] || null,
                         qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
                         valor: valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null,
-                        queryLocation: queryLocation
+                        queryLocation: coordCli || await obterLocalizacao(nomeCli, linkCli)
                     });
                 }
             }
@@ -2395,29 +2438,44 @@ app.post("/caderno-entregas/editar/:id", async (req, res) => {
         await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [id]);
 
         if (local) {
+            // O QUE MUDA NAS ROTAS POST /novo e POST /editar/:id
             const locais = Array.isArray(local) ? local : [local];
             const links = Array.isArray(link) ? link : [link];
             const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
             const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
+            // NOVO: Puxa o array de coordenadas preenchido dinamicamente na tela
+            const coordsForm = Array.isArray(req.body.coordenadas_rota) ? req.body.coordenadas_rota : [req.body.coordenadas_rota];
 
             let entregasParaProcessar = [];
             for (let i = 0; i < locais.length; i++) {
                 const nomeCli = locais[i].trim();
                 const linkCli = links[i] || null;
+                let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
 
                 if (nomeCli !== '') {
-                    // Busca as coordenadas salvas (PLANO A)
-                    const [cliRows] = await db.promise().query("SELECT coordenadas FROM clientes_historico WHERE nome = ?", [nomeCli]);
-                    const coordsDB = cliRows.length > 0 ? cliRows[0].coordenadas : null;
+                    // Se não preencheu coordenada na tela, mas tem link, o servidor caça a coordenada sozinho
+                    if (!coordCli && linkCli) {
+                        const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
+                        if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                            coordCli = localizacaoResolvida.trim();
+                        }
+                    }
 
-                    db.promise().query(`
-                        INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
-                        ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
-                    `, [nomeCli, linkCli, linkCli]).catch(e => console.error(e));
+                    // Se encontrou a coordenada, descobre a CIDADE na hora
+                    let cidadeCli = null;
+                    if (coordCli) {
+                        cidadeCli = await obterCidadeDasCoordenadas(coordCli);
+                    }
 
-                    // Se tiver coordenada salva, usa. Se não, manda a função extrair ou pesquisar
-                    const queryLocation = (coordsDB && coordsDB.trim() !== '') ? coordsDB.trim() : await obterLocalizacao(nomeCli, linkCli);
+                    // Salva no banco de dados o Cliente + Link + Coordenadas + Cidade Automática
+                    await db.promise().query(`
+                        INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE 
+                            link_endereco = COALESCE(?, link_endereco),
+                            coordenadas = COALESCE(?, coordenadas),
+                            cidade = COALESCE(?, cidade)
+                    `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
 
                     entregasParaProcessar.push({
                         nome: nomeCli,
@@ -2425,7 +2483,7 @@ app.post("/caderno-entregas/editar/:id", async (req, res) => {
                         itens: itens[i] || null,
                         qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
                         valor: valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null,
-                        queryLocation: queryLocation
+                        queryLocation: coordCli || await obterLocalizacao(nomeCli, linkCli)
                     });
                 }
             }
@@ -2771,7 +2829,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 }
                 return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
             }).join('/');
-            
+
             // Truque de concatenação
             const baseDirUrl = "https://www" + ".google.com/maps/dir//";
             linkRotaCompleta = baseDirUrl + paradasUrl;
@@ -3020,7 +3078,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
             // QR Code Individual da Parada (Usa Coordenadas se existirem, senão link)
             const searchBaseUrl = "https://www" + ".google.com/maps/search/?api=1&query=";
-            const targetLink = (item.coordenadas && item.coordenadas.trim() !== '') 
+            const targetLink = (item.coordenadas && item.coordenadas.trim() !== '')
                 ? searchBaseUrl + encodeURIComponent(item.coordenadas.trim().replace(/\s/g, ''))
                 : item.link_endereco;
 
@@ -3070,21 +3128,21 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 });
 
 // =======================================================
-// ROTA TEMPORÁRIA: MIGRAR COORDENADAS DE CLIENTES ANTIGOS
+// ROTA TEMPORÁRIA: MIGRAR COORDENADAS E CIDADES
 // =======================================================
 app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
+        // Busca clientes que não têm coordenada OU que não têm a cidade salva
         const [clientes] = await db.promise().query(`
-            SELECT nome, link_endereco 
+            SELECT nome, link_endereco, coordenadas 
             FROM clientes_historico 
             WHERE link_endereco IS NOT NULL 
               AND link_endereco != '' 
-              AND (coordenadas IS NULL OR coordenadas = '')
+              AND (coordenadas IS NULL OR coordenadas = '' OR cidade IS NULL OR cidade = '')
         `);
 
-        // CABEÇALHOS PARA DESATIVAR O BUFFERING DO NAVEGADOR
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
@@ -3095,12 +3153,11 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
             return res.send(`
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
                     <h3 style="color: #0D5749;">Tudo pronto!</h3>
-                    <p>Não há clientes antigos precisando de atualização.</p>
+                    <p>Não há clientes precisando de atualização de GPS ou Cidade.</p>
                 </div>
             `);
         }
 
-        // TRUQUE MÁGICO: Envia 1024 bytes invisíveis para forçar o navegador a renderizar a página AGORA!
         res.write(' '.repeat(1024));
 
         res.write(`
@@ -3111,7 +3168,7 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                 .aviso { border-left-color: #ffc107; }
                 .erro { border-left-color: #dc3545; }
             </style>
-            <h3>Sincronizando ${clientes.length} clientes...</h3>
+            <h3>Sincronizando GPS e Cidade de ${clientes.length} clientes...</h3>
             <p>Por favor, não feche o modal até a conclusão.</p>
             <hr style="border: 1px solid #ddd;">
         `);
@@ -3120,26 +3177,37 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
 
         for (let c of clientes) {
             try {
-                const localizacaoResolvida = await obterLocalizacao(c.nome, c.link_endereco);
+                let coordCli = c.coordenadas;
+                let atualizouAlgo = false;
 
-                if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                // Se não tem coordenada, decodifica o link
+                if (!coordCli || coordCli.trim() === '') {
+                    const localizacaoResolvida = await obterLocalizacao(c.nome, c.link_endereco);
+                    if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                        coordCli = localizacaoResolvida.trim();
+                        atualizouAlgo = true;
+                    }
+                }
+
+                // Se temos a coordenada na mão, buscamos a cidade
+                if (coordCli && coordCli.trim() !== '') {
+                    const cidade = await obterCidadeDasCoordenadas(coordCli);
+                    
                     await db.promise().query(
-                        "UPDATE clientes_historico SET coordenadas = ? WHERE nome = ?",
-                        [localizacaoResolvida.trim(), c.nome]
+                        "UPDATE clientes_historico SET coordenadas = ?, cidade = ? WHERE nome = ?",
+                        [coordCli, cidade || null, c.nome]
                     );
+                    
                     atualizados++;
-                    res.write(`<div class="linha sucesso">✅ <b>${c.nome}:</b> Coordenadas salvas! <span style="color:#666; font-size:12px;">(${localizacaoResolvida.trim()})</span></div>`);
+                    res.write(`<div class="linha sucesso">✅ <b>${c.nome}:</b> GPS: ${coordCli} | Cidade: <b>${cidade || 'Não localizada'}</b></div>`);
                 } else {
-                    res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> O link não revelou as coordenadas. Atualize manualmente.</div>`);
+                    res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> Link não revelou a coordenada.</div>`);
                 }
             } catch (err) {
                 res.write(`<div class="linha erro">❌ <b>Erro em ${c.nome}:</b> ${err.message}</div>`);
             }
 
-            // Script para descer a barra de rolagem do iframe automaticamente a cada nova linha
             res.write(`<script>window.scrollTo(0, document.body.scrollHeight);</script>`);
-            
-            // Aguarda 1.5 segundos para o Google não bloquear a sua conexão
             await new Promise(resolve => setTimeout(resolve, 1500));
         }
 

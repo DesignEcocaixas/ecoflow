@@ -153,6 +153,127 @@ app.use(session({
     }
 }));
 
+// =======================================================
+// ROTEIRIZAÇÃO COM A NOVA GOOGLE ROUTES API (MODERNA)
+// =======================================================
+const GOOGLE_MAPS_API_KEY = "AIzaSyCTqm520ZD70o6T3ub9tcTsjYdBcjNpQ6g"; // Cole a sua chave real aqui
+const ENDERECO_FABRICA = "-12.7036939, -38.2923817";
+
+// 1. Função de extração (Burlar bloqueios e capturar o PINO EXATO)
+async function obterLocalizacao(nome, link) {
+    if (link && link.includes("http")) {
+        try {
+            const response = await axios.get(link, {
+                maxRedirects: 10,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                validateStatus: () => true
+            });
+            const finalUrl = response.request.res ? response.request.res.responseUrl : link;
+            const htmlData = typeof response.data === 'string' ? response.data : '';
+
+            // PRIORIDADE 1: Pino exato do estabelecimento (!3d e !4d)
+            let matchPin = finalUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+            if (matchPin) return `${matchPin[1]},${matchPin[2]}`;
+
+            matchPin = finalUrl.match(/query=(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (matchPin) return `${matchPin[1]},${matchPin[2]}`;
+
+            // PRIORIDADE 2: Pino exato oculto nas meta tags do HTML
+            let metaPin = htmlData.match(/preview\/place\/[^/]+\/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (metaPin) return `${metaPin[1]},${metaPin[2]}`;
+
+            const metaRefresh = htmlData.match(/URL='([^']+)'/i);
+            if (metaRefresh) {
+                let refPin = metaRefresh[1].match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+                if (refPin) return `${refPin[1]},${refPin[2]}`;
+
+                refPin = metaRefresh[1].match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+                if (refPin) return `${refPin[1]},${refPin[2]}`;
+            }
+
+            // PRIORIDADE 3: Centro da tela do usuário (@) - Fallback
+            let matchViewport = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (matchViewport) return `${matchViewport[1]},${matchViewport[2]}`;
+
+            // PRIORIDADE 4: Nome do lugar
+            const matchPlace = finalUrl.match(/\/maps\/place\/([^\/]+)/) || finalUrl.match(/\/maps\/search\/([^\/]+)/);
+            if (matchPlace) return decodeURIComponent(matchPlace[1].replace(/\+/g, ' '));
+
+        } catch (e) {
+            console.error(`[Aviso] Falha ao decodificar link de ${nome}:`, e.message);
+        }
+    }
+    return `${nome}, Camaçari, Bahia, Brasil`;
+}
+
+// 2. Converte as coordenadas ou texto para o formato estrito da Nova Routes API
+function formatarParaRoutesAPI(local) {
+    // Verifica se a string tem cara de coordenada (ex: -12.1234, -38.1234)
+    const coords = local.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+    if (coords) {
+        return {
+            location: {
+                latLng: {
+                    latitude: parseFloat(coords[1]),
+                    longitude: parseFloat(coords[2])
+                }
+            }
+        };
+    }
+    // Se não for coordenada exata, envia como texto de endereço
+    return { address: local };
+}
+
+// 3. Comunica com a nova Google Routes API (V2)
+async function otimizarRotaGoogleAPI(entregas) {
+    if (entregas.length <= 1) return entregas;
+
+    try {
+        const originDest = formatarParaRoutesAPI(ENDERECO_FABRICA);
+        const intermediates = entregas.map(e => formatarParaRoutesAPI(e.queryLocation));
+
+        const requestBody = {
+            origin: originDest,
+            destination: originDest,
+            intermediates: intermediates,
+            travelMode: "DRIVE",
+            routingPreference: "TRAFFIC_AWARE", // Considera o trânsito real no momento
+            optimizeWaypointOrder: true // Esta é a instrução que reordena tudo!
+        };
+
+        const res = await axios.post(
+            'https://routes.googleapis.com/directions/v2:computeRoutes',
+            requestBody,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+                    // O FieldMask diz ao Google para retornar apenas a nova ordem e economizar a sua franquia
+                    'X-Goog-FieldMask': 'routes.optimizedIntermediateWaypointIndex'
+                }
+            }
+        );
+
+        if (res.data && res.data.routes && res.data.routes.length > 0) {
+            const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
+            const entregasReordenadas = [];
+
+            if (ordemOtimizada) {
+                for (let i = 0; i < ordemOtimizada.length; i++) {
+                    entregasReordenadas.push(entregas[ordemOtimizada[i]]);
+                }
+                return entregasReordenadas;
+            }
+        }
+        return entregas;
+    } catch (error) {
+        console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);
+        return entregas; // Em caso de falha, salva na ordem original inserida
+    }
+}
+// =======================================================
+// =======================================================
+
 app.get("/login", (req, res) => {
     if (req.session.user) {
         // Se já está logado, vai direto para home
@@ -2167,14 +2288,21 @@ app.get("/caderno-entregas", async (req, res) => {
         `, queryParams);
 
         for (let c of cadernos) {
-            const [itens] = await db.promise().query("SELECT * FROM caderno_entregas_itens WHERE caderno_id = ?", [c.id]);
+            // MUDANÇA: Faz um JOIN para buscar também as coordenadas salvas na tabela de histórico
+            const [itens] = await db.promise().query(`
+                SELECT i.*, ch.coordenadas 
+                FROM caderno_entregas_itens i
+                LEFT JOIN clientes_historico ch ON i.local_entrega = ch.nome
+                WHERE i.caderno_id = ?
+                ORDER BY i.id ASC
+            `, [c.id]);
             c.entregas = itens;
         }
 
         const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
 
         // NOVO: Busca o histórico fixo de clientes imune à exclusão
-        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco FROM clientes_historico ORDER BY nome ASC");
+        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas FROM clientes_historico ORDER BY nome ASC");
 
         res.send(require('./views/cadernoEntregasView')(
             req.session.user, cadernos, veiculos, clientesDB,
@@ -2187,6 +2315,7 @@ app.get("/caderno-entregas", async (req, res) => {
 });
 
 // 2. Salvar Novo Caderno
+// 2. Salvar Novo Caderno Otimizado via API
 app.post("/caderno-entregas/novo", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
@@ -2205,25 +2334,43 @@ app.post("/caderno-entregas/novo", async (req, res) => {
             const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
 
+            let entregasParaProcessar = [];
             for (let i = 0; i < locais.length; i++) {
                 const nomeCli = locais[i].trim();
                 const linkCli = links[i] || null;
 
                 if (nomeCli !== '') {
-                    // NOVO: Salva/Atualiza o cliente na tabela fixa de histórico
-                    await db.promise().query(`
+                    // Busca as coordenadas salvas (PLANO A)
+                    const [cliRows] = await db.promise().query("SELECT coordenadas FROM clientes_historico WHERE nome = ?", [nomeCli]);
+                    const coordsDB = cliRows.length > 0 ? cliRows[0].coordenadas : null;
+
+                    db.promise().query(`
                         INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
                         ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
-                    `, [nomeCli, linkCli, linkCli]);
+                    `, [nomeCli, linkCli, linkCli]).catch(e => console.error(e));
 
-                    const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
-                    const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
+                    // Se tiver coordenada salva, usa. Se não, manda a função extrair ou pesquisar
+                    const queryLocation = (coordsDB && coordsDB.trim() !== '') ? coordsDB.trim() : await obterLocalizacao(nomeCli, linkCli);
 
-                    await db.promise().query(
-                        "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
-                        [cadernoId, nomeCli, linkCli, itens[i] || null, qtd, valAberto]
-                    );
+                    entregasParaProcessar.push({
+                        nome: nomeCli,
+                        link: linkCli,
+                        itens: itens[i] || null,
+                        qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
+                        valor: valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null,
+                        queryLocation: queryLocation
+                    });
                 }
+            }
+
+            // A MÁGICA ACONTECE AQUI: A API do Google devolve o array ordenado com trânsito real
+            const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
+
+            for (let item of rotaFinal) {
+                await db.promise().query(
+                    "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
+                    [cadernoId, item.nome, item.link, item.itens, item.qtd, item.valor]
+                );
             }
         }
         res.redirect("/caderno-entregas");
@@ -2233,7 +2380,7 @@ app.post("/caderno-entregas/novo", async (req, res) => {
     }
 });
 
-// 3. Editar Caderno
+// 3. Editar Caderno Otimizado via API
 app.post("/caderno-entregas/editar/:id", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     const { id } = req.params;
@@ -2254,25 +2401,42 @@ app.post("/caderno-entregas/editar/:id", async (req, res) => {
             const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
 
+            let entregasParaProcessar = [];
             for (let i = 0; i < locais.length; i++) {
                 const nomeCli = locais[i].trim();
                 const linkCli = links[i] || null;
 
                 if (nomeCli !== '') {
-                    // NOVO: Atualiza a tabela fixa de clientes
-                    await db.promise().query(`
+                    // Busca as coordenadas salvas (PLANO A)
+                    const [cliRows] = await db.promise().query("SELECT coordenadas FROM clientes_historico WHERE nome = ?", [nomeCli]);
+                    const coordsDB = cliRows.length > 0 ? cliRows[0].coordenadas : null;
+
+                    db.promise().query(`
                         INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
                         ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
-                    `, [nomeCli, linkCli, linkCli]);
+                    `, [nomeCli, linkCli, linkCli]).catch(e => console.error(e));
 
-                    const valAberto = valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null;
-                    const qtd = quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null;
+                    // Se tiver coordenada salva, usa. Se não, manda a função extrair ou pesquisar
+                    const queryLocation = (coordsDB && coordsDB.trim() !== '') ? coordsDB.trim() : await obterLocalizacao(nomeCli, linkCli);
 
-                    await db.promise().query(
-                        "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
-                        [id, nomeCli, linkCli, itens[i] || null, qtd, valAberto]
-                    );
+                    entregasParaProcessar.push({
+                        nome: nomeCli,
+                        link: linkCli,
+                        itens: itens[i] || null,
+                        qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
+                        valor: valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null,
+                        queryLocation: queryLocation
+                    });
                 }
+            }
+
+            const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
+
+            for (let item of rotaFinal) {
+                await db.promise().query(
+                    "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
+                    [id, item.nome, item.link, item.itens, item.qtd, item.valor]
+                );
             }
         }
         res.redirect("/caderno-entregas");
@@ -2303,23 +2467,37 @@ app.post("/caderno-entregas/excluir/:id", async (req, res) => {
 });
 
 // ==========================================
-// CADASTRAR NOVO CLIENTE / LINK MAPS INDIVIDUALMENTE
+// CADASTRAR NOVO CLIENTE / LINK MAPS / COORDENADAS
 // ==========================================
 app.post("/caderno-entregas/clientes/novo", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-
-    const { nome, link_endereco } = req.body;
+    let { nome, link_endereco, coordenadas } = req.body;
 
     try {
         if (nome && nome.trim() !== '') {
-            // Insere na tabela clientes_historico e se já existir atualiza o link (blindagem de erros)
-            await db.promise().query(`
-                INSERT INTO clientes_historico (nome, link_endereco) VALUES (?, ?) 
-                ON DUPLICATE KEY UPDATE link_endereco = COALESCE(?, link_endereco)
-            `, [nome.trim(), link_endereco || null, link_endereco || null]);
-        }
+            // SE A COORDENADA VEIO VAZIA, MAS TEM LINK: O servidor decodifica o link curto agora mesmo!
+            if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
+                const localizacaoResolvida = await obterLocalizacao(nome, link_endereco);
 
-        // Redireciona de volta. Ao recarregar a página, o novo cliente já é processado no SELECT!
+                // Valida se o que foi retornado segue o padrão de coordenadas numéricas (lat,lng)
+                if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                    coordenadas = localizacaoResolvida.trim();
+                }
+            }
+
+            await db.promise().query(`
+                INSERT INTO clientes_historico (nome, link_endereco, coordenadas) VALUES (?, ?, ?) 
+                ON DUPLICATE KEY UPDATE 
+                    link_endereco = COALESCE(?, link_endereco), 
+                    coordenadas = COALESCE(?, coordenadas)
+            `, [
+                nome.trim(),
+                link_endereco || null,
+                coordenadas || null,
+                link_endereco || null,
+                coordenadas || null
+            ]);
+        }
         res.redirect("/caderno-entregas");
     } catch (error) {
         console.error("[ERRO AO CADASTRAR CLIENTE]:", error);
@@ -2332,19 +2510,25 @@ app.post("/caderno-entregas/clientes/novo", async (req, res) => {
 // ==========================================
 app.post("/caderno-entregas/clientes/editar", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    const { nomeOriginal, nomeNovo, link_endereco } = req.body;
+    let { nomeOriginal, nomeNovo, link_endereco, coordenadas } = req.body;
 
     try {
         if (nomeOriginal && nomeNovo) {
-            // Atualiza o nome e o link na tabela de histórico
+            // SE NA EDIÇÃO A COORDENADA FICOU VAZIA, MAS FOI PASSADO UM LINK: Decodifica também!
+            if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
+                const localizacaoResolvida = await obterLocalizacao(nomeNovo, link_endereco);
+
+                if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                    coordenadas = localizacaoResolvida.trim();
+                }
+            }
+
             await db.promise().query(`
                 UPDATE clientes_historico 
-                SET nome = ?, link_endereco = ? 
+                SET nome = ?, link_endereco = ?, coordenadas = ? 
                 WHERE nome = ?
-            `, [nomeNovo.trim(), link_endereco || null, nomeOriginal.trim()]);
+            `, [nomeNovo.trim(), link_endereco || null, coordenadas || null, nomeOriginal.trim()]);
 
-            // Opcional: Se desejar que a alteração de nome reflita também nos cadernos ANTIGOS.
-            // Se preferir manter o passado intacto, pode remover esta query.
             await db.promise().query(`
                 UPDATE caderno_entregas_itens 
                 SET local_entrega = ? 
@@ -2562,11 +2746,14 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
         const caderno = cadernoRows[0];
 
-        // 2. Busca todos os locais de entrega associados ao caderno
-        const [itens] = await db.promise().query(
-            "SELECT * FROM caderno_entregas_itens WHERE caderno_id = ? ORDER BY id ASC",
-            [id]
-        );
+        // 2. Busca todos os locais de entrega associados ao caderno + coordenadas salvas no histórico
+        const [itens] = await db.promise().query(`
+            SELECT i.*, ch.coordenadas 
+            FROM caderno_entregas_itens i
+            LEFT JOIN clientes_historico ch ON i.local_entrega = ch.nome
+            WHERE i.caderno_id = ? 
+            ORDER BY i.id ASC
+        `, [id]);
 
         const PDFDocument = require('pdfkit');
         const axios = require('axios');
@@ -2574,29 +2761,37 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         const path = require('path');
 
         // =======================================================
+        // CONSTRÓI A URL DA ROTA INTELIGENTE COMPLETA (TODAS AS PARADAS)
+        // =======================================================
+        let linkRotaCompleta = "#";
+        if (itens.length > 0) {
+            const paradasUrl = itens.map(e => {
+                if (e.coordenadas && e.coordenadas.trim() !== '') {
+                    return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
+                }
+                return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
+            }).join('/');
+            
+            // Truque de concatenação
+            const baseDirUrl = "https://www" + ".google.com/maps/dir//";
+            linkRotaCompleta = baseDirUrl + paradasUrl;
+        }
+
+        // =======================================================
         // FUNÇÕES AUXILIARES PARA ORGANIZAR ITENS POR TAMANHO
         // =======================================================
         function extrairTamanhoDoItem(texto = '') {
             const item = String(texto).toUpperCase();
-
             const match = item.match(/\b(N\d{1,3}|PP\d*|P\d*|M\d*|G\d*|GG|C\d+|A\d+|L\d+|\d+\s*CM|\d+\s*MM|\d+)\b/);
-
             return match ? match[0].replace(/\s+/g, '') : '';
         }
 
+        // Fórmula de ordenação sequencial de caixas (PP -> GG)
         function pesoTamanho(tamanho = '') {
             const t = String(tamanho).toUpperCase().replace(/\s+/g, '');
-
             const ordemLetras = {
-                'MINI': 1,
-                'PP': 2,
-                'PP1': 3,
-                'PP2': 4,
-                'PP3': 5,
-                'P': 10,
-                'M': 20,
-                'G': 30,
-                'GG': 40
+                'MINI': 1, 'PP': 2, 'PP1': 3, 'PP2': 4, 'PP3': 5,
+                'P': 10, 'M': 20, 'G': 30, 'GG': 40
             };
 
             if (ordemLetras[t]) return ordemLetras[t];
@@ -2619,8 +2814,6 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 .replace(/\s+\/\s+/g, ';')
                 .replace(/\s*\|\s*/g, ';');
 
-            // Se vier tudo separado por vírgula, também quebra.
-            // Ex.: N30 - 10, N35 - 20, N40 - 5
             texto = texto.replace(/,\s*(?=(CX|CAIXA|PIZZA|N\d{1,3}|PP|P\b|M\b|G\b|GG\b|RETANGULAR|QUADRADA|SMART|OITAVADA))/gi, ';');
 
             const lista = texto
@@ -2636,7 +2829,6 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 const pesoB = pesoTamanho(tamanhoB);
 
                 if (pesoA !== pesoB) return pesoA - pesoB;
-
                 return a.localeCompare(b, 'pt-BR');
             });
         }
@@ -2648,7 +2840,6 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             doc.font('Helvetica-Bold')
                 .fontSize(6.8)
                 .fillColor('#333333');
-                //.text('Pago [   ]', x, y, { lineBreak: false });
 
             doc.text('Dinheiro [   ]', x + 42, y, { lineBreak: false });
             doc.text('Pix [   ]', x + 100, y, { lineBreak: false });
@@ -2681,34 +2872,53 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         // Título Principal
         doc.fillColor('#222222')
             .font('Helvetica-Bold')
-            .fontSize(16)
+            .fontSize(14)
             .text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
 
         doc.font('Helvetica')
-            .fontSize(9)
+            .fontSize(8.5)
             .fillColor('#666666')
-            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 58);
+            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 55);
 
-        doc.moveTo(40, 80).lineTo(555, 80).stroke('#eeeeee');
+        // =======================================================
+        // NOVO: INSERÇÃO DO QR CODE DA ROTA COMPLETA OTIMIZADA
+        // =======================================================
+        if (linkRotaCompleta !== "#") {
+            try {
+                const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(linkRotaCompleta)}`;
+                const responseGeral = await axios.get(qrUrlGeral, { responseType: 'arraybuffer' });
+                const qrBufferGeral = Buffer.from(responseGeral.data, 'binary');
 
-        // Quadro Informativo
-        doc.rect(40, 95, 515, 55).fill('#f8f9fa');
+                // Desenha o QR Code mestre no canto superior direito do cabeçalho
+                doc.image(qrBufferGeral, 490, 22, { width: 52, height: 52 });
+                doc.font('Helvetica-Bold')
+                    .fontSize(6.5)
+                    .fillColor('#0D5749')
+                    .text('ROTA COMPLETA (GPS)', 470, 78, { width: 90, align: 'center' });
+            } catch (errQrGeral) {
+                console.error("[Erro] Falha ao injetar QR Code Geral no PDF:", errQrGeral.message);
+            }
+        }
+
+        doc.moveTo(40, 88).lineTo(555, 88).stroke('#eeeeee');
+
+        // Quadro Informativo da Equipe
+        doc.rect(40, 98, 515, 55).fill('#f8f9fa');
 
         doc.fillColor('#333333')
             .font('Helvetica-Bold')
             .fontSize(10)
-            .text('MOTORISTA:', 55, 105)
-            .text('AJUDANTE:', 215, 105)
-            .text('VEÍCULO / FROTA:', 375, 105);
+            .text('MOTORISTA:', 55, 108)
+            .text('AJUDANTE:', 215, 108)
+            .text('VEÍCULO / FROTA:', 375, 108);
 
         doc.font('Helvetica')
             .fontSize(11)
             .fillColor('#444444')
-            .text((caderno.motorista || '').toUpperCase(), 55, 122)
-            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 122)
-            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 122);
+            .text((caderno.motorista || '').toUpperCase(), 55, 125)
+            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 125)
+            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 125);
 
-        // Subtítulo da Lista de Entregas
         doc.moveTo(40, 170).lineTo(555, 170).stroke('#dddddd');
 
         doc.fillColor('#0D5749')
@@ -2718,10 +2928,9 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
         let yPosition = 215;
 
-        // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code
+        // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code individual
         for (let i = 0; i < itens.length; i++) {
             const item = itens[i];
-
             const itensOrganizados = organizarItensPorTamanho(item.itens_pedido);
 
             const alturaLinhaItem = 11;
@@ -2730,10 +2939,9 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             const qtdY = yPosition + 43 + alturaItens;
             const idY = qtdY + 30;
 
-            // Altura dinâmica da caixa para acomodar vários itens um abaixo do outro
             const boxHeight = Math.max(108, idY - yPosition + 22);
 
-            // Proteção de Quebra de Página
+            // Proteção de Quebra de Página Inteligente
             if (yPosition + boxHeight > doc.page.height - 45) {
                 doc.addPage();
                 doc.rect(0, 0, 600, 12).fill('#0D5749');
@@ -2748,7 +2956,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             // Caixa delimitadora da entrega
             doc.rect(40, yPosition, 515, boxHeight).stroke('#e5e5e5');
 
-            // Cliente / Localização
+            // Nome do Cliente / Localização
             doc.fillColor('#111111')
                 .font('Helvetica-Bold')
                 .fontSize(11)
@@ -2757,13 +2965,12 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                     lineBreak: false
                 });
 
-            // Itens do pedido
+            // Listagem de Itens
             doc.font('Helvetica-Bold')
                 .fontSize(9)
                 .fillColor('#444444')
                 .text('Itens:', 55, itensStartY);
 
-            // Itens um embaixo do outro, ordenados por tamanho
             doc.font('Helvetica')
                 .fontSize(8.7)
                 .fillColor('#333333');
@@ -2775,7 +2982,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 });
             });
 
-            // Qtd Total
+            // Quantidades Totais
             doc.font('Helvetica-Bold')
                 .fontSize(9)
                 .fillColor('#444444')
@@ -2785,7 +2992,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 .fillColor('#333333')
                 .text((item.quantidade || '-'), 110, qtdStartY);
 
-            // Valor em aberto + campo de marcação de recebimento
+            // Valores Financeiros em Aberto
             if (item.valor_aberto && parseFloat(item.valor_aberto) > 0) {
                 const valorFormatado = parseFloat(item.valor_aberto).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
@@ -2802,25 +3009,29 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                     .fillColor('#0D5749')
                     .text(`R$ ${valorFormatado}`, 202, qtdStartY);
 
-                // Campo manual para o motorista marcar como recebeu
                 desenharCamposRecebimento(doc, 270, qtdStartY + 1);
             }
 
-            // Informações de ID
+            // Metadados de ID e Rastreio
             doc.font('Helvetica')
                 .fontSize(8)
                 .fillColor('#999999')
                 .text(`ID Registo: #${item.id}  |  Manifesto Base: #${id}`, 55, idStartY);
 
-            // Tratamento do QR Code
-            if (item.link_endereco) {
+            // QR Code Individual da Parada (Usa Coordenadas se existirem, senão link)
+            const searchBaseUrl = "https://www" + ".google.com/maps/search/?api=1&query=";
+            const targetLink = (item.coordenadas && item.coordenadas.trim() !== '') 
+                ? searchBaseUrl + encodeURIComponent(item.coordenadas.trim().replace(/\s/g, ''))
+                : item.link_endereco;
+
+            if (targetLink) {
                 doc.font('Helvetica-Bold')
                     .fontSize(8)
                     .fillColor('#0D5749')
                     .text('Endereço ->', 385, yPosition + 45);
 
                 try {
-                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.link_endereco)}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(targetLink)}`;
                     const response = await axios.get(qrUrl, { responseType: 'arraybuffer' });
                     const qrBuffer = Buffer.from(response.data, 'binary');
 
@@ -2829,11 +3040,10 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
                         height: 70
                     });
                 } catch (errorQr) {
-                    console.error("Falha ao injetar QR Code no PDF:", errorQr.message);
-
+                    console.error("Falha ao injetar QR Code individual no PDF:", errorQr.message);
                     doc.fillColor('#dc3545')
                         .fontSize(8)
-                        .text('[Erro ao processar QR Code]', 430, yPosition + 32);
+                        .text('[Erro QR Code]', 430, yPosition + 32);
                 }
             } else {
                 doc.font('Helvetica-Oblique')
@@ -2848,15 +3058,79 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             yPosition += boxHeight + 15;
         }
 
-        // Finaliza o documento
+        // Finaliza o documento PDF
         doc.end();
 
     } catch (error) {
         console.error('[ERRO PDF MANIFESTO]', error);
-
         if (!res.headersSent) {
             res.status(500).send('Erro crítico interno ao processar o PDF de impressão. Verifique os logs.');
         }
+    }
+});
+
+// =======================================================
+// ROTA TEMPORÁRIA: MIGRAR COORDENADAS DE CLIENTES ANTIGOS
+// =======================================================
+app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
+    // Proteção para apenas utilizadores logados executarem
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        // 1. Busca no banco todos os clientes que TÊM link cadastrado, mas a coordenada está VAZIA
+        const [clientes] = await db.promise().query(`
+            SELECT nome, link_endereco 
+            FROM clientes_historico 
+            WHERE link_endereco IS NOT NULL 
+              AND link_endereco != '' 
+              AND (coordenadas IS NULL OR coordenadas = '')
+        `);
+
+        if (clientes.length === 0) {
+            return res.send("<h3>Tudo pronto!</h3><p>Não há clientes antigos precisando de atualização de coordenadas.</p>");
+        }
+
+        // Mantém a conexão aberta e vai enviando o progresso para a tela do navegador
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.write(`<h3>Iniciando migração de ${clientes.length} clientes... Aguarde.</h3><hr>`);
+
+        let atualizados = 0;
+
+        // 2. Loop passando por cada cliente antigo
+        for (let c of clientes) {
+            try {
+                // Chama a nossa função robusta de extração (burladora de bloqueios)
+                const localizacaoResolvida = await obterLocalizacao(c.nome, c.link_endereco);
+
+                // Verifica se a função conseguiu mesmo extrair números (Latitude, Longitude)
+                if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+
+                    // Atualiza o banco de dados com a coordenada exata (PLANO A)
+                    await db.promise().query(
+                        "UPDATE clientes_historico SET coordenadas = ? WHERE nome = ?",
+                        [localizacaoResolvida.trim(), c.nome]
+                    );
+
+                    atualizados++;
+                    res.write(`<p style="color: green; margin: 2px;">✅ <b>${c.nome}:</b> Coordenadas salvas com sucesso! (${localizacaoResolvida.trim()})</p>`);
+                } else {
+                    res.write(`<p style="color: orange; margin: 2px;">⚠️ <b>${c.nome}:</b> O link não revelou a coordenada. Terá de ser feito manualmente se necessário.</p>`);
+                }
+            } catch (err) {
+                res.write(`<p style="color: red; margin: 2px;">❌ <b>Erro no cliente ${c.nome}:</b> ${err.message}</p>`);
+            }
+
+            // Aguarda 1 segundo entre cada extração para o Google não bloquear o IP do servidor
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        res.write(`<hr><h4>🎉 Migração Concluída!</h4><p><b>${atualizados}</b> clientes foram atualizados com as coordenadas perfeitas.</p>`);
+        res.write(`<a href="/caderno-entregas" style="padding: 10px; background: #0D5749; color: white; text-decoration: none; border-radius: 5px;">Voltar ao Caderno</a>`);
+        res.end();
+
+    } catch (error) {
+        console.error("[ERRO NA MIGRAÇÃO]:", error);
+        if (!res.headersSent) res.status(500).send("Erro interno ao tentar rodar a migração.");
     }
 });
 

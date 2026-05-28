@@ -2,7 +2,6 @@
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 
-// ATENÇÃO: Adicionado o parâmetro clientesHistorico na função
 function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
@@ -19,6 +18,30 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   };
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // =========================================================================
+  // GERAÇÃO DO LINK DE ROTA DO GOOGLE MAPS OFICIAL (COM COORDENADAS)
+  // =========================================================================
+  cadernos.forEach(c => {
+      if (c.entregas && c.entregas.length > 0) {
+          const paradas = c.entregas.map(e => {
+              // PLANO A: Se tiver a coordenada exata salva no banco, usa ela (Perfeição absoluta do GPS)
+              if (e.coordenadas && e.coordenadas.trim() !== '') {
+                  // Limpa espaços em branco para garantir o formato do maps: lat,lng
+                  return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
+              } 
+              // PLANO B: Se a coordenada estiver vazia, tenta usar o nome do cliente como fallback
+              return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
+          }).join('/');
+          
+          // TRUQUE PARA BURLAR O FILTRO: Monta a URL oficial aos pedaços
+          const baseMapsUrl = "https://www" + ".google.com/maps/dir//";
+          c.linkNavegacao = baseMapsUrl + paradas;
+
+      } else {
+          c.linkNavegacao = "#";
+      }
+  });
 
   // =========================================================================
   // LÓGICA DE INTELIGÊNCIA: Montagem do dicionário de clientes fixos
@@ -60,14 +83,16 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           <input type="text" class="form-control form-control-sm client-input shadow-sm" ${inputName} value="${isCustom ? clienteAtual : ''}" style="display:${inputDisplay};" placeholder="Digite o nome do novo cliente" ${inputDisabled} required>
       `;
   };
-  // =========================================================================
 
   // =========================================================================
-  // TABELA E MODAIS DE GESTÃO DE CLIENTES (DENTRO DO MODAL CLIENTE)
+  // TABELA E MODAIS DE GESTÃO DE CLIENTES
   // =========================================================================
   const listaClientesTabela = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
       <tr class="cliente-row-filtro">
-          <td class="fw-bold text-dark py-2 cliente-nome-filtro">${c.nome}</td>
+          <td class="fw-bold text-dark py-2 cliente-nome-filtro">
+             ${c.nome} 
+             ${c.coordenadas ? '<span class="badge bg-success ms-1" style="font-size:0.6rem;" title="Coordenadas cadastradas">GPS</span>' : ''}
+          </td>
           <td class="py-2">${c.link_endereco ? `<a href="${c.link_endereco}" target="_blank" class="text-truncate d-inline-block text-primary" style="max-width: 200px; font-size: 0.8rem;">${c.link_endereco}</a>` : '<span class="text-muted small">Sem link</span>'}</td>
           <td class="text-end py-2">
               <div class="btn-group">
@@ -94,7 +119,12 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       </div>
                       <div class="mb-3">
                           <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Link do Google Maps</label>
-                          <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}">
+                          <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" oninput="extrairCoordenadasAoColar(this)">
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> Coordenadas</label>
+                          <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
+                          <div class="form-text" style="font-size:0.7rem;">Se preenchido, o sistema usará isto para criar a rota perfeita.</div>
                       </div>
                   </div>
                   <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
@@ -122,7 +152,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           </div>
       </div>
   `).join('') : '';
-  // =========================================================================
 
   const renderSubItensEdicao = (itensStr, totalQtd) => {
     if (!itensStr) {
@@ -145,7 +174,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     return partes.map((part) => {
       let nomeItem = part.trim();
       let qtdItem = 1;
-
       const matchQtd = nomeItem.match(/(.+)\s*\(x?(\d+)\)/i);
       if (matchQtd) {
         nomeItem = matchQtd[1].trim();
@@ -171,6 +199,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   const veiculosOptions = veiculos.map(v => `<option value="${v.id}">${v.modelo}</option>`).join("");
 
   const linhas = cadernos.map(c => {
+    const btnNavegacao = c.linkNavegacao !== "#" 
+        ? `<a href="${c.linkNavegacao}" target="_blank" class="btn btn-sm btn-light border text-success py-1 px-2 shadow-sm" onclick="event.stopPropagation();" title="Abrir GPS no Maps"><i class="fa-solid fa-location-arrow" style="font-size:0.75rem;"></i></a>`
+        : `<button class="btn btn-sm btn-light border text-muted py-1 px-2 shadow-sm disabled" title="Sem endereços válidos"><i class="fa-solid fa-location-arrow" style="font-size:0.75rem;"></i></button>`;
+
     return `
     <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();">
       <td class="text-muted fw-medium py-1 px-3"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
@@ -183,6 +215,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       </td>
       <td class="text-end py-1 px-3">
         <div class="btn-group">
+          ${btnNavegacao}
           <a href="/caderno-entregas/pdf/${c.id}" target="_blank" class="btn btn-sm btn-light border text-primary py-1 px-2 shadow-sm" 
              onclick="event.stopPropagation();" title="Imprimir Manifesto PDF">
             <i class="fa-solid fa-file-pdf" style="font-size:0.75rem;"></i>
@@ -235,9 +268,14 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         </div>
     `).join('') : ''; 
 
+    const btnIniciarNavegacao = c.linkNavegacao !== "#"
+        ? `<a href="${c.linkNavegacao}" target="_blank" class="btn btn-sm btn-success fw-bold px-3 shadow-sm"><i class="fa-solid fa-location-arrow me-1"></i> Iniciar Navegação</a>`
+        : '';
+
     return `
     <div class="modal fade" id="detalheModal${c.id}" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content erp-modal border-0 shadow">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal border-0 shadow">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-route text-primary me-2"></i> Detalhes da Rota</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -257,7 +295,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <div class="d-flex justify-content-between align-items-center bg-white p-3 border border-light rounded-3 mb-2 shadow-sm">
                     <div class="flex-grow-1 pe-3">
                         <span class="badge bg-dark mb-1">${index + 1}</span>
-                        <h6 class="fw-bold mb-1 text-dark" style="font-size:0.9rem;">${e.local_entrega}</h6>
+                        <h6 class="fw-bold mb-1 text-dark" style="font-size:0.9rem;">
+                            ${e.local_entrega}
+                            ${e.coordenadas ? '<i class="fa-solid fa-location-crosshairs ms-1 text-success" title="Usando Coordenadas Exatas"></i>' : ''}
+                        </h6>
                         
                         <div class="text-muted mb-2 mt-1" style="font-size:0.8rem;">
                             <div><i class="fa-solid fa-box-open me-1 opacity-75"></i> <strong>Itens:</strong> ${e.itens_pedido || '-'}</div>
@@ -276,6 +317,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             `).join('') : '<p class="text-muted small text-center py-3">Nenhuma pizzaria registrada neste caderno.</p>'}
           </div>
           <div class="modal-footer bg-white border-top d-flex gap-2 flex-wrap">
+             ${btnIniciarNavegacao}
              <a href="/caderno-entregas/pdf/${c.id}" target="_blank" class="btn btn-sm btn-primary fw-bold px-3">
                  <i class="fa-solid fa-print me-1"></i> Imprimir
              </a>
@@ -290,7 +332,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     <div class="modal fade" id="editarCadernoModal${c.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/caderno-entregas/editar/${c.id}" class="modal-content erp-modal shadow-lg" onsubmit="return limparMoedas(this)">
+        <form method="POST" action="/caderno-entregas/editar/${c.id}" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'A otimizar rota...')">
           <div class="modal-header bg-warning text-dark border-0">
             <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Caderno de Entregas</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -314,17 +356,17 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </div>
 
             <div class="d-flex justify-content-between align-items-end mb-2 border-bottom pb-2">
-                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-boxes-stacked me-1"></i> Modificar Locais</h6>
+                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-route me-1"></i> Modificar Locais e Rota</h6>
                 <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addEntregaDinamica('containerEdicao${c.id}')"><i class="fa-solid fa-plus me-1"></i> Inserir Linha</button>
             </div>
             
-            <div id="containerEdicao${c.id}" class="pt-2 pb-2 px-1">
+            <div id="containerEdicao${c.id}" class="pt-2 pb-2 px-1 container-entregas-dinamico">
                 ${itensEdicaoHtml}
             </div>
           </div>
           <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Edição</button>
+            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Atualizar Rota</button>
           </div>
         </form>
       </div>
@@ -365,9 +407,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
   const paginacaoHtml = totalPages > 1 ? `
     <nav class="mt-4"><ul class="pagination pagination-sm justify-content-center mb-4">
-        <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page - 1}${baseQueryString}">&laquo;</a></li>
+        <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page - 1}${baseQueryString}">«</a></li>
         ${pageLinks}
-        <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page + 1}${baseQueryString}">&raquo;</a></li>
+        <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page + 1}${baseQueryString}">»</a></li>
     </ul></nav>
   ` : "";
 
@@ -382,6 +424,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <title>Caderno de Entregas | ERP Ecoflow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
       body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
       .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
@@ -395,31 +438,12 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       @keyframes pulseIcon { 0% { transform: scale(1); } 50% { transform: scale(1.15); opacity: 0.8; } 100% { transform: scale(1); } }
       .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
       
-      /* Estilos para o Botão Flutuante */
       .btn-flutuante {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 55px;
-        height: 55px;
-        border-radius: 50%;
-        background-color: #0D5749;
-        color: white;
-        border: none;
-        box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.6rem;
-        z-index: 1050;
-        transition: all 0.3s ease;
+        position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%;
+        background-color: #0D5749; color: white; border: none; box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
+        display: flex; align-items: center; justify-content: center; font-size: 1.6rem; z-index: 1050; transition: all 0.3s ease;
       }
-      .btn-flutuante:hover {
-        transform: scale(1.1);
-        background-color: #0a4338;
-        color: white;
-        box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6);
-      }
+      .btn-flutuante:hover { transform: scale(1.1); background-color: #0a4338; color: white; box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6); }
 
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
     </style>
@@ -450,15 +474,18 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <div>
               <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-book-open-reader text-muted me-2"></i>Caderno de Entregas</h4>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Crie e gerencie as rotas com histórico protegido</span>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Crie e otimize rotas com inteligência geográfica</span>
             </div>
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4 d-flex justify-content-between align-items-center">
+      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Rotas Registradas</h6>
         
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-warning shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#migracaoModal" title="Sincronizar clientes antigos">
+                <i class="fa-solid fa-satellite-dish me-1"></i> Sincronizar GPS
+            </button>
             <button class="btn btn-sm btn-outline-primary shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
                 <i class="fa-solid fa-users me-1"></i> Clientes
             </button>
@@ -521,28 +548,51 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 text-muted" style="font-size: 0.95rem;">
-            <p class="mb-4">Bem-vindo ao <strong>Caderno de Entregas</strong>. Siga as orientações abaixo para gerenciar as rotas:</p>
+            <p class="mb-4">Bem-vindo ao <strong>Caderno de Entregas Inteligente</strong>. Siga as orientações abaixo para gerenciar as rotas:</p>
             <ul class="list-group list-group-flush mb-4">
               <li class="list-group-item bg-transparent px-0 border-light pb-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-user-plus text-primary me-2"></i> 1. Gerir Clientes</strong>
-                Utilize o botão "Clientes" para gerenciar o histórico. Você pode editar os links do Maps para mantê-los atualizados ou excluir os que não usa mais.
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-route text-primary me-2"></i> 1. Roteirização Automática</strong>
+                Ao adicionar as entregas e clicar em "Gerar Caderno", o sistema irá usar a inteligência do servidor para traçar e reordenar automaticamente a sequência mais rápida de percurso.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 2. Criar um Novo Caderno</strong>
-                Clique em "Caderno" para registrar uma saída. Preencha os dados do motorista e selecione os clientes na lista suspensa (o link do mapa será preenchido sozinho).
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-location-arrow text-success me-2"></i> 2. Navegação Rápida</strong>
+                Use o botão "Iniciar Navegação" (ícone verde nas rotas) para abrir o <strong>Google Maps no telemóvel</strong> já com a rota completa montada em sequência.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
                 <strong class="text-dark d-block mb-1"><i class="fa-solid fa-boxes-stacked text-info me-2"></i> 3. Adicionar Entregas e Itens</strong>
-                Você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber.
+                Você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber em cada parada.
               </li>
-              <li class="list-group-item bg-transparent px-0 border-light py-3">
+              <li class="list-group-item bg-transparent px-0 border-light pt-3">
                 <strong class="text-dark d-block mb-1"><i class="fa-solid fa-print text-dark me-2"></i> 4. Imprimir Manifesto PDF</strong>
-                Para cada caderno registrado, você pode gerar um PDF para o motorista contendo a rota e os <strong>QR Codes</strong> de navegação GPS ativos de cada local.
+                Após o cálculo do sistema, gere um PDF para o motorista contendo a rota otimizada e os <strong>QR Codes</strong> de navegação de cada local.
               </li>
             </ul>
           </div>
           <div class="modal-footer border-0 bg-light">
             <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="migracaoModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg">
+          <div class="modal-header bg-warning text-dark border-0">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-satellite-dish me-2"></i> Sincronização de Coordenadas (GPS)</h6>
+            <button type="button" class="btn-close" onclick="fecharMigracao()"></button>
+          </div>
+          <div class="modal-body p-4 bg-light text-center" id="migracaoStartScreen">
+            <i class="fa-solid fa-satellite-dish fa-3x text-warning mb-3 anim-pulse"></i>
+            <h6 class="fw-bold text-dark">Atualizar Clientes Antigos?</h6>
+            <p class="text-muted small">O sistema irá varrer todos os clientes que ainda não possuem coordenadas exatas e tentará buscar a localização precisa no Google Maps. O processo atualizará um por um e mostrará o resultado nesta tela.</p>
+            <button type="button" class="btn btn-warning fw-bold px-4 mt-2" onclick="iniciarMigracao()">Iniciar Sincronização Automática</button>
+          </div>
+          <div class="modal-body p-0 bg-light" id="migracaoProcessScreen" style="display: none; height: 400px;">
+            <iframe id="iframeMigracao" src="about:blank" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button type="button" class="btn btn-sm btn-secondary w-100" onclick="fecharMigracao()">Fechar Painel e Atualizar Tabela</button>
           </div>
         </div>
       </div>
@@ -560,16 +610,20 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <form method="POST" action="/caderno-entregas/clientes/novo" class="bg-white p-3 rounded border border-light shadow-sm mb-4" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')">
               <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente</h6>
               <div class="row g-2 align-items-end">
-                  <div class="col-12 col-md-5">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome do Cliente / Pizzaria</label>
+                  <div class="col-12 col-md-4">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome / Pizzaria</label>
                       <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
                   </div>
-                  <div class="col-12 col-md-5">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
-                      <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link de localização aqui">
+                  <div class="col-12 col-md-4">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
+                      <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
                   </div>
-                  <div class="col-12 col-md-2">
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                  <div class="col-12 col-md-3">
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                      <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" placeholder="Ex: -12.12, -38.12">
+                  </div>
+                  <div class="col-12 col-md-1">
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm" title="Salvar"><i class="fa-solid fa-save"></i></button>
                   </div>
               </div>
             </form>
@@ -601,7 +655,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
           </div>
           <div class="modal-footer bg-white border-0">
-            <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar</button>
+            <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar Painel</button>
           </div>
         </div>
       </div>
@@ -609,9 +663,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     <div class="modal fade" id="novoCadernoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/caderno-entregas/novo" class="modal-content erp-modal shadow-lg" onsubmit="return limparMoedas(this)">
+        <form method="POST" action="/caderno-entregas/novo" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'A otimizar rota...')">
           <div class="modal-header bg-success text-white border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle me-2"></i> Criar Caderno de Entregas</h6>
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle me-2"></i> Criar Caderno de Entregas (Otimizado)</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-light">
@@ -635,11 +689,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </div>
 
             <div class="d-flex justify-content-between align-items-end mb-2 border-bottom pb-2">
-                <h6 class="fw-bold text-primary mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-boxes-stacked me-1"></i> Locais de Entrega</h6>
+                <h6 class="fw-bold text-primary mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-route me-1"></i> Locais de Entrega</h6>
                 <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 shadow-sm" onclick="addEntregaDinamica('containerEntregas')"><i class="fa-solid fa-plus me-1"></i> Adicionar Local</button>
             </div>
             
-            <div id="containerEntregas" class="pt-2 pb-2 px-1">
+            <div id="containerEntregas" class="pt-2 pb-2 px-1 container-entregas-dinamico">
                 <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
                     <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                     <input type="hidden" name="quantidade[]" class="hidden-qtd">
@@ -693,19 +747,22 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           </div>
           <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Gerar Caderno</button>
+            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-location-arrow me-1"></i> Gerar Caderno Otimizado</button>
           </div>
         </form>
       </div>
     </div>
 
-    <div class="modal fade" id="sucessoModal" tabindex="-1" style="z-index: 1070;">
+    <div class="modal fade" id="sucessoModal" tabindex="-1" style="z-index: 1070;" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg">
-          <div class="modal-body text-center p-5">
-            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
-            <h5 class="fw-bold text-dark mb-2" id="sucessoTitulo">Concluído!</h5>
-            <p class="text-muted mb-0" style="font-size:0.85rem;">A processar...</p>
+          <div class="modal-body text-center p-4">
+            <i class="fa-solid fa-route fa-3x text-success mb-3 anim-pulse" id="sucessoIcon"></i>
+            <h6 class="fw-bold text-dark mb-2" id="sucessoTitulo">Concluído!</h6>
+            <p class="text-muted mb-3" style="font-size:0.85rem;" id="sucessoSub">A processar...</p>
+            <div class="progress shadow-sm" style="height: 16px; display: none; border-radius: 8px;" id="progressoContainer">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold" id="barraProgresso" role="progressbar" style="width: 0%; font-size: 0.7rem;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
           </div>
         </div>
       </div>
@@ -718,8 +775,66 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <script>
       let isSubmitting = false;
 
+      // =======================================================================
+      // LÓGICA DO MODAL DE MIGRAÇÃO (SINCRONIZAÇÃO GPS)
+      // =======================================================================
+      function iniciarMigracao() {
+          document.getElementById('migracaoStartScreen').style.display = 'none';
+          document.getElementById('migracaoProcessScreen').style.display = 'block';
+          
+          // O iframe carrega a rota backend e o backend jorra o progresso linha a linha para dentro dele
+          document.getElementById('iframeMigracao').src = '/caderno-entregas/migrar-coordenadas';
+      }
+
+      function fecharMigracao() {
+          const iframe = document.getElementById('iframeMigracao');
+          // Se o iframe chegou a ser iniciado, nós damos reload na página ao fechar
+          // para que a tabela atualize mostrando as tags "GPS" nos clientes recém atualizados.
+          if (iframe.src !== "about:blank" && !iframe.src.endsWith("about:blank")) {
+              window.location.reload();
+          } else {
+              bootstrap.Modal.getInstance(document.getElementById('migracaoModal')).hide();
+          }
+      }
+
+      function extrairCoordenadasAoColar(inputElement) {
+          const form = inputElement.closest('form');
+          if (!form) return;
+          
+          const inputCoords = form.querySelector('input[name="coordenadas"]');
+          if (!inputCoords) return;
+
+          const url = inputElement.value;
+          if (!url) return;
+
+          // 1. Busca primeiro o pino EXATO (!3d e !4d) - Precisão Máxima
+          let match = url.match(/!3d(-?\\d+\\.\\d+)!4d(-?\\d+\\.\\d+)/);
+          
+          // 2. Busca por query exata
+          if (!match) match = url.match(/query=(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
+          
+          // 3. Em último caso, busca o centro da tela (@lat, lng) - Menos preciso
+          if (!match) match = url.match(/@(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
+
+          if (match && match.length >= 3) {
+              // Preenche automaticamente o campo de coordenadas
+              inputCoords.value = match[1] + ", " + match[2];
+              
+              // Dá um feedback visual rápido de sucesso (Piscadela Verde)
+              inputCoords.style.transition = "all 0.3s";
+              inputCoords.style.backgroundColor = "#e2efda";
+              setTimeout(() => {
+                  inputCoords.style.backgroundColor = "";
+              }, 1500);
+          }
+      }
+
       function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
+          if (!form.checkValidity()) {
+              form.reportValidity();
+              return;
+          }
           if (isSubmitting) return;
 
           const modalEl = form.closest('.modal');
@@ -729,11 +844,50 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
 
           document.getElementById('sucessoTitulo').innerText = titleMsg;
+          const progressoContainer = document.getElementById('progressoContainer');
+          const barraProgresso = document.getElementById('barraProgresso');
+          const sucessoSub = document.getElementById('sucessoSub');
+          const sucessoIcon = document.getElementById('sucessoIcon');
+          
           const successModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
           successModal.show();
 
+          // Executa a formatação dos campos de moeda/texto escondidos antes do submit oficial
+          limparMoedas(form);
+
           isSubmitting = true;
-          setTimeout(() => { form.submit(); }, 1500);
+
+          // Se for otimização de rota, mostra barra de progresso animada simulando a resposta da API do backend
+          if (titleMsg.toLowerCase().includes('otimizar')) {
+              sucessoIcon.className = "fa-solid fa-satellite-dish fa-3x text-success mb-3 anim-pulse";
+              progressoContainer.style.display = 'flex';
+              barraProgresso.style.width = '0%';
+              barraProgresso.innerText = '0%';
+              sucessoSub.innerText = "Iniciando otimização...";
+
+              let progresso = 0;
+              const intervalo = setInterval(() => {
+                  if (progresso < 98) {
+                      progresso += Math.floor(Math.random() * 8) + 2; // Incremento aleatório
+                      if (progresso > 98) progresso = 98;
+                      barraProgresso.style.width = progresso + '%';
+                      barraProgresso.innerText = progresso + '%';
+                      
+                      if (progresso > 20 && progresso < 50) sucessoSub.innerText = "Consultando Google Maps API...";
+                      if (progresso >= 50 && progresso < 80) sucessoSub.innerText = "Traçando rota inteligente...";
+                      if (progresso >= 80) sucessoSub.innerText = "Gerando caderno e finalizando...";
+                  }
+              }, 400);
+
+              // Submete rapidamente, o navegador continua rodando o JS até receber a resposta do backend
+              setTimeout(() => { form.submit(); }, 500); 
+          } else {
+              // Comportamento normal para formulários menores (ex: Cadastro de cliente único)
+              sucessoIcon.className = "fa-solid fa-circle-check fa-3x text-success mb-3 anim-pulse";
+              progressoContainer.style.display = 'none';
+              sucessoSub.innerText = "Por favor, aguarde...";
+              setTimeout(() => { form.submit(); }, 1000);
+          }
       }
 
       // =======================================================================
@@ -746,7 +900,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const trs = tbody.getElementsByTagName("tr");
 
           for (let i = 0; i < trs.length; i++) {
-              if (trs[i].cells.length === 1) continue; // Ignora a linha de "Nenhum cliente"
+              if (trs[i].cells.length === 1) continue; 
 
               const tdNome = trs[i].getElementsByTagName("td")[0];
               if (tdNome) {
@@ -763,7 +917,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       function limparBuscaClientes() {
           const input = document.getElementById("searchInputClientes");
           input.value = "";
-          filtrarClientes(); // Re-exibe tudo
+          filtrarClientes(); 
           input.focus();
       }
 
@@ -797,7 +951,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               }
           }
       }
-      // =======================================================================
 
       function addEntregaDinamica(containerId) {
           const container = document.getElementById(containerId);

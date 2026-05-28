@@ -246,7 +246,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" value="${e.link_endereco || ''}" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas(Opcional)</label>
                 <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm shadow-sm coord-input" value="${e.coordenadas || ''}" placeholder="Lat, Lng">
             </div>
             

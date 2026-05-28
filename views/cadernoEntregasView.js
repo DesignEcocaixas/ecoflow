@@ -122,7 +122,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                           <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" oninput="extrairCoordenadasAoColar(this)">
                       </div>
                       <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> Coordenadas</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> Coordenadas(Opcional)</label>
                           <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
                           <div class="form-text" style="font-size:0.7rem;">Se preenchido, o sistema usará isto para criar a rota perfeita.</div>
                       </div>
@@ -619,7 +619,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
                   </div>
                   <div class="col-12 col-md-3">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas(Opcional)</label>
                       <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" placeholder="Ex: -12.12, -38.12">
                   </div>
                   <div class="col-12 col-md-1">

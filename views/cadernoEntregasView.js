@@ -579,20 +579,20 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg">
           <div class="modal-header bg-warning text-dark border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-satellite-dish me-2"></i> Sincronização de Coordenadas (GPS)</h6>
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-satellite-dish me-2"></i> Sincronizar Coordenadas</h6>
             <button type="button" class="btn-close" onclick="fecharMigracao()"></button>
           </div>
           <div class="modal-body p-4 bg-light text-center" id="migracaoStartScreen">
             <i class="fa-solid fa-satellite-dish fa-3x text-warning mb-3 anim-pulse"></i>
             <h6 class="fw-bold text-dark">Atualizar Clientes Antigos?</h6>
             <p class="text-muted small">O sistema irá varrer todos os clientes que ainda não possuem coordenadas exatas e tentará buscar a localização precisa no Google Maps. O processo atualizará um por um e mostrará o resultado nesta tela.</p>
-            <button type="button" class="btn btn-warning fw-bold px-4 mt-2" onclick="iniciarMigracao()">Iniciar Sincronização Automática</button>
+            <button type="button" class="btn btn-warning fw-bold px-4 mt-2" onclick="iniciarMigracao()">Sincronizar</button>
           </div>
           <div class="modal-body p-0 bg-light" id="migracaoProcessScreen" style="display: none; height: 400px;">
             <iframe id="iframeMigracao" src="about:blank" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
           </div>
           <div class="modal-footer bg-white border-0">
-            <button type="button" class="btn btn-sm btn-secondary w-100" onclick="fecharMigracao()">Fechar Painel e Atualizar Tabela</button>
+            <button type="button" class="btn btn-sm btn-secondary w-100" onclick="fecharMigracao()">Fechar</button>
           </div>
         </div>
       </div>

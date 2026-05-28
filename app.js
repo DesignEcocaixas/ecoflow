@@ -3073,11 +3073,9 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 // ROTA TEMPORÁRIA: MIGRAR COORDENADAS DE CLIENTES ANTIGOS
 // =======================================================
 app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
-    // Proteção para apenas utilizadores logados executarem
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // 1. Busca no banco todos os clientes que TÊM link cadastrado, mas a coordenada está VAZIA
         const [clientes] = await db.promise().query(`
             SELECT nome, link_endereco 
             FROM clientes_historico 
@@ -3086,46 +3084,73 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
               AND (coordenadas IS NULL OR coordenadas = '')
         `);
 
+        // CABEÇALHOS PARA DESATIVAR O BUFFERING DO NAVEGADOR
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+
         if (clientes.length === 0) {
-            return res.send("<h3>Tudo pronto!</h3><p>Não há clientes antigos precisando de atualização de coordenadas.</p>");
+            return res.send(`
+                <div style="font-family: sans-serif; text-align: center; padding: 20px;">
+                    <h3 style="color: #0D5749;">Tudo pronto!</h3>
+                    <p>Não há clientes antigos precisando de atualização.</p>
+                </div>
+            `);
         }
 
-        // Mantém a conexão aberta e vai enviando o progresso para a tela do navegador
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.write(`<h3>Iniciando migração de ${clientes.length} clientes... Aguarde.</h3><hr>`);
+        // TRUQUE MÁGICO: Envia 1024 bytes invisíveis para forçar o navegador a renderizar a página AGORA!
+        res.write(' '.repeat(1024));
+
+        res.write(`
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #333; padding: 10px; margin: 0; background: #f8f9fa; }
+                .linha { margin: 5px 0; padding: 8px; border-radius: 4px; border-left: 4px solid #ccc; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                .sucesso { border-left-color: #198754; }
+                .aviso { border-left-color: #ffc107; }
+                .erro { border-left-color: #dc3545; }
+            </style>
+            <h3>Sincronizando ${clientes.length} clientes...</h3>
+            <p>Por favor, não feche o modal até a conclusão.</p>
+            <hr style="border: 1px solid #ddd;">
+        `);
 
         let atualizados = 0;
 
-        // 2. Loop passando por cada cliente antigo
         for (let c of clientes) {
             try {
-                // Chama a nossa função robusta de extração (burladora de bloqueios)
                 const localizacaoResolvida = await obterLocalizacao(c.nome, c.link_endereco);
 
-                // Verifica se a função conseguiu mesmo extrair números (Latitude, Longitude)
                 if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
-
-                    // Atualiza o banco de dados com a coordenada exata (PLANO A)
                     await db.promise().query(
                         "UPDATE clientes_historico SET coordenadas = ? WHERE nome = ?",
                         [localizacaoResolvida.trim(), c.nome]
                     );
-
                     atualizados++;
-                    res.write(`<p style="color: green; margin: 2px;">✅ <b>${c.nome}:</b> Coordenadas salvas com sucesso! (${localizacaoResolvida.trim()})</p>`);
+                    res.write(`<div class="linha sucesso">✅ <b>${c.nome}:</b> Coordenadas salvas! <span style="color:#666; font-size:12px;">(${localizacaoResolvida.trim()})</span></div>`);
                 } else {
-                    res.write(`<p style="color: orange; margin: 2px;">⚠️ <b>${c.nome}:</b> O link não revelou a coordenada. Terá de ser feito manualmente se necessário.</p>`);
+                    res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> O link não revelou as coordenadas. Atualize manualmente.</div>`);
                 }
             } catch (err) {
-                res.write(`<p style="color: red; margin: 2px;">❌ <b>Erro no cliente ${c.nome}:</b> ${err.message}</p>`);
+                res.write(`<div class="linha erro">❌ <b>Erro em ${c.nome}:</b> ${err.message}</div>`);
             }
 
-            // Aguarda 1 segundo entre cada extração para o Google não bloquear o IP do servidor
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Script para descer a barra de rolagem do iframe automaticamente a cada nova linha
+            res.write(`<script>window.scrollTo(0, document.body.scrollHeight);</script>`);
+            
+            // Aguarda 1.5 segundos para o Google não bloquear a sua conexão
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
 
-        res.write(`<hr><h4>🎉 Migração Concluída!</h4><p><b>${atualizados}</b> clientes foram atualizados com as coordenadas perfeitas.</p>`);
-        res.write(`<a href="/caderno-entregas" style="padding: 10px; background: #0D5749; color: white; text-decoration: none; border-radius: 5px;">Voltar ao Caderno</a>`);
+        res.write(`
+            <hr style="border: 1px solid #ddd;">
+            <div style="text-align: center; padding: 20px 0;">
+                <h4 style="color: #0D5749; margin-bottom: 5px;">🎉 Sincronização Concluída!</h4>
+                <p><b>${atualizados}</b> clientes foram atualizados com sucesso.</p>
+            </div>
+            <script>window.scrollTo(0, document.body.scrollHeight);</script>
+        `);
         res.end();
 
     } catch (error) {

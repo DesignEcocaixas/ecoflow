@@ -1,6 +1,6 @@
 // views/cadernoEntregasView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
+//const renderLoaderParticulas = require("./renderLoaderParticulas"); ${renderLoaderParticulas("Carregando Caderno")}
 
 function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -450,7 +450,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   </head>
   <body>
     
-    ${renderLoaderParticulas("Carregando Caderno")}
+    
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>

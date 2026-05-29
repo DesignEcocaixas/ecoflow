@@ -236,13 +236,13 @@ function extrairLatLon(texto) {
 // Calcula a distância em linha reta (Raio) entre 2 coordenadas em KM
 function calcularDistanciaReta(lat1, lon1, lat2, lon2) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    const R = 6371; 
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
@@ -254,13 +254,13 @@ async function otimizarRotaGoogleAPI(entregas) {
     try {
         // Usa a coordenada da fábrica ou o centro de Camaçari por padrão
         const coordFabrica = extrairLatLon(ENDERECO_FABRICA) || { lat: -12.6974, lon: -38.3241 };
-        
+
         let indiceMaisDistante = 0;
         let maiorDistancia = -1;
 
         // 1. O Sistema descobre matematicamente qual é o cliente mais longe da fábrica
         for (let i = 0; i < entregas.length; i++) {
-            if (!entregas[i]) continue; 
+            if (!entregas[i]) continue;
             const coordEntrega = extrairLatLon(entregas[i].queryLocation);
             if (coordEntrega) {
                 const dist = calcularDistanciaReta(coordFabrica.lat, coordFabrica.lon, coordEntrega.lat, coordEntrega.lon);
@@ -288,11 +288,11 @@ async function otimizarRotaGoogleAPI(entregas) {
 
         const requestBody = {
             origin: originAPI,
-            destination: destinationAPI, 
+            destination: destinationAPI,
             intermediates: intermediatesAPI,
             travelMode: "DRIVE",
             routingPreference: "TRAFFIC_AWARE",
-            optimizeWaypointOrder: true 
+            optimizeWaypointOrder: true
         };
 
         const res = await axios.post(
@@ -310,7 +310,7 @@ async function otimizarRotaGoogleAPI(entregas) {
         if (res.data && res.data.routes && res.data.routes.length > 0) {
             const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
             let entregasReordenadas = [];
-            
+
             // Verifica se a API devolveu a ordem dos intermediários de forma íntegra
             if (Array.isArray(ordemOtimizada) && ordemOtimizada.length === entregasIntermediarias.length) {
                 for (let i = 0; i < ordemOtimizada.length; i++) {
@@ -323,13 +323,13 @@ async function otimizarRotaGoogleAPI(entregas) {
                 // Caso o Google não tenha reordenado (ex: havia só 1 intermediário)
                 entregasReordenadas = [...entregasIntermediarias];
             }
-            
+
             // Por fim, anexa a entrega mais distante obrigatoriamente na ÚLTIMA posição
             entregasReordenadas.push(entregaDestino);
-            
+
             return entregasReordenadas;
         }
-        
+
         return entregas;
     } catch (error) {
         console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);
@@ -2999,64 +2999,79 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             titleX = 170;
         }
 
-        // Título Principal
+        // Título Principal (Ajustado verticalmente para alinhar com o novo QR Code)
         doc.fillColor('#222222')
             .font('Helvetica-Bold')
             .fontSize(14)
-            .text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
+            .text('MANIFESTO DE CARGA E ROTAS', titleX, 45);
 
         doc.font('Helvetica')
             .fontSize(8.5)
             .fillColor('#666666')
-            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 55);
+            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 65);
 
         // =======================================================
-        // NOVO: INSERÇÃO DO QR CODE DA ROTA COMPLETA OTIMIZADA
+        // ATUALIZADO: QR CODE DA ROTA COMPLETA BEM MAIOR (110x110)
         // =======================================================
         if (linkRotaCompleta !== "#") {
             try {
-                const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(linkRotaCompleta)}`;
+                // Solicita o tamanho 250x250 da API externa para garantir densidade e nitidez máxima no papel
+                const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(linkRotaCompleta)}`;
                 const responseGeral = await axios.get(qrUrlGeral, { responseType: 'arraybuffer' });
                 const qrBufferGeral = Buffer.from(responseGeral.data, 'binary');
 
-                // Desenha o QR Code mestre no canto superior direito do cabeçalho
-                doc.image(qrBufferGeral, 490, 22, { width: 52, height: 52 });
+                // Desenha o QR Code mestre ampliado no canto superior direito
+                doc.image(qrBufferGeral, 445, 25, { width: 110, height: 110 });
                 doc.font('Helvetica-Bold')
-                    .fontSize(6.5)
+                    .fontSize(7.5)
                     .fillColor('#0D5749')
-                    .text('ROTA COMPLETA (GPS)', 470, 78, { width: 90, align: 'center' });
+                    .text('ROTA COMPLETA NO MAPS (GPS)', 435, 140, { width: 130, align: 'center' });
             } catch (errQrGeral) {
                 console.error("[Erro] Falha ao injetar QR Code Geral no PDF:", errQrGeral.message);
             }
         }
 
-        doc.moveTo(40, 88).lineTo(555, 88).stroke('#eeeeee');
+        // Linha divisória empurrada ligeiramente para baixo para respeitar o QR Code maior
+        doc.moveTo(40, 155).lineTo(555, 155).stroke('#eeeeee');
 
-        // Quadro Informativo da Equipe
-        doc.rect(40, 98, 515, 55).fill('#f8f9fa');
+        // Quadro Informativo da Equipe reposicionado continuamente
+        doc.rect(40, 165, 515, 55).fill('#f8f9fa');
 
         doc.fillColor('#333333')
             .font('Helvetica-Bold')
             .fontSize(10)
-            .text('MOTORISTA:', 55, 108)
-            .text('AJUDANTE:', 215, 108)
-            .text('VEÍCULO / FROTA:', 375, 108);
+            .text('MOTORISTA:', 55, 175)
+            .text('AJUDANTE:', 215, 175)
+            .text('VEÍCULO / FROTA:', 375, 175);
 
         doc.font('Helvetica')
             .fontSize(11)
             .fillColor('#444444')
-            .text((caderno.motorista || '').toUpperCase(), 55, 125)
-            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 125)
-            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 125);
+            .text((caderno.motorista || '').toUpperCase(), 55, 192)
+            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 192)
+            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 192);
 
-        doc.moveTo(40, 170).lineTo(555, 170).stroke('#dddddd');
+        // =======================================================
+        // NOVO: CAIXA DE ALERTA VERMELHO DE ARRUMAÇÃO DE CARGA
+        // =======================================================
+        doc.rect(40, 230, 515, 30).fill('#FFF5F5');
+        doc.lineWidth(1).strokeColor('#F5B7B7').rect(40, 230, 515, 30).stroke();
+
+        doc.fillColor('#D32F2F')
+            .font('Helvetica-Bold')
+            .fontSize(9.5)
+            .text('⚠️ ATENÇÃO MOTORISTA: CARREGUE O VEÍCULO DO ÚLTIMO PARA O PRIMEIRO ITEM DA ROTA!', 45, 240, { align: 'center', width: 505 });
+
+        // Linha divisória pós-alerta antes de iniciar a listagem das paradas
+        doc.moveTo(40, 273).lineTo(555, 273).stroke('#dddddd');
 
         doc.fillColor('#0D5749')
             .font('Helvetica-Bold')
             .fontSize(13)
-            .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 185);
+            .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 285);
 
-        let yPosition = 215;
+        // Posição Y inicial de renderização das caixas ajustada de forma limpa
+        let yPosition = 310;
 
         // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code individual
         for (let i = 0; i < itens.length; i++) {

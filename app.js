@@ -2999,19 +2999,41 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             titleX = 170;
         }
 
-        // Título Principal (Ajustado verticalmente para alinhar com o novo QR Code)
+        // Título Principal
         doc.fillColor('#222222')
             .font('Helvetica-Bold')
             .fontSize(14)
-            .text('MANIFESTO DE CARGA E ROTAS', titleX, 45);
+            .text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
 
-        doc.font('Helvetica')
-            .fontSize(8.5)
-            .fillColor('#666666')
-            .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, titleX, 65);
+        // Dados da Equipe (Em bloco compacto abaixo do título)
+        doc.font('Helvetica-Bold')
+            .fontSize(9.5)
+            .fillColor('#333333');
+            
+        let infoY = 58;
+        const colLabelX = titleX;
+        const colValueX = titleX + 65;
+
+        // Motorista
+        doc.text('Motorista:', colLabelX, infoY);
+        doc.font('Helvetica').fillColor('#555555').text((caderno.motorista || '').toUpperCase(), colValueX, infoY);
+        infoY += 14;
+
+        // Ajudante
+        doc.font('Helvetica-Bold').fillColor('#333333').text('Ajudante:', colLabelX, infoY);
+        doc.font('Helvetica').fillColor('#555555').text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), colValueX, infoY);
+        infoY += 14;
+
+        // Veículo
+        doc.font('Helvetica-Bold').fillColor('#333333').text('Veículo:', colLabelX, infoY);
+        doc.font('Helvetica').fillColor('#555555').text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), colValueX, infoY);
+        infoY += 16;
+        
+        // Data de Geração
+        doc.font('Helvetica-Oblique').fontSize(8).fillColor('#888888').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, colLabelX, infoY);
 
         // =======================================================
-        // ATUALIZADO: QR CODE DA ROTA COMPLETA BEM MAIOR (110x110)
+        // QR CODE DA ROTA COMPLETA BEM MAIOR (110x110)
         // =======================================================
         if (linkRotaCompleta !== "#") {
             try {
@@ -3031,47 +3053,27 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             }
         }
 
-        // Linha divisória empurrada ligeiramente para baixo para respeitar o QR Code maior
-        doc.moveTo(40, 155).lineTo(555, 155).stroke('#eeeeee');
-
-        // Quadro Informativo da Equipe reposicionado continuamente
-        doc.rect(40, 165, 515, 55).fill('#f8f9fa');
-
-        doc.fillColor('#333333')
-            .font('Helvetica-Bold')
-            .fontSize(10)
-            .text('MOTORISTA:', 55, 175)
-            .text('AJUDANTE:', 215, 175)
-            .text('VEÍCULO / FROTA:', 375, 175);
-
-        doc.font('Helvetica')
-            .fontSize(11)
-            .fillColor('#444444')
-            .text((caderno.motorista || '').toUpperCase(), 55, 192)
-            .text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), 215, 192)
-            .text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), 375, 192);
-
         // =======================================================
-        // NOVO: CAIXA DE ALERTA VERMELHO DE ARRUMAÇÃO DE CARGA
+        // CAIXA DE ALERTA VERMELHO DE ARRUMAÇÃO DE CARGA
         // =======================================================
-        doc.rect(40, 230, 515, 30).fill('#FFF5F5');
-        doc.lineWidth(1).strokeColor('#F5B7B7').rect(40, 230, 515, 30).stroke();
+        doc.rect(40, 155, 515, 30).fill('#FFF5F5');
+        doc.lineWidth(1).strokeColor('#F5B7B7').rect(40, 155, 515, 30).stroke();
 
         doc.fillColor('#D32F2F')
             .font('Helvetica-Bold')
             .fontSize(9.5)
-            .text('⚠️ ATENÇÃO MOTORISTA: CARREGUE O VEÍCULO DO ÚLTIMO PARA O PRIMEIRO ITEM DA ROTA!', 45, 240, { align: 'center', width: 505 });
+            .text('ORDEM DE CARREGAMENTO: CARREGUE O VEÍCULO DO ÚLTIMO PARA O PRIMEIRO ITEM', 45, 165, { align: 'center', width: 505 });
 
         // Linha divisória pós-alerta antes de iniciar a listagem das paradas
-        doc.moveTo(40, 273).lineTo(555, 273).stroke('#dddddd');
+        doc.moveTo(40, 200).lineTo(555, 200).stroke('#dddddd');
 
         doc.fillColor('#0D5749')
             .font('Helvetica-Bold')
             .fontSize(13)
-            .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 285);
+            .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 212);
 
         // Posição Y inicial de renderização das caixas ajustada de forma limpa
-        let yPosition = 310;
+        let yPosition = 237;
 
         // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code individual
         for (let i = 0; i < itens.length; i++) {

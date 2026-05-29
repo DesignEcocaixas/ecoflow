@@ -236,13 +236,13 @@ function extrairLatLon(texto) {
 // Calcula a distância em linha reta (Raio) entre 2 coordenadas em KM
 function calcularDistanciaReta(lat1, lon1, lat2, lon2) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    const R = 6371;
+    const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
 }
 
@@ -254,13 +254,13 @@ async function otimizarRotaGoogleAPI(entregas) {
     try {
         // Usa a coordenada da fábrica ou o centro de Camaçari por padrão
         const coordFabrica = extrairLatLon(ENDERECO_FABRICA) || { lat: -12.6974, lon: -38.3241 };
-
+        
         let indiceMaisDistante = 0;
         let maiorDistancia = -1;
 
         // 1. O Sistema descobre matematicamente qual é o cliente mais longe da fábrica
         for (let i = 0; i < entregas.length; i++) {
-            if (!entregas[i]) continue;
+            if (!entregas[i]) continue; 
             const coordEntrega = extrairLatLon(entregas[i].queryLocation);
             if (coordEntrega) {
                 const dist = calcularDistanciaReta(coordFabrica.lat, coordFabrica.lon, coordEntrega.lat, coordEntrega.lon);
@@ -288,11 +288,11 @@ async function otimizarRotaGoogleAPI(entregas) {
 
         const requestBody = {
             origin: originAPI,
-            destination: destinationAPI,
+            destination: destinationAPI, 
             intermediates: intermediatesAPI,
             travelMode: "DRIVE",
             routingPreference: "TRAFFIC_AWARE",
-            optimizeWaypointOrder: true
+            optimizeWaypointOrder: true 
         };
 
         const res = await axios.post(
@@ -310,7 +310,7 @@ async function otimizarRotaGoogleAPI(entregas) {
         if (res.data && res.data.routes && res.data.routes.length > 0) {
             const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
             let entregasReordenadas = [];
-
+            
             // Verifica se a API devolveu a ordem dos intermediários de forma íntegra
             if (Array.isArray(ordemOtimizada) && ordemOtimizada.length === entregasIntermediarias.length) {
                 for (let i = 0; i < ordemOtimizada.length; i++) {
@@ -323,13 +323,13 @@ async function otimizarRotaGoogleAPI(entregas) {
                 // Caso o Google não tenha reordenado (ex: havia só 1 intermediário)
                 entregasReordenadas = [...entregasIntermediarias];
             }
-
+            
             // Por fim, anexa a entrega mais distante obrigatoriamente na ÚLTIMA posição
             entregasReordenadas.push(entregaDestino);
-
+            
             return entregasReordenadas;
         }
-
+        
         return entregas;
     } catch (error) {
         console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);

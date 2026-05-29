@@ -2283,7 +2283,7 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
 // MÓDULO: CADERNO DE ENTREGAS (ATUALIZADO)
 // ==========================================
 
-// 1. Listar Cadernos (Agora busca o histórico fixo de clientes)
+// 1. Listar Cadernos (Agora busca o histórico fixo de clientes e catálogo de itens)
 app.get("/caderno-entregas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
@@ -2329,12 +2329,20 @@ app.get("/caderno-entregas", async (req, res) => {
 
         const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
 
-        // NOVO: Busca o histórico fixo de clientes imune à exclusão
-        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas FROM clientes_historico ORDER BY nome ASC");
+        // NOVO: Busca o histórico fixo de clientes imune à exclusão (com a Cidade para a tag azul)
+        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade FROM clientes_historico ORDER BY nome ASC");
+
+        // NOVO: Busca o catálogo de itens do pedido (as dezenas de caixas que inserimos via script SQL)
+        const [itensCatalogo] = await db.promise().query("SELECT nome FROM itens_catalogo ORDER BY nome ASC");
 
         res.send(require('./views/cadernoEntregasView')(
-            req.session.user, cadernos, veiculos, clientesDB,
-            { page, totalPages, total }, { data_inicio, data_fim }
+            req.session.user, 
+            cadernos, 
+            veiculos, 
+            clientesDB,
+            { page, totalPages, total }, 
+            { data_inicio, data_fim },
+            itensCatalogo // <--- Passando o catálogo mágico para a View final!
         ));
     } catch (error) {
         console.error("Erro no Caderno de Entregas:", error);

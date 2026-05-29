@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 //const renderLoaderParticulas = require("./renderLoaderParticulas"); ${renderLoaderParticulas("Carregando Caderno")}
 
-function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}) {
+function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
@@ -25,19 +25,14 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   cadernos.forEach(c => {
       if (c.entregas && c.entregas.length > 0) {
           const paradas = c.entregas.map(e => {
-              // PLANO A: Se tiver a coordenada exata salva no banco, usa ela (Perfeição absoluta do GPS)
               if (e.coordenadas && e.coordenadas.trim() !== '') {
-                  // Limpa espaços em branco para garantir o formato do maps: lat,lng
                   return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
               } 
-              // PLANO B: Se a coordenada estiver vazia, tenta usar o nome do cliente como fallback
               return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
           }).join('/');
           
-          // TRUQUE PARA BURLAR O FILTRO: Monta a URL oficial aos pedaços
           const baseMapsUrl = "https://www" + ".google.com/maps/dir//";
           c.linkNavegacao = baseMapsUrl + paradas;
-
       } else {
           c.linkNavegacao = "#";
       }
@@ -50,37 +45,21 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   
   if (clientesHistorico && clientesHistorico.length > 0) {
       clientesHistorico.forEach(c => {
-          historicoClientes[c.nome] = c.link_endereco || "";
+          historicoClientes[c.nome] = {
+              link: c.link_endereco || "",
+              coord: c.coordenadas || ""
+          };
       });
   }
 
-  const optionsClientesHtml = Object.keys(historicoClientes)
-      .map(cliente => `<option value="${cliente}">${cliente}</option>`)
-      .join('');
-
+  // Gera o Input HTML com suporte à nova caixa de seleção (Lista Suspensa de Cliente)
   const renderClienteField = (clienteAtual = "") => {
-      const isCustom = clienteAtual && !historicoClientes.hasOwnProperty(clienteAtual);
-      const isNewMode = isCustom || !clienteAtual;
-      
-      const selectName = isNewMode ? "" : `name="local[]"`;
-      const inputName = isNewMode ? `name="local[]"` : "";
-      
-      const inputDisplay = isNewMode ? "block" : "none";
-      const inputDisabled = isNewMode ? "" : "disabled";
-
-      let optionsHtml = `<option value="" disabled ${!clienteAtual ? 'selected' : ''}>-- Selecionar Cliente --</option>`;
-      optionsHtml += `<option value="NOVO_CLIENTE" class="text-success fw-bold" ${isNewMode && clienteAtual ? 'selected' : ''}>+ Cadastrar Novo Cliente</option>`;
-      
-      Object.keys(historicoClientes).forEach(cliente => {
-          const selected = cliente === clienteAtual ? "selected" : "";
-          optionsHtml += `<option value="${cliente}" ${selected}>${cliente}</option>`;
-      });
-
+      const safeVal = clienteAtual.replace(/"/g, '"');
       return `
-          <select class="form-select form-select-sm mb-1 client-select shadow-sm" ${selectName} onchange="handleClientSelect(this)" required>
-              ${optionsHtml}
-          </select>
-          <input type="text" class="form-control form-control-sm client-input shadow-sm" ${inputName} value="${isCustom ? clienteAtual : ''}" style="display:${inputDisplay};" placeholder="Digite o nome do novo cliente" ${inputDisabled} required>
+          <div class="autocomplete-container">
+              <input type="text" name="local[]" class="form-control form-control-sm client-input shadow-sm" oninput="handleClientInput(event, this)" onclick="handleClientInput(event, this)" value="${safeVal}" placeholder="Digite o nome..." required autocomplete="off">
+              <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+          </div>
       `;
   };
 
@@ -159,7 +138,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       return `
         <div class="row g-1 mb-1 sub-item-row">
             <div class="col-8">
-                <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" required>
+                <div class="autocomplete-container">
+                    <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" oninput="handleItemInput(event, this)" onclick="handleItemInput(event, this)" required autocomplete="off">
+                    <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                </div>
             </div>
             <div class="col-3">
                 <input type="number" class="form-control form-control-sm sub-item-qtd shadow-sm" placeholder="Qtd" value="${totalQtd || ''}" required>
@@ -180,11 +162,16 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         nomeItem = matchQtd[1].trim();
         qtdItem = parseInt(matchQtd[2], 10);
       }
+      
+      const safeItem = nomeItem.replace(/"/g, '"');
 
       return `
         <div class="row g-1 mb-1 sub-item-row">
             <div class="col-8">
-                <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" value="${nomeItem}" placeholder="Item do Pedido" required>
+                <div class="autocomplete-container">
+                    <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" value="${safeItem}" placeholder="Item do Pedido" oninput="handleItemInput(event, this)" onclick="handleItemInput(event, this)" required autocomplete="off">
+                    <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                </div>
             </div>
             <div class="col-3">
                 <input type="number" class="form-control form-control-sm sub-item-qtd shadow-sm" value="${qtdItem}" placeholder="Qtd" required>
@@ -200,9 +187,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   const veiculosOptions = veiculos.map(v => `<option value="${v.id}">${v.modelo}</option>`).join("");
 
   const linhas = cadernos.map(c => {
-    const btnNavegacao = c.linkNavegacao !== "#" 
-        ? `<a href="${c.linkNavegacao}" target="_blank" class="btn btn-sm btn-light border text-success py-1 px-2 shadow-sm" onclick="event.stopPropagation();" title="Abrir GPS no Maps"><i class="fa-solid fa-location-arrow" style="font-size:0.75rem;"></i></a>`
-        : `<button class="btn btn-sm btn-light border text-muted py-1 px-2 shadow-sm disabled" title="Sem endereços válidos"><i class="fa-solid fa-location-arrow" style="font-size:0.75rem;"></i></button>`;
+    const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
 
     return `
     <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();">
@@ -216,9 +201,12 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       </td>
       <td class="text-end py-1 px-3">
         <div class="btn-group">
-          ${btnNavegacao}
-          <a href="/caderno-entregas/pdf/${c.id}" target="_blank" class="btn btn-sm btn-light border text-primary py-1 px-2 shadow-sm" 
-             onclick="event.stopPropagation();" title="Imprimir Manifesto PDF">
+          <button class="btn btn-sm btn-light border text-success py-1 px-2 shadow-sm ${c.entregas && c.entregas.length > 0 ? '' : 'disabled'}" 
+                  onclick="event.stopPropagation(); iniciarNavegacao(${paradasData.replace(/"/g, "'")})" title="Iniciar Navegação">
+            <i class="fa-solid fa-location-arrow" style="font-size:0.75rem;"></i>
+          </button>
+          
+          <a href="/caderno-entregas/pdf/${c.id}" target="_blank" class="btn btn-sm btn-light border text-primary py-1 px-2 shadow-sm" onclick="event.stopPropagation();" title="Imprimir Manifesto PDF">
             <i class="fa-solid fa-file-pdf" style="font-size:0.75rem;"></i>
           </a>
           <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2 shadow-sm" 
@@ -232,6 +220,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   }).join("");
 
   const modais = cadernos.map(c => {
+    const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
+    
     const itensEdicaoHtml = (c.entregas && c.entregas.length > 0) ? c.entregas.map((e) => `
         <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
             <input type="hidden" name="itens_pedido[]" class="hidden-itens">
@@ -273,8 +263,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         </div>
     `).join('') : ''; 
 
-    const btnIniciarNavegacao = c.linkNavegacao !== "#"
-        ? `<a href="${c.linkNavegacao}" target="_blank" class="btn btn-sm btn-success fw-bold px-3 shadow-sm"><i class="fa-solid fa-location-arrow me-1"></i> Iniciar Navegação</a>`
+    const btnIniciarNavegacao = (c.entregas && c.entregas.length > 0)
+        ? `<button type="button" onclick="iniciarNavegacao(${paradasData.replace(/"/g, "'")})" class="btn btn-sm btn-success fw-bold px-3 shadow-sm"><i class="fa-solid fa-location-arrow me-1"></i> Iniciar Navegação</button>`
         : '';
 
     return `
@@ -450,12 +440,24 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       }
       .btn-flutuante:hover { transform: scale(1.1); background-color: #0a4338; color: white; box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6); }
 
+      /* CSS DO AUTOCOMPLETE / DROPDOWN */
+      .autocomplete-container { position: relative; width: 100%; }
+      .autocomplete-dropdown {
+          position: absolute; top: 100%; left: 0; right: 0; z-index: 2000;
+          background-color: #ffffff; border: 1px solid #ced4da; border-top: none; border-radius: 0 0 6px 6px;
+          max-height: 250px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;
+      }
+      .autocomplete-item {
+          padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f3f5; font-size: 0.85rem; color: #333;
+      }
+      .autocomplete-item:last-child { border-bottom: none; }
+      .autocomplete-item:hover { background-color: #e2efda; color: #0D5749; }
+      .autocomplete-item strong { color: #0D5749; }
+
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
     </style>
   </head>
   <body>
-    
-    
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
@@ -705,12 +707,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
                     <div class="col-12 col-md-5">
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
-                        <select class="form-select form-select-sm mb-1 client-select shadow-sm" onchange="handleClientSelect(this)" required>
-                            <option value="" disabled selected>-- Selecionar Cliente --</option>
-                            <option value="NOVO_CLIENTE" class="text-success fw-bold">+ Cadastrar Novo Cliente</option>
-                            ${optionsClientesHtml}
-                        </select>
-                        <input type="text" class="form-control form-control-sm client-input shadow-sm" style="display:none;" placeholder="Digite o nome do novo cliente" disabled required>
+                        <div class="autocomplete-container">
+                            <input type="text" name="local[]" class="form-control form-control-sm client-input shadow-sm" oninput="handleClientInput(event, this)" onclick="handleClientInput(event, this)" placeholder="Digite o nome..." required autocomplete="off">
+                            <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                        </div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
@@ -726,7 +726,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                         <div class="sub-itens-container bg-light p-2 rounded border border-opacity-50">
                             <div class="row g-1 mb-1 sub-item-row">
                                 <div class="col-8">
-                                    <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" required>
+                                    <div class="autocomplete-container">
+                                        <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" oninput="handleItemInput(event, this)" onclick="handleItemInput(event, this)" required autocomplete="off">
+                                        <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                                    </div>
                                 </div>
                                 <div class="col-3">
                                     <input type="number" class="form-control form-control-sm sub-item-qtd shadow-sm" placeholder="Qtd" required>
@@ -784,6 +787,15 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <script>
       let isSubmitting = false;
 
+      // =======================================================================
+      // NAVEGAÇÃO E URLs SEGURAS
+      // =======================================================================
+      function iniciarNavegacao(listaParadas) {
+          const paradasFormatadas = listaParadas.map(p => encodeURIComponent(p)).join('/');
+          const url = "https://www.google.com/maps/dir//" + paradasFormatadas;
+          window.open(url, '_blank');
+      }
+
       function iniciarMigracao() {
           document.getElementById('migracaoStartScreen').style.display = 'none';
           document.getElementById('migracaoProcessScreen').style.display = 'block';
@@ -799,19 +811,163 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
+      // =======================================================================
+      // AUTOCOMPLETAR CUSTOMIZADO COM TYPEAHEAD (SUGESTÃO INLINE)
+      // =======================================================================
+      const dictClientes = ${JSON.stringify(historicoClientes)};
+      const clientNames = Object.keys(dictClientes);
+      const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
+
+      function handleClientInput(event, inputEl) {
+          const containerItem = inputEl.closest('.entrega-item');
+          if (!containerItem) return;
+          
+          const linkInput = containerItem.querySelector('.link-maps-input');
+          const coordInput = containerItem.querySelector('.coord-input');
+          const dropdown = inputEl.nextElementSibling;
+          
+          let val = inputEl.value;
+
+          if (event && event.inputType && event.inputType.startsWith('insert') && val.trim() !== '') {
+              let perfectMatch = clientNames.find(name => name.toLowerCase().startsWith(val.toLowerCase()));
+              if (perfectMatch && perfectMatch.toLowerCase() !== val.toLowerCase()) {
+                  const currentLength = val.length;
+                  inputEl.value = perfectMatch;
+                  inputEl.setSelectionRange(currentLength, perfectMatch.length);
+                  val = inputEl.value; 
+              }
+          }
+
+          const searchVal = val.toLowerCase().trim();
+          dropdown.innerHTML = '';
+
+          if (!searchVal) {
+              dropdown.style.display = 'none';
+              if (linkInput) linkInput.value = '';
+              if (coordInput) coordInput.value = '';
+              return;
+          }
+
+          const matches = clientNames.filter(name => name.toLowerCase().includes(searchVal));
+
+          if (matches.length > 0) {
+              dropdown.style.display = 'block';
+              matches.forEach(match => {
+                  const item = document.createElement('div');
+                  item.className = 'autocomplete-item';
+                  
+                  const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
+                  const regex = new RegExp(\`(\${safeRegex})\`, "gi");
+                  item.innerHTML = match.replace(regex, "<strong>$1</strong>");
+
+                  item.onmousedown = function(e) {
+                      e.preventDefault(); 
+                      inputEl.value = match;
+                      if (linkInput) linkInput.value = dictClientes[match].link || '';
+                      if (coordInput) coordInput.value = dictClientes[match].coord || '';
+                      dropdown.style.display = 'none';
+                  };
+                  dropdown.appendChild(item);
+              });
+          } else {
+              dropdown.style.display = 'block';
+              const novoItem = document.createElement('div');
+              novoItem.className = 'autocomplete-item text-success fw-bold';
+              novoItem.innerHTML = \`<i class="fa-solid fa-plus-circle me-1"></i> Cadastrar cliente "<strong>\${val}</strong>"\`;
+              novoItem.onmousedown = function(e) {
+                  e.preventDefault();
+                  inputEl.value = val;
+                  if (linkInput) linkInput.value = '';
+                  if (coordInput) coordInput.value = '';
+                  dropdown.style.display = 'none';
+              };
+              dropdown.appendChild(novoItem);
+          }
+
+          if (dictClientes[val]) {
+              if (linkInput) linkInput.value = dictClientes[val].link || '';
+              if (coordInput) coordInput.value = dictClientes[val].coord || '';
+          } else {
+              if (linkInput) linkInput.value = '';
+              if (coordInput) coordInput.value = '';
+          }
+      }
+
+      // Função para o Autocompletar dos Itens do Pedido (Catálogo)
+      function handleItemInput(event, inputEl) {
+          const dropdown = inputEl.nextElementSibling;
+          let val = inputEl.value;
+
+          if (event && event.inputType && event.inputType.startsWith('insert') && val.trim() !== '') {
+              let perfectMatch = arrayItensCatalogo.find(name => name.toLowerCase().startsWith(val.toLowerCase()));
+              if (perfectMatch && perfectMatch.toLowerCase() !== val.toLowerCase()) {
+                  const currentLength = val.length;
+                  inputEl.value = perfectMatch;
+                  inputEl.setSelectionRange(currentLength, perfectMatch.length);
+                  val = inputEl.value; 
+              }
+          }
+
+          const searchVal = val.toLowerCase().trim();
+          dropdown.innerHTML = '';
+
+          if (!searchVal) {
+              dropdown.style.display = 'none';
+              return;
+          }
+
+          const matches = arrayItensCatalogo.filter(name => name.toLowerCase().includes(searchVal));
+
+          if (matches.length > 0) {
+              dropdown.style.display = 'block';
+              matches.forEach(match => {
+                  const item = document.createElement('div');
+                  item.className = 'autocomplete-item';
+                  
+                  const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
+                  const regex = new RegExp(\`(\${safeRegex})\`, "gi");
+                  item.innerHTML = match.replace(regex, "<strong>$1</strong>");
+
+                  item.onmousedown = function(e) {
+                      e.preventDefault(); 
+                      inputEl.value = match;
+                      dropdown.style.display = 'none';
+                  };
+                  dropdown.appendChild(item);
+              });
+          } else {
+              dropdown.style.display = 'block';
+              const novoItem = document.createElement('div');
+              novoItem.className = 'autocomplete-item text-primary fw-bold';
+              novoItem.innerHTML = \`<i class="fa-solid fa-keyboard me-1"></i> Cadastrar novo item "<strong>\${val}</strong>"\`;
+              novoItem.onmousedown = function(e) {
+                  e.preventDefault();
+                  inputEl.value = val;
+                  dropdown.style.display = 'none';
+              };
+              dropdown.appendChild(novoItem);
+          }
+      }
+
+      // Fecha as listas suspensas se clicar fora
+      document.addEventListener('click', function(e) {
+          document.querySelectorAll('.autocomplete-dropdown').forEach(d => {
+              if (!d.contains(e.target) && e.target !== d.previousElementSibling) {
+                  d.style.display = 'none';
+              }
+          });
+      });
+
       function extrairCoordenadasAoColar(inputElement) {
-          // Busca o contentor pai: ou a linha do Novo Caderno ou o formulário do Novo Cliente
           const container = inputElement.closest('.entrega-item') || inputElement.closest('form');
           if (!container) return;
           
-          // Procura a caixa de coordenadas correta para aquela linha/form
           const inputCoords = container.querySelector('input[name="coordenadas"]') || container.querySelector('input[name="coordenadas_rota[]"]');
           if (!inputCoords) return;
 
           const url = inputElement.value;
           if (!url) return;
 
-          // Extração super precisa baseada no pino ou query
           let match = url.match(/!3d(-?\\d+\\.\\d+)!4d(-?\\d+\\.\\d+)/);
           if (!match) match = url.match(/query=(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
           if (!match) match = url.match(/@(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)/);
@@ -906,38 +1062,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           input.focus();
       }
 
-      const dictClientes = ${JSON.stringify(historicoClientes)};
-      const optionsClientesGeral = \`${optionsClientesHtml}\`;
-      
-      function handleClientSelect(selectEl) {
-          const container = selectEl.closest('.entrega-item');
-          const inputEl = container.querySelector('.client-input');
-          const linkInput = container.querySelector('.link-maps-input');
-          const coordInput = container.querySelector('.coord-input');
-          
-          if (selectEl.value === 'NOVO_CLIENTE') {
-              inputEl.style.display = 'block';
-              inputEl.disabled = false;
-              inputEl.setAttribute('name', 'local[]');
-              selectEl.removeAttribute('name');
-              if (linkInput) linkInput.value = '';
-              if (coordInput) coordInput.value = '';
-          } else {
-              inputEl.style.display = 'none';
-              inputEl.disabled = true;
-              inputEl.removeAttribute('name');
-              selectEl.setAttribute('name', 'local[]');
-              
-              if (dictClientes[selectEl.value]) {
-                  if (linkInput) linkInput.value = dictClientes[selectEl.value];
-                  // Opcionalmente poderia preencher as coordenadas se quiséssemos injetar no dicionário
-              } else {
-                  if (linkInput) linkInput.value = '';
-                  if (coordInput) coordInput.value = '';
-              }
-          }
-      }
-
       function addEntregaDinamica(containerId) {
           const container = document.getElementById(containerId);
           const html = \`
@@ -947,12 +1071,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
                   <div class="col-12 col-md-5">
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
-                      <select class="form-select form-select-sm mb-1 client-select shadow-sm" onchange="handleClientSelect(this)" required>
-                          <option value="" disabled selected>-- Selecionar Cliente --</option>
-                          <option value="NOVO_CLIENTE" class="text-success fw-bold">+ Cadastrar Novo Cliente</option>
-                          \${optionsClientesGeral}
-                      </select>
-                      <input type="text" class="form-control form-control-sm client-input shadow-sm" style="display:none;" placeholder="Digite o nome do novo cliente" disabled required>
+                      <div class="autocomplete-container">
+                          <input type="text" name="local[]" class="form-control form-control-sm client-input shadow-sm" oninput="handleClientInput(event, this)" onclick="handleClientInput(event, this)" placeholder="Digite o nome..." required autocomplete="off">
+                          <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                      </div>
                   </div>
                   <div class="col-12 col-md-4">
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
@@ -968,7 +1090,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       <div class="sub-itens-container bg-light p-2 rounded border border-opacity-50">
                           <div class="row g-1 mb-1 sub-item-row">
                               <div class="col-8">
-                                  <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" required>
+                                  <div class="autocomplete-container">
+                                      <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" oninput="handleItemInput(event, this)" onclick="handleItemInput(event, this)" required autocomplete="off">
+                                      <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                                  </div>
                               </div>
                               <div class="col-3">
                                   <input type="number" class="form-control form-control-sm sub-item-qtd shadow-sm" placeholder="Qtd" required>
@@ -1003,7 +1128,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const html = \`
               <div class="row g-1 mb-1 sub-item-row">
                   <div class="col-8">
-                      <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" required>
+                      <div class="autocomplete-container">
+                          <input type="text" class="form-control form-control-sm sub-item-nome shadow-sm" placeholder="Item do Pedido" oninput="handleItemInput(event, this)" onclick="handleItemInput(event, this)" required autocomplete="off">
+                          <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                      </div>
                   </div>
                   <div class="col-3">
                       <input type="number" class="form-control form-control-sm sub-item-qtd shadow-sm" placeholder="Qtd" required>

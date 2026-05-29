@@ -224,21 +224,75 @@ function formatarParaRoutesAPI(local) {
     return { address: local };
 }
 
-// 3. Comunica com a nova Google Routes API (V2)
+// ---------------------------------------------------------
+// FUNÇÕES MATEMÁTICAS PARA FORÇAR "OS MAIS PERTOS PRIMEIRO"
+// ---------------------------------------------------------
+function extrairLatLon(texto) {
+    const match = String(texto).match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+    if (match) return { lat: parseFloat(match[1]), lon: parseFloat(match[2]) };
+    return null;
+}
+
+// Calcula a distância em linha reta (Raio) entre 2 coordenadas em KM
+function calcularDistanciaReta(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+// 3. Comunica com a nova Google Routes API (Ponto mais distante como Destino Fixo)
 async function otimizarRotaGoogleAPI(entregas) {
-    if (entregas.length <= 1) return entregas;
+    // Validação cega: Se houver apenas 1 entrega, não há o que otimizar
+    if (!entregas || entregas.length <= 1) return entregas;
 
     try {
-        const originDest = formatarParaRoutesAPI(ENDERECO_FABRICA);
-        const intermediates = entregas.map(e => formatarParaRoutesAPI(e.queryLocation));
+        // Usa a coordenada da fábrica ou o centro de Camaçari por padrão
+        const coordFabrica = extrairLatLon(ENDERECO_FABRICA) || { lat: -12.6974, lon: -38.3241 };
+        
+        let indiceMaisDistante = 0;
+        let maiorDistancia = -1;
+
+        // 1. O Sistema descobre matematicamente qual é o cliente mais longe da fábrica
+        for (let i = 0; i < entregas.length; i++) {
+            if (!entregas[i]) continue; 
+            const coordEntrega = extrairLatLon(entregas[i].queryLocation);
+            if (coordEntrega) {
+                const dist = calcularDistanciaReta(coordFabrica.lat, coordFabrica.lon, coordEntrega.lat, coordEntrega.lon);
+                if (dist > maiorDistancia) {
+                    maiorDistancia = dist;
+                    indiceMaisDistante = i;
+                }
+            }
+        }
+
+        // Proteção extra de índice
+        if (!entregas[indiceMaisDistante]) indiceMaisDistante = 0;
+
+        // 2. Extrai o mais distante e o define como PONTO FINAL obrigatório
+        const entregaDestino = entregas[indiceMaisDistante];
+        const entregasIntermediarias = entregas.filter((_, index) => index !== indiceMaisDistante && entregas[index]);
+
+        // Se após remover o destino não sobrar mais nada na rota, retorna
+        if (entregasIntermediarias.length === 0) return [entregaDestino];
+
+        // 3. Monta a requisição: Origem -> Intermediários (Misturados) -> Destino Fixo (Mais Longe)
+        const originAPI = formatarParaRoutesAPI(ENDERECO_FABRICA);
+        const destinationAPI = formatarParaRoutesAPI(entregaDestino.queryLocation);
+        const intermediatesAPI = entregasIntermediarias.map(e => formatarParaRoutesAPI(e.queryLocation));
 
         const requestBody = {
-            origin: originDest,
-            destination: originDest,
-            intermediates: intermediates,
+            origin: originAPI,
+            destination: destinationAPI, 
+            intermediates: intermediatesAPI,
             travelMode: "DRIVE",
-            routingPreference: "TRAFFIC_AWARE", // Considera o trânsito real no momento
-            optimizeWaypointOrder: true // Esta é a instrução que reordena tudo!
+            routingPreference: "TRAFFIC_AWARE",
+            optimizeWaypointOrder: true 
         };
 
         const res = await axios.post(
@@ -248,7 +302,6 @@ async function otimizarRotaGoogleAPI(entregas) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-                    // O FieldMask diz ao Google para retornar apenas a nova ordem e economizar a sua franquia
                     'X-Goog-FieldMask': 'routes.optimizedIntermediateWaypointIndex'
                 }
             }
@@ -256,22 +309,33 @@ async function otimizarRotaGoogleAPI(entregas) {
 
         if (res.data && res.data.routes && res.data.routes.length > 0) {
             const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
-            const entregasReordenadas = [];
-
-            if (ordemOtimizada) {
+            let entregasReordenadas = [];
+            
+            // Verifica se a API devolveu a ordem dos intermediários de forma íntegra
+            if (Array.isArray(ordemOtimizada) && ordemOtimizada.length === entregasIntermediarias.length) {
                 for (let i = 0; i < ordemOtimizada.length; i++) {
-                    entregasReordenadas.push(entregas[ordemOtimizada[i]]);
+                    const wpIndex = ordemOtimizada[i];
+                    if (entregasIntermediarias[wpIndex]) {
+                        entregasReordenadas.push(entregasIntermediarias[wpIndex]);
+                    }
                 }
-                return entregasReordenadas;
+            } else {
+                // Caso o Google não tenha reordenado (ex: havia só 1 intermediário)
+                entregasReordenadas = [...entregasIntermediarias];
             }
+            
+            // Por fim, anexa a entrega mais distante obrigatoriamente na ÚLTIMA posição
+            entregasReordenadas.push(entregaDestino);
+            
+            return entregasReordenadas;
         }
+        
         return entregas;
     } catch (error) {
         console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);
-        return entregas; // Em caso de falha, salva na ordem original inserida
+        return entregas; // Retorna intacto para não causar crash
     }
 }
-
 // =======================================================
 // NOVA FUNÇÃO: DESCOBRIR CIDADE PELAS COORDENADAS
 // =======================================================
@@ -280,7 +344,7 @@ async function obterCidadeDasCoordenadas(coordenadas) {
     try {
         const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordenadas.replace(/\s/g, '')}&key=${GOOGLE_MAPS_API_KEY}`;
         const response = await axios.get(url);
-        
+
         if (response.data.status === 'OK') {
             for (let result of response.data.results) {
                 for (let component of result.address_components) {
@@ -2336,11 +2400,11 @@ app.get("/caderno-entregas", async (req, res) => {
         const [itensCatalogo] = await db.promise().query("SELECT nome FROM itens_catalogo ORDER BY nome ASC");
 
         res.send(require('./views/cadernoEntregasView')(
-            req.session.user, 
-            cadernos, 
-            veiculos, 
+            req.session.user,
+            cadernos,
+            veiculos,
             clientesDB,
-            { page, totalPages, total }, 
+            { page, totalPages, total },
             { data_inicio, data_fim },
             itensCatalogo // <--- Passando o catálogo mágico para a View final!
         ));
@@ -3200,12 +3264,12 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                 // Se temos a coordenada na mão, buscamos a cidade
                 if (coordCli && coordCli.trim() !== '') {
                     const cidade = await obterCidadeDasCoordenadas(coordCli);
-                    
+
                     await db.promise().query(
                         "UPDATE clientes_historico SET coordenadas = ?, cidade = ? WHERE nome = ?",
                         [coordCli, cidade || null, c.nome]
                     );
-                    
+
                     atualizados++;
                     res.write(`<div class="linha sucesso">✅ <b>${c.nome}:</b> GPS: ${coordCli} | Cidade: <b>${cidade || 'Não localizada'}</b></div>`);
                 } else {

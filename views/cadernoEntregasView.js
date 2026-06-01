@@ -67,21 +67,46 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   // TABELA E MODAIS DE GESTÃO DE CLIENTES
   // =========================================================================
   const listaClientesTabela = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
-      <tr class="cliente-row-filtro">
-          <td class="fw-bold text-dark py-2 cliente-nome-filtro">
-             ${c.nome} 
-             ${c.coordenadas ? '<span class="badge bg-success ms-1" style="font-size:0.6rem;" title="Coordenadas cadastradas">GPS</span>' : ''}
-             ${c.cidade ? `<span class="badge bg-info ms-1 text-dark" style="font-size:0.6rem;" title="Cidade Vinculada">${c.cidade}</span>` : ''}
-          </td>
-          <td class="py-2">${c.link_endereco ? `<a href="${c.link_endereco}" target="_blank" class="text-truncate d-inline-block text-primary" style="max-width: 200px; font-size: 0.8rem;">${c.link_endereco}</a>` : '<span class="text-muted small">Sem link</span>'}</td>
-          <td class="text-end py-2">
-              <div class="btn-group">
-                  <button type="button" class="btn btn-sm btn-light border text-warning shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#editarClienteModal${i}" title="Editar Cliente"><i class="fa-solid fa-pen" style="font-size:0.75rem;"></i></button>
-                  <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#excluirClienteModal${i}" title="Excluir Cliente"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></button>
-              </div>
-          </td>
-      </tr>
-  `).join('') : `<tr><td colspan="3" class="text-center text-muted py-4"><i class="fa-solid fa-users-slash fa-2x opacity-25 mb-2"></i><br>Nenhum cliente cadastrado no histórico.</td></tr>`;
+    <tr 
+        class="cliente-row-filtro" 
+        data-bs-toggle="modal" 
+        data-bs-target="#editarClienteModal${i}" 
+        style="cursor: pointer;"
+        title="Clique para editar este cliente"
+    >
+        <td class="fw-bold text-dark py-2 px-3 cliente-nome-filtro">
+            ${c.nome} 
+            ${c.coordenadas ? '<span class="badge bg-success ms-1" style="font-size:0.6rem;" title="Coordenadas cadastradas">GPS</span>' : ''}
+        </td>
+
+        <td class="py-2 px-3">
+            ${c.cidade 
+                ? `<span class="badge bg-info text-dark" style="font-size:0.7rem;" title="Cidade vinculada">${c.cidade}</span>` 
+                : '<span class="badge bg-secondary" style="font-size:0.7rem;">Sem cidade</span>'
+            }
+        </td>
+
+        <td class="text-end py-2 px-3">
+            <button 
+                type="button" 
+                class="btn btn-sm btn-light border text-danger shadow-sm py-1 px-2" 
+                data-bs-toggle="modal" 
+                data-bs-target="#excluirClienteModal${i}" 
+                title="Excluir Cliente"
+                onclick="event.stopPropagation();"
+            >
+                <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+            </button>
+        </td>
+    </tr>
+`).join('') : `
+    <tr>
+        <td colspan="3" class="text-center text-muted py-4">
+            <i class="fa-solid fa-users-slash fa-2x opacity-25 mb-2"></i>
+            <br>Nenhum cliente cadastrado no histórico.
+        </td>
+    </tr>
+`;
 
   const modaisEdicaoExclusaoClientes = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
       <div class="modal fade" id="editarClienteModal${i}" tabindex="-1" style="z-index: 1060;">
@@ -714,7 +739,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     <thead class="table-light position-sticky top-0" style="z-index: 1;">
                     <tr>
                         <th class="py-2 px-3 text-muted">Nome do Cliente</th>
-                        <th class="py-2 px-3 text-muted">Link Cadastrado</th>
+                        <th class="py-2 px-3 text-muted">Cidade</th>
                         <th class="py-2 px-3 text-end text-muted">Ações</th>
                     </tr>
                     </thead>

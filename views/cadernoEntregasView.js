@@ -606,67 +606,136 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
 
     <div class="modal fade" id="novoClienteModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content erp-modal shadow-lg">
-          <div class="modal-header bg-primary text-white border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-users me-2"></i> Gerenciamento de Clientes (Maps)</h6>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body p-4 bg-light">
-            
-            <form method="POST" action="/caderno-entregas/clientes/novo" class="bg-white p-3 rounded border border-light shadow-sm mb-4" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')">
-              <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente</h6>
-              <div class="row g-2 align-items-end">
-                  <div class="col-12 col-md-5">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome / Pizzaria</label>
-                      <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
-                  </div>
-                  <div class="col-12 col-md-4">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
-                      <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
-                  </div>
-                  <div class="col-12 col-md-3">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coord. (Opcional)</label>
-                      <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm coord-input" placeholder="Lat, Lng">
-                  </div>
-                  <div class="col-12 mt-2 text-end">
-                      <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" title="Salvar"><i class="fa-solid fa-save me-1"></i> Salvar Cliente</button>
-                  </div>
-              </div>
-            </form>
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content erp-modal shadow-lg">
 
-            <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;"><i class="fa-solid fa-list me-1"></i> Histórico de Clientes Cadastrados</h6>
-            
-            <div class="input-group input-group-sm mb-2 shadow-sm">
-                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" id="searchInputClientes" class="form-control border-start-0 border-end-0" placeholder="Pesquisar cliente por nome..." onkeyup="filtrarClientes()">
-                <button class="btn btn-outline-secondary bg-white border-start-0 text-danger" type="button" onclick="limparBuscaClientes()" title="Limpar pesquisa">
+            <div class="modal-header bg-primary text-white border-0">
+                <h6 class="modal-title fw-bold">
+                <i class="fa-solid fa-users me-2"></i> Gerenciamento de Clientes (Maps)
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 bg-light">
+
+                <form 
+                method="POST" 
+                action="/caderno-entregas/clientes/novo" 
+                class="bg-white p-0 rounded border border-light shadow-sm mb-4" 
+                onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')"
+                >
+                <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente
+                </h6>
+
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
+                        Nome / Pizzaria
+                    </label>
+                    <input 
+                        type="text" 
+                        name="nome" 
+                        class="form-control form-control-sm shadow-sm" 
+                        required 
+                        placeholder="Ex: Pizzaria Bella Napoli"
+                    >
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
+                        Link do Maps
+                    </label>
+                    <input 
+                        type="url" 
+                        name="link_endereco" 
+                        class="form-control form-control-sm shadow-sm" 
+                        placeholder="Cole o link aqui" 
+                        oninput="extrairCoordenadasAoColar(this)"
+                    >
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
+                        Coord. (Opcional)
+                    </label>
+                    <input 
+                        type="text" 
+                        name="coordenadas" 
+                        class="form-control form-control-sm shadow-sm coord-input" 
+                        placeholder="Lat, Lng"
+                    >
+                    </div>
+
+                    <div class="col-12 col-md-2">
+                    <button 
+                        type="submit" 
+                        class="btn btn-sm btn-primary w-100 fw-bold shadow-sm" 
+                        title="Salvar"
+                    >
+                        <i class="fa-solid fa-save me-1"></i> Salvar
+                    </button>
+                    </div>
+                </div>
+                </form>
+
+                <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">
+                <i class="fa-solid fa-list me-1"></i> Histórico de Clientes Cadastrados
+                </h6>
+
+                <div class="input-group input-group-sm mb-2 shadow-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+
+                <input 
+                    type="text" 
+                    id="searchInputClientes" 
+                    class="form-control border-start-0 border-end-0" 
+                    placeholder="Pesquisar cliente por nome..." 
+                    onkeyup="filtrarClientes()"
+                >
+
+                <button 
+                    class="btn btn-outline-secondary bg-white border-start-0 text-danger" 
+                    type="button" 
+                    onclick="limparBuscaClientes()" 
+                    title="Limpar pesquisa"
+                >
                     <i class="fa-solid fa-xmark"></i>
+                </button>
+                </div>
+
+                <div 
+                class="table-responsive bg-white rounded border border-light shadow-sm" 
+                style="height: 58vh; max-height: 560px; overflow-y: auto;"
+                >
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                    <tr>
+                        <th class="py-2 px-3 text-muted">Nome do Cliente</th>
+                        <th class="py-2 px-3 text-muted">Link Cadastrado</th>
+                        <th class="py-2 px-3 text-end text-muted">Ações</th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="tabelaClientesBody">
+                    ${listaClientesTabela}
+                    </tbody>
+                </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer bg-white border-0">
+                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">
+                Fechar Painel
                 </button>
             </div>
 
-            <div class="table-responsive bg-white rounded border border-light shadow-sm" style="max-height: 250px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
-                        <tr>
-                            <th class="py-2 px-3 text-muted">Nome do Cliente</th>
-                            <th class="py-2 px-3 text-muted">Link Cadastrado</th>
-                            <th class="py-2 px-3 text-end text-muted">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaClientesBody">
-                        ${listaClientesTabela}
-                    </tbody>
-                </table>
             </div>
-
-          </div>
-          <div class="modal-footer bg-white border-0">
-            <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar Painel</button>
-          </div>
         </div>
-      </div>
-    </div>
+        </div>
 
     <div class="modal fade" id="novoCadernoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">

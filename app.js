@@ -398,30 +398,30 @@ app.get("/", (req, res) => {
     res.redirect("/login");
 });
 
-// Rota POST /login -> valida login
 app.post("/login", (req, res) => {
-    const { email, senha, lembrar } = req.body;
-
-    db.query("SELECT * FROM usuarios WHERE email = ? AND senha = ?", [email, senha], (err, results) => {
+    const { email, senha } = req.body;
+    
+    // Certifique-se de que o SELECT busca a foto (ou use SELECT *)
+    db.query("SELECT * FROM usuarios WHERE email=? AND senha=?", [email, senha], (err, rows) => {
         if (err) {
-            console.error("Erro no banco:", err);
-            return res.send(loginView("Erro interno. Tente novamente."));
+            console.error("Erro no login:", err);
+            return res.status(500).send("Erro no servidor.");
         }
-
-        if (results.length > 0) {
-            req.session.user = results[0];
-
-            if (lembrar) {
-                // Sessão expira em 7 dias
-                req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000;
-            } else {
-                // Sessão expira ao fechar o navegador
-                req.session.cookie.expires = false;
-            }
-
-            return res.redirect("/home");
+        
+        if (rows.length > 0) {
+            const user = rows[0];
+            
+            // Aqui está o detalhe: guardar a foto na sessão!
+            req.session.user = {
+                id: user.id,
+                nome: user.nome,
+                tipo_usuario: user.tipo_usuario,
+                foto: user.foto 
+            };
+            
+            return res.redirect("/home"); // ou o redirecionamento padrão do seu sistema
         } else {
-            return res.send(loginView("Usuário ou senha inválidos"));
+            return res.status(401).send("Credenciais inválidas.");
         }
     });
 });
@@ -597,12 +597,14 @@ app.get("/logout", (req, res) => {
 });
 
 
+// GET /cadastro
 app.get("/cadastro", (req, res) => {
     if (!req.session.user) return res.redirect("/login");            // precisa estar logado
     if (req.session.user.tipo_usuario !== "admin")                   // só admin acessa
         return res.status(403).send("Acesso negado.");
 
-    db.query("SELECT id, nome, email, tipo_usuario FROM usuarios ORDER BY id DESC", (err, rows) => {
+    // Atualizado para incluir a coluna 'foto' no SELECT
+    db.query("SELECT id, nome, email, tipo_usuario, foto FROM usuarios ORDER BY id DESC", (err, rows) => {
         if (err) {
             console.error("Erro ao listar usuários:", err);
             return res.status(500).send("Erro ao carregar usuários.");
@@ -614,24 +616,24 @@ app.get("/cadastro", (req, res) => {
 
 
 // CRIAR USUÁRIO
-app.post("/usuarios/novo", (req, res) => {
+app.post("/usuarios/novo", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     if (req.session.user.tipo_usuario !== "admin") return res.status(403).send("Acesso negado.");
 
     const { nome, email, senha, tipo_usuario } = req.body;
+    const foto = req.file ? req.file.filename : null; // Captura a foto do middleware
 
     db.query(
-        "INSERT INTO usuarios (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)",
-        [nome, email, senha, tipo_usuario],
+        "INSERT INTO usuarios (nome, email, senha, tipo_usuario, foto) VALUES (?, ?, ?, ?, ?)",
+        [nome, email, senha, tipo_usuario, foto],
         (err) => {
             if (err) {
                 console.error("Erro ao cadastrar:", err);
-                // Recarrega a tela de cadastro com a lista e erro
+                // Recarrega a tela de cadastro com a lista e erro (incluindo a coluna foto)
                 return db.query(
-                    "SELECT id, nome, email, tipo_usuario FROM usuarios ORDER BY id DESC",
+                    "SELECT id, nome, email, tipo_usuario, foto FROM usuarios ORDER BY id DESC",
                     (erro2, rows) => {
                         if (erro2) return res.status(500).send("Erro no sistema.");
-                        // Se sua view aceitar mensagem, passe como 3º arg. Se não, apenas renderize.
                         return res.send(cadastroView(req.session.user, rows || []));
                     }
                 );
@@ -641,41 +643,83 @@ app.post("/usuarios/novo", (req, res) => {
     );
 });
 
+
 // EDITAR USUÁRIO
-app.post("/usuarios/editar/:id", (req, res) => {
+app.post("/usuarios/editar/:id", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     if (req.session.user.tipo_usuario !== "admin") return res.status(403).send("Acesso negado.");
 
     const { id } = req.params;
     const { nome, email, senha, tipo_usuario } = req.body;
+    const novaFoto = req.file ? req.file.filename : null;
 
-    // Se senha vier vazia, não altera a senha
-    if (!senha || senha.trim() === "") {
-        db.query(
-            "UPDATE usuarios SET nome=?, email=?, tipo_usuario=? WHERE id=?",
-            [nome, email, tipo_usuario, id],
-            (err) => {
-                if (err) {
-                    console.error("Erro ao editar usuário (sem senha):", err);
-                    return res.status(500).send("Erro ao editar usuário.");
-                }
-                return res.redirect("/cadastro");
+    // Função interna para rodar o UPDATE dependendo do cenário (com/sem senha, com/sem foto)
+    const executarUpdate = () => {
+        let sql;
+        let params;
+
+        if (!senha || senha.trim() === "") {
+            // NÃO altera a senha
+            if (novaFoto) {
+                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=?, foto=? WHERE id=?";
+                params = [nome, email, tipo_usuario, novaFoto, id];
+            } else {
+                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=? WHERE id=?";
+                params = [nome, email, tipo_usuario, id];
             }
-        );
+        } else {
+            // ALTERA a senha
+            if (novaFoto) {
+                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=?, foto=? WHERE id=?";
+                params = [nome, email, senha, tipo_usuario, novaFoto, id];
+            } else {
+                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=? WHERE id=?";
+                params = [nome, email, senha, tipo_usuario, id];
+            }
+        }
+
+        db.query(sql, params, (err) => {
+            if (err) {
+                console.error("Erro ao editar usuário:", err);
+                return res.status(500).send("Erro ao editar usuário.");
+            }
+
+            // --- ATUALIZA A SESSÃO EM TEMPO REAL ---
+            if (req.session.user && req.session.user.id === parseInt(id)) {
+                req.session.user.nome = nome;
+                req.session.user.tipo_usuario = tipo_usuario;
+                if (novaFoto) {
+                    req.session.user.foto = novaFoto;
+                }
+            }
+            // ---------------------------------------
+
+            return res.redirect("/cadastro");
+        });
+    };
+
+    // Se o usuário fez upload de uma foto nova, removemos a antiga do disco primeiro
+    if (novaFoto) {
+        db.query("SELECT foto FROM usuarios WHERE id = ?", [id], (errSel, rows) => {
+            if (!errSel && rows.length > 0 && rows[0].foto) {
+                const fotoAntiga = rows[0].foto;
+                const caminho = path.join(__dirname, "uploads", fotoAntiga);
+                
+                const fs = require('fs');
+                if (fs.existsSync(caminho)) {
+                    fs.unlink(caminho, (errUnlink) => {
+                        if (errUnlink) console.warn("Erro ao remover foto antiga:", errUnlink);
+                    });
+                }
+            }
+            executarUpdate();
+        });
     } else {
-        db.query(
-            "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=? WHERE id=?",
-            [nome, email, senha, tipo_usuario, id],
-            (err) => {
-                if (err) {
-                    console.error("Erro ao editar usuário (com senha):", err);
-                    return res.status(500).send("Erro ao editar usuário.");
-                }
-                return res.redirect("/cadastro");
-            }
-        );
+        // Se não houver foto nova, apenas atualizamos os campos de texto
+        executarUpdate();
     }
 });
+
 
 // EXCLUIR USUÁRIO
 app.post("/usuarios/excluir/:id", (req, res) => {
@@ -684,12 +728,28 @@ app.post("/usuarios/excluir/:id", (req, res) => {
 
     const { id } = req.params;
 
-    db.query("DELETE FROM usuarios WHERE id=?", [id], (err) => {
-        if (err) {
-            console.error("Erro ao excluir usuário:", err);
-            return res.status(500).send("Erro ao excluir usuário.");
+    // Primeiro busca a foto para excluí-la do diretório 'uploads'
+    db.query("SELECT foto FROM usuarios WHERE id = ?", [id], (errSel, rows) => {
+        if (!errSel && rows.length > 0 && rows[0].foto) {
+            const fotoAntiga = rows[0].foto;
+            const caminho = path.join(__dirname, "uploads", fotoAntiga);
+            
+            const fs = require('fs');
+            if (fs.existsSync(caminho)) {
+                fs.unlink(caminho, (errUnlink) => {
+                    if (errUnlink) console.warn("Erro ao remover foto do usuário excluído:", errUnlink);
+                });
+            }
         }
-        return res.redirect("/cadastro");
+
+        // Em seguida, apaga o registro do banco de dados
+        db.query("DELETE FROM usuarios WHERE id=?", [id], (err) => {
+            if (err) {
+                console.error("Erro ao excluir usuário:", err);
+                return res.status(500).send("Erro ao excluir usuário.");
+            }
+            return res.redirect("/cadastro");
+        });
     });
 });
 
@@ -969,6 +1029,7 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     const {
         veiculo, oleo, agua, freio, direcao, combustivel,
         pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+        kit_pneu, acessorios_cabine, // Novos campos
         responsavel, motorista, observacao,
     } = req.body;
 
@@ -991,16 +1052,18 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
     INSERT INTO checklists 
       (veiculo, oleo, agua, freio, direcao, combustivel,
        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+       kit_pneu, acessorios_cabine,
        responsavel, motorista, registrado_por, observacao, foto) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
     const params = [
         veiculo, oleo, agua, freio, direcao, combustivel,
         pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+        kit_pneu, acessorios_cabine,                      // Novos campos
         responsavel,
-        motorista.trim(),                 // ✅ do formulário
-        req.session.user.nome,            // ✅ quem registrou (logado)
+        motorista.trim(),                                 // ✅ do formulário
+        req.session.user.nome,                            // ✅ quem registrou (logado)
         observacao && observacao.trim() !== "" ? observacao : null,
         foto,
     ];
@@ -1015,8 +1078,6 @@ app.post("/checklist-motoristas/novo", upload.single("foto"), (req, res) => {
 });
 
 
-
-
 app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
@@ -1029,20 +1090,10 @@ app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) =
 
     // Garante que req.body existe
     const {
-        veiculo,
-        oleo,
-        agua,
-        freio,
-        direcao,
-        combustivel,
-        pneu_calibragem,
-        pneu_estado,
-        luzes,
-        ruidos,
-        lixo,
-        responsavel,
-        motorista,
-        observacao,
+        veiculo, oleo, agua, freio, direcao, combustivel,
+        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+        kit_pneu, acessorios_cabine, // Novos campos
+        responsavel, motorista, observacao,
     } = req.body || {};
 
     const novaFoto = req.file ? req.file.filename : null;
@@ -1078,22 +1129,14 @@ app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) =
                     `UPDATE checklists
            SET veiculo = ?, oleo = ?, agua = ?, freio = ?, direcao = ?, combustivel = ?,
                pneu_calibragem = ?, pneu_estado = ?, luzes = ?, ruidos = ?, lixo = ?,
+               kit_pneu = ?, acessorios_cabine = ?,
                responsavel = ?, motorista = ?, observacao = ?, foto = ?
            WHERE id = ?`,
                     [
-                        veiculo,
-                        oleo,
-                        agua,
-                        freio,
-                        direcao,
-                        combustivel,
-                        pneu_calibragem,
-                        pneu_estado,
-                        luzes,
-                        ruidos,
-                        lixo,
-                        responsavel,
-                        motorista,
+                        veiculo, oleo, agua, freio, direcao, combustivel,
+                        pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+                        kit_pneu, acessorios_cabine,
+                        responsavel, motorista,
                         observacao && observacao.trim() !== "" ? observacao : null,
                         novaFoto,
                         id,
@@ -1114,22 +1157,14 @@ app.post("/checklist-motoristas/editar/:id", upload.single("foto"), (req, res) =
             `UPDATE checklists
        SET veiculo = ?, oleo = ?, agua = ?, freio = ?, direcao = ?, combustivel = ?,
            pneu_calibragem = ?, pneu_estado = ?, luzes = ?, ruidos = ?, lixo = ?,
+           kit_pneu = ?, acessorios_cabine = ?,
            responsavel = ?, motorista = ?, observacao = ?
        WHERE id = ?`,
             [
-                veiculo,
-                oleo,
-                agua,
-                freio,
-                direcao,
-                combustivel,
-                pneu_calibragem,
-                pneu_estado,
-                luzes,
-                ruidos,
-                lixo,
-                responsavel,
-                motorista,
+                veiculo, oleo, agua, freio, direcao, combustivel,
+                pneu_calibragem, pneu_estado, luzes, ruidos, lixo,
+                kit_pneu, acessorios_cabine,
+                responsavel, motorista,
                 observacao && observacao.trim() !== "" ? observacao : null,
                 id,
             ],

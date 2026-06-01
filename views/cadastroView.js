@@ -17,7 +17,7 @@ function cadastroView(usuario, usuarios = []) {
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                  <form method="POST" action="/usuarios/editar/${u.id}" class="modal-content erp-modal">
+                  <form method="POST" action="/usuarios/editar/${u.id}" enctype="multipart/form-data" class="modal-content erp-modal">
                     <div class="modal-header bg-light">
                       <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-pen me-2 text-warning"></i> Editar Usuário</h6>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -45,6 +45,11 @@ function cadastroView(usuario, usuarios = []) {
                         <div class="col-12 col-md-6">
                           <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Nova Senha (opcional)</label>
                           <input type="password" name="senha" class="form-control form-control-sm" placeholder="••••••••">
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Foto de Perfil (Opcional)</label>
+                          ${u.foto ? `<div class="mb-2"><img src="/uploads/${u.foto}" alt="Perfil atual" class="rounded-circle border" style="width: 40px; height: 40px; object-fit: cover;"></div>` : ""}
+                          <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
                         </div>
                       </div>
                     </div>
@@ -79,7 +84,13 @@ function cadastroView(usuario, usuarios = []) {
             return `
               <tr class="align-middle">
                 <td class="fw-medium text-dark">
-                  <i class="fa-solid fa-user-circle text-muted me-2"></i> ${u.nome}
+                  <div class="d-flex align-items-center">
+                    ${u.foto 
+                      ? `<img src="/uploads/${u.foto}" alt="${u.nome}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">` 
+                      : `<i class="fa-solid fa-user-circle text-muted me-2" style="font-size: 1.5rem;"></i>`
+                    }
+                    ${u.nome}
+                  </div>
                 </td>
                 <td class="text-muted" style="font-size: 0.85rem;">${u.email}</td>
                 <td>
@@ -237,7 +248,7 @@ function cadastroView(usuario, usuarios = []) {
 
     <div class="modal fade" id="novoUsuarioModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/usuarios/novo" class="modal-content erp-modal">
+        <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-plus me-2 text-success"></i> Novo Usuário</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -265,6 +276,10 @@ function cadastroView(usuario, usuarios = []) {
                   <option value="design">Design</option>
                   <option value="logistica">Logística</option>
                 </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Foto de Perfil (Opcional)</label>
+                <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
               </div>
             </div>
           </div>

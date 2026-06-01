@@ -111,37 +111,41 @@ function menuLateral(usuario, rotaAtiva = "") {
     </a>
   `;
 
-  // --- CONTAINER DO PERFIL DO USUÁRIO (BARRA FIXA SUPERIOR) ---
+  // --- CONTAINER DO PERFIL DO USUÁRIO (NOVO LAYOUT) ---
+  const fotoUrl = usuario && usuario.foto ? `/uploads/${usuario.foto}` : null;
+  const renderFoto = fotoUrl
+    ? `<img src="${fotoUrl}" alt="Foto de perfil" class="shadow-lg" style="width: 85px; height: 85px; object-fit: cover; border-radius: 18px; border: 3px solid rgba(255,255,255,0.15);">`
+    : `<div class="d-flex align-items-center justify-content-center shadow-lg" style="width: 85px; height: 85px; border-radius: 18px; background-color: rgba(255,255,255,0.08); border: 3px solid rgba(255,255,255,0.15);"><i class="fa-solid fa-user text-white-50" style="font-size: 2.2rem;"></i></div>`;
+
   const userProfileHtml = `
-    <div class="user-profile-container px-3 py-2 mb-3 border-bottom border-light border-opacity-10 text-white">
-      <div class="d-flex align-items-center justify-content-between user-info-row">
-        <div class="d-flex align-items-center text-truncate profile-avatar-box">
-          <i class="fa-solid fa-user-circle fs-5 menu-icone text-white-50" style="width: 24px; text-align: center;"></i>
+    <div class="user-profile-container px-3 py-4 mb-3 border-bottom border-light border-opacity-10 text-white position-relative text-center">
+      
+      <button type="button"
+        id="btnAbrirNotificacoes"
+        class="text-white-50 transition-btn p-1 rounded d-flex align-items-center justify-content-center border-0 bg-transparent position-absolute"
+        title="Notificações"
+        style="top: 12px; right: 12px; text-decoration: none; width: 32px; height: 32px;">
+        <i class="fa-solid fa-bell fs-5"></i>
+        <span id="contadorNotificacoes"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
+          style="font-size: 0.55rem; min-width: 18px; height: 18px; display: none; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid #0D5749;">
+          0
+        </span>
+      </button>
 
-          <div class="text-truncate sidebar-text ms-2">
-            <div class="fw-bold text-truncate text-white" style="font-size: 0.85rem; max-width: 125px;">
-              ${usuario && usuario.nome ? usuario.nome : "Usuário"}
-            </div>
-
-            <span class="badge bg-white bg-opacity-25 text-white" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 5px;">
-              ${tipo}
-            </span>
-          </div>
+      <div class="d-flex flex-column align-items-center justify-content-center">
+        <div class="profile-avatar-box mb-3 position-relative">
+          ${renderFoto}
         </div>
 
-        <button type="button"
-          id="btnAbrirNotificacoes"
-          class="text-white-50 transition-btn p-1 rounded sidebar-text d-flex align-items-center justify-content-center border-0 bg-transparent position-relative"
-          title="Notificações"
-          style="text-decoration: none;">
-          <i class="fa-solid fa-bell" style="font-size: 0.9rem;"></i>
-
-          <span id="contadorNotificacoes"
-            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-            style="font-size: 0.55rem; min-width: 16px; height: 16px; display: none; align-items: center; justify-content: center; padding: 0 4px;">
-            0
+        <div class="text-truncate w-100 px-1">
+          <div class="fw-bold text-truncate text-white mb-2" style="font-size: 1.05rem;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
+            ${usuario && usuario.nome ? usuario.nome : "Usuário"}
+          </div>
+          <span class="badge bg-white bg-opacity-25 text-white" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
+            <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
           </span>
-        </button>
+        </div>
       </div>
     </div>
   `;
@@ -439,16 +443,6 @@ function menuLateral(usuario, rotaAtiva = "") {
       .sidebar-scroll-area::-webkit-scrollbar-thumb {
         background: rgba(255,255,255,0.2);
         border-radius: 10px;
-      }
-
-      #btnAbrirNotificacoes {
-        width: 28px;
-        height: 28px;
-      }
-
-      #contadorNotificacoes {
-        line-height: 16px;
-        z-index: 3;
       }
 
       .painel-notificacoes-animado {

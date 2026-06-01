@@ -141,6 +141,9 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                     <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Pneu Estado</label><select name="pneu_estado" class="form-select form-select-sm"><option ${item.pneu_estado === 'Desgastado' ? 'selected' : ''}>Desgastado</option><option ${item.pneu_estado === 'Meia vida' ? 'selected' : ''}>Meia vida</option><option ${item.pneu_estado === 'Apto' ? 'selected' : ''}>Apto</option></select></div>
                     <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Ruídos</label><select name="ruidos" class="form-select form-select-sm"><option ${item.ruidos === 'Sem ruídos anormais' ? 'selected' : ''}>Sem ruídos anormais</option><option ${item.ruidos === 'Ruído motor' ? 'selected' : ''}>Ruído motor</option><option ${item.ruidos === 'Ruído suspensão' ? 'selected' : ''}>Ruído suspensão</option><option ${item.ruidos === 'Ruído portas' ? 'selected' : ''}>Ruído portas</option></select></div>
                     <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Lixo Interno</label><select name="lixo" class="form-select form-select-sm"><option ${item.lixo === 'Pendente' ? 'selected' : ''}>Pendente</option><option ${item.lixo === 'Feito' ? 'selected' : ''}>Feito</option></select></div>
+                    
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;" title="Macaco, triângulo, chave de roda">Kit Pneu</label><select name="kit_pneu" class="form-select form-select-sm"><option ${item.kit_pneu === 'Completo' ? 'selected' : ''}>Completo</option><option ${item.kit_pneu === 'Incompleto' ? 'selected' : ''}>Incompleto</option><option ${item.kit_pneu === 'Ausente' ? 'selected' : ''}>Ausente</option></select></div>
+                    <div class="col-6"><label class="form-label mb-1 text-muted" style="font-size:0.8rem;" title="Cabos e suporte de celular">Acessórios Cabine</label><select name="acessorios_cabine" class="form-select form-select-sm"><option ${item.acessorios_cabine === 'Presentes' ? 'selected' : ''}>Presentes</option><option ${item.acessorios_cabine === 'Danificados' ? 'selected' : ''}>Danificados</option><option ${item.acessorios_cabine === 'Ausentes' ? 'selected' : ''}>Ausentes</option></select></div>
                 </div>
             </div>
             <div class="card border-0 shadow-sm p-3 mb-1">
@@ -152,7 +155,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                 </div>
                 <div class="col-12 col-md-5">
                   <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Anexar Foto</label><br>
-                  ${item.foto ? `<a href="/uploads/${item.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100 mb-2"><i class="fa-solid fa-image me-1"></i> Ver Foto Atual</a>` : ""}
+                  ${item.foto ? `<a href="/uploads/${item.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100 mb-2"><i class="fa-solid fa-image me-1"></i> Ver Foto</a>` : ""}
                   <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
                 </div>
               </div>
@@ -330,11 +333,9 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         </div>
       </div>
 
-      <!-- BARRA DE FERRAMENTAS INTEGRADA (Filtros + Botões) -->
       <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">
         <div class="row g-3 align-items-end">
           
-          <!-- FILTROS -->
           <div class="col-12 col-lg-8">
             <form method="GET" action="/checklist-motoristas" class="row g-2 align-items-end">
               <div class="col-12 col-sm-5">
@@ -352,7 +353,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
             </form>
           </div>
 
-          <!-- BOTÕES DE AÇÃO -->
           <div class="col-12 col-lg-4 d-flex justify-content-lg-end gap-2">
               <button class="btn btn-sm btn-success shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
                 <i class="fa-solid fa-plus me-1"></i> Novo Checklist
@@ -372,7 +372,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       ${paginacaoHtml}
     </div>
 
-    <!-- MODAL NOVO CHECKLIST (WIZARD) -->
     <div class="modal fade" id="novoChecklistModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <form id="wizardForm" method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" class="modal-content erp-modal">
@@ -544,6 +543,32 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                 </select>
               </div>
             </div>
+            
+            <div class="wizard-step" data-title="Ferramentas e Acessórios">
+              <div class="slide-img-container bg-light d-flex align-items-center justify-content-center">
+                <i class="fa-solid fa-toolbox fa-5x text-secondary opacity-50"></i>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-0 fw-medium" style="font-size:0.8rem;">Kit básico de troca de pneu</label>
+                <div class="text-muted mb-1" style="font-size:0.7rem;">(Macaco, triângulo, chave de roda)</div>
+                <select name="kit_pneu" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Completo">Completo</option>
+                  <option value="Incompleto">Incompleto</option>
+                  <option value="Ausente">Ausente</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted mb-0 fw-medium" style="font-size:0.8rem;">Acessórios de Cabine</label>
+                <div class="text-muted mb-1" style="font-size:0.7rem;">(Cabos e suporte de celular)</div>
+                <select name="acessorios_cabine" class="form-select form-select-sm" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option value="Presentes">Presentes (Aptos)</option>
+                  <option value="Danificados">Danificados</option>
+                  <option value="Ausentes">Ausentes</option>
+                </select>
+              </div>
+            </div>
 
             <div class="wizard-step" data-title="Finalização">
               <div class="slide-img-container text-muted bg-light border-0">
@@ -569,7 +594,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       </div>
     </div>
 
-    <!-- MODAL DE RELATÓRIO (COM SELECTS DINÂMICOS CASCATA) -->
     <div class="modal fade" id="relatorioModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content erp-modal border-0">
@@ -594,15 +618,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
                   <select id="relatorioAno" name="ano" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    <!-- Preenchido via JavaScript -->
-                  </select>
+                    </select>
                 </div>
                 <div class="col-6">
                   <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Mês</label>
                   <select id="relatorioMes" name="mes" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    <!-- Preenchido via JavaScript -->
-                  </select>
+                    </select>
                 </div>
               </div>
             </div>
@@ -615,7 +637,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       </div>
     </div>
 
-    <!-- MODAL DE SUCESSO AO CONCLUIR -->
     <div class="modal fade" id="sucessoChecklistModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0">

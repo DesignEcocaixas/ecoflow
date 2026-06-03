@@ -236,13 +236,13 @@ function extrairLatLon(texto) {
 // Calcula a distância em linha reta (Raio) entre 2 coordenadas em KM
 function calcularDistanciaReta(lat1, lon1, lat2, lon2) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    const R = 6371; 
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
@@ -254,13 +254,13 @@ async function otimizarRotaGoogleAPI(entregas) {
     try {
         // Usa a coordenada da fábrica ou o centro de Camaçari por padrão
         const coordFabrica = extrairLatLon(ENDERECO_FABRICA) || { lat: -12.6974, lon: -38.3241 };
-        
+
         let indiceMaisDistante = 0;
         let maiorDistancia = -1;
 
         // 1. O Sistema descobre matematicamente qual é o cliente mais longe da fábrica
         for (let i = 0; i < entregas.length; i++) {
-            if (!entregas[i]) continue; 
+            if (!entregas[i]) continue;
             const coordEntrega = extrairLatLon(entregas[i].queryLocation);
             if (coordEntrega) {
                 const dist = calcularDistanciaReta(coordFabrica.lat, coordFabrica.lon, coordEntrega.lat, coordEntrega.lon);
@@ -288,11 +288,11 @@ async function otimizarRotaGoogleAPI(entregas) {
 
         const requestBody = {
             origin: originAPI,
-            destination: destinationAPI, 
+            destination: destinationAPI,
             intermediates: intermediatesAPI,
             travelMode: "DRIVE",
             routingPreference: "TRAFFIC_AWARE",
-            optimizeWaypointOrder: true 
+            optimizeWaypointOrder: true
         };
 
         const res = await axios.post(
@@ -310,7 +310,7 @@ async function otimizarRotaGoogleAPI(entregas) {
         if (res.data && res.data.routes && res.data.routes.length > 0) {
             const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
             let entregasReordenadas = [];
-            
+
             // Verifica se a API devolveu a ordem dos intermediários de forma íntegra
             if (Array.isArray(ordemOtimizada) && ordemOtimizada.length === entregasIntermediarias.length) {
                 for (let i = 0; i < ordemOtimizada.length; i++) {
@@ -323,13 +323,13 @@ async function otimizarRotaGoogleAPI(entregas) {
                 // Caso o Google não tenha reordenado (ex: havia só 1 intermediário)
                 entregasReordenadas = [...entregasIntermediarias];
             }
-            
+
             // Por fim, anexa a entrega mais distante obrigatoriamente na ÚLTIMA posição
             entregasReordenadas.push(entregaDestino);
-            
+
             return entregasReordenadas;
         }
-        
+
         return entregas;
     } catch (error) {
         console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);
@@ -400,25 +400,25 @@ app.get("/", (req, res) => {
 
 app.post("/login", (req, res) => {
     const { email, senha } = req.body;
-    
+
     // Certifique-se de que o SELECT busca a foto (ou use SELECT *)
     db.query("SELECT * FROM usuarios WHERE email=? AND senha=?", [email, senha], (err, rows) => {
         if (err) {
             console.error("Erro no login:", err);
             return res.status(500).send("Erro no servidor.");
         }
-        
+
         if (rows.length > 0) {
             const user = rows[0];
-            
+
             // Aqui está o detalhe: guardar a foto na sessão!
             req.session.user = {
                 id: user.id,
                 nome: user.nome,
                 tipo_usuario: user.tipo_usuario,
-                foto: user.foto 
+                foto: user.foto
             };
-            
+
             return res.redirect("/home"); // ou o redirecionamento padrão do seu sistema
         } else {
             return res.status(401).send("Credenciais inválidas.");
@@ -704,7 +704,7 @@ app.post("/usuarios/editar/:id", upload.single("foto"), (req, res) => {
             if (!errSel && rows.length > 0 && rows[0].foto) {
                 const fotoAntiga = rows[0].foto;
                 const caminho = path.join(__dirname, "uploads", fotoAntiga);
-                
+
                 const fs = require('fs');
                 if (fs.existsSync(caminho)) {
                     fs.unlink(caminho, (errUnlink) => {
@@ -733,7 +733,7 @@ app.post("/usuarios/excluir/:id", (req, res) => {
         if (!errSel && rows.length > 0 && rows[0].foto) {
             const fotoAntiga = rows[0].foto;
             const caminho = path.join(__dirname, "uploads", fotoAntiga);
-            
+
             const fs = require('fs');
             if (fs.existsSync(caminho)) {
                 fs.unlink(caminho, (errUnlink) => {
@@ -2911,9 +2911,9 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
         const caderno = cadernoRows[0];
 
-        // 2. Busca todos os locais de entrega associados ao caderno + coordenadas salvas no histórico
+        // 2. Busca todos os locais de entrega associados ao caderno + coordenadas e cidade salvas no histórico
         const [itens] = await db.promise().query(`
-            SELECT i.*, ch.coordenadas 
+            SELECT i.*, ch.coordenadas, ch.cidade 
             FROM caderno_entregas_itens i
             LEFT JOIN clientes_historico ch ON i.local_entrega = ch.nome
             WHERE i.caderno_id = ? 
@@ -3044,7 +3044,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         doc.font('Helvetica-Bold')
             .fontSize(9.5)
             .fillColor('#333333');
-            
+
         let infoY = 58;
         const colLabelX = titleX;
         const colValueX = titleX + 65;
@@ -3063,7 +3063,7 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
         doc.font('Helvetica-Bold').fillColor('#333333').text('Veículo:', colLabelX, infoY);
         doc.font('Helvetica').fillColor('#555555').text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), colValueX, infoY);
         infoY += 16;
-        
+
         // Data de Geração
         doc.font('Helvetica-Oblique').fontSize(8).fillColor('#888888').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, colLabelX, infoY);
 
@@ -3138,11 +3138,15 @@ app.get("/caderno-entregas/pdf/:id", async (req, res) => {
             // Caixa delimitadora da entrega
             doc.rect(40, yPosition, 515, boxHeight).stroke('#e5e5e5');
 
+            // Formatação do Nome do Cliente e da Cidade
+            const cidadeFormatada = item.cidade && item.cidade.trim() !== '' ? ` (${item.cidade.trim().toUpperCase()})` : '';
+            const nomeClienteFinal = `${(item.local_entrega || '').toUpperCase()}${cidadeFormatada}`;
+
             // Nome do Cliente / Localização
             doc.fillColor('#111111')
                 .font('Helvetica-Bold')
                 .fontSize(11)
-                .text(`[   ]  ${i + 1}. ${(item.local_entrega || '').toUpperCase()}`, 55, yPosition + 15, {
+                .text(`[   ]  ${i + 1}. ${nomeClienteFinal}`, 55, yPosition + 15, {
                     width: 390,
                     lineBreak: false
                 });

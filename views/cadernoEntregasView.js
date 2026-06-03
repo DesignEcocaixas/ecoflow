@@ -530,7 +530,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         </div>
       </div>
 
-      <form class="row g-2 align-items-end mt-2 border-top pt-3 mb-4" method="GET" action="/caderno-entregas">
+      <form class="row g-2 align-items-end border-top mb-4" method="GET" action="/caderno-entregas">
           <div class="col-12 col-md-4">
               <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
               <input type="date" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
@@ -853,7 +853,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           </div>
           <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-location-arrow me-1"></i> Gerar Caderno Otimizado</button>
+            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-location-arrow me-1"></i> Gerar Caderno</button>
           </div>
         </form>
       </div>

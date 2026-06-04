@@ -2397,7 +2397,7 @@ app.get("/caderno-entregas", async (req, res) => {
 
     try {
         const page = parseInt(req.query.page || "1", 10);
-        const limit = 20;
+        const limit = 10;
         const offset = (page - 1) * limit;
         const { data_inicio, data_fim } = req.query;
 
@@ -2458,8 +2458,6 @@ app.get("/caderno-entregas", async (req, res) => {
     }
 });
 
-// 2. Salvar Novo Caderno
-// 2. Salvar Novo Caderno Otimizado via API
 app.post("/caderno-entregas/novo", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
@@ -2532,7 +2530,10 @@ app.post("/caderno-entregas/novo", async (req, res) => {
                 );
             }
         }
-        res.redirect("/caderno-entregas");
+        
+        // CORREÇÃO AQUI: Passando o ID do caderno criado pela URL para o frontend detectar
+        return res.redirect("/caderno-entregas?cadernoCriado=" + cadernoId);
+        
     } catch (error) {
         console.error("Erro ao salvar caderno:", error);
         res.status(500).send("Erro ao salvar.");
@@ -2672,7 +2673,10 @@ app.post("/caderno-entregas/clientes/novo", async (req, res) => {
                 coordenadas || null
             ]);
         }
-        res.redirect("/caderno-entregas");
+        
+        // CORREÇÃO: Enviando o parâmetro na URL para ativar o Toast na View
+        res.redirect("/caderno-entregas?sucessoCliente=1");
+        
     } catch (error) {
         console.error("[ERRO AO CADASTRAR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar salvar o cliente.");
@@ -2709,7 +2713,10 @@ app.post("/caderno-entregas/clientes/editar", async (req, res) => {
                 WHERE local_entrega = ?
             `, [nomeNovo.trim(), nomeOriginal.trim()]);
         }
-        res.redirect("/caderno-entregas");
+        
+        // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
+        res.redirect("/caderno-entregas?sucessoCliente=1");
+        
     } catch (error) {
         console.error("[ERRO AO EDITAR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar atualizar o cliente.");
@@ -2727,7 +2734,10 @@ app.post("/caderno-entregas/clientes/excluir", async (req, res) => {
         if (nome) {
             await db.promise().query("DELETE FROM clientes_historico WHERE nome = ?", [nome.trim()]);
         }
-        res.redirect("/caderno-entregas");
+        
+        // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
+        res.redirect("/caderno-entregas?sucessoCliente=1");
+        
     } catch (error) {
         console.error("[ERRO AO EXCLUIR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar excluir o cliente.");

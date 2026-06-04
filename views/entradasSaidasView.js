@@ -168,9 +168,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <div class="modal fade" id="excluirModal${m.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0">
-          <form method="POST" action="/movimentacoes/excluir/${m.id}">
+          <form method="POST" action="/movimentacoes/excluir/${m.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Excluído!')">
             <div class="modal-body text-center p-4">
-              <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+              <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>
               <h6 class="fw-bold">Excluir este registo?</h6>
               <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação é irreversível.</p>
             </div>
@@ -279,12 +279,38 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           background-color: rgba(13, 87, 73, 0.06) !important;
       }
 
-      @keyframes pulseIcon {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.15); opacity: 0.8; }
-        100% { transform: scale(1); }
+      /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
+      .toast {
+          transform: translateX(120%); /* Mantém o toast escondido fora da tela */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
       }
-      .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+      .toast.showing, .toast.show {
+          transform: translateX(0); /* Desliza para dentro da tela */
+      }
+
+      /* ANIMAÇÃO DE ENTRADA E SAÍDA DOS MODAIS */
+      .modal.fade .modal-dialog {
+          transform: scale(0.85) translateY(30px); /* Começa menor e mais abaixo */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+      }
+      .modal.show .modal-dialog {
+          transform: scale(1) translateY(0); /* Cresce e encaixa na posição original */
+      }
+
+      /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
+      .toast-timer {
+          height: 6px;
+          background: rgba(255, 255, 255, 0.4);
+          width: 100%;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          transform-origin: left;
+      }
+      @keyframes shrinkToast {
+          from { width: 100%; }
+          to { width: 0%; }
+      }
 
       /* Botão Flutuante de Ajuda */
       .btn-flutuante {
@@ -611,16 +637,36 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       </div>
     </div>
 
-    <div class="modal fade" id="sucessoModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal border-0">
-          <div class="modal-body text-center p-5">
-            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
-            <h5 class="fw-bold text-dark mb-2" id="sucessoTitulo">Concluído!</h5>
-            <p class="text-muted mb-0" style="font-size:0.85rem;">A processar registo...</p>
-          </div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">A processar...</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
         </div>
-      </div>
+
+        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+        </div>
+
     </div>
 
     ${modais}
@@ -628,6 +674,39 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO) CORRIGIDA
+      // =======================================================================
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+              
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; // Força o reflow para a animação reiniciar
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+
+              // Destrói a instância anterior para limpar a configuração "congelada" do "A Processar"
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+
+              // Cria uma nova instância forçando o fechamento automático em 5 segundos
+              const toast = new bootstrap.Toast(toastEl, {
+                  autohide: true,
+                  delay: 5000
+              });
+              
+              toast.show();
+          }
+      }
+
+      // =======================================================================
+      // LÓGICA DO CANVAS DE ASSINATURA
+      // =======================================================================
       const canvases = {
           'canvasEntrada': { ctx: null, isDrawing: false, empty: true, hiddenId: 'assinaturaEntradaHidden' },
           'canvasSaida': { ctx: null, isDrawing: false, empty: true, hiddenId: 'assinaturaSaidaHidden' }
@@ -726,6 +805,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           i.value = v;
       }
 
+      // =======================================================================
+      // SUBMISSÃO AJAX (SEM RELOAD DE PÁGINA)
+      // =======================================================================
       let isSubmitting = false;
 
       function prepararEnvio(event, form, titleMsg) {
@@ -734,7 +816,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
           const canvasId = form.id === 'formEntrada' ? 'canvasEntrada' : 'canvasSaida';
           if (canvases[canvasId].empty) {
-              alert("Por favor, preencha a assinatura antes de guardar.");
+              mostrarToast('erro', 'Atenção', 'Por favor, preencha a assinatura antes de guardar.');
               return;
           }
 
@@ -747,24 +829,90 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           submeter(form, titleMsg);
       }
 
-      function submeter(form, titleMsg) {
+      async function submeter(form, titleMsg) {
+          // Prepara a máscara para envio numérico
           const inputMoeda = form.querySelector('.mask-moeda');
           if(inputMoeda && inputMoeda.value) {
               inputMoeda.value = inputMoeda.value.replace(/\\./g, '').replace(',', '.');
           }
 
+          // Fecha o modal que estava aberto
           const modalEl = form.closest('.modal');
           if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
               modal.hide();
           }
 
-          document.getElementById('sucessoTitulo').innerText = titleMsg;
-          const successModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
-          successModal.show();
+          // Ativa o Toast no modo contínuo de "A Processar"
+          const successToastEl = document.getElementById('sucessoToast');
+          document.getElementById('sucessoTitulo').innerText = "A Processar";
+          document.getElementById('sucessoSub').innerText = "Por favor, aguarde...";
+          
+          successToastEl.setAttribute('data-bs-autohide', 'false'); 
+          
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
 
           isSubmitting = true;
-          setTimeout(() => { form.submit(); }, 1500);
+
+          try {
+              // Prepara os dados codificados como Formulário Clássico
+              const formData = new URLSearchParams();
+              new FormData(form).forEach((value, key) => formData.append(key, value));
+
+              const response = await fetch(form.action, {
+                  method: form.method || 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: formData.toString()
+              });
+
+              if (response.ok) {
+                  // O Node.js retorna o HTML da página atualizada via redirecionamento implícito do fetch
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  // 1. Atualizar conteúdo principal (Tabela, Saldo de Caixa e Paginação)
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+
+                  // 2. Atualizar todos os Modais Gerados Dinamicamente (Edição, Exclusão, Detalhes)
+                  document.querySelectorAll('.modal').forEach(m => {
+                      // Remove todos os modais da DOM, exceto os modais estáticos e de cadastro base
+                      if (!['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal'].includes(m.id)) {
+                          m.remove();
+                      }
+                  });
+                  doc.querySelectorAll('.modal').forEach(m => {
+                      if (!['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal'].includes(m.id)) {
+                          document.body.appendChild(m.cloneNode(true));
+                      }
+                  });
+
+                  // Limpar Formulário Original para caso o utilizador queira usar de novo
+                  form.reset();
+                  if (form.id === 'formEntrada') limparAssinatura('canvasEntrada');
+                  if (form.id === 'formSaida') limparAssinatura('canvasSaida');
+
+                  // Disparar o toast verde de sucesso definitivo
+                  mostrarToast('sucesso', 'Concluído!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique sua internet e tente novamente.');
+          } finally {
+              isSubmitting = false;
+          }
       }
 
       // ==========================================
@@ -816,11 +964,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           
           if(mes && ano) {
               window.open(\`/exportar/movimentacoes?mes=\${mes}&ano=\${ano}\`, '_blank');
-              bootstrap.Modal.getInstance(document.getElementById('modalRelatorio')).hide();
           } else {
               window.open('/exportar/movimentacoes', '_blank');
-              bootstrap.Modal.getInstance(document.getElementById('modalRelatorio')).hide();
           }
+
+          const modalRelatorio = bootstrap.Modal.getInstance(document.getElementById('modalRelatorio'));
+          if (modalRelatorio) modalRelatorio.hide();
+          
+          mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está sendo baixado.');
       }
     </script>
     <script src="./script/checkLogin.js"></script>

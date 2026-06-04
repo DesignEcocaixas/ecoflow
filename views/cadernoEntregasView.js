@@ -1,6 +1,5 @@
 // views/cadernoEntregasView.js
 const menuLateral = require("./menuLateral");
-//const renderLoaderParticulas = require("./renderLoaderParticulas"); ${renderLoaderParticulas("Carregando Caderno")}
 
 function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -145,7 +144,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               <form method="POST" action="/caderno-entregas/clientes/excluir" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Excluído!')">
                   <input type="hidden" name="nome" value="${c.nome}">
                   <div class="modal-body text-center p-4">
-                      <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+                      <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
                       <h6 class="mb-2 fw-bold text-dark">Excluir Cliente?</h6>
                       <p class="text-muted mb-0" style="font-size:0.85rem;"><strong>${c.nome}</strong> será removido permanentemente do histórico de preenchimento automático.</p>
                   </div>
@@ -395,9 +394,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <div class="modal fade" id="excluirModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0">
-          <form method="POST" action="/caderno-entregas/excluir/${c.id}">
+          <form method="POST" action="/caderno-entregas/excluir/${c.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Caderno Excluído!')">
             <div class="modal-body text-center p-4">
-              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
+              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
               <h6 class="mb-2 fw-bold text-dark">Excluir Caderno?</h6>
               <p class="text-muted mb-0" style="font-size:0.85rem;">As entregas vinculadas serão apagadas, mas o histórico de clientes continuará salvo.</p>
             </div>
@@ -420,20 +419,52 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   const pageLinks = (() => {
     let html = '';
     for (let i = 1; i <= totalPages; i++) {
-      html += `<li class="page-item ${i === page ? "active" : ""}"><a class="page-link text-dark ${i === page ? "fw-bold" : ""}" href="/caderno-entregas?page=${i}${baseQueryString}">${i}</a></li>`;
+      html += `<li class="page-item ${i === page ? "active" : ""}"><a class="page-link text-dark ${i === page ? "fw-bold" : ""}" href="/caderno-entregas?page=${i}${baseQueryString}" onclick="navegarPagina(event, this.href)">${i}</a></li>`;
     }
     return html;
   })();
 
   const paginacaoHtml = totalPages > 1 ? `
     <nav class="mt-4"><ul class="pagination pagination-sm justify-content-center mb-4">
-        <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page - 1}${baseQueryString}">«</a></li>
+        <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">«</a></li>
         ${pageLinks}
-        <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page + 1}${baseQueryString}">»</a></li>
+        <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link text-dark" href="/caderno-entregas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">»</a></li>
     </ul></nav>
   ` : "";
 
   const menuHTML = menuLateral(user, "/caderno-entregas");
+
+  // =========================================================================
+  // Modal de Impressão Refinado (Clean e Corporativo)
+  // =========================================================================
+  const modalImprimirNovoHtml = `
+    <div class="modal fade" id="modalImprimirNovo" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content erp-modal border-0 shadow-lg">
+          <div class="modal-header bg-white border-0 pb-0 pt-4 px-4">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body text-center p-5 pt-2">
+            <div class="mb-4">
+               <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid #e9ecef;">
+                   <i class="fa-solid fa-print fa-2x" style="color: #0D5749;"></i>
+               </div>
+            </div>
+            <h5 class="fw-bold text-dark mb-3">Caderno Gerado com Sucesso</h5>
+            <p class="text-muted mb-4" style="font-size:0.9rem; line-height: 1.5;">A rota foi otimizada e salva no sistema. Deseja imprimir o manifesto de entregas agora?</p>
+            <div class="d-flex flex-column gap-2 mt-2">
+               <a href="#" target="_blank" id="btnImprimirNovoModal" class="btn fw-bold shadow-sm" style="background-color: #0D5749; color: white;" onclick="bootstrap.Modal.getInstance(document.getElementById('modalImprimirNovo')).hide();">
+                   <i class="fa-solid fa-print me-1"></i> Imprimir Manifesto
+               </a>
+               <button type="button" class="btn btn-light border text-muted fw-bold" data-bs-dismiss="modal">
+                   Agora Não
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
   return `
   <!DOCTYPE html>
@@ -455,8 +486,24 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       .erp-modal { border-radius: 12px; border: none; }
       .table-hover-row { transition: background-color 0.2s; }
       .table-hover-row:hover > td { background-color: rgba(13, 87, 73, 0.06) !important; }
-      @keyframes pulseIcon { 0% { transform: scale(1); } 50% { transform: scale(1.15); opacity: 0.8; } 100% { transform: scale(1); } }
-      .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+
+      /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
+      .toast {
+          transform: translateX(120%); /* Mantém o toast escondido fora da tela */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
+      }
+      .toast.showing, .toast.show {
+          transform: translateX(0); /* Desliza para dentro da tela */
+      }
+
+      /* ANIMAÇÃO DE ENTRADA E SAÍDA DOS MODAIS */
+      .modal.fade .modal-dialog {
+          transform: scale(0.85) translateY(30px); /* Começa menor e mais abaixo */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+      }
+      .modal.show .modal-dialog {
+          transform: scale(1) translateY(0); /* Cresce e encaixa na posição original */
+      }
       
       .btn-flutuante {
         position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%;
@@ -478,6 +525,21 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       .autocomplete-item:last-child { border-bottom: none; }
       .autocomplete-item:hover { background-color: #e2efda; color: #0D5749; }
       .autocomplete-item strong { color: #0D5749; }
+
+      /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
+      .toast-timer {
+          height: 6px;
+          background: rgba(255, 255, 255, 0.4);
+          width: 100%;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          transform-origin: left;
+      }
+      @keyframes shrinkToast {
+          from { width: 100%; }
+          to { width: 0%; }
+      }
 
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
     </style>
@@ -524,13 +586,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button class="btn btn-sm btn-success shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
                 <i class="fa-solid fa-plus me-1"></i> Caderno
             </button>
-            <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel">
+            <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está sendo baixado.')">
                 <i class="fa-solid fa-file-excel me-1"></i> Relatório
             </a>
         </div>
       </div>
 
-      <form class="row g-2 align-items-end border-top mb-4" method="GET" action="/caderno-entregas">
+      <form id="formFiltroCaderno" class="row g-2 align-items-end border-top mb-4" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
           <div class="col-12 col-md-4">
               <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
               <input type="date" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
@@ -541,7 +603,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           </div>
           <div class="col-12 col-md-4 d-flex gap-2">
               <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar Período</button>
-              <a href="/caderno-entregas" class="btn btn-sm btn-light border text-center shadow-sm px-3"><i class="fa-solid fa-xmark"></i></a>
+              <button type="button" class="btn btn-sm btn-light border text-center shadow-sm px-3" onclick="limparFiltrosCaderno()"><i class="fa-solid fa-xmark"></i></button>
           </div>
       </form>
 
@@ -615,7 +677,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button type="button" class="btn-close" onclick="fecharMigracao()"></button>
           </div>
           <div class="modal-body p-4 bg-light text-center" id="migracaoStartScreen">
-            <i class="fa-solid fa-satellite-dish fa-3x text-warning mb-3 anim-pulse"></i>
+            <i class="fa-solid fa-satellite-dish fa-3x text-warning mb-3"></i>
             <h6 class="fw-bold text-dark">Atualizar Clientes Antigos?</h6>
             <p class="text-muted small">O sistema irá varrer todos os clientes que ainda não possuem coordenadas exatas e tentará buscar a localização precisa no Google Maps. O processo atualizará um por um e mostrará o resultado nesta tela.</p>
             <button type="button" class="btn btn-warning fw-bold px-4 mt-2" onclick="iniciarMigracao()">Sincronizar</button>
@@ -859,27 +921,221 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       </div>
     </div>
 
-    <div class="modal fade" id="sucessoModal" tabindex="-1" style="z-index: 1070;" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal border-0 shadow-lg">
-          <div class="modal-body text-center p-4">
-            <i class="fa-solid fa-route fa-3x text-success mb-3 anim-pulse" id="sucessoIcon"></i>
-            <h6 class="fw-bold text-dark mb-2" id="sucessoTitulo">Concluído!</h6>
-            <p class="text-muted mb-3" style="font-size:0.85rem;" id="sucessoSub">A processar...</p>
-            <div class="progress shadow-sm" style="height: 16px; display: none; border-radius: 8px;" id="progressoContainer">
-              <div class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold" id="barraProgresso" role="progressbar" style="width: 0%; font-size: 0.7rem;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
             </div>
-          </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+                <div class="progress shadow-sm bg-dark bg-opacity-25 position-absolute bottom-0 start-0 w-100 rounded-0" style="height: 6px; display: none;" id="progressoContainer">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-white text-success fw-bold" id="barraProgresso" role="progressbar" style="width: 0%; font-size: 0.65rem;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
         </div>
-      </div>
+
+        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+        </div>
+
     </div>
 
     ${modais}
     ${modaisEdicaoExclusaoClientes}
+    ${modalImprimirNovoHtml}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       let isSubmitting = false;
+      let dictClientes = ${JSON.stringify(historicoClientes)};
+      let clientNames = Object.keys(dictClientes);
+      const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
+
+      // =======================================================================
+      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO)
+      // =======================================================================
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+              
+              const progressoContainer = document.getElementById('progressoContainer');
+              if (tipo === 'sucesso' && progressoContainer) progressoContainer.style.display = 'none';
+
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; // Força o reflow para a animação reiniciar
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+
+              // Destrói a instância anterior para limpar a configuração "congelada" do "A Processar"
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+
+              // Cria uma nova instância forçando o fechamento automático em 5 segundos
+              const toast = new bootstrap.Toast(toastEl, {
+                  autohide: true,
+                  delay: 5000
+              });
+              
+              toast.show();
+          }
+      }
+
+      function mostrarToastCarregando(mensagem) {
+          const successToastEl = document.getElementById('sucessoToast');
+          if(!successToastEl) return;
+          document.getElementById('sucessoTitulo').innerText = "A Processar";
+          document.getElementById('sucessoSub').innerText = mensagem;
+          
+          const progressoContainer = document.getElementById('progressoContainer');
+          if(progressoContainer) progressoContainer.style.display = 'none';
+
+          successToastEl.setAttribute('data-bs-autohide', 'false');
+
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
+      }
+
+      // =======================================================================
+      // CARREGAMENTO INICIAL: CHECA URL PARA MODAIS (Caso haja Refresh)
+      // =======================================================================
+      document.addEventListener("DOMContentLoaded", () => {
+          const urlParams = new URLSearchParams(window.location.search);
+          
+          const cadernoCriadoId = urlParams.get('cadernoCriado');
+          if (cadernoCriadoId) {
+              mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
+              
+              const btnImprimir = document.getElementById('btnImprimirNovoModal');
+              if (btnImprimir) {
+                  btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
+              }
+              const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
+              modalImp.show();
+
+              const url = new URL(window.location.href);
+              url.searchParams.delete('cadernoCriado');
+              window.history.replaceState({}, document.title, url.toString());
+          }
+
+          if (urlParams.has('sucessoCliente')) {
+              mostrarToast('sucesso', 'Sucesso!', 'Histórico de clientes atualizado com sucesso.');
+              
+              const url = new URL(window.location.href);
+              url.searchParams.delete('sucessoCliente');
+              window.history.replaceState({}, document.title, url.toString());
+          }
+      });
+
+      // =======================================================================
+      // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
+      // =======================================================================
+      async function prepararBuscaSimples(event, form, titleMsg) {
+          if (event) event.preventDefault();
+          
+          mostrarToastCarregando('Atualizando os registros...');
+
+          try {
+              const formData = new FormData(form);
+              const queryString = new URLSearchParams(formData).toString();
+              const url = form.action + '?' + queryString;
+
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível realizar a busca.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          }
+      }
+
+      function limparFiltrosCaderno() {
+          const form = document.getElementById('formFiltroCaderno');
+          if (form) {
+              form.querySelectorAll('input[type="date"]').forEach(i => i.value = '');
+              prepararBuscaSimples(null, form, 'Os filtros foram removidos!');
+          }
+      }
+
+      async function navegarPagina(event, url) {
+          event.preventDefault();
+          mostrarToastCarregando('Mudando de página...');
+          try {
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Página Carregada!', 'Exibindo novos resultados.');
+              } else {
+                  mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          }
+      }
+
+      // Função cirúrgica para garantir que todos os modais novos entrem e os velhos saiam
+      function atualizarModaisDinamicos(doc) {
+          const staticModals = ['modalInstrucoes', 'migracaoModal', 'novoClienteModal', 'novoCadernoModal', 'modalImprimirNovo', 'sidebarMenu'];
+          document.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) m.remove();
+          });
+          doc.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
+          });
+      }
 
       // =======================================================================
       // NAVEGAÇÃO E URLs SEGURAS
@@ -908,10 +1164,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       // =======================================================================
       // AUTOCOMPLETAR CUSTOMIZADO COM TYPEAHEAD (SUGESTÃO INLINE)
       // =======================================================================
-      const dictClientes = ${JSON.stringify(historicoClientes)};
-      const clientNames = Object.keys(dictClientes);
-      const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
-
       function handleClientInput(event, inputEl) {
           const containerItem = inputEl.closest('.entrega-item');
           if (!containerItem) return;
@@ -987,7 +1239,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // Função para o Autocompletar dos Itens do Pedido (Catálogo)
       function handleItemInput(event, inputEl) {
           const dropdown = inputEl.nextElementSibling;
           let val = inputEl.value;
@@ -1043,7 +1294,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // Fecha as listas suspensas se clicar fora
       document.addEventListener('click', function(e) {
           document.querySelectorAll('.autocomplete-dropdown').forEach(d => {
               if (!d.contains(e.target) && e.target !== d.previousElementSibling) {
@@ -1076,7 +1326,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      function prepararSubmissaoSimples(event, form, titleMsg) {
+      // =======================================================================
+      // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA (CRUD)
+      // =======================================================================
+      async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
           if (!form.checkValidity()) {
               form.reportValidity();
@@ -1084,6 +1337,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
           if (isSubmitting) return;
 
+          // Esconde qualquer modal aberto para não bloquear a tela
           const modalEl = form.closest('.modal');
           if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1095,27 +1349,40 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const barraProgresso = document.getElementById('barraProgresso');
           const sucessoSub = document.getElementById('sucessoSub');
           const sucessoIcon = document.getElementById('sucessoIcon');
+          const timerEl = document.getElementById('sucessoTimer');
+          const successToastEl = document.getElementById('sucessoToast');
           
-          const successModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
-          successModal.show();
+          // Desabilita o auto-hide para não fechar o toast durante o processamento do servidor
+          successToastEl.setAttribute('data-bs-autohide', 'false');
+          if (timerEl) timerEl.style.display = 'none';
+
+          // Força a recriação da instância
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
 
           limparMoedas(form);
           isSubmitting = true;
 
+          let intervalProgress;
           if (titleMsg.toLowerCase().includes('otimizar')) {
-              sucessoIcon.className = "fa-solid fa-satellite-dish fa-3x text-success mb-3 anim-pulse";
-              progressoContainer.style.display = 'flex';
-              barraProgresso.style.width = '0%';
-              barraProgresso.innerText = '0%';
+              sucessoIcon.className = "fa-solid fa-satellite-dish text-white fs-5 me-2"; 
+              if(progressoContainer) progressoContainer.style.display = 'flex';
+              if(barraProgresso) {
+                 barraProgresso.style.width = '0%';
+                 barraProgresso.innerText = '0%';
+              }
               sucessoSub.innerText = "Iniciando otimização...";
 
               let progresso = 0;
-              const intervalo = setInterval(() => {
+              intervalProgress = setInterval(() => {
                   if (progresso < 98) {
                       progresso += Math.floor(Math.random() * 8) + 2;
                       if (progresso > 98) progresso = 98;
-                      barraProgresso.style.width = progresso + '%';
-                      barraProgresso.innerText = progresso + '%';
+                      if(barraProgresso) {
+                          barraProgresso.style.width = progresso + '%';
+                      }
                       
                       if (progresso > 20 && progresso < 50) sucessoSub.innerText = "Consultando Google Maps API...";
                       if (progresso >= 50 && progresso < 80) sucessoSub.innerText = "Traçando rota inteligente...";
@@ -1123,12 +1390,112 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   }
               }, 400);
 
-              setTimeout(() => { form.submit(); }, 500); 
           } else {
-              sucessoIcon.className = "fa-solid fa-circle-check fa-3x text-success mb-3 anim-pulse";
-              progressoContainer.style.display = 'none';
+              sucessoIcon.className = "fa-solid fa-circle-check text-white fs-5 me-2"; 
+              if(progressoContainer) progressoContainer.style.display = 'none';
               sucessoSub.innerText = "Por favor, aguarde...";
-              setTimeout(() => { form.submit(); }, 1000);
+          }
+
+          try {
+              // Converte os dados do formulário nativo para x-www-form-urlencoded
+              const formData = new URLSearchParams();
+              const fd = new FormData(form);
+              for (const [key, value] of fd.entries()) {
+                  formData.append(key, value);
+              }
+
+              const response = await fetch(form.action, {
+                  method: form.method || 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: formData.toString()
+              });
+
+              if (intervalProgress) clearInterval(intervalProgress);
+
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  // 1. Atualiza conteúdo principal (Tabela, Paginação)
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+
+                  // 2. Atualiza Cirurgicamente a tabela de Clientes (Importante para aparecer no Modal na hora)
+                  const oldTbody = document.getElementById('tabelaClientesBody');
+                  const newTbody = doc.getElementById('tabelaClientesBody');
+                  if (oldTbody && newTbody) {
+                      oldTbody.innerHTML = newTbody.innerHTML;
+                  }
+
+                  // 3. Atualiza Modais gerados dinamicamente
+                  atualizarModaisDinamicos(doc);
+
+                  // 4. Atualiza Dicionário de Autocompletar Manualmente
+                  if (form.action.includes('/clientes/novo')) {
+                      const n = fd.get('nome');
+                      if (n) {
+                          dictClientes[n] = { link: fd.get('link_endereco') || '', coord: fd.get('coordenadas') || '' };
+                          if (!clientNames.includes(n)) clientNames.push(n);
+                      }
+                  } else if (form.action.includes('/clientes/editar')) {
+                      const nOri = fd.get('nomeOriginal');
+                      const nNovo = fd.get('nomeNovo');
+                      if (nOri && dictClientes[nOri]) {
+                          delete dictClientes[nOri];
+                          const idx = clientNames.indexOf(nOri);
+                          if (idx > -1) clientNames.splice(idx, 1);
+                      }
+                      if (nNovo) {
+                          dictClientes[nNovo] = { link: fd.get('link_endereco') || '', coord: fd.get('coordenadas') || '' };
+                          if (!clientNames.includes(nNovo)) clientNames.push(nNovo);
+                      }
+                  } else if (form.action.includes('/clientes/excluir')) {
+                      const n = fd.get('nome');
+                      if (n && dictClientes[n]) {
+                          delete dictClientes[n];
+                          const idx = clientNames.indexOf(n);
+                          if (idx > -1) clientNames.splice(idx, 1);
+                      }
+                  }
+
+                  // Reseta os campos do formulário preenchido
+                  form.reset();
+                  const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
+                  dynamicContainers.forEach(el => el.remove());
+
+                  // 5. Analisa a resposta para exibir os modais/toasts corretos
+                  const responseUrl = new URL(response.url);
+                  
+                  if (responseUrl.searchParams.has('cadernoCriado')) {
+                      const cadernoCriadoId = responseUrl.searchParams.get('cadernoCriado');
+                      mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
+                      
+                      const btnImprimir = document.getElementById('btnImprimirNovoModal');
+                      if (btnImprimir) {
+                          btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
+                      }
+                      const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
+                      modalImp.show();
+                  } else if (responseUrl.searchParams.has('sucessoCliente')) {
+                      mostrarToast('sucesso', 'Sucesso!', 'Histórico de clientes atualizado com sucesso.');
+                  } else {
+                      mostrarToast('sucesso', 'Concluído!', titleMsg);
+                  }
+
+              } else {
+                  if (intervalProgress) clearInterval(intervalProgress);
+                  mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
+              }
+          } catch (err) {
+              console.error(err);
+              if (intervalProgress) clearInterval(intervalProgress);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua internet e tente novamente.');
+          } finally {
+              isSubmitting = false;
           }
       }
 

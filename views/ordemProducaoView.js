@@ -5,11 +5,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/producao");
 
-  // Captura estados da query para disparar os modais
-  const estadoSucesso = query.sucesso ? 'true' : 'false';
-  const estadoLimpo = query.limpo ? 'true' : 'false';
-  const estadoErro = query.erro === 'planilha' ? 'true' : 'false';
-
   function formatarCor(cor) {
     if (!cor || cor === 'N/D') return 'Não definida';
     return cor.replace(/personalização/i, '').trim();
@@ -86,22 +81,42 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .card-concluido { background-color: #f0fff4 !important; border-left: 5px solid #28a745 !important; }
     .card-pendente { border-left: 5px solid #6c757d !important; border-bottom: 1px solid #eee; }
     .info-sm { font-size: 0.8rem; }
-
-    /* Estilização para barra de progresso e modais de sucesso */
-    .sucesso-icone { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: #e6f4ea; display: flex; align-items: center; justify-content: center; }
-    .sucesso-icone i { font-size: 40px; color: #1e7e34; }
-    .erro-icone { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: #fce8e6; display: flex; align-items: center; justify-content: center; }
-    .erro-icone i { font-size: 40px; color: #d93025; }
     
     .progress { height: 12px; border-radius: 10px; background-color: #eee; overflow: hidden; }
     .progress-bar { background-color: #0D5749; transition: width 0.4s ease; }
+
+    /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
+      .toast {
+          transform: translateX(120%); /* Mantém o toast escondido fora da tela */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
+      }
+      .toast.showing, .toast.show {
+          transform: translateX(0); /* Desliza para dentro da tela */
+      }
+
+      /* ANIMAÇÃO DE ENTRADA E SAÍDA DOS MODAIS */
+      .modal.fade .modal-dialog {
+          transform: scale(0.85) translateY(30px); /* Começa menor e mais abaixo */
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+      }
+      .modal.show .modal-dialog {
+          transform: scale(1) translateY(0); /* Cresce e encaixa na posição original */
+      }
     
-    @keyframes pulseIcon {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); opacity: 0.8; }
-      100% { transform: scale(1); }
+    /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
+    .toast-timer {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.4);
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        transform-origin: left;
     }
-    .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+    @keyframes shrinkToast {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
 
     /* Divisória apenas no desktop */
     @media (min-width: 992px) {
@@ -232,6 +247,36 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       
       ${paginacaoHtml}
     </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+      <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+              <div>
+                  <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                  <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+              </div>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+          </div>
+          <div class="toast-body pt-1 pb-4 px-3 position-relative">
+              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+          </div>
+          <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+      </div>
+
+      <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+              <div>
+                  <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                  <strong class="fs-6" id="erroTitulo">Erro!</strong>
+              </div>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+          </div>
+          <div class="toast-body pt-1 pb-4 px-3 position-relative">
+              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+          </div>
+          <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+      </div>
   </div>
 
   <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
@@ -395,40 +440,31 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
-  <div class="modal fade" id="modalSucessoImport" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-body text-center p-4">
-          <div class="sucesso-icone"><i class="fa-solid fa-check"></i></div>
-          <h6 class="fw-bold mb-1">Importação Concluída</h6>
-          <p class="text-muted small mb-3">As ordens foram geradas com sucesso.</p>
-          <button class="btn btn-sm btn-success w-100" data-bs-dismiss="modal">OK</button>
+  <div class="modal fade" id="modalSugestaoDownload" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-header bg-white border-0 pb-0 pt-4 px-4">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="modalSucessoLimpo" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-body text-center p-4">
-          <div class="sucesso-icone"><i class="fa-solid fa-broom"></i></div>
-          <h6 class="fw-bold mb-1">Painel Limpo</h6>
-          <p class="text-muted small mb-3">Todos os dados foram removidos.</p>
-          <button class="btn btn-sm btn-success w-100" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="modalErroPlanilha" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-body text-center p-4">
-          <div class="erro-icone"><i class="fa-solid fa-triangle-exclamation"></i></div>
-          <h6 class="fw-bold mb-1">Erro na Planilha</h6>
-          <p class="text-muted small mb-3">O arquivo enviado é incompatível ou está corrompido.</p>
-          <button class="btn btn-sm btn-danger w-100" data-bs-dismiss="modal">Entendi</button>
+        <div class="modal-body text-center p-5 pt-2">
+          <div class="mb-4">
+             <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid #e9ecef;">
+                 <i class="fa-solid fa-file-excel fa-2x" style="color: #0D5749;"></i>
+             </div>
+          </div>
+          <h5 class="fw-bold text-dark mb-3">Ordens Geradas com Sucesso</h5>
+          <p class="text-muted mb-4" style="font-size:0.9rem; line-height: 1.5;">A planilha foi processada e as ordens separadas. Deseja baixar os relatórios de produção agora?</p>
+          <div class="d-flex flex-column gap-2 mt-2">
+             <a href="/exportar/rotativa" target="_blank" class="btn fw-bold shadow-sm" style="background-color: #0D5749; color: white;" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                 <i class="fa-solid fa-gear me-1"></i> Baixar Rotativa / Plana
+             </a>
+             <a href="/exportar/flexografica" target="_blank" class="btn fw-bold shadow-sm" style="background-color: #198754; color: white;" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                 <i class="fa-solid fa-layer-group me-1"></i> Baixar Flexográfica
+             </a>
+             <button type="button" class="btn btn-light border text-muted fw-bold mt-2" data-bs-dismiss="modal">
+                 Agora Não
+             </button>
+          </div>
         </div>
       </div>
     </div>
@@ -436,21 +472,47 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    function mostrarToast(tipo, titulo, mensagem) {
+        const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+        if (toastEl) {
+            document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+            document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+            
+            toastEl.setAttribute('data-bs-autohide', 'true');
+            toastEl.setAttribute('data-bs-delay', '5000');
+            
+            const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+            if (timerEl) {
+                timerEl.style.display = 'block';
+                timerEl.style.animation = 'none';
+                timerEl.offsetHeight; 
+                timerEl.style.animation = 'shrinkToast 5s linear forwards';
+            }
+
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    }
+
     window.addEventListener('load', () => {
-        if (${estadoSucesso}) {
-            new bootstrap.Modal(document.getElementById('modalSucessoImport')).show();
-        } else if (${estadoLimpo}) {
-            new bootstrap.Modal(document.getElementById('modalSucessoLimpo')).show();
-        } else if (${estadoErro}) {
-            new bootstrap.Modal(document.getElementById('modalErroPlanilha')).show();
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.has('sucesso')) {
+            mostrarToast('sucesso', 'Importação Concluída', 'As ordens foram geradas com sucesso.');
+            const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSugestaoDownload'));
+            modalImp.show();
+        } else if (urlParams.has('limpo')) {
+            mostrarToast('sucesso', 'Painel Limpo', 'Todos os dados foram removidos.');
+        } else if (urlParams.has('erro')) {
+            mostrarToast('erro', 'Erro na Planilha', 'O arquivo enviado é incompatível ou está corrompido.');
         }
         
         if (window.history.replaceState) {
-            const url = new URL(window.location);
+            const url = new URL(window.location.href);
             url.searchParams.delete('sucesso');
             url.searchParams.delete('limpo');
             url.searchParams.delete('erro');
-            window.history.replaceState({}, document.title, url.pathname);
+            window.history.replaceState({}, document.title, url.toString());
         }
     });
 

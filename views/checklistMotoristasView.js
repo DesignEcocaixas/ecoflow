@@ -29,7 +29,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
   // 1. GERAR OS CARDS COMPACTOS COM CORES DINÂMICAS POR VEÍCULO
   const cards = itens.map(item => {
-    // Lógica para definir cores diferentes para cada tipo de veículo
     let badgeClass = "bg-light text-dark border shadow-sm";
     let iconClass = "text-muted";
     
@@ -89,11 +88,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     </div>
   `}).join("");
 
-  // 2. GERAR OS MODAIS DE EDIÇÃO E EXCLUSÃO
+  // 2. GERAR OS MODAIS DE EDIÇÃO E EXCLUSÃO (COM AJAX onSubmit)
   const modais = itens.map(item => `
     <div class="modal fade" id="editarModal${item.id}" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <form method="POST" action="/checklist-motoristas/editar/${item.id}" enctype="multipart/form-data" class="modal-content erp-modal">
+        <form method="POST" action="/checklist-motoristas/editar/${item.id}" enctype="multipart/form-data" class="modal-content erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Atualizado!')">
           <div class="modal-header bg-light">
             <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Checklist</h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -163,7 +162,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
           </div>
           <div class="modal-footer border-top-0 bg-light">
             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
           </div>
         </form>
       </div>
@@ -171,16 +170,16 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
     <div class="modal fade" id="excluirModal${item.id}" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal">
-          <form method="POST" action="/checklist-motoristas/excluir/${item.id}">
+        <div class="modal-content erp-modal border-0 shadow-lg">
+          <form method="POST" action="/checklist-motoristas/excluir/${item.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Excluído!')">
             <div class="modal-body text-center p-4">
               <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-              <h6 class="mb-2">Excluir Checklist?</h6>
+              <h6 class="mb-2 fw-bold">Excluir Checklist?</h6>
               <p class="text-muted mb-0" style="font-size:0.85rem;">Deseja excluir o checklist do motorista <b>${item.motorista}</b>?</p>
             </div>
-            <div class="modal-footer justify-content-center bg-light border-0">
-              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-sm btn-danger">Sim, Excluir</button>
+            <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
+              <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Sim, Excluir</button>
             </div>
           </form>
         </div>
@@ -203,12 +202,12 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     paginas.forEach(p => {
       if (ultima) {
         if (p - ultima === 2) {
-          html += `<li class="page-item"><a class="page-link text-dark" href="/checklist-motoristas?page=${ultima + 1}${qParam}">${ultima + 1}</a></li>`;
+          html += `<li class="page-item"><a class="page-link text-dark" href="/checklist-motoristas?page=${ultima + 1}${qParam}" onclick="navegarPagina(event, this.href)">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
           html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
         }
       }
-      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/checklist-motoristas?page=${p}${qParam}">${p}</a></li>`;
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/checklist-motoristas?page=${p}${qParam}" onclick="navegarPagina(event, this.href)">${p}</a></li>`;
       ultima = p;
     });
 
@@ -219,11 +218,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/checklist-motoristas?page=${page - 1}${qParam}">&laquo;</a>
+          <a class="page-link text-dark" href="/checklist-motoristas?page=${page - 1}${qParam}" onclick="navegarPagina(event, this.href)">&laquo;</a>
         </li>
         ${pageLinks}
         <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/checklist-motoristas?page=${page + 1}${qParam}">&raquo;</a>
+          <a class="page-link text-dark" href="/checklist-motoristas?page=${page + 1}${qParam}" onclick="navegarPagina(event, this.href)">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -247,7 +246,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; }
       
-      /* Restauração da borda da badge de usuário */
       .usuario-badge { 
           background-color: white; 
           color: #0D5749; 
@@ -287,13 +285,35 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       .wizard-progress { height: 6px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 10px; }
       .wizard-progress-bar { height: 100%; background-color: #0D5749; width: 0%; transition: width 0.3s ease; }
 
-      /* Animação do Modal de Sucesso */
-      @keyframes pulseIcon {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.15); opacity: 0.8; }
-        100% { transform: scale(1); }
+      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
+      .toast {
+          transform: translateX(120%);
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
       }
-      .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
+      .toast.showing, .toast.show {
+          transform: translateX(0);
+      }
+      .modal.fade .modal-dialog {
+          transform: scale(0.85) translateY(30px);
+          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+      }
+      .modal.show .modal-dialog {
+          transform: scale(1) translateY(0);
+      }
+
+      .toast-timer {
+          height: 6px;
+          background: rgba(255, 255, 255, 0.4);
+          width: 100%;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          transform-origin: left;
+      }
+      @keyframes shrinkToast {
+          from { width: 100%; }
+          to { width: 0%; }
+      }
 
       @media (max-width: 767.98px) {
         body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
@@ -337,7 +357,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         <div class="row g-3 align-items-end">
           
           <div class="col-12 col-lg-8">
-            <form method="GET" action="/checklist-motoristas" class="row g-2 align-items-end">
+            <form id="formFiltro" method="GET" action="/checklist-motoristas" class="row g-2 align-items-end" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
               <div class="col-12 col-sm-5">
                 <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Data Inicial (De:)</label>
                 <input type="date" name="data_inicio" class="form-control form-control-sm" value="${data_inicio}">
@@ -348,16 +368,16 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               </div>
               <div class="col-12 col-sm-2 d-flex gap-2 mt-2 mt-sm-0">
                 <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm px-0">Buscar</button>
-                <a href="/checklist-motoristas" class="btn btn-sm btn-light border text-secondary px-2" title="Limpar Filtros"><i class="fa-solid fa-eraser"></i></a>
+                <button type="button" class="btn btn-sm btn-light border text-secondary px-2" title="Limpar Filtros" onclick="limparFiltrosChecklist()"><i class="fa-solid fa-eraser"></i></button>
               </div>
             </form>
           </div>
 
           <div class="col-12 col-lg-4 d-flex justify-content-lg-end gap-2">
-              <button class="btn btn-sm btn-success shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
+              <button class="btn btn-sm btn-success shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap fw-bold" data-bs-toggle="modal" data-bs-target="#novoChecklistModal">
                 <i class="fa-solid fa-plus me-1"></i> Novo Checklist
               </button>
-              <button class="btn btn-sm btn-primary shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#relatorioModal">
+              <button class="btn btn-sm btn-primary shadow-sm flex-grow-1 flex-lg-grow-0 text-nowrap fw-bold" data-bs-toggle="modal" data-bs-target="#relatorioModal">
                 <i class="fa-solid fa-file-excel me-1"></i> Relatório
               </button>
           </div>
@@ -374,7 +394,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
     <div class="modal fade" id="novoChecklistModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
-        <form id="wizardForm" method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" class="modal-content erp-modal">
+        <form id="wizardForm" method="POST" action="/checklist-motoristas/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="event.preventDefault();">
           
           <div class="wizard-header">
             <div class="d-flex justify-content-between align-items-center">
@@ -395,7 +415,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Motorista</label>
                 <select name="motorista" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Quem está dirigindo?</option>
+                  <option value="" disabled selected>Motorista</option>
                   <option value="Flávio">Flávio</option>
                   <option value="Alexandre">Alexandre</option>
                   <option value="Thiago">Thiago</option>
@@ -404,7 +424,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Veículo</label>
                 <select name="veiculo" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Qual veículo?</option>
+                  <option value="" disabled selected>Veículo</option>
                   <option value="Master">Renault Master</option>
                   <option value="Strada">Fiat Strada</option>
                   <option value="Fiorino">Fiat Fiorino</option>
@@ -413,7 +433,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Responsável Logístico</label>
                 <select name="responsavel" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Quem liberou o carro?</option>
+                  <option value="" disabled selected>Responsável logístico</option>
                   <option value="Eliege">Eliege</option>
                   <option value="Mirna">Mirna</option>
                   <option value="Renilson">Renilson</option>
@@ -596,8 +616,8 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
     <div class="modal fade" id="relatorioModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content erp-modal border-0">
-          <form method="GET" action="/checklist-motoristas/relatorio" target="_blank">
+        <div class="modal-content erp-modal border-0 shadow-lg">
+          <form method="GET" action="/checklist-motoristas/relatorio" target="_blank" onsubmit="iniciarDownloadRelatorio(this)">
             <div class="modal-header bg-light border-bottom-0 pb-0">
               <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-excel text-success me-2"></i> Relatório Mensal</h6>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -607,7 +627,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               
               <div class="mb-3">
                 <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Motorista</label>
-                <select id="relatorioMotorista" name="motorista" class="form-select form-select-sm">
+                <select id="relatorioMotorista" name="motorista" class="form-select form-select-sm shadow-sm">
                   <option value="">Todos os Motoristas</option>
                   ${motoristasUnicos.map(m => `<option value="${m}">${m}</option>`).join("")}
                 </select>
@@ -616,13 +636,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="row g-2 mb-2">
                 <div class="col-6">
                   <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Ano</label>
-                  <select id="relatorioAno" name="ano" class="form-select form-select-sm">
+                  <select id="relatorioAno" name="ano" class="form-select form-select-sm shadow-sm">
                     <option value="">Todos</option>
                     </select>
                 </div>
                 <div class="col-6">
                   <label class="form-label text-muted fw-medium mb-1" style="font-size:0.8rem;">Mês</label>
-                  <select id="relatorioMes" name="mes" class="form-select form-select-sm">
+                  <select id="relatorioMes" name="mes" class="form-select form-select-sm shadow-sm">
                     <option value="">Todos</option>
                     </select>
                 </div>
@@ -630,30 +650,47 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
             </div>
             <div class="modal-footer bg-light border-0 d-flex justify-content-between">
               <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-sm btn-success w-100 mt-2 m-0"><i class="fa-solid fa-download me-1"></i> Gerar Excel</button>
+              <button type="submit" class="btn btn-sm btn-success w-100 mt-2 m-0 fw-bold"><i class="fa-solid fa-download me-1"></i> Gerar Excel</button>
             </div>
           </form>
         </div>
       </div>
     </div>
 
-    <div class="modal fade" id="sucessoChecklistModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal border-0">
-          <div class="modal-body text-center p-5">
-            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
-            <h5 class="fw-bold text-dark mb-2">Checklist Concluído!</h5>
-            <p class="text-muted mb-0" style="font-size:0.85rem;">Salvando os dados, por favor aguarde...</p>
-          </div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
         </div>
-      </div>
+
+        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+        </div>
     </div>
 
     ${modais}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      
       // ==========================================
       // LÓGICA CASCATA DO FILTRO (MOTORISTA -> ANO -> MÊS)
       // ==========================================
@@ -675,13 +712,11 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
           const anoSel = selectAno.value;
           const mesSel = selectMes.value;
 
-          // 1. Dados filtrados pelo Motorista
           let dadosFiltradosMot = filtrosData;
           if (motSel) {
               dadosFiltradosMot = filtrosData.filter(f => f.motorista === motSel);
           }
 
-          // 2. Atualiza Select de Ano se a mudança foi no motorista ou na inicialização
           if (changedElement === 'relatorioMotorista' || !changedElement) {
               const anosDisponiveis = [...new Set(dadosFiltradosMot.map(f => f.ano))].sort((a,b) => b - a);
               const keepsAno = anosDisponiveis.includes(Number(anoSel));
@@ -692,14 +727,12 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               });
           }
 
-          // 3. Dados filtrados pelo Ano 
           const anoAtualizado = selectAno.value;
           let dadosFiltradosAno = dadosFiltradosMot;
           if (anoAtualizado) {
               dadosFiltradosAno = dadosFiltradosMot.filter(f => f.ano == anoAtualizado);
           }
 
-          // 4. Atualizar select de Mês sempre
           const mesesDisponiveis = [...new Set(dadosFiltradosAno.map(f => f.mes))].sort((a,b) => a - b);
           const keepsMes = mesesDisponiveis.includes(Number(mesSel));
 
@@ -714,14 +747,212 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       if (selectMot && selectAno && selectMes) {
           selectMot.addEventListener('change', atualizaFiltros);
           selectAno.addEventListener('change', atualizaFiltros);
-          atualizaFiltros(); // Inicializa o estado assim que a página carrega
+          atualizaFiltros(); 
       }
 
+      // =======================================================================
+      // FUNÇÃO GENÉRICA DE TOASTS
+      // =======================================================================
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+              
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; 
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+
+              const toast = new bootstrap.Toast(toastEl, {
+                  autohide: true,
+                  delay: 5000
+              });
+              
+              toast.show();
+          }
+      }
+
+      function mostrarToastCarregando(mensagem) {
+          const successToastEl = document.getElementById('sucessoToast');
+          document.getElementById('sucessoTitulo').innerText = "A Processar";
+          document.getElementById('sucessoSub').innerText = mensagem;
+          successToastEl.setAttribute('data-bs-autohide', 'false');
+
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
+      }
+
+      // =======================================================================
+      // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
+      // =======================================================================
+      async function prepararBuscaSimples(event, form, titleMsg) {
+          if (event) event.preventDefault();
+          
+          mostrarToastCarregando('Atualizando os registros...');
+
+          try {
+              const formData = new FormData(form);
+              const queryString = new URLSearchParams(formData).toString();
+              const url = form.action + '?' + queryString;
+
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível realizar a busca.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          }
+      }
+
+      function limparFiltrosChecklist() {
+          const form = document.getElementById('formFiltro');
+          if (form) {
+              form.querySelectorAll('input').forEach(i => i.value = '');
+              prepararBuscaSimples(null, form, 'Os filtros foram removidos!');
+          }
+      }
+
+      async function navegarPagina(event, url) {
+          event.preventDefault();
+          mostrarToastCarregando('Mudando de página...');
+          try {
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Página Carregada!', 'Exibindo novos resultados.');
+              } else {
+                  mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          }
+      }
+
+      function atualizarModaisDinamicos(doc) {
+          const staticModals = ['novoChecklistModal', 'relatorioModal', 'sidebarMenu', 'modalInstrucoes'];
+          document.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) m.remove();
+          });
+          doc.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
+          });
+      }
+
+      // =======================================================================
+      // DOWNLOAD DE RELATÓRIO COM TOAST (Nativo via target="_blank")
+      // =======================================================================
+      function iniciarDownloadRelatorio(form) {
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.hide();
+          }
+          mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está sendo baixado.');
+      }
+
+      // =======================================================================
+      // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA (SUPORTA FOTOS) PARA CRUD
+      // =======================================================================
+      let isSubmitting = false;
+
+      async function prepararSubmissaoSimples(event, form, titleMsg) {
+          if (event) event.preventDefault();
+          if (isSubmitting) return;
+
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.hide();
+          }
+
+          document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style = '';
+
+          mostrarToastCarregando("Aguarde um momento...");
+          isSubmitting = true;
+
+          try {
+              const formData = new FormData(form);
+
+              const response = await fetch(form.action, {
+                  method: form.method || 'POST',
+                  body: formData 
+              });
+
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+
+                  atualizarModaisDinamicos(doc);
+
+                  form.reset();
+                  if (form.id === 'wizardForm') {
+                      resetWizard();
+                  }
+
+                  mostrarToast('sucesso', 'Concluído!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível guardar os dados no servidor.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          } finally {
+              isSubmitting = false;
+          }
+      }
 
       // ==========================================
       // LÓGICA DO WIZARD ANIMADO
       // ==========================================
-      let isSubmitting = false; 
       let currentTab = 0;
 
       function showTab(n) {
@@ -731,22 +962,18 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         }
         steps[n].classList.add("active");
         
-        // Atualiza Título
         const title = steps[n].getAttribute("data-title");
         document.getElementById("stepTitle").innerText = "Passo " + (n + 1) + " de " + steps.length + " - " + title;
         
-        // Atualiza Barra de Progresso
         const progress = ((n + 1) / steps.length) * 100;
         document.getElementById("progressBar").style.width = progress + "%";
 
-        // Controla Botão Voltar
         if (n === 0) {
           document.getElementById("prevBtn").style.display = "none";
         } else {
           document.getElementById("prevBtn").style.display = "inline-block";
         }
 
-        // Controla Botão Avançar/Concluir
         const nextBtn = document.getElementById("nextBtn");
         if (n === (steps.length - 1)) {
           nextBtn.innerHTML = 'Finalizar e Enviar <i class="fa-solid fa-check ms-1"></i>';
@@ -773,29 +1000,14 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
       function nextPrev(n) {
         const steps = document.getElementsByClassName("wizard-step");
-        
         if (n === 1 && !validateForm(currentTab)) return false;
-        
         currentTab = currentTab + n;
         
         if (currentTab >= steps.length) {
-          isSubmitting = true; 
-
-          const wizardEl = document.getElementById('novoChecklistModal');
-          const wizardModal = bootstrap.Modal.getOrCreateInstance(wizardEl);
-          wizardModal.hide();
-
-          const successEl = document.getElementById('sucessoChecklistModal');
-          const successModal = bootstrap.Modal.getOrCreateInstance(successEl);
-          successModal.show();
-
-          setTimeout(() => {
-            document.getElementById("wizardForm").submit();
-          }, 1500);
-
+          const form = document.getElementById("wizardForm");
+          prepararSubmissaoSimples(null, form, 'Checklist Registrado!');
           return false;
         }
-        
         showTab(currentTab);
       }
 
@@ -805,6 +1017,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       }
 
       window.addEventListener('load', () => {
+        resetWizard(); 
         const modalEl = document.getElementById('novoChecklistModal');
         if(modalEl) {
            modalEl.addEventListener('hidden.bs.modal', function () {
@@ -814,7 +1027,6 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
              }
            });
         }
-        resetWizard(); 
       });
     </script>
     <script src="./script/checkLogin.js"></script>

@@ -55,3 +55,25 @@ window.addEventListener("load", () => {
     setTimeout(() => preloader.remove(), 300); // efeito suave
   }
 });
+
+// public/script/checkLogin.js
+
+function verificarSessao() {
+    fetch('/ping-sessao', { 
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            alert("⚠️ Sua sessão expirou por inatividade.\n\nPor favor, faça login novamente antes de preencher qualquer dado para não perder seu trabalho.");
+            window.location.href = "/login";
+        }
+    })
+    .catch(err => console.error("Erro ao verificar sessão:", err));
+}
+
+// 1. Mantém a sessão viva a cada 15 minutos se a aba estiver aberta e em uso
+setInterval(verificarSessao, 15 * 60 * 1000);
+
+// 2. Verifica IMEDIATAMENTE a sessão assim que o usuário volta para a aba do sistema
+window.addEventListener('focus', verificarSessao);

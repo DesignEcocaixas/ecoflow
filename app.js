@@ -11,6 +11,7 @@ const ExcelJS = require("exceljs");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const MySQLStore = require("express-mysql-session")(session);
 const loginView = require("./views/loginView");
 const homeView = require("./views/homeView");
 const cadastroView = require("./views/cadastroView");
@@ -142,21 +143,29 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+// Cria o armazenador de sessões aproveitando o seu pool de conexão existente
+const sessionStore = new MySQLStore({
+    clearExpired: true, // Limpa automaticamente sessões velhas do banco
+    checkExpirationInterval: 900000, // Limpa a cada 15 minutos
+    expiration: 1000 * 60 * 60 * 12 // Duração de 12 horas
+}, db.promise()); // Usa a mesma promessa de conexão do banco
+
+// Configuração da sessão atualizada
 app.use(session({
-    secret: "chave-super-secreta",   // troque por uma chave forte (ex.: gerada pelo openssl)
-    resave: false,                   // não salva sessão se nada mudou
-    saveUninitialized: false,        // não cria sessões "em branco"
-    cookie: {
-        httpOnly: true,              // impede acesso por JS no browser
-        secure: false,               // true só se usar HTTPS
-        maxAge: 1000 * 60 * 60       // 1 hora
+    key: 'ecoflow_cookie',
+    secret: "sua_chave_secreta_aqui",
+    store: sessionStore, // Define o MySQL como motor de gravação
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        maxAge: 1000 * 60 * 60 * 12 // 12 horas
     }
 }));
 
 // =======================================================
 // ROTEIRIZAÇÃO COM A NOVA GOOGLE ROUTES API (MODERNA)
 // =======================================================
-const GOOGLE_MAPS_API_KEY = "AIzaSyCTqm520ZD70o6T3ub9tcTsjYdBcjNpQ6g"; // Cole a sua chave real aqui
+const GOOGLE_MAPS_API_KEY = "AIzaSyCTqm520ZD70o6T3ub9tcTsjYdBcjNpQ6g";
 const ENDERECO_FABRICA = "-12.7036939, -38.2923817";
 
 // 1. Função de extração (Burlar bloqueios e capturar o PINO EXATO)
@@ -4568,6 +4577,14 @@ app.post('/admin/gabaritos/delete/:id', (req, res) => {
             res.redirect('/admin/gabaritos');
         });
     });
+});
+
+// Rota de Keep-Alive para manter a sessão ativa enquanto a aba estiver aberta
+app.get("/ping-sessao", (req, res) => {
+    if (req.session.user) {
+        return res.status(200).json({ status: "ativo" });
+    }
+    return res.status(401).json({ status: "expirado" });
 });
 
 app.get("/health", (req, res) => {

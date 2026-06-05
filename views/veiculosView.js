@@ -37,6 +37,32 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                     ? `${c.servico.slice(0, 50)}…`
                     : (c.servico || "");
 
+                // Lógica de visualização inteligente do anexo (Imagem vs PDF)
+                let anexoHtml = `<span class="text-muted text-center d-block w-100 p-2 border rounded" style="font-size:0.8rem;"><i class="fa-solid fa-file-excel me-1"></i> Sem documento anexo</span>`;
+                if (c.documento) {
+                    const ext = c.documento.split('.').pop().toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                    
+                    if (isImage) {
+                        anexoHtml = `
+                        <div class="text-center mb-2">
+                            <img src="/uploads/${c.documento}" alt="Anexo" class="img-fluid rounded border shadow-sm" style="max-height: 150px; object-fit: cover;">
+                        </div>
+                        <a class="btn btn-sm btn-outline-success w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-expand me-1"></i> Ver Imagem Completa</a>
+                        `;
+                    } else if (ext === 'pdf') {
+                        anexoHtml = `
+                        <div class="text-center p-3 border rounded mb-2 bg-light">
+                            <i class="fa-solid fa-file-pdf fa-2x text-danger mb-2"></i>
+                            <p class="mb-0 small fw-bold text-dark">Documento PDF anexado</p>
+                        </div>
+                        <a class="btn btn-sm btn-outline-danger w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Abrir PDF</a>
+                        `;
+                    } else {
+                        anexoHtml = `<a class="btn btn-sm btn-outline-primary w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip me-1"></i> Visualizar Documento Anexo</a>`;
+                    }
+                }
+
                 // Modal de Detalhes
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="detalheChecklist${c.id}" tabindex="-1">
@@ -76,10 +102,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                                 </div>
                               </div>
                               <div class="mt-3">
-                              ${c.documento
-                    ? `<a class="btn btn-sm btn-outline-success w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-paperclip me-1"></i> Visualizar Documento Anexo</a>`
-                    : `<span class="text-muted text-center d-block w-100 p-2 border rounded" style="font-size:0.8rem;"><i class="fa-solid fa-file-excel me-1"></i> Sem documento anexo</span>`
-                  }
+                                  ${anexoHtml}
                               </div>
                             </div>
                             <div class="modal-footer bg-light border-0 d-flex gap-2">
@@ -271,7 +294,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
         // Card do veículo
         return `
-            <div class="col-12 col-md-6 col-lg-3">
+            <div class="col-12 col-md-6 col-lg-3 mb-3">
               <div class="card erp-card shadow-sm h-100 border-0 transition-hover" 
                    style="cursor: pointer;" 
                    data-bs-toggle="modal" 
@@ -430,7 +453,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
           height: 100vh; 
           margin: 0; 
           background-color: #f4f7f6;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       }
       
       .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
@@ -504,6 +527,21 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
           to { width: 0%; }
       }
 
+      /* SKELETON LOADING */
+      .skeleton-view {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading-view 1.5s infinite linear;
+          border-radius: 4px;
+      }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 28px; width: 32px; border-radius: 4px; display: inline-block; }
+      .skeleton-img-view { height: 140px; width: 100%; border-bottom: 1px solid #eee; }
+      @keyframes skeleton-loading-view {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+      }
+
       /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
@@ -515,8 +553,6 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
     </style>
   </head>
   <body>
-    
-    ${renderLoaderParticulas("Acessando frota...")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
@@ -708,6 +744,75 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       });
 
       // =======================================================================
+      // SKELETON LOADING
+      // =======================================================================
+      function gerarSkeletonCards(quantidade = 4) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="card erp-card shadow-sm h-100 border-0 p-0">
+                  <div class="skeleton-view skeleton-img-view"></div>
+                  <div class="card-body p-3 d-flex flex-column">
+                    <div class="skeleton-view skeleton-text-view" style="width: 70%; margin-bottom: 16px;"></div>
+                    <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                      <div class="skeleton-view skeleton-text-view" style="width: 40%; margin: 0;"></div>
+                      <div class="d-flex gap-1">
+                        <div class="skeleton-view skeleton-btn-view"></div>
+                        <div class="skeleton-view skeleton-btn-view"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const gridContainer = document.querySelector('.content > .row.g-3');
+          const emptyState = document.querySelector('.content > .col-12.text-center.text-muted.mt-5');
+          
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="row g-3 skeleton-container">
+              \${gerarSkeletonCards(4)}
+          </div>\`;
+
+          if (gridContainer && !gridContainer.classList.contains('skeleton-container')) {
+              gridContainer.style.display = 'none';
+              gridContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          } else if (emptyState) {
+              emptyState.style.display = 'none';
+              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const gridContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
+          const emptyState = document.querySelector('.content > .col-12.text-center.text-muted.mt-5');
+
+          if (gridContainer) gridContainer.style.display = 'flex';
+          if (emptyState) emptyState.style.display = 'block';
+      }
+
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
+      });
+
+      // =======================================================================
       // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA (SUPORTA FOTOS E DOCS)
       // =======================================================================
       let isSubmitting = false;
@@ -742,7 +847,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
           document.body.classList.remove('modal-open');
           document.body.style = '';
 
-          mostrarToastCarregando('A guardar informações...');
+          mostrarSkeletonGlobais();
           isSubmitting = true;
 
           try {
@@ -788,6 +893,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
               mostrarToast('erro', 'Falha de Conexão', 'Verifique a internet e tente novamente.');
           } finally {
               isSubmitting = false;
+              ocultarSkeletonGlobais();
           }
       }
 

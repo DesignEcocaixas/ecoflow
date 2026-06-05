@@ -311,7 +311,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           height: 100vh; 
           margin: 0; 
           background-color: #f4f7f6;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       }
       
       /* Sidebar */

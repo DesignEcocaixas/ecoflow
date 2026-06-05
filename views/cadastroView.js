@@ -56,7 +56,7 @@ function cadastroView(usuario, usuarios = []) {
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
                           <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email}" required>
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Tipo de Usuário</label>
                           <select name="tipo_usuario" class="form-select form-select-sm shadow-sm">
                             <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
@@ -68,7 +68,21 @@ function cadastroView(usuario, usuarios = []) {
                         </div>
                         <div class="col-12 col-md-6">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nova Senha (opcional)</label>
-                          <input type="password" name="senha" class="form-control form-control-sm shadow-sm" placeholder="••••••••">
+                          <div class="input-group input-group-sm shadow-sm">
+                            <input type="password" name="senha" id="senhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
+                            <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaEdit${u.id}', this)">
+                              <i class="fa-solid fa-eye text-muted"></i>
+                            </button>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Nova Senha</label>
+                          <div class="input-group input-group-sm shadow-sm">
+                            <input type="password" name="confirma_senha" id="confirmaSenhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
+                            <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaEdit${u.id}', this)">
+                              <i class="fa-solid fa-eye text-muted"></i>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -151,7 +165,7 @@ function cadastroView(usuario, usuarios = []) {
           height: 100vh; 
           margin: 0; 
           background-color: #f4f7f6;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       }
       .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
       .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
@@ -257,6 +271,21 @@ function cadastroView(usuario, usuarios = []) {
           to { width: 0%; }
       }
 
+      /* SKELETON LOADING */
+      .skeleton-view {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading-view 1.5s infinite linear;
+          border-radius: 4px;
+      }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 28px; width: 32px; border-radius: 4px; display: inline-block; }
+      .skeleton-avatar-view { height: 38px; width: 38px; border-radius: 50%; }
+      @keyframes skeleton-loading-view {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+      }
+
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
         .sidebar { display: none; }
@@ -267,8 +296,6 @@ function cadastroView(usuario, usuarios = []) {
     </style>
   </head>
   <body>
-    ${renderLoaderParticulas("Listando usuários")}
-
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
         <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width: 130px;">
@@ -357,11 +384,7 @@ function cadastroView(usuario, usuarios = []) {
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
                 <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="joao@ecoflow.com">
               </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha de Acesso</label>
-                <input type="password" name="senha" class="form-control form-control-sm shadow-sm" required placeholder="••••••••">
-              </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Perfil / Tipo de Usuário</label>
                 <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" required>
                   <option value="admin">Administrador</option>
@@ -370,6 +393,24 @@ function cadastroView(usuario, usuarios = []) {
                   <option value="design">Design</option>
                   <option value="logistica">Logística</option>
                 </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha de Acesso</label>
+                <div class="input-group input-group-sm shadow-sm">
+                  <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••">
+                  <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaNovo', this)">
+                    <i class="fa-solid fa-eye text-muted"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
+                <div class="input-group input-group-sm shadow-sm">
+                  <input type="password" name="confirma_senha" id="confirmaSenhaNovo" class="form-control border-end-0" required placeholder="••••••••">
+                  <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaNovo', this)">
+                    <i class="fa-solid fa-eye text-muted"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -418,6 +459,78 @@ function cadastroView(usuario, usuarios = []) {
 
     <script>
         // =======================================================================
+        // SKELETON LOADING
+        // =======================================================================
+        function gerarSkeletonTabela(quantidade = 4) {
+            let html = '';
+            for(let i=0; i<quantidade; i++) {
+                html += \`
+                <tr class="align-middle">
+                    <td class="py-2 px-3">
+                        <div class="d-flex align-items-center">
+                            <div class="skeleton-view skeleton-avatar-view me-3 flex-shrink-0"></div>
+                            <div class="skeleton-view skeleton-text-view" style="width: 120px; margin: 0;"></div>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 150px; margin: 0;"></div></td>
+                    <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0;"></div></td>
+                    <td class="text-end py-2 px-3 d-flex justify-content-end gap-1">
+                        <div class="skeleton-view skeleton-btn-view"></div>
+                    </td>
+                </tr>\`;
+            }
+            return html;
+        }
+
+        function mostrarSkeletonGlobais() {
+            const tableContainer = document.querySelector('.content > .erp-card .table-responsive');
+            
+            if (document.getElementById('skeleton-temp-container')) return;
+
+            const skeletonHTML = \`
+            <div id="skeleton-temp-container" class="table-responsive skeleton-container">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                   <thead>
+                     <tr>
+                       <th>Nome Completo</th>
+                       <th>E-mail</th>
+                       <th>Perfil de Acesso</th>
+                       <th class="text-end" style="width: 80px;">Ações</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                      \${gerarSkeletonTabela(4)}
+                   </tbody>
+                </table>
+            </div>\`;
+
+            if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
+                tableContainer.style.display = 'none';
+                tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+            }
+        }
+
+        function ocultarSkeletonGlobais() {
+            const tempSkeleton = document.getElementById('skeleton-temp-container');
+            if (tempSkeleton) tempSkeleton.remove();
+
+            const tableContainer = document.querySelector('.content > .erp-card .table-responsive:not(.skeleton-container)');
+            if (tableContainer) tableContainer.style.display = '';
+        }
+
+        mostrarSkeletonGlobais();
+
+        if (document.readyState === 'complete') {
+            setTimeout(ocultarSkeletonGlobais, 100);
+        } else {
+            window.addEventListener('load', ocultarSkeletonGlobais);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            mostrarSkeletonGlobais();
+        });
+
+        // =======================================================================
         // FUNÇÃO GENÉRICA DE TOASTS
         // =======================================================================
         function mostrarToast(tipo, titulo, mensagem) {
@@ -447,48 +560,69 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         // =======================================================================
-        // SUBMISSÃO AJAX COM SUPORTE A UPLOAD DE ARQUIVOS (MULTIPART/FORM-DATA)
+        // VISIBILIDADE DE SENHA (TOGGLE)
+        // =======================================================================
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function validarSenhaConfirmacao(form) {
+            const senha = form.querySelector('input[name="senha"]');
+            const confirma = form.querySelector('input[name="confirma_senha"]');
+            
+            if (senha && confirma) {
+                if (senha.value !== confirma.value) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // =======================================================================
+        // SUBMISSÃO AJAX COM SUPORTE A UPLOAD DE ARQUIVOS E SKELETON
         // =======================================================================
         let isSubmitting = false;
 
         async function prepararSubmissaoSimples(event, form, defaultMsg) {
             event.preventDefault();
+            
+            if (!validarSenhaConfirmacao(form)) {
+                mostrarToast('erro', 'Atenção', 'As senhas inseridas não coincidem!');
+                return;
+            }
+
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
             if (isSubmitting) return;
 
-            // Fecha o modal aberto imediatamente
             const modalEl = form.closest('.modal');
             if (modalEl) {
                 const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
                 modal.hide();
             }
 
-            // Defesa extra: Remove o ecrã escuro caso fique travado
             document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
             document.body.classList.remove('modal-open');
             document.body.style = '';
 
-            // Exibe Toast no modo "Aguarde..."
-            const successToastEl = document.getElementById('sucessoToast');
-            document.getElementById('sucessoTitulo').innerText = "A Processar";
-            document.getElementById('sucessoSub').innerText = "Por favor, aguarde...";
-            successToastEl.setAttribute('data-bs-autohide', 'false');
-
-            const timerEl = document.getElementById('sucessoTimer');
-            if (timerEl) timerEl.style.display = 'none';
-
-            const oldInstance = bootstrap.Toast.getInstance(successToastEl);
-            if (oldInstance) oldInstance.dispose();
-            const successToast = new bootstrap.Toast(successToastEl);
-            successToast.show();
+            // Mostrar Skeleton Loading ao invés de toast amarelo obstrutivo
+            mostrarSkeletonGlobais();
 
             isSubmitting = true;
 
             try {
-                // O FormData funciona perfeitamente para Criar, Editar (com foto ou sem foto) e Excluir
                 const formData = new FormData(form);
 
                 const response = await fetch(form.action, {
@@ -501,14 +635,12 @@ function cadastroView(usuario, usuarios = []) {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
 
-                    // 1. Atualizar conteúdo principal
                     const oldContent = document.querySelector('.content');
                     const newContent = doc.querySelector('.content');
                     if (oldContent && newContent) {
                         oldContent.innerHTML = newContent.innerHTML;
                     }
 
-                    // 2. Atualizar todos os Modais de Edição/Exclusão
                     const staticModals = ['novoUsuarioModal', 'sidebarMenu'];
                     document.querySelectorAll('.modal').forEach(m => {
                         if (!staticModals.includes(m.id)) m.remove();
@@ -517,14 +649,12 @@ function cadastroView(usuario, usuarios = []) {
                         if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
                     });
 
-                    // 3. Reset do formulário original e pré-visualização de imagem
                     form.reset();
                     const previewImg = form.querySelector('img[id^="previewFoto"]');
                     if (previewImg) {
                         previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Usuario&background=e9ecef&color=6c757d&size=120";
                     }
 
-                    // 4. Analisar URL caso o servidor envie mensagens específicas
                     const responseUrl = new URL(response.url);
                     let finalMsg = defaultMsg;
                     if (responseUrl.searchParams.has('sucesso')) finalMsg = 'Novo usuário foi adicionado ao sistema.';
@@ -540,6 +670,7 @@ function cadastroView(usuario, usuarios = []) {
                 mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
             } finally {
                 isSubmitting = false;
+                ocultarSkeletonGlobais();
             }
         }
 

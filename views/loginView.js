@@ -1,5 +1,4 @@
 // views/loginView.js
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function loginView(msg = "") {
   return `
@@ -17,7 +16,7 @@ function loginView(msg = "") {
           height: 100%;
           margin: 0;
           overflow: hidden;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
           background-color: #f4f7f6;
         }
 
@@ -149,12 +148,32 @@ function loginView(msg = "") {
           background-color: #0D5749;
           border-color: #0D5749;
         }
+
+        /* ANIMAÇÕES DO TOAST */
+        .toast {
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
+        }
+        .toast.showing, .toast.show {
+            transform: translateX(0);
+        }
+        .toast-timer {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.4);
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transform-origin: left;
+        }
+        @keyframes shrinkToast {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
       </style>
   </head>
 
   <body class="d-flex align-items-center justify-content-center vh-100">
-    
-    ${renderLoaderParticulas("Preparando Sistema...")}
 
     <video id="bg-video" autoplay muted loop playsinline>
       <source src="/img/bg.mp4" type="video/mp4">
@@ -197,7 +216,7 @@ function loginView(msg = "") {
         </div>
       ` : ""}
 
-      <form method="POST" action="/login">
+      <form id="formLogin" method="POST" action="/login" onsubmit="prepararLogin(event, this)">
         
         <div class="mb-3">
             <label class="form-label text-muted fw-medium" style="font-size: 0.8rem;">E-mail</label>
@@ -229,9 +248,158 @@ function loginView(msg = "") {
       </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="./script/checkLogin.js"></script>
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Acesso Permitido!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Bem-vindo(a) ao sistema.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none;"></div>
+        </div>
 
+        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Função Genérica de Toasts
+        function mostrarToastLogin(tipo, titulo, mensagem) {
+            const isSuccess = tipo === 'sucesso';
+            const toastId = isSuccess ? 'sucessoToast' : 'erroToast';
+            const tituloId = isSuccess ? 'sucessoTitulo' : 'erroTitulo';
+            const subId = isSuccess ? 'sucessoSub' : 'erroSub';
+            const timerId = isSuccess ? 'sucessoTimer' : 'erroTimer';
+
+            const toastEl = document.getElementById(toastId);
+            if (toastEl) {
+                document.getElementById(tituloId).innerText = titulo;
+                document.getElementById(subId).innerText = mensagem;
+                
+                const timerEl = document.getElementById(timerId);
+                if (timerEl) {
+                    timerEl.style.display = 'block';
+                    timerEl.style.animation = 'none';
+                    timerEl.offsetHeight; // Força reflow
+                    timerEl.style.animation = 'shrinkToast 5s linear forwards';
+                }
+
+                // Evita conflitos instanciando um novo toast e fechando após 5s
+                const oldInstance = bootstrap.Toast.getInstance(toastEl);
+                if (oldInstance) oldInstance.dispose();
+
+                const toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                
+                toast.show();
+            }
+        }
+
+        // Submissão do Login em Segundo Plano (AJAX)
+        async function prepararLogin(event, form) {
+            event.preventDefault();
+            
+            const btn = form.querySelector('button[type="submit"]');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Validando...';
+            btn.disabled = true;
+
+            try {
+                const formData = new URLSearchParams();
+                new FormData(form).forEach((value, key) => formData.append(key, value));
+
+                const response = await fetch(form.action, {
+                    method: form.method || 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                // O fetch segue os redirecionamentos configurados no backend
+                const responseUrl = new URL(response.url);
+
+                if (responseUrl.pathname.includes('/home')) {
+                    // Login com sucesso!
+                    mostrarToastLogin('sucesso', 'Acesso Permitido', 'A redirecionar...');
+                    
+                    // Um pequeno atraso apenas para mostrar a animação de sucesso bonita antes de recarregar
+                    setTimeout(() => {
+                        window.location.href = '/home';
+                    }, 1200); 
+                } else if (responseUrl.searchParams.has('erro')) {
+                    // Trata os erros
+                    const tipoErro = responseUrl.searchParams.get('erro');
+                    if (tipoErro === 'credenciais') {
+                        mostrarToastLogin('erro', 'Acesso Negado', 'E-mail ou senha incorretos. Tente novamente.');
+                    } else if (tipoErro === 'servidor') {
+                        mostrarToastLogin('erro', 'Erro', 'Falha ao conectar com o servidor.');
+                    } else {
+                        mostrarToastLogin('erro', 'Acesso Negado', 'Verifique as suas credenciais.');
+                    }
+                    
+                    // Restaura o botão e limpa a password
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                    form.querySelector('input[name="senha"]').value = '';
+                    
+                } else {
+                    // Para qualquer outro redirecionamento inesperado, deixa seguir o fluxo normal
+                    window.location.href = response.url;
+                }
+
+            } catch (err) {
+                console.error(err);
+                mostrarToastLogin('erro', 'Falha de Conexão', 'Verifique a sua internet e tente novamente.');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        // Verifica os erros na URL assim que a página carrega (Ex: quando vem de redirecionamentos diretos de views protegidas)
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('erro')) {
+                const tipoErro = urlParams.get('erro');
+                
+                if (tipoErro === 'credenciais') {
+                    mostrarToastLogin('erro', 'Acesso Negado', 'E-mail ou senha incorretos. Tente novamente.');
+                } else if (tipoErro === 'servidor') {
+                    mostrarToastLogin('erro', 'Erro', 'Falha ao conectar com o servidor.');
+                } else if (tipoErro === 'perfil_invalido') {
+                    mostrarToastLogin('erro', 'Acesso Restrito', 'O seu perfil não tem permissões configuradas.');
+                } else if (tipoErro === 'nao_logado') {
+                    mostrarToastLogin('erro', 'Acesso Expirado', 'Por favor, faça login para continuar.');
+                }
+
+                // Limpa a URL para que o erro não volte a aparecer
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('erro');
+                    window.history.replaceState({}, document.title, url.toString());
+                }
+            }
+        });
+    </script>
   </body>
   </html>
   `;

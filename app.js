@@ -157,7 +157,7 @@ app.use(session({
     store: sessionStore, // Define o MySQL como motor de gravação
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         maxAge: 1000 * 60 * 60 * 12 // 12 horas
     }
 }));
@@ -372,10 +372,112 @@ async function obterCidadeDasCoordenadas(coordenadas) {
     }
     return null;
 }
+
+
+// =======================================================================
+// LÓGICA DE AUTORIZAÇÃO (COLOCAR NO APP.JS)
+// =======================================================================
+const permissoesPorCargo = {
+    admin: ['*'], // Acesso total
+
+    motorista: [
+        '/checklist-motoristas',
+        '/entregas',
+        '/home',
+        '/logout',
+        '/notificacoes',
+        '/api'
+    ],
+
+    logistica: [
+        '/producao',
+        '/veiculos',
+        '/checklist-motoristas',
+        '/entregas',
+        '/caderno-entregas',
+        '/home',
+        '/logout',
+        '/notificacoes',
+        '/api'
+    ],
+
+    financeiro: [
+        '/tabela-precos',
+        '/chapas',
+        '/entradas-saidas',
+        '/producao',
+        '/caderno-entregas',
+        '/home',
+        '/logout',
+        '/notificacoes',
+        '/api',
+        '/exportar'
+    ],
+
+    design: [
+        '/propostas',
+        '/admin/gabaritos',
+        '/home',
+        '/logout',
+        '/notificacoes',
+        '/api'
+    ]
+};
+
+function verificarHierarquia(req, res, next) {
+    const rotaRequisitada = req.path;
+
+    // 1. Verifica se está logado
+    if (!req.session || !req.session.user) {
+        if (rotaRequisitada === '/login') return next();
+        return res.redirect('/login?erro=nao_logado');
+    }
+
+    const tipoUsuario = (req.session.user.tipo_usuario || 'admin').toLowerCase();
+
+    // 2. Admin passa direto para qualquer rota
+    if (tipoUsuario === 'admin') {
+        return next();
+    }
+
+    const rotasPermitidas = permissoesPorCargo[tipoUsuario] || [];
+
+    // 3. Verifica se a rota requisitada começa com alguma das rotas permitidas
+    const temAcesso = rotasPermitidas.some(rotaPai =>
+        rotaRequisitada === rotaPai || rotaRequisitada.startsWith(rotaPai + '/')
+    );
+
+    if (temAcesso) {
+        return next(); 
+    } else {
+        console.warn(`Acesso negado: [${tipoUsuario}] tentou acessar ${rotaRequisitada}`);
+        
+        // Verifica se a requisição veio do AJAX/Fetch (Formulários sem reload)
+        const isAjax = req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.headers['sec-fetch-dest'] === 'empty';
+        
+        if (isAjax) {
+            // Se for requisição em segundo plano, apenas barra e o front-end dispara o Toast
+            return res.status(403).send("Acesso Negado");
+        }
+
+        if (rotaRequisitada === '/home') {
+            // Se não tem acesso nem à home, mata a sessão e manda pro login
+            req.session.destroy(() => {
+                res.redirect('/login?erro=perfil_invalido');
+            });
+            return;
+        }
+        
+        // Redireciona o utilizador de volta passando a flag de erro na URL
+        return res.redirect('/home?erro=acesso_negado');
+    }
+}
+
+
 // =======================================================
 // =======================================================
 
-app.get("/login", (req, res) => {
+app.get("/login", verificarHierarquia, (req, res) => {
     if (req.session.user) {
         // Se já está logado, vai direto para home
         return res.redirect("/home");
@@ -410,17 +512,15 @@ app.get("/", (req, res) => {
 app.post("/login", (req, res) => {
     const { email, senha } = req.body;
 
-    // Certifique-se de que o SELECT busca a foto (ou use SELECT *)
     db.query("SELECT * FROM usuarios WHERE email=? AND senha=?", [email, senha], (err, rows) => {
         if (err) {
             console.error("Erro no login:", err);
-            return res.status(500).send("Erro no servidor.");
+            return res.redirect("/login?erro=servidor");
         }
 
         if (rows.length > 0) {
             const user = rows[0];
 
-            // Aqui está o detalhe: guardar a foto na sessão!
             req.session.user = {
                 id: user.id,
                 nome: user.nome,
@@ -428,9 +528,10 @@ app.post("/login", (req, res) => {
                 foto: user.foto
             };
 
-            return res.redirect("/home"); // ou o redirecionamento padrão do seu sistema
+            return res.redirect("/home"); 
         } else {
-            return res.status(401).send("Credenciais inválidas.");
+            // REDIRECIONA COM A FLAG DE ERRO EM VEZ DE DAR SEND()
+            return res.redirect("/login?erro=credenciais");
         }
     });
 });
@@ -2530,10 +2631,10 @@ app.post("/caderno-entregas/novo", async (req, res) => {
                 );
             }
         }
-        
+
         // CORREÇÃO AQUI: Passando o ID do caderno criado pela URL para o frontend detectar
         return res.redirect("/caderno-entregas?cadernoCriado=" + cadernoId);
-        
+
     } catch (error) {
         console.error("Erro ao salvar caderno:", error);
         res.status(500).send("Erro ao salvar.");
@@ -2673,10 +2774,10 @@ app.post("/caderno-entregas/clientes/novo", async (req, res) => {
                 coordenadas || null
             ]);
         }
-        
+
         // CORREÇÃO: Enviando o parâmetro na URL para ativar o Toast na View
         res.redirect("/caderno-entregas?sucessoCliente=1");
-        
+
     } catch (error) {
         console.error("[ERRO AO CADASTRAR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar salvar o cliente.");
@@ -2713,10 +2814,10 @@ app.post("/caderno-entregas/clientes/editar", async (req, res) => {
                 WHERE local_entrega = ?
             `, [nomeNovo.trim(), nomeOriginal.trim()]);
         }
-        
+
         // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
         res.redirect("/caderno-entregas?sucessoCliente=1");
-        
+
     } catch (error) {
         console.error("[ERRO AO EDITAR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar atualizar o cliente.");
@@ -2734,10 +2835,10 @@ app.post("/caderno-entregas/clientes/excluir", async (req, res) => {
         if (nome) {
             await db.promise().query("DELETE FROM clientes_historico WHERE nome = ?", [nome.trim()]);
         }
-        
+
         // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
         res.redirect("/caderno-entregas?sucessoCliente=1");
-        
+
     } catch (error) {
         console.error("[ERRO AO EXCLUIR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar excluir o cliente.");

@@ -541,6 +541,20 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           to { width: 0%; }
       }
 
+      /* SKELETON LOADING (Isolado para não conflitar com a sidebar) */
+      .skeleton-view {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading-view 1.5s infinite linear;
+          border-radius: 4px;
+      }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
+      @keyframes skeleton-loading-view {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+      }
+
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
     </style>
   </head>
@@ -586,7 +600,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button class="btn btn-sm btn-success shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
                 <i class="fa-solid fa-plus me-1"></i> Caderno
             </button>
-            <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está sendo baixado.')">
+            <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
                 <i class="fa-solid fa-file-excel me-1"></i> Relatório
             </a>
         </div>
@@ -624,7 +638,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                </tbody>
              </table>
            </div>` 
-        : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-route fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhum caderno encontrado para este filtro.</p></div>`
+        : `<div class="col-12 text-center text-muted mt-4 text-center-empty"><i class="fa-solid fa-route fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhum caderno encontrado para este filtro.</p></div>`
       }
 
       ${paginacaoHtml}
@@ -1022,6 +1036,85 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       }
 
       // =======================================================================
+      // SKELETON LOADING
+      // =======================================================================
+      function gerarSkeletonTabela(quantidade = 5) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <tr class="align-middle">
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 40px; margin: 0 auto;"></div></td>
+                  <td class="text-end py-2 px-3 d-flex justify-content-end gap-1">
+                      <div class="skeleton-view skeleton-btn-view"></div>
+                      <div class="skeleton-view skeleton-btn-view"></div>
+                      <div class="skeleton-view skeleton-btn-view"></div>
+                  </td>
+              </tr>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const tableContainer = document.querySelector('.content > .table-responsive');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+          
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
+              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
+                 <thead class="table-light">
+                   <tr>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Data de Saída</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Motorista</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Veículo</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Entregas</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Ações</th>
+                   </tr>
+                 </thead>
+                 <tbody class="border-top-0">
+                    \${gerarSkeletonTabela(5)}
+                 </tbody>
+              </table>
+          </div>\`;
+
+          if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
+              tableContainer.style.display = 'none';
+              tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          } else if (emptyState) {
+              emptyState.style.display = 'none';
+              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const tableContainer = document.querySelector('.content > .table-responsive');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+
+          if (tableContainer) tableContainer.style.display = '';
+          if (emptyState) emptyState.style.display = '';
+      }
+
+      // ACIONAMENTO AUTOMÁTICO DO SKELETON PARA TABELA (LOAD/RELOAD)
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
+      });
+
+      // =======================================================================
       // CARREGAMENTO INICIAL: CHECA URL PARA MODAIS (Caso haja Refresh)
       // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {
@@ -1058,7 +1151,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       async function prepararBuscaSimples(event, form, titleMsg) {
           if (event) event.preventDefault();
           
-          mostrarToastCarregando('Atualizando os registros...');
+          mostrarSkeletonGlobais();
 
           try {
               const formData = new FormData(form);
@@ -1100,7 +1193,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
       async function navegarPagina(event, url) {
           event.preventDefault();
-          mostrarToastCarregando('Mudando de página...');
+          mostrarSkeletonGlobais();
           try {
               const response = await fetch(url, { method: 'GET' });
               if (response.ok) {
@@ -1115,9 +1208,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   }
                   
                   atualizarModaisDinamicos(doc);
-
                   window.history.pushState({}, '', url);
-                  mostrarToast('sucesso', 'Página Carregada!', 'Exibindo novos resultados.');
               } else {
                   mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
               }
@@ -1394,6 +1485,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               sucessoIcon.className = "fa-solid fa-circle-check text-white fs-5 me-2"; 
               if(progressoContainer) progressoContainer.style.display = 'none';
               sucessoSub.innerText = "Por favor, aguarde...";
+              
+              // Se for apenas edição ou exclusão comum, podemos acionar o skeleton
+              if(!titleMsg.toLowerCase().includes('cliente')) {
+                 mostrarSkeletonGlobais();
+              }
           }
 
           try {

@@ -1,6 +1,5 @@
 // views/checklistMotoristasView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -315,14 +314,26 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
           to { width: 0%; }
       }
 
+      /* SKELETON LOADING */
+      .skeleton-view {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading-view 1.5s infinite linear;
+          border-radius: 4px;
+      }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 30px; width: 100%; border-radius: 4px; display: inline-block; }
+      @keyframes skeleton-loading-view {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+      }
+
       @media (max-width: 767.98px) {
         body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
       }
     </style>
   </head>
   <body>
-    
-    ${renderLoaderParticulas("Organizando checklists")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
@@ -415,7 +426,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Motorista</label>
                 <select name="motorista" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Motorista</option>
+                  <option value="" disabled selected>Quem está dirigindo?</option>
                   <option value="Flávio">Flávio</option>
                   <option value="Alexandre">Alexandre</option>
                   <option value="Thiago">Thiago</option>
@@ -424,7 +435,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Veículo</label>
                 <select name="veiculo" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Veículo</option>
+                  <option value="" disabled selected>Qual veículo?</option>
                   <option value="Master">Renault Master</option>
                   <option value="Strada">Fiat Strada</option>
                   <option value="Fiorino">Fiat Fiorino</option>
@@ -433,7 +444,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
               <div class="mb-3">
                 <label class="form-label text-muted mb-1 fw-medium" style="font-size:0.8rem;">Responsável Logístico</label>
                 <select name="responsavel" class="form-select form-select-sm" required>
-                  <option value="" disabled selected>Responsável logístico</option>
+                  <option value="" disabled selected>Quem liberou o carro?</option>
                   <option value="Eliege">Eliege</option>
                   <option value="Mirna">Mirna</option>
                   <option value="Renilson">Renilson</option>
@@ -795,12 +806,78 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
       }
 
       // =======================================================================
+      // SKELETON LOADING
+      // =======================================================================
+      function gerarSkeletonCards(quantidade = 8) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                <div class="card erp-card shadow-sm border-0 h-100 p-2">
+                  <div class="card-body p-2 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div>
+                      <div class="skeleton-view skeleton-text-view" style="width: 30%; height: 20px; border-radius: 10px; margin: 0;"></div>
+                    </div>
+                    <div class="mb-2 mt-2">
+                      <div class="skeleton-view skeleton-text-view" style="width: 80%;"></div>
+                      <div class="skeleton-view skeleton-text-view" style="width: 50%;"></div>
+                    </div>
+                    <div class="mt-auto border-top pt-2 d-flex justify-content-between align-items-center gap-2">
+                       <div class="skeleton-view skeleton-btn-view" style="width: 60%;"></div>
+                       <div class="skeleton-view skeleton-btn-view" style="width: 30%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const cardContainer = document.querySelector('.content > .row.g-3');
+          const emptyState = document.querySelector('.content > .row.g-3 > .col-12.text-center');
+
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="row g-3 skeleton-container">
+              \${gerarSkeletonCards(8)}
+          </div>\`;
+
+          if (cardContainer && !cardContainer.classList.contains('skeleton-container')) {
+              cardContainer.style.display = 'none';
+              cardContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const cardContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
+          if (cardContainer) cardContainer.style.display = 'flex';
+      }
+
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
+      });
+
+      // =======================================================================
       // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
       // =======================================================================
       async function prepararBuscaSimples(event, form, titleMsg) {
           if (event) event.preventDefault();
           
-          mostrarToastCarregando('Atualizando os registros...');
+          mostrarSkeletonGlobais();
 
           try {
               const formData = new FormData(form);
@@ -829,6 +906,8 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
           } catch (err) {
               console.error(err);
               mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          } finally {
+              ocultarSkeletonGlobais();
           }
       }
 
@@ -842,7 +921,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
       async function navegarPagina(event, url) {
           event.preventDefault();
-          mostrarToastCarregando('Mudando de página...');
+          mostrarSkeletonGlobais();
           try {
               const response = await fetch(url, { method: 'GET' });
               if (response.ok) {
@@ -859,17 +938,18 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   atualizarModaisDinamicos(doc);
 
                   window.history.pushState({}, '', url);
-                  mostrarToast('sucesso', 'Página Carregada!', 'Exibindo novos resultados.');
               } else {
                   mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
               }
           } catch (err) {
               mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          } finally {
+              ocultarSkeletonGlobais();
           }
       }
 
       function atualizarModaisDinamicos(doc) {
-          const staticModals = ['novoChecklistModal', 'relatorioModal', 'sidebarMenu', 'modalInstrucoes'];
+          const staticModals = ['novoChecklistModal', 'relatorioModal', 'sidebarMenu'];
           document.querySelectorAll('.modal').forEach(m => {
               if (!staticModals.includes(m.id)) m.remove();
           });
@@ -957,35 +1037,46 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
 
       function showTab(n) {
         const steps = document.getElementsByClassName("wizard-step");
+        if(steps.length === 0) return;
+        
         for (let i = 0; i < steps.length; i++) {
           steps[i].classList.remove("active");
         }
         steps[n].classList.add("active");
         
         const title = steps[n].getAttribute("data-title");
-        document.getElementById("stepTitle").innerText = "Passo " + (n + 1) + " de " + steps.length + " - " + title;
+        const stepTitle = document.getElementById("stepTitle");
+        if(stepTitle) stepTitle.innerText = "Passo " + (n + 1) + " de " + steps.length + " - " + title;
         
         const progress = ((n + 1) / steps.length) * 100;
-        document.getElementById("progressBar").style.width = progress + "%";
+        const progressBar = document.getElementById("progressBar");
+        if(progressBar) progressBar.style.width = progress + "%";
 
-        if (n === 0) {
-          document.getElementById("prevBtn").style.display = "none";
-        } else {
-          document.getElementById("prevBtn").style.display = "inline-block";
+        const prevBtn = document.getElementById("prevBtn");
+        if (prevBtn) {
+            if (n === 0) {
+              prevBtn.style.display = "none";
+            } else {
+              prevBtn.style.display = "inline-block";
+            }
         }
 
         const nextBtn = document.getElementById("nextBtn");
-        if (n === (steps.length - 1)) {
-          nextBtn.innerHTML = 'Finalizar e Enviar <i class="fa-solid fa-check ms-1"></i>';
-          nextBtn.classList.replace("btn-primary", "btn-success");
-        } else {
-          nextBtn.innerHTML = 'Próximo <i class="fa-solid fa-chevron-right ms-1"></i>';
-          nextBtn.classList.replace("btn-success", "btn-primary");
+        if (nextBtn) {
+            if (n === (steps.length - 1)) {
+              nextBtn.innerHTML = 'Finalizar e Enviar <i class="fa-solid fa-check ms-1"></i>';
+              nextBtn.classList.replace("btn-primary", "btn-success");
+            } else {
+              nextBtn.innerHTML = 'Próximo <i class="fa-solid fa-chevron-right ms-1"></i>';
+              nextBtn.classList.replace("btn-success", "btn-primary");
+            }
         }
       }
 
       function validateForm(tabIndex) {
-        const step = document.getElementsByClassName("wizard-step")[tabIndex];
+        const steps = document.getElementsByClassName("wizard-step");
+        if(steps.length === 0) return true;
+        const step = steps[tabIndex];
         const inputs = step.querySelectorAll("input[required], select[required], textarea[required]");
         let valid = true;
         for (let i = 0; i < inputs.length; i++) {
@@ -1022,7 +1113,8 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
         if(modalEl) {
            modalEl.addEventListener('hidden.bs.modal', function () {
              if (!isSubmitting) {
-               document.getElementById("wizardForm").reset();
+               const formW = document.getElementById("wizardForm");
+               if(formW) formW.reset();
                resetWizard();
              }
            });

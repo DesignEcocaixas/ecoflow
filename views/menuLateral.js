@@ -138,11 +138,11 @@ function menuLateral(usuario, rotaAtiva = "") {
           ${renderFoto}
         </div>
 
-        <div class="text-truncate w-100 px-1">
-          <div class="fw-bold text-truncate text-white mb-2" style="font-size: 1.05rem;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
+        <div class="text-truncate w-100 px-1 profile-info-box">
+          <div class="fw-bold text-truncate text-white mb-2 profile-name-text" style="font-size: 1.05rem;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
             ${usuario && usuario.nome ? usuario.nome : "Usuário"}
           </div>
-          <span class="badge bg-white bg-opacity-25 text-white" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
+          <span class="badge bg-white bg-opacity-25 text-white profile-badge-type" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
             <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
           </span>
         </div>
@@ -184,10 +184,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
       <div class="offcanvas-body p-0 painel-notificacoes-body">
         <div id="listaNotificacoes" class="p-3">
-          <div class="text-center text-muted py-4">
-            Carregando notificações...
           </div>
-        </div>
 
         <div class="border-top p-3 painel-notificacoes-footer">
           <button type="button" id="btnLimparNotificacoes" class="btn btn-outline-danger w-100 btn-sm">
@@ -198,6 +195,77 @@ function menuLateral(usuario, rotaAtiva = "") {
     </div>
 
     <script>
+      // =======================================================================
+      // FUNÇÃO GLOBAL: SKELETON LOADING PARA O MENU LATERAL E PÁGINA
+      // =======================================================================
+      window.mostrarSkeletonMenuLateral = function() {
+          // 1. Elementos do Perfil
+          const avatar = document.querySelector('.profile-avatar-box img') || document.querySelector('.profile-avatar-box div');
+          if (avatar) avatar.classList.add('skeleton');
+          
+          const nome = document.querySelector('.user-profile-container .profile-name-text');
+          if (nome) nome.classList.add('skeleton'); 
+          
+          const badge = document.querySelector('.user-profile-container .profile-badge-type');
+          if (badge) badge.classList.add('skeleton'); 
+          
+          const btnNotif = document.getElementById('btnAbrirNotificacoes');
+          if (btnNotif) btnNotif.classList.add('skeleton');
+
+          // 2. Elementos dos Links (Aplicado individualmente no texto e ícone para manter o layout limpo)
+          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
+          linksSpans.forEach(el => el.classList.add('skeleton'));
+          
+          const linksIcons = document.querySelectorAll('#sidebarMenuContainer a .menu-icone');
+          linksIcons.forEach(el => el.classList.add('skeleton'));
+
+          // 3. Desativar cliques enquanto carrega
+          const links = document.querySelectorAll('#sidebarMenuContainer a');
+          links.forEach(l => l.style.pointerEvents = 'none');
+      };
+
+      window.ocultarSkeletonMenuLateral = function() {
+          const avatar = document.querySelector('.profile-avatar-box img') || document.querySelector('.profile-avatar-box div');
+          if (avatar) avatar.classList.remove('skeleton');
+          
+          const nome = document.querySelector('.user-profile-container .profile-name-text');
+          if (nome) nome.classList.remove('skeleton'); 
+          
+          const badge = document.querySelector('.user-profile-container .profile-badge-type');
+          if (badge) badge.classList.remove('skeleton'); 
+          
+          const btnNotif = document.getElementById('btnAbrirNotificacoes');
+          if (btnNotif) btnNotif.classList.remove('skeleton');
+
+          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
+          linksSpans.forEach(el => el.classList.remove('skeleton'));
+          
+          const linksIcons = document.querySelectorAll('#sidebarMenuContainer a .menu-icone');
+          linksIcons.forEach(el => el.classList.remove('skeleton'));
+
+          const links = document.querySelectorAll('#sidebarMenuContainer a');
+          links.forEach(l => l.style.pointerEvents = '');
+      };
+
+      // ACIONAMENTO AUTOMÁTICO DO SKELETON
+      // 1. Mostrar imediatamente ao iniciar a leitura do menu (Cobre a fase de carregamento da página)
+      mostrarSkeletonMenuLateral();
+
+      // 2. Ocultar quando todos os recursos (HTML, imagens) terminarem de carregar
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonMenuLateral, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonMenuLateral);
+      }
+
+      // 3. Mostrar novamente caso o usuário faça um reload (F5) ou mude de página através de um link
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonMenuLateral();
+      });
+
+      // =======================================================================
+      // LÓGICA DO PAINEL DE NOTIFICAÇÕES (COM SKELETON)
+      // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {
         const btn = document.getElementById("btnAbrirNotificacoes");
         const painelEl = document.getElementById("painelNotificacoes");
@@ -223,6 +291,25 @@ function menuLateral(usuario, rotaAtiva = "") {
               Nenhuma notificação encontrada.
             </div>
           \`;
+        };
+
+        const htmlSkeletonNotificacoes = () => {
+          // Skeleton dinâmico idêntico ao YouTube para o painel lateral
+          let skeletons = '';
+          for(let i=0; i<4; i++) {
+             skeletons += \`
+              <div class="border rounded-3 p-3 mb-2 bg-light">
+                <div class="d-flex justify-content-between gap-2">
+                  <div class="w-100">
+                    <div class="skeleton-dark skeleton-text w-75 mb-2"></div>
+                    <div class="skeleton-dark skeleton-text w-50"></div>
+                  </div>
+                  <div class="skeleton-dark" style="width: 28px; height: 28px; border-radius: 4px; flex-shrink: 0;"></div>
+                </div>
+              </div>
+             \`;
+          }
+          return skeletons;
         };
 
         const atualizarContadorNotificacoes = (total) => {
@@ -289,12 +376,8 @@ function menuLateral(usuario, rotaAtiva = "") {
 
         const carregarNotificacoes = async (mostrarLoading = true) => {
           if (mostrarLoading) {
-            lista.innerHTML = \`
-              <div class="text-center text-muted py-4">
-                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                Carregando notificações...
-              </div>
-            \`;
+            // Usa o skeleton moderno em vez do spinner giratório
+            lista.innerHTML = htmlSkeletonNotificacoes();
           }
 
           try {
@@ -318,6 +401,7 @@ function menuLateral(usuario, rotaAtiva = "") {
               return;
             }
 
+            // Exibir as notificações reais recebidas do servidor
             lista.innerHTML = notificacoes.map(n => {
               const data = n.criado_em
                 ? new Date(n.criado_em).toLocaleString("pt-BR")
@@ -399,6 +483,10 @@ function menuLateral(usuario, rotaAtiva = "") {
   // --- RETORNO COM CSS ---
   return `
     <style>
+      body{
+        font-family: 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
       .sidebar {
         width: 240px !important;
         overflow-x: hidden;
@@ -481,6 +569,40 @@ function menuLateral(usuario, rotaAtiva = "") {
 
       .offcanvas-backdrop.show {
         opacity: 0.5;
+      }
+
+      /* =========================================================
+         SKELETON LOADING PARA MENU LATERAL E NOTIFICAÇÕES
+         ========================================================= */
+      .skeleton {
+          background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.06) 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite linear;
+          border-radius: 6px;
+          color: transparent !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+      }
+      .skeleton * {
+          visibility: hidden !important;
+      }
+      .skeleton-dark {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite linear;
+          border-radius: 6px;
+          color: transparent !important;
+      }
+      .skeleton-dark * {
+          visibility: hidden !important;
+      }
+      .skeleton-text {
+          height: 14px;
+          border-radius: 4px;
+      }
+      @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
       }
 
       @keyframes painelNotificacoesEntrada {

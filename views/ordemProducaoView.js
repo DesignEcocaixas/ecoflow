@@ -69,7 +69,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Roboto', sans-serif; }
     .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
     .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
     .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
@@ -82,7 +82,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .card-pendente { border-left: 5px solid #6c757d !important; border-bottom: 1px solid #eee; }
     .info-sm { font-size: 0.8rem; }
     
-    .progress { height: 12px; border-radius: 10px; background-color: #eee; overflow: hidden; }
+    .progress { height: 16px; border-radius: 10px; background-color: #eee; overflow: hidden; }
     .progress-bar { background-color: #0D5749; transition: width 0.4s ease; }
 
     /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
@@ -116,6 +116,20 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     @keyframes shrinkToast {
         from { width: 100%; }
         to { width: 0%; }
+    }
+
+    /* SKELETON LOADING */
+    .skeleton-view {
+        background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading-view 1.5s infinite linear;
+        border-radius: 4px;
+    }
+    .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+    .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
+    @keyframes skeleton-loading-view {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
     }
 
     /* Divisória apenas no desktop */
@@ -433,7 +447,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
           <h5 class="fw-bold mb-2">Processando Planilha</h5>
           <p id="textoEtapa" class="text-muted small mb-4">Iniciando leitura dos dados...</p>
           <div class="progress">
-            <div id="barraProgresso" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+            <div id="barraProgresso" class="progress-bar progress-bar-striped progress-bar-animated fw-bold" style="width: 0%; font-size: 0.75rem;">0%</div>
           </div>
         </div>
       </div>
@@ -472,6 +486,72 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // =======================================================================
+    // SKELETON LOADING
+    // =======================================================================
+    function gerarSkeletonTabela(quantidade = 3) {
+        let html = '';
+        for(let i=0; i<quantidade; i++) {
+            html += \`
+            <tr class="align-middle">
+                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                <td class="text-center py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 50%; margin: 0 auto;"></div></td>
+                <td class="text-end py-3 px-3 d-flex justify-content-end gap-1"><div class="skeleton-view skeleton-btn-view" style="width: 80px;"></div></td>
+            </tr>\`;
+        }
+        return html;
+    }
+
+    function mostrarSkeletonGlobais() {
+        const tableContainer = document.querySelector('.content > .bg-white .table-responsive');
+        
+        if (document.getElementById('skeleton-temp-container')) return;
+
+        const skeletonHTML = \`
+        <div id="skeleton-temp-container" class="table-responsive skeleton-container">
+            <table class="table table-hover align-middle border mb-0" style="font-size: 0.9rem;">
+               <thead class="table-light">
+                 <tr>
+                   <th>Data de Geração das Ordens</th>
+                   <th class="text-center">Ordens Geradas Neste Dia</th>
+                   <th class="text-end">Ação</th>
+                 </tr>
+               </thead>
+               <tbody>
+                  \${gerarSkeletonTabela(3)}
+               </tbody>
+            </table>
+        </div>\`;
+
+        if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
+            tableContainer.style.display = 'none';
+            tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+        }
+    }
+
+    function ocultarSkeletonGlobais() {
+        const tempSkeleton = document.getElementById('skeleton-temp-container');
+        if (tempSkeleton) tempSkeleton.remove();
+
+        const tableContainer = document.querySelector('.content > .bg-white .table-responsive:not(.skeleton-container)');
+        if (tableContainer) tableContainer.style.display = '';
+    }
+
+    mostrarSkeletonGlobais();
+
+    if (document.readyState === 'complete') {
+        setTimeout(ocultarSkeletonGlobais, 100);
+    } else {
+        window.addEventListener('load', ocultarSkeletonGlobais);
+    }
+
+    window.addEventListener('beforeunload', () => {
+        mostrarSkeletonGlobais();
+    });
+
+    // =======================================================================
+    // FUNÇÕES DA VIEW
+    // =======================================================================
     function mostrarToast(tipo, titulo, mensagem) {
         const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
         if (toastEl) {
@@ -524,6 +604,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
             const barra = document.getElementById('barraProgresso');
             const texto = document.getElementById('textoEtapa');
+            
+            barra.style.width = '0%';
+            barra.innerText = '0%';
 
             const etapas = [
                 { v: 30, t: "Limpando registros antigos..." },
@@ -539,6 +622,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                     return;
                 }
                 barra.style.width = etapas[i].v + "%";
+                barra.innerText = etapas[i].v + "%";
                 texto.innerText = etapas[i].t;
                 i++;
             }, 1200);

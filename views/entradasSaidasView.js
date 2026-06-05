@@ -1,6 +1,5 @@
 // views/entradasSaidasView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -206,12 +205,12 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     paginas.forEach(p => {
       if (ultima) {
         if (p - ultima === 2) {
-          html += `<li class="page-item"><a class="page-link text-dark" href="/entradas-saidas?page=${ultima + 1}${baseQueryString}">${ultima + 1}</a></li>`;
+          html += `<li class="page-item"><a class="page-link text-dark" href="/entradas-saidas?page=${ultima + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
           html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
         }
       }
-      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entradas-saidas?page=${p}${baseQueryString}">${p}</a></li>`;
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entradas-saidas?page=${p}${baseQueryString}" onclick="navegarPagina(event, this.href)">${p}</a></li>`;
       ultima = p;
     });
 
@@ -222,11 +221,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page - 1}${baseQueryString}">&laquo;</a>
+          <a class="page-link text-dark" href="/entradas-saidas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&laquo;</a>
         </li>
         ${pageLinks}
         <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page + 1}${baseQueryString}">&raquo;</a>
+          <a class="page-link text-dark" href="/entradas-saidas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -259,6 +258,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           font-size: 0.85rem; 
           font-weight: 500; 
           box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       }
       
       .erp-modal { border-radius: 12px; border: none; }
@@ -312,6 +312,20 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           to { width: 0%; }
       }
 
+      /* SKELETON LOADING (Isolado para não conflitar com a sidebar) */
+      .skeleton-view {
+          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading-view 1.5s infinite linear;
+          border-radius: 4px;
+      }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
+      @keyframes skeleton-loading-view {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+      }
+
       /* Botão Flutuante de Ajuda */
       .btn-flutuante {
         position: fixed;
@@ -345,8 +359,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
   </head>
   <body>
     
-    ${renderLoaderParticulas("Carregando")}
-
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
       <div class="flex-grow-1">${menuHTML}</div>
@@ -422,7 +434,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           </div>
         </div>
 
-        <form class="row g-2 align-items-end mt-2 border-top pt-3" method="GET" action="/entradas-saidas">
+        <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top pt-3" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
             <div class="col-12 col-md-3">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
                 <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
@@ -441,7 +453,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
             </div>
             <div class="col-12 col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                <a href="/entradas-saidas" class="btn btn-sm btn-light border flex-grow-1 text-center shadow-sm"><i class="fa-solid fa-xmark"></i></a>
+                <button type="button" class="btn btn-sm btn-light border text-center shadow-sm flex-grow-1" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </form>
 
@@ -465,7 +477,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                </tbody>
              </table>
            </div>` 
-        : `<div class="col-12 text-center text-muted mt-4"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada para este filtro.</p></div>`
+        : `<div class="col-12 text-center text-muted mt-4 text-center-empty"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada para este filtro.</p></div>`
       }
 
       ${paginacaoHtml}
@@ -674,6 +686,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+      // =======================================================================
       // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO) CORRIGIDA
       // =======================================================================
       function mostrarToast(tipo, titulo, mensagem) {
@@ -702,6 +715,187 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               
               toast.show();
           }
+      }
+
+      function mostrarToastCarregando(mensagem) {
+          const successToastEl = document.getElementById('sucessoToast');
+          if(!successToastEl) return;
+          document.getElementById('sucessoTitulo').innerText = "A Processar";
+          document.getElementById('sucessoSub').innerText = mensagem;
+
+          successToastEl.setAttribute('data-bs-autohide', 'false');
+
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
+      }
+
+      // =======================================================================
+      // SKELETON LOADING
+      // =======================================================================
+      function gerarSkeletonTabela(quantidade = 5) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <tr class="align-middle">
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 85px; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                  <td class="py-2 px-3 text-end"><div class="skeleton-view skeleton-text-view" style="width: 50%; margin: 0 0 0 auto;"></div></td>
+                  <td class="text-center py-2 px-3 d-flex justify-content-center gap-1">
+                      <div class="skeleton-view skeleton-btn-view"></div>
+                      <div class="skeleton-view skeleton-btn-view"></div>
+                  </td>
+              </tr>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const tableContainer = document.querySelector('.content > .table-responsive');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+          
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
+              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
+                 <thead class="table-light">
+                   <tr>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
+                     <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
+                   </tr>
+                 </thead>
+                 <tbody class="border-top-0">
+                    \${gerarSkeletonTabela(5)}
+                 </tbody>
+              </table>
+          </div>\`;
+
+          if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
+              tableContainer.style.display = 'none';
+              tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          } else if (emptyState) {
+              emptyState.style.display = 'none';
+              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const tableContainer = document.querySelector('.content > .table-responsive');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+
+          if (tableContainer) tableContainer.style.display = '';
+          if (emptyState) emptyState.style.display = '';
+      }
+
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
+      });
+
+      // =======================================================================
+      // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
+      // =======================================================================
+      async function prepararBuscaSimples(event, form, titleMsg) {
+          if (event) event.preventDefault();
+          
+          mostrarSkeletonGlobais();
+
+          try {
+              const formData = new FormData(form);
+              const queryString = new URLSearchParams(formData).toString();
+              const url = form.action + '?' + queryString;
+
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível realizar a busca.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          } finally {
+              ocultarSkeletonGlobais(); 
+          }
+      }
+
+      function limparFiltros() {
+          const form = document.getElementById('formFiltro');
+          if (form) {
+              form.querySelectorAll('input').forEach(i => i.value = '');
+              form.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+              prepararBuscaSimples(null, form, 'Os filtros foram removidos!');
+          }
+      }
+
+      async function navegarPagina(event, url) {
+          event.preventDefault();
+          mostrarSkeletonGlobais();
+          try {
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+                  window.history.pushState({}, '', url);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          }
+      }
+
+      function atualizarModaisDinamicos(doc) {
+          const staticModals = ['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal', 'sidebarMenu'];
+          document.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) m.remove();
+          });
+          doc.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
+          });
       }
 
       // =======================================================================
@@ -844,19 +1038,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           }
 
           // Ativa o Toast no modo contínuo de "A Processar"
-          const successToastEl = document.getElementById('sucessoToast');
-          document.getElementById('sucessoTitulo').innerText = "A Processar";
-          document.getElementById('sucessoSub').innerText = "Por favor, aguarde...";
-          
-          successToastEl.setAttribute('data-bs-autohide', 'false'); 
-          
-          const timerEl = document.getElementById('sucessoTimer');
-          if (timerEl) timerEl.style.display = 'none';
-
-          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
-          if (oldInstance) oldInstance.dispose();
-          const successToast = new bootstrap.Toast(successToastEl);
-          successToast.show();
+          mostrarToastCarregando("A aguardar envio...");
 
           isSubmitting = true;
 
@@ -884,18 +1066,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                       oldContent.innerHTML = newContent.innerHTML;
                   }
 
-                  // 2. Atualizar todos os Modais Gerados Dinamicamente (Edição, Exclusão, Detalhes)
-                  document.querySelectorAll('.modal').forEach(m => {
-                      // Remove todos os modais da DOM, exceto os modais estáticos e de cadastro base
-                      if (!['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal'].includes(m.id)) {
-                          m.remove();
-                      }
-                  });
-                  doc.querySelectorAll('.modal').forEach(m => {
-                      if (!['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal'].includes(m.id)) {
-                          document.body.appendChild(m.cloneNode(true));
-                      }
-                  });
+                  // 2. Atualizar todos os Modais Gerados Dinamicamente
+                  atualizarModaisDinamicos(doc);
 
                   // Limpar Formulário Original para caso o utilizador queira usar de novo
                   form.reset();

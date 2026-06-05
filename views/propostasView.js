@@ -1,6 +1,5 @@
 // views/propostasView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 module.exports = function propostasView(usuario) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -16,7 +15,7 @@ module.exports = function propostasView(usuario) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Roboto', system-ui, -apple-system, sans-serif; }
     
     /* Layout Padrão Ecoflow */
     .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
@@ -58,14 +57,49 @@ module.exports = function propostasView(usuario) {
     }
     .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
 
+    /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
+    .toast {
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
+    }
+    .toast.showing, .toast.show {
+        transform: translateX(0);
+    }
+
+    /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
+    .toast-timer {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.4);
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        transform-origin: left;
+    }
+    @keyframes shrinkToast {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+
+    /* SKELETON LOADING */
+    .skeleton-view {
+        background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading-view 1.5s infinite linear;
+        border-radius: 4px;
+    }
+    .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+    @keyframes skeleton-loading-view {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
     @media (max-width: 767.98px) {
       body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
     }
   </style>
 </head>
 <body>
-
-  ${renderLoaderParticulas("Carregando")}
 
   <div class="sidebar d-none d-md-flex">
     <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
@@ -107,7 +141,7 @@ module.exports = function propostasView(usuario) {
         </div>
       </div>
 
-      <form class="row g-2 align-items-end" onsubmit="event.preventDefault(); buscarPropostas(1);">
+      <form class="row g-2 align-items-end" onsubmit="event.preventDefault(); buscarPropostas(1, 'Filtros aplicados com sucesso!');">
         <div class="col-12 col-md-4">
           <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Buscar Cliente</label>
           <div class="input-group input-group-sm">
@@ -128,11 +162,6 @@ module.exports = function propostasView(usuario) {
           <button type="button" class="btn btn-sm btn-light border" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </form>
-    </div>
-
-    <div id="loadingPropostas" class="text-center py-5">
-      <i class="fa-solid fa-circle-notch fa-spin fa-2x text-brand mb-2"></i>
-      <p class="text-muted small">A carregar propostas...</p>
     </div>
 
     <div id="listaPropostas" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4" style="display: none;"></div>
@@ -256,17 +285,6 @@ module.exports = function propostasView(usuario) {
     </div>
   </div>
 
-  <div class="modal fade" id="sucessoModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-body text-center p-5">
-          <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
-          <h5 class="fw-bold text-dark mb-0" id="sucessoTitulo">Concluído!</h5>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="modal fade" id="excluirModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-sm modal-dialog-centered">
       <div class="modal-content erp-modal border-0 shadow-lg">
@@ -283,6 +301,36 @@ module.exports = function propostasView(usuario) {
     </div>
   </div>
 
+  <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+      <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+              <div>
+                  <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                  <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+              </div>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+          </div>
+          <div class="toast-body pt-1 pb-4 px-3 position-relative">
+              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+          </div>
+          <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+      </div>
+
+      <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+              <div>
+                  <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                  <strong class="fs-6" id="erroTitulo">Erro!</strong>
+              </div>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+          </div>
+          <div class="toast-body pt-1 pb-4 px-3 position-relative">
+              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+          </div>
+          <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+      </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
@@ -297,11 +345,88 @@ module.exports = function propostasView(usuario) {
         return res;
     }
 
-    function mostrarSucesso(mensagem) {
-        document.getElementById('sucessoTitulo').innerText = mensagem;
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sucessoModal'));
-        modal.show();
-        setTimeout(() => { modal.hide(); }, 1500);
+    // =======================================================================
+    // FUNÇÃO GENÉRICA DE TOASTS
+    // =======================================================================
+    function mostrarToast(tipo, titulo, mensagem) {
+        const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+        if (toastEl) {
+            document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+            document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+            
+            const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+            if (timerEl) {
+                timerEl.style.display = 'block';
+                timerEl.style.animation = 'none';
+                timerEl.offsetHeight; 
+                timerEl.style.animation = 'shrinkToast 5s linear forwards';
+            }
+
+            const oldInstance = bootstrap.Toast.getInstance(toastEl);
+            if (oldInstance) oldInstance.dispose();
+
+            const toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000
+            });
+            
+            toast.show();
+        }
+    }
+
+    // =======================================================================
+    // SKELETON LOADING
+    // =======================================================================
+    function gerarSkeletonTabela(quantidade = 5) {
+        let html = '';
+        for(let i=0; i<quantidade; i++) {
+            html += \`
+            <tr class="align-middle">
+                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                <td class="py-3 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 30px; margin: 0 auto;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+            </tr>\`;
+        }
+        return html;
+    }
+
+    function mostrarSkeletonGlobais() {
+        const listContainer = document.getElementById('listaPropostas');
+        
+        if (document.getElementById('skeleton-temp-container')) return;
+
+        const skeletonHTML = \`
+        <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
+            <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
+                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
+                        <th class="px-2 py-2 text-muted fw-bold border-0 text-center" style="font-size:0.75rem;">Alterações</th>
+                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Tempo de Arte</th>
+                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Prazo Clichê</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    \${gerarSkeletonTabela(5)}
+                </tbody>
+            </table>
+        </div>\`;
+
+        if (listContainer) {
+            listContainer.style.display = 'none';
+            listContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+        }
+    }
+
+    function ocultarSkeletonGlobais() {
+        const tempSkeleton = document.getElementById('skeleton-temp-container');
+        if (tempSkeleton) tempSkeleton.remove();
+
+        const listContainer = document.getElementById('listaPropostas');
+        if (listContainer) listContainer.style.display = 'block';
     }
 
     // ==========================================
@@ -398,9 +523,8 @@ module.exports = function propostasView(usuario) {
     // ==========================================
     // CRUD E RENDERIZAÇÃO DA TABELA 
     // ==========================================
-    async function buscarPropostas(page = 1) {
-        document.getElementById('loadingPropostas').style.display = 'block';
-        document.getElementById('listaPropostas').style.display = 'none';
+    async function buscarPropostas(page = 1, toastMsg = null) {
+        mostrarSkeletonGlobais();
 
         const cliente = document.getElementById('filtroCliente').value;
         const inicio = document.getElementById('filtroInicio').value;
@@ -417,11 +541,13 @@ module.exports = function propostasView(usuario) {
             
             renderTable(json.data);
             renderPaginacao(json.pagination);
+
+            if(toastMsg) mostrarToast('sucesso', 'Busca Concluída', toastMsg);
         } catch (error) {
             console.error("Erro ao buscar propostas", error);
+            mostrarToast('erro', 'Erro', 'Falha ao buscar as propostas no servidor.');
         } finally {
-            document.getElementById('loadingPropostas').style.display = 'none';
-            document.getElementById('listaPropostas').style.display = 'block';
+            ocultarSkeletonGlobais();
         }
     }
 
@@ -453,20 +579,20 @@ module.exports = function propostasView(usuario) {
 
             return \`
             <tr style="cursor: pointer;" class="align-middle \${rowClass}" onclick="abrirModalProposta(\${p.id})">
-                <td class="py-1 px-2 border-0 border-bottom">
+                <td class="py-2 px-3 border-0 border-bottom">
                     <strong class="text-dark d-block text-truncate" style="max-width: 250px; font-size: 0.8rem;">\${p.cliente}</strong>
                 </td>
-                <td class="py-1 px-2 border-0 border-bottom text-muted" style="font-size: 0.8rem;">
+                <td class="py-2 px-3 border-0 border-bottom text-muted" style="font-size: 0.8rem;">
                     <i class="fa-solid fa-user-pen me-1"></i> \${p.designer || '-'}
                 </td>
-                <td class="py-1 px-2 border-0 border-bottom text-center">
+                <td class="py-2 px-3 border-0 border-bottom text-center">
                     \${modBadge}
                 </td>
-                <td class="py-1 px-2 border-0 border-bottom">
+                <td class="py-2 px-3 border-0 border-bottom">
                     <span class="text-muted d-block" style="font-size: 0.65rem;">Produção da Arte:</span>
                     \${gerarBadgeDias(diasArte)}
                 </td>
-                <td class="py-1 px-2 border-0 border-bottom">
+                <td class="py-2 px-3 border-0 border-bottom">
                     <span class="text-muted d-block" style="font-size: 0.65rem;">Logística Clichê:</span>
                     \${gerarBadgeDias(diasCliche)}
                 </td>
@@ -478,11 +604,11 @@ module.exports = function propostasView(usuario) {
             <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
                 <thead class="table-light">
                     <tr>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0 text-center" style="font-size:0.75rem;">Alterações</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Tempo de Arte</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Prazo Clichê</th>
+                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
+                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
+                        <th class="px-3 py-2 text-muted fw-bold border-0 text-center" style="font-size:0.75rem;">Alterações</th>
+                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Tempo de Arte</th>
+                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Prazo Clichê</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
@@ -540,7 +666,7 @@ module.exports = function propostasView(usuario) {
         document.getElementById('filtroCliente').value = '';
         document.getElementById('filtroInicio').value = '';
         document.getElementById('filtroFim').value = '';
-        buscarPropostas(1);
+        buscarPropostas(1, 'Os filtros foram removidos!');
     }
 
     // ==========================================
@@ -604,7 +730,10 @@ module.exports = function propostasView(usuario) {
             modificacoes: extrairModificacoes()
         };
 
-        if(!payload.cliente) return alert('O nome do cliente é obrigatório!');
+        if(!payload.cliente) {
+            mostrarToast('erro', 'Atenção', 'O nome do cliente é obrigatório!');
+            return;
+        }
 
         const method = id ? 'PUT' : 'POST';
         const url = id ? \`/propostas/\${id}\` : '/propostas';
@@ -620,14 +749,14 @@ module.exports = function propostasView(usuario) {
             
             if(json.success) {
                 bootstrap.Modal.getInstance(document.getElementById('modalProposta')).hide();
-                mostrarSucesso('Proposta Salva!');
+                mostrarToast('sucesso', 'Concluído!', 'A proposta foi salva com sucesso no sistema.');
                 buscarPropostas();
             } else {
-                alert('Erro ao guardar proposta.');
+                mostrarToast('erro', 'Erro', 'Erro ao guardar proposta no servidor.');
             }
         } catch (e) {
             console.error(e);
-            alert('Erro de comunicação com o servidor.');
+            mostrarToast('erro', 'Falha de Conexão', 'Erro de comunicação com o servidor.');
         }
     }
 
@@ -649,10 +778,11 @@ module.exports = function propostasView(usuario) {
             if(!res) return;
             
             bootstrap.Modal.getInstance(document.getElementById('excluirModal')).hide();
-            mostrarSucesso('Proposta Excluída!');
+            mostrarToast('sucesso', 'Excluído!', 'A proposta foi removida permanentemente.');
             buscarPropostas();
         } catch(e) {
             console.error(e);
+            mostrarToast('erro', 'Falha', 'Não foi possível excluir a proposta.');
         }
     }
 
@@ -694,6 +824,7 @@ module.exports = function propostasView(usuario) {
         if(mes && ano) {
             window.open(\`/propostas/exportar/excel?mes=\${mes}&ano=\${ano}\`, '_blank');
             bootstrap.Modal.getInstance(document.getElementById('modalRelatorio')).hide();
+            mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está sendo gerado e baixado.');
         }
     }
 

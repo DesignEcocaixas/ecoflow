@@ -1,6 +1,5 @@
 // views/homeView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function homeView(usuario, notificacoes = [], dashboard = {}) {
   const qtdNotificacoes = notificacoes.length;
@@ -390,7 +389,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
           height: 100vh; 
           margin: 0; 
           background-color: #f4f7f6;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
         }
         
         /* Sidebar */
@@ -462,6 +461,19 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
         .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
 
+        /* SKELETON LOADING */
+        .skeleton-view {
+            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading-view 1.5s infinite linear;
+            border-radius: 4px;
+        }
+        .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+        @keyframes skeleton-loading-view {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
         /* Offcanvas Mobile */
         @media (max-width: 767.98px) {
           body { flex-direction: column; }
@@ -474,8 +486,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   </head>
 
   <body>
-    
-    ${renderLoaderParticulas("Preparando dados...")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
@@ -621,6 +631,116 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     ${modalRota}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // =======================================================================
+      // SKELETON LOADING
+      // =======================================================================
+      function gerarSkeletonCard() {
+          let html = '';
+          for(let i=0; i<3; i++) {
+              html += \`
+              <div class="card border-0 shadow-sm mb-2 p-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                      <div style="width: 80%;">
+                          <div class="skeleton-view skeleton-text-view" style="width: 100%;"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 60%; margin-bottom: 0;"></div>
+                      </div>
+                      <div class="skeleton-view skeleton-text-view" style="width: 20px; margin-bottom: 0;"></div>
+                  </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const mainContainer = document.querySelector('.content > .row.g-3');
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="row g-3 skeleton-container">
+              <div class="col-12 col-lg-6">
+                  <div class="card dashboard-section-card h-100 bg-white">
+                      <div class="card-body p-3">
+                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
+                          \${gerarSkeletonCard()}
+                      </div>
+                  </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                  <div class="card dashboard-section-card h-100 bg-white">
+                      <div class="card-body p-3">
+                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
+                          \${gerarSkeletonCard()}
+                      </div>
+                  </div>
+              </div>
+              ${usuario.tipo_usuario !== "motorista" ? `
+              <div class="col-12 col-lg-6">
+                  <div class="card dashboard-section-card h-100 bg-white">
+                      <div class="card-body p-3">
+                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
+                          \${gerarSkeletonCard()}
+                      </div>
+                  </div>
+              </div>` : ""}
+              <div class="col-12 col-lg-6">
+                  <div class="card dashboard-section-card h-100 bg-white">
+                      <div class="card-body p-3">
+                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
+                          \${gerarSkeletonCard()}
+                      </div>
+                  </div>
+              </div>
+          </div>\`;
+
+          if (mainContainer && !mainContainer.classList.contains('skeleton-container')) {
+              mainContainer.style.display = 'none';
+              mainContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const mainContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
+          if (mainContainer) mainContainer.style.display = 'flex';
+      }
+
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
+      });
+    </script>
+
+    <script>
+      // Verifica os parâmetros da URL assim que a Home carrega
+      window.addEventListener('load', () => {
+          const urlParams = new URLSearchParams(window.location.search);
+          
+          if (urlParams.has('erro')) {
+              const tipoErro = urlParams.get('erro');
+              
+              if (tipoErro === 'acesso_negado') {
+                  mostrarToast('erro', 'Acesso Restrito!', 'O seu perfil de utilizador não tem permissão para aceder a esta funcionalidade.');
+              }
+              
+              // Limpa a URL para o erro não voltar a aparecer se ele atualizar a página
+              if (window.history.replaceState) {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('erro');
+                  window.history.replaceState({}, document.title, url.toString());
+              }
+          }
+      });
+    </script>
     <script src="./script/checkLogin.js"></script>
   </body>
   </html>

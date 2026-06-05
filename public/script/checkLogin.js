@@ -58,6 +58,44 @@ window.addEventListener("load", () => {
 
 // public/script/checkLogin.js
 
+// Cria e exibe o modal vermelho padrão Ecoflow dinamicamente
+function mostrarModalSessao() {
+    // Verifica se o modal já foi criado para não duplicar
+    if (!document.getElementById('sessaoExpiradaModal')) {
+        const modalHtml = `
+        <div class="modal fade" id="sessaoExpiradaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" style="z-index: 10000;">
+          <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content erp-modal border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+              <div class="modal-body text-center p-4">
+                <i class="fa-solid fa-clock-rotate-left fa-3x text-danger mb-3"></i>
+                <h6 class="mb-2 fw-bold text-dark">Sessão Expirada!</h6>
+                <p class="text-muted mb-0" style="font-size:0.85rem;">Sua conexão foi encerrada por inatividade. Faça login novamente para não perder seu trabalho.</p>
+              </div>
+              <div class="modal-footer justify-content-center bg-light border-0 p-3" style="border-top: 1px solid #f0f0f0;">
+                <button type="button" class="btn btn-danger w-100 fw-bold shadow-sm" onclick="window.location.href='/login?erro=nao_logado'" style="border-radius: 6px;">
+                  <i class="fa-solid fa-right-to-bracket me-1"></i> Entrar Novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        `;
+        // Injeta o HTML no fim da página
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Exibe o modal usando a API do Bootstrap
+    const modalEl = document.getElementById('sessaoExpiradaModal');
+    
+    // Fallback de segurança: se a biblioteca do Bootstrap falhar por algum motivo, redireciona direto
+    if (typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        window.location.href = '/login?erro=nao_logado';
+    }
+}
+
 function verificarSessao() {
     fetch('/ping-sessao', { 
         method: 'GET',
@@ -65,8 +103,7 @@ function verificarSessao() {
     })
     .then(response => {
         if (response.status === 401) {
-            alert("⚠️ Sua sessão expirou por inatividade.\n\nPor favor, faça login novamente antes de preencher qualquer dado para não perder seu trabalho.");
-            window.location.href = "/login";
+            mostrarModalSessao();
         }
     })
     .catch(err => console.error("Erro ao verificar sessão:", err));

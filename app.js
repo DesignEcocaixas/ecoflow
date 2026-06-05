@@ -448,13 +448,13 @@ function verificarHierarquia(req, res, next) {
     );
 
     if (temAcesso) {
-        return next(); 
+        return next();
     } else {
         console.warn(`Acesso negado: [${tipoUsuario}] tentou acessar ${rotaRequisitada}`);
-        
+
         // Verifica se a requisição veio do AJAX/Fetch (Formulários sem reload)
         const isAjax = req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.headers['sec-fetch-dest'] === 'empty';
-        
+
         if (isAjax) {
             // Se for requisição em segundo plano, apenas barra e o front-end dispara o Toast
             return res.status(403).send("Acesso Negado");
@@ -467,12 +467,11 @@ function verificarHierarquia(req, res, next) {
             });
             return;
         }
-        
+
         // Redireciona o utilizador de volta passando a flag de erro na URL
         return res.redirect('/home?erro=acesso_negado');
     }
 }
-
 
 // =======================================================
 // =======================================================
@@ -528,7 +527,7 @@ app.post("/login", (req, res) => {
                 foto: user.foto
             };
 
-            return res.redirect("/home"); 
+            return res.redirect("/home");
         } else {
             // REDIRECIONA COM A FLAG DE ERRO EM VEZ DE DAR SEND()
             return res.redirect("/login?erro=credenciais");
@@ -2641,86 +2640,92 @@ app.post("/caderno-entregas/novo", async (req, res) => {
     }
 });
 
-// 3. Editar Caderno Otimizado via API
-app.post("/caderno-entregas/editar/:id", async (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
-    const { id } = req.params;
-    const { motorista, ajudante, veiculo_id, local, link, itens_pedido, quantidade, valor_aberto } = req.body;
+// Rota de Edição do Caderno (Substitua no seu backend - app.js)
+app.post("/caderno-entregas/editar/:id", (req, res) => {
+    const cadernoId = req.params.id;
+    const { motorista, ajudante, veiculo_id } = req.body;
 
-    try {
-        await db.promise().query(
-            "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?",
-            [motorista, ajudante || null, veiculo_id || null, id]
-        );
+    // Força a padronização para Array para evitar problemas de sincronia
+    const forceArray = (val) => Array.isArray(val) ? val : (val ? [val] : []);
 
-        await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [id]);
+    const ids = forceArray(req.body['id[]'] || req.body.id);
+    const locais = forceArray(req.body['local[]'] || req.body.local);
+    const links = forceArray(req.body['link[]'] || req.body.link);
+    const itensPedido = forceArray(req.body['itens_pedido[]'] || req.body.itens_pedido);
+    const quantidades = forceArray(req.body['quantidade[]'] || req.body.quantidade);
+    const valoresAbertos = forceArray(req.body['valor_aberto[]'] || req.body.valor_aberto);
 
-        if (local) {
-            // O QUE MUDA NAS ROTAS POST /novo e POST /editar/:id
-            const locais = Array.isArray(local) ? local : [local];
-            const links = Array.isArray(link) ? link : [link];
-            const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
-            const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
-            const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
-            // NOVO: Puxa o array de coordenadas preenchido dinamicamente na tela
-            const coordsForm = Array.isArray(req.body.coordenadas_rota) ? req.body.coordenadas_rota : [req.body.coordenadas_rota];
+    // 1. Tabela Correta: caderno_entregas (Singular)
+    const sqlUpdateCaderno = "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?";
+    
+    db.query(sqlUpdateCaderno, [motorista, ajudante, veiculo_id, cadernoId], (err) => {
+        if (err) {
+            console.error("Erro ao atualizar caderno:", err);
+            return res.status(500).send("Erro no servidor.");
+        }
 
-            let entregasParaProcessar = [];
-            for (let i = 0; i < locais.length; i++) {
-                const nomeCli = locais[i].trim();
-                const linkCli = links[i] || null;
-                let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
+        const idsValidos = ids.filter(id => id !== undefined && id !== null && id.trim() !== '');
 
-                if (nomeCli !== '') {
-                    // Se não preencheu coordenada na tela, mas tem link, o servidor caça a coordenada sozinho
-                    if (!coordCli && linkCli) {
-                        const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
-                        if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
-                            coordCli = localizacaoResolvida.trim();
-                        }
-                    }
+        // 2. Tabela Correta: caderno_entregas_itens
+        let sqlDelete = "DELETE FROM caderno_entregas_itens WHERE caderno_id = ?";
+        let deleteParams = [cadernoId];
+        
+        if (idsValidos.length > 0) {
+            sqlDelete += " AND id NOT IN (?)";
+            deleteParams.push(idsValidos);
+        }
 
-                    // Se encontrou a coordenada, descobre a CIDADE na hora
-                    let cidadeCli = null;
-                    if (coordCli) {
-                        cidadeCli = await obterCidadeDasCoordenadas(coordCli);
-                    }
+        db.query(sqlDelete, deleteParams, (err) => {
+            if (err) console.error("Erro ao deletar entregas removidas:", err);
 
-                    // Salva no banco de dados o Cliente + Link + Coordenadas + Cidade Automática
-                    await db.promise().query(`
-                        INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
-                        ON DUPLICATE KEY UPDATE 
-                            link_endereco = COALESCE(?, link_endereco),
-                            coordenadas = COALESCE(?, coordenadas),
-                            cidade = COALESCE(?, cidade)
-                    `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
+            if (locais.length === 0) {
+                return res.redirect("/caderno-entregas");
+            }
 
-                    entregasParaProcessar.push({
-                        nome: nomeCli,
-                        link: linkCli,
-                        itens: itens[i] || null,
-                        qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
-                        valor: valores[i] && valores[i].trim() !== '' ? parseFloat(valores[i]) : null,
-                        queryLocation: coordCli || await obterLocalizacao(nomeCli, linkCli)
-                    });
+            let queriesPendentes = locais.length;
+
+            locais.forEach((local_entrega, index) => {
+                const entregaId = ids[index];
+                const link_endereco = links[index] || '';
+                const itens = itensPedido[index] || '';
+                const qtd = quantidades[index] || 1;
+                
+                // Tratamento seguro para valores vazios
+                let valor = valoresAbertos[index];
+                if (!valor || valor.trim() === '') valor = null;
+
+                if (entregaId && entregaId.trim() !== '') {
+                    // UPDATE: Removida a coluna 'coordenadas' que não existe nesta tabela
+                    const sqlUpdateEntrega = `
+                        UPDATE caderno_entregas_itens 
+                        SET local_entrega = ?, link_endereco = ?, itens_pedido = ?, quantidade = ?, valor_aberto = ?
+                        WHERE id = ? AND caderno_id = ?
+                    `;
+                    db.query(sqlUpdateEntrega, [local_entrega, link_endereco, itens, qtd, valor, entregaId, cadernoId], handleQueryEnd);
+                } else {
+                    // INSERT: Ajuste da tabela, remoção de coordenadas e 'Pendente' com letra maiúscula
+                    const sqlInsertEntrega = `
+                        INSERT INTO caderno_entregas_itens 
+                        (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto, status) 
+                        VALUES (?, ?, ?, ?, ?, ?, 'Pendente')
+                    `;
+                    db.query(sqlInsertEntrega, [cadernoId, local_entrega, link_endereco, itens, qtd, valor], handleQueryEnd);
+                }
+            });
+
+            function handleQueryEnd(err) {
+                if (err) console.error("Erro ao processar entrega individual:", err);
+                
+                queriesPendentes--;
+                if (queriesPendentes === 0) {
+                    res.redirect("/caderno-entregas"); 
                 }
             }
-
-            const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
-
-            for (let item of rotaFinal) {
-                await db.promise().query(
-                    "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto) VALUES (?, ?, ?, ?, ?, ?)",
-                    [id, item.nome, item.link, item.itens, item.qtd, item.valor]
-                );
-            }
-        }
-        res.redirect("/caderno-entregas");
-    } catch (error) {
-        console.error("Erro editar caderno:", error);
-        res.status(500).send("Erro ao editar.");
-    }
+        });
+    });
 });
+
+
 // ==========================================
 // EXCLUIR CADERNO DE ENTREGAS
 // ==========================================

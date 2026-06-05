@@ -246,8 +246,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   const modais = cadernos.map(c => {
     const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
     
+    // Grelha de Edição (Itens já existentes) - Mantém os IDs
     const itensEdicaoHtml = (c.entregas && c.entregas.length > 0) ? c.entregas.map((e) => `
         <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
+            <input type="hidden" name="id[]" value="${e.id || ''}">
+            <input type="hidden" name="entrega_id[]" value="${e.id || ''}">
+            <input type="hidden" name="id_entrega[]" value="${e.id || ''}">
+            
             <input type="hidden" name="itens_pedido[]" class="hidden-itens">
             <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
@@ -541,7 +546,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           to { width: 0%; }
       }
 
-      /* SKELETON LOADING (Isolado para não conflitar com a sidebar) */
+      /* SKELETON LOADING */
       .skeleton-view {
           background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
           background-size: 200% 100%;
@@ -872,6 +877,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             
             <div id="containerEntregas" class="pt-2 pb-2 px-1 container-entregas-dinamico">
                 <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
+                    <input type="hidden" name="id[]" value="">
+                    <input type="hidden" name="entrega_id[]" value="">
+                    <input type="hidden" name="id_entrega[]" value="">
+                    
                     <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                     <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
@@ -1509,7 +1518,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               if (intervalProgress) clearInterval(intervalProgress);
 
               if (response.ok) {
-                  const html = await response.text();
+                  // Atraso de 800ms para garantir que o backend completou todas as inserções no banco de dados
+                  await new Promise(r => setTimeout(r, 800));
+
+                  // Double-Fetch para garantir os dados 100% atualizados vindos da Base de Dados
+                  const freshResponse = await fetch(window.location.href);
+                  const html = await freshResponse.text();
+                  
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(html, 'text/html');
 
@@ -1623,6 +1638,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const container = document.getElementById(containerId);
           const html = \`
               <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
+                  <input type="hidden" name="id[]" value="">
+                  <input type="hidden" name="entrega_id[]" value="">
+                  <input type="hidden" name="id_entrega[]" value="">
+
                   <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                   <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
@@ -1676,7 +1695,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       <i class="fa-solid fa-xmark"></i>
                   </button>
               </div>
-          \`;
+          \`
           container.insertAdjacentHTML('beforeend', html);
       }
 

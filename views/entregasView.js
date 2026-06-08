@@ -1,6 +1,5 @@
 // views/entregasView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, paginacao = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
@@ -94,12 +93,12 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                     </div>
                   `;
 
-                  // Modal EDITAR cliente
+                  // Modal EDITAR cliente (Com AJAX)
                   const modalEditar = `
                     <div class="modal fade" id="editarCliente${c.id}" tabindex="-1">
                       <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content erp-modal">
-                          <form method="POST" action="/entregas/clientes/editar/${c.id}">
+                          <form method="POST" action="/entregas/clientes/editar/${c.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Atualizado!')">
                             <div class="modal-header bg-light">
                               <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-pen me-2 text-warning"></i> Editar Cliente</h6>
                               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -128,12 +127,12 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                     </div>
                   `;
 
-                  // Modal EXCLUIR cliente
+                  // Modal EXCLUIR cliente (Com AJAX)
                   const modalExcluir = `
                     <div class="modal fade" id="excluirCliente${c.id}" tabindex="-1">
                       <div class="modal-dialog modal-sm modal-dialog-centered">
                         <div class="modal-content erp-modal border-0">
-                          <form method="POST" action="/entregas/clientes/excluir/${c.id}">
+                          <form method="POST" action="/entregas/clientes/excluir/${c.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Removido!')">
                             <div class="modal-body text-center p-4">
                               <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
                               <h6 class="mb-2 fw-bold text-dark">Excluir Cliente?</h6>
@@ -213,7 +212,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
               <div class="modal fade" id="novoCliente${p.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">
                   <div class="modal-content erp-modal">
-                    <form method="POST" action="/entregas/${p.id}/clientes/novo">
+                    <form method="POST" action="/entregas/${p.id}/clientes/novo" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Adicionado!')">
                       <div class="modal-header bg-light">
                         <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-plus me-2 text-success"></i> Adicionar Cliente</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -248,7 +247,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
               <div class="modal fade" id="excluirPedido${p.id}" tabindex="-1">
                 <div class="modal-dialog modal-sm modal-dialog-centered">
                   <div class="modal-content erp-modal border-0">
-                    <form method="POST" action="/entregas/${p.id}/excluir">
+                    <form method="POST" action="/entregas/${p.id}/excluir" onsubmit="prepararSubmissaoSimples(event, this, 'Rota Excluída!')">
                       <div class="modal-body text-center p-4">
                         <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
                         <h6 class="mb-2 fw-bold text-dark">Excluir Rota?</h6>
@@ -265,32 +264,32 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
             `;
         })
         .join("")
-      : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-map-location-dot fa-3x opacity-25 mb-3"></i><p>Nenhuma rota/pedido cadastrado.</p></div>`;
+      : `<div class="col-12 text-center text-muted mt-5 text-center-empty"><i class="fa-solid fa-map-location-dot fa-3x opacity-25 mb-3"></i><p>Nenhuma rota/pedido cadastrado.</p></div>`;
 
   const paginationHtml = totalPages > 1 ? `
       <nav aria-label="Paginação de pedidos" class="mt-4">
         <ul class="pagination pagination-sm justify-content-center">
           <li class="page-item ${page <= 1 ? "disabled" : ""}">
-            <a class="page-link text-dark" href="/entregas?page=${page - 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">&laquo;</a>
+            <a class="page-link text-dark" href="/entregas?page=${page - 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}" onclick="navegarPagina(event, this.href)">&laquo;</a>
           </li>
 
           ${Array.from({ length: totalPages }, (_, i) => {
             const p = i + 1;
             return `
               <li class="page-item ${p === page ? "active" : ""}">
-                <a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entregas?page=${p}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">${p}</a>
+                <a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entregas?page=${p}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}" onclick="navegarPagina(event, this.href)">${p}</a>
               </li>
             `;
           }).join("")}
 
           <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-            <a class="page-link text-dark" href="/entregas?page=${page + 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}">&raquo;</a>
+            <a class="page-link text-dark" href="/entregas?page=${page + 1}&titulo=${encodeURIComponent(filtros.titulo || "")}&data_inicio=${encodeURIComponent(filtros.data_inicio || "")}&data_fim=${encodeURIComponent(filtros.data_fim || "")}" onclick="navegarPagina(event, this.href)">&raquo;</a>
           </li>
         </ul>
       </nav>
     ` : "";
 
-  const menuHTML = menuLateral(usuario, "/entregas");
+  const menuHTML = menuLateral(user, "/entregas");
 
   return `
   <!DOCTYPE html>
@@ -303,7 +302,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    ${usuario.tipo_usuario === "admin" ? `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">` : ""}
+    ${user.tipo_usuario === "admin" ? `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">` : ""}
 
     <style>
       body { 
@@ -377,6 +376,17 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         to { opacity: 1; transform: translateX(0); }
       }
 
+      /* TOAST ANIMATION AJAX */
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
+      .toast.showing, .toast.show { transform: translateX(0); }
+      .toast-timer { height: 6px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+      @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
+
+      /* SKELETON LOADING */
+      .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading-view 1.5s infinite linear; border-radius: 4px; }
+      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
       /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
@@ -388,7 +398,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
     </style>
   </head>
   <body>
-    ${renderLoaderParticulas("Acessando Rotas...")}
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
@@ -424,7 +433,7 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       </div>
 
       <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">
-        <form class="row g-2 align-items-end" method="GET" action="/entregas">
+        <form class="row g-2 align-items-end" method="GET" action="/entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros aplicados!')">
           <div class="col-12 col-md-4">
             <label class="form-label text-muted mb-1" style="font-size:0.8rem;">Buscar Pedido/Rota</label>
             <div class="input-group input-group-sm">
@@ -452,20 +461,20 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
           <i class="fa-solid fa-plus me-1"></i> Criar Nova Rota
         </button>
 
-        ${usuario.tipo_usuario === "motorista" ? `
+        ${user.tipo_usuario === "motorista" ? `
         <button id="btnAtivarLocalizacao" class="btn btn-sm btn-primary shadow-sm">
           <i class="fa-solid fa-location-arrow me-1"></i> Ativar Localização
         </button>
         ` : ""}
 
-        ${usuario.tipo_usuario === "admin" ? `
+        ${user.tipo_usuario === "admin" ? `
         <button class="btn btn-sm btn-outline-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#mapaMotoristasModal">
           <i class="fa-solid fa-map-location-dot me-1"></i> Rastreio em Tempo Real
         </button>
         ` : ""}
       </div>
 
-      <div class="row g-3">
+      <div class="row g-3" id="listaPedidosContainer">
         ${cards}
       </div>
 
@@ -567,21 +576,39 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       </div>
     </div>
 
-    <div class="modal fade" id="sucessoRotaModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal border-0">
-          <div class="modal-body text-center p-5">
-            <i class="fa-solid fa-circle-check fa-4x text-success mb-3 anim-pulse"></i>
-            <h5 class="fw-bold text-dark mb-2">Rota Salva!</h5>
-            <p class="text-muted mb-0" style="font-size:0.85rem;">Salvando os dados, por favor aguarde...</p>
-          </div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+            </div>
+            <div class="toast-timer" id="sucessoTimer" style="display: none;"></div>
         </div>
-      </div>
+
+        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3">
+                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro.</p>
+            </div>
+            <div class="toast-timer" id="erroTimer" style="display: none;"></div>
+        </div>
     </div>
 
     ${clienteModals.join("")}
 
-    ${usuario.tipo_usuario === "admin" ? `
+    ${user.tipo_usuario === "admin" ? `
     <div class="modal fade" id="mapaMotoristasModal" tabindex="-1">
       <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content erp-modal">
@@ -607,6 +634,232 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
+
+    <script>
+      let isSubmitting = false;
+
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; 
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+
+              const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
+              toast.show();
+          }
+      }
+
+      function gerarSkeletonCards(quantidade = 6) {
+          let html = '';
+          for(let i = 0; i < quantidade; i++) {
+              html += \`
+              <div class="col-12 col-md-6 col-lg-4">
+                  <div class="card erp-card shadow-sm h-100 border-0">
+                      <div class="card-body p-3 d-flex flex-column">
+                          <div class="d-flex align-items-center gap-2 mb-2">
+                              <div class="skeleton-view" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                              <div class="skeleton-view skeleton-text-view" style="width: 60%; margin:0;"></div>
+                          </div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 80%;"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 50%;"></div>
+                          <div class="mt-auto pt-2 border-top d-flex justify-content-between">
+                              <div class="skeleton-view" style="height: 30px; width: 60%; border-radius: 4px;"></div>
+                              <div class="skeleton-view" style="height: 30px; width: 30px; border-radius: 4px;"></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais() {
+          const container = document.getElementById('listaPedidosContainer');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-5');
+          
+          if (document.getElementById('skeleton-temp-container')) return;
+
+          const skeletonHTML = \`<div class="row g-3 skeleton-container" id="skeleton-temp-container">\${gerarSkeletonCards(6)}</div>\`;
+
+          if (container && !container.classList.contains('skeleton-container')) {
+              container.style.display = 'none';
+              container.insertAdjacentHTML('beforebegin', skeletonHTML);
+          } else if (emptyState) {
+              emptyState.style.display = 'none';
+              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const container = document.getElementById('listaPedidosContainer');
+          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-5');
+
+          if (container) container.style.display = '';
+          if (emptyState) emptyState.style.display = '';
+      }
+
+      mostrarSkeletonGlobais();
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
+
+      async function prepararBuscaSimples(event, form, titleMsg) {
+          if (event) event.preventDefault();
+          mostrarSkeletonGlobais();
+
+          try {
+              const formData = new FormData(form);
+              const queryString = new URLSearchParams(formData).toString();
+              const url = form.action + '?' + queryString;
+
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+                  window.history.pushState({}, '', url);
+                  mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível realizar a busca.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Falha', 'Verifique a sua rede.');
+          } finally {
+              ocultarSkeletonGlobais();
+          }
+      }
+
+      async function navegarPagina(event, url) {
+          event.preventDefault();
+          mostrarSkeletonGlobais();
+          try {
+              const response = await fetch(url, { method: 'GET' });
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.querySelector('.content');
+                  const newContent = doc.querySelector('.content');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+                  
+                  atualizarModaisDinamicos(doc);
+                  window.history.pushState({}, '', url);
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          } finally {
+              ocultarSkeletonGlobais();
+          }
+      }
+
+      async function prepararSubmissaoSimples(event, form, titleMsg) {
+          event.preventDefault();
+          if (!form.checkValidity()) {
+              form.reportValidity();
+              return;
+          }
+          if (isSubmitting) return;
+
+          // Esconder modais
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.hide();
+          }
+          document.querySelectorAll('.modal-backdrop').forEach(mb => mb.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style = '';
+
+          mostrarSkeletonGlobais();
+          isSubmitting = true;
+
+          try {
+              const formData = new URLSearchParams();
+              const fd = new FormData(form);
+              for (const [key, value] of fd.entries()) {
+                  formData.append(key, value);
+              }
+
+              const response = await fetch(form.action, {
+                  method: form.method || 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: formData.toString()
+              });
+
+              if (response.ok) {
+                  recarregarTelaSilenciosamente(titleMsg);
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados.');
+                  ocultarSkeletonGlobais();
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Falha', 'Verifique a conexão.');
+              ocultarSkeletonGlobais();
+          } finally {
+              isSubmitting = false;
+          }
+      }
+
+      async function recarregarTelaSilenciosamente(titleMsg) {
+          try {
+              await new Promise(r => setTimeout(r, 300));
+              const freshResponse = await fetch(window.location.href);
+              const html = await freshResponse.text();
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+
+              const oldContent = document.querySelector('.content');
+              const newContent = doc.querySelector('.content');
+              if (oldContent && newContent) {
+                  oldContent.innerHTML = newContent.innerHTML;
+              }
+
+              atualizarModaisDinamicos(doc);
+              mostrarToast('sucesso', 'Sucesso!', titleMsg);
+          } catch (err) {
+             window.location.reload();
+          } finally {
+             ocultarSkeletonGlobais();
+          }
+      }
+
+      function atualizarModaisDinamicos(doc) {
+          const staticModals = ['novoPedidoModal', 'mapaMotoristasModal', 'sidebarMenu'];
+          document.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) m.remove();
+          });
+          doc.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
+          });
+      }
+    </script>
 
     <script>
       let isSubmittingRota = false;
@@ -765,18 +1018,17 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         showTabRota(currentTabRota);
       }
 
-      // Função de Salvamento AJAX
+      // Função de Salvamento AJAX do Wizard Adaptada
       function saveRouteAndClientsViaAjax() {
           isSubmittingRota = true; 
+          mostrarSkeletonGlobais();
 
-          // Exibe o modal de Sucesso Animado
           const wizardEl = document.getElementById('novoPedidoModal');
-          const wizardModal = bootstrap.Modal.getOrCreateInstance(wizardEl);
+          const wizardModal = bootstrap.Modal.getInstance(wizardEl) || bootstrap.Modal.getOrCreateInstance(wizardEl);
           wizardModal.hide();
-
-          const successEl = document.getElementById('sucessoRotaModal');
-          const successModal = bootstrap.Modal.getOrCreateInstance(successEl);
-          successModal.show();
+          document.querySelectorAll('.modal-backdrop').forEach(mb => mb.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style = '';
 
           const tituloRota = document.getElementById('rotaTitulo').value;
           const dataRota = document.getElementById('rotaData').value;
@@ -792,12 +1044,11 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
               body: routeData.toString()
           })
           .then(() => {
-              // 2. Busca a rota recém criada para descobrir o ID gerado pelo banco
+              // 2. Busca a rota recém criada
               return fetch('/entregas?titulo=' + encodeURIComponent(tituloRota));
           })
           .then(res => res.text())
           .then(html => {
-              // RegExp segura para capturar os IDs de pedidos retornados na busca
               const regex = new RegExp('id="pedidoModal(\\\\\\d+)"', 'g');
               const matches = [...html.matchAll(regex)];
               
@@ -806,7 +1057,6 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                   const newId = Math.max(...ids);
                   
                   if (tempClients.length > 0) {
-                      // 3. Cadastra os clientes 1 a 1 na nova rota usando o endpoint nativo
                       const promises = tempClients.map(c => {
                           const cData = new URLSearchParams();
                           cData.append('cliente_nome', c.nome);
@@ -821,21 +1071,20 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
                       });
                       
                       Promise.all(promises).then(() => {
-                          setTimeout(() => window.location.reload(), 600);
+                          recarregarTelaSilenciosamente('Nova rota cadastrada com sucesso!');
                       }).catch(err => {
-                          console.error(err);
-                          window.location.reload();
+                          recarregarTelaSilenciosamente('Rota criada, mas com erros nos clientes.');
                       });
                   } else {
-                      setTimeout(() => window.location.reload(), 600);
+                      recarregarTelaSilenciosamente('Nova rota cadastrada com sucesso!');
                   }
               } else {
-                  window.location.reload();
+                  recarregarTelaSilenciosamente('Nova rota cadastrada com sucesso!');
               }
           })
           .catch(err => {
-              console.error(err);
-              window.location.reload();
+              mostrarToast('erro', 'Erro', 'Falha ao gerar a rota.');
+              ocultarSkeletonGlobais();
           });
       }
 
@@ -843,28 +1092,20 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
         currentTabRota = 0;
         tempClients = [];
         showTabRota(0);
+        document.getElementById("wizardRotaForm").reset();
       }
 
       window.addEventListener('load', () => {
-        const modalEl = document.getElementById('novoPedidoModal');
-        if(modalEl) {
-           modalEl.addEventListener('hidden.bs.modal', function () {
-             if (!isSubmittingRota) {
-               document.getElementById("wizardRotaForm").reset();
-               resetWizardRota();
-             }
-           });
-        }
         resetWizardRota();
       });
     </script>
 
     <script>
-      window.NOME_USUARIO = "${usuario.nome}";
+      window.NOME_USUARIO = "${user.nome}";
     </script>
     <script src="/socket.io/socket.io.js"></script>
 
-    ${usuario.tipo_usuario === "admin" ? `
+    ${user.tipo_usuario === "admin" ? `
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <script>
       (() => {
@@ -934,12 +1175,13 @@ function entregasView(usuario, pedidos = [], clientesMap = {}, filtros = {}, pag
       </script>
     ` : ""}
 
-    ${usuario.tipo_usuario === "motorista" ? `
+    ${user.tipo_usuario === "motorista" ? `
       <script src="/script/motoristaTracker.js"></script>
       <script>
         document.getElementById("btnAtivarLocalizacao")?.addEventListener("click", () => {
           if (typeof window.iniciarRastreamento === "function") {
              window.iniciarRastreamento();
+             mostrarToast('sucesso', 'Rastreio ativado!', 'Sua localização está sendo enviada.');
           } else {
              console.log("Ativar localização clicado (fallback)");
           }

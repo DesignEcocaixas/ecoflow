@@ -105,7 +105,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   <select name="motorista" class="form-select form-select-sm" required>
                     <option value="Flávio" ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
                     <option value="Alexandre" ${item.motorista === "Alexandre" ? "selected" : ""}>Alexandre</option>
-                    <option value="Thiago" ${item.motorista === "Thiago" ? "selected" : ""}>Thiago</option>
+                    <option value="Damião" ${item.motorista === "Damião" ? "selected" : ""}>Damião</option>
                   </select>
                 </div>
                 <div class="col-12 col-md-4">
@@ -429,7 +429,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   <option value="" disabled selected>Quem está dirigindo?</option>
                   <option value="Flávio">Flávio</option>
                   <option value="Alexandre">Alexandre</option>
-                  <option value="Thiago">Thiago</option>
+                  <option value="Damião">Damião</option>
                 </select>
               </div>
               <div class="mb-3">

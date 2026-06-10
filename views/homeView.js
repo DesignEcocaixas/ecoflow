@@ -378,6 +378,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
       <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
       <meta http-equiv="Pragma" content="no-cache">
       <meta http-equiv="Expires" content="0">
+      <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
 
       <title>Dashboard | ERP Ecoflow</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

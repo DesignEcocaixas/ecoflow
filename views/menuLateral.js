@@ -85,7 +85,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   };
 
   // --- LÓGICA DE MONTAGEM DO MENU ---
-  let menuLinks = renderLink("/home", "fas fa-home", "Home");
+  let menuLinks = renderLink("/home", "fas fa-home", "Início");
 
   if (tipo === "motorista") {
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);

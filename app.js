@@ -3421,7 +3421,7 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                 .aviso { border-left-color: #ffc107; }
                 .erro { border-left-color: #dc3545; }
             </style>
-            <h3>Sincronizando GPS e Cidade de ${clientes.length} clientes...</h3>
+            <h3>Sincronizando cidades e coordenadas de ${clientes.length} clientes...</h3>
             <p>Por favor, não feche o modal até a conclusão.</p>
             <hr style="border: 1px solid #ddd;">
         `);
@@ -3454,7 +3454,7 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                     atualizados++;
                     res.write(`<div class="linha sucesso">✅ <b>${c.nome}:</b> GPS: ${coordCli} | Cidade: <b>${cidade || 'Não localizada'}</b></div>`);
                 } else {
-                    res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> Link não revelou a coordenada.</div>`);
+                    res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> Coordenada não encontrada.</div>`);
                 }
             } catch (err) {
                 res.write(`<div class="linha erro">❌ <b>Erro em ${c.nome}:</b> ${err.message}</div>`);
@@ -3467,7 +3467,7 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
         res.write(`
             <hr style="border: 1px solid #ddd;">
             <div style="text-align: center; padding: 20px 0;">
-                <h4 style="color: #0D5749; margin-bottom: 5px;">🎉 Sincronização Concluída!</h4>
+                <h4 style="color: #0D5749; margin-bottom: 5px;">Sincronização Concluída!</h4>
                 <p><b>${atualizados}</b> clientes foram atualizados com sucesso.</p>
             </div>
             <script>window.scrollTo(0, document.body.scrollHeight);</script>

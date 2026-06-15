@@ -550,7 +550,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           </div>
           <div class="modal-body p-4 bg-light" style="max-height: 70vh; overflow-y: auto;">
             
-            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-steering-wheel me-1"></i> Diárias para Motoristas</h6>
+            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3" style="font-size: 0.85rem;">Valor Motoristas</h6>
             <div class="row g-2 mb-4">
                 <div class="col-4">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">1 a 6 Entregas</label>
@@ -566,7 +566,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                 </div>
             </div>
 
-            <h6 class="fw-bold text-success border-bottom pb-2 mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-hands-holding-circle me-1"></i> Diárias para Ajudantes</h6>
+            <h6 class="fw-bold text-success border-bottom pb-2 mb-3" style="font-size: 0.85rem;">Valor Ajudantes</h6>
             <div class="row g-2 mb-4">
                 <div class="col-4">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">1 a 6 Entregas</label>
@@ -582,18 +582,18 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                 </div>
             </div>
 
-            <h6 class="fw-bold text-danger border-bottom pb-2 mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-map-location-dot me-1"></i> Viagens Longas e Adicionais</h6>
+            <h6 class="fw-bold text-danger border-bottom pb-2 mb-3" style="font-size: 0.85rem;">Valor viagens longas</h6>
             <div class="row g-2">
                 <div class="col-6">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Sul da Bahia</label>
                     <input type="number" step="0.01" name="vl_sulbahia" class="form-control form-control-sm text-center shadow-sm" value="${taxas.vl_sulbahia || 200.00}" required>
                 </div>
                 <div class="col-6">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Aracaju (Padrão)</label>
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Aracaju</label>
                     <input type="number" step="0.01" name="vl_aracaju1" class="form-control form-control-sm text-center shadow-sm" value="${taxas.vl_aracaju1 || 160.00}" required>
                 </div>
                 <div class="col-6">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Aracaju (Extra)</label>
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Aracaju</label>
                     <input type="number" step="0.01" name="vl_aracaju2" class="form-control form-control-sm text-center shadow-sm" value="${taxas.vl_aracaju2 || 200.00}" required>
                 </div>
                 <div class="col-6">
@@ -601,7 +601,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                     <input type="number" step="0.01" name="vl_capimgrosso" class="form-control form-control-sm text-center shadow-sm" value="${taxas.vl_capimgrosso || 200.00}" required>
                 </div>
                 <div class="col-12 mt-3">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Valor Padrão de Almoço (R$)</label>
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Valor Almoço (R$)</label>
                     <input type="number" step="0.01" name="val_almoco" id="inputValorAlmocoBase" class="form-control form-control-sm shadow-sm" value="${taxas.val_almoco || 25.00}" required>
                 </div>
             </div>

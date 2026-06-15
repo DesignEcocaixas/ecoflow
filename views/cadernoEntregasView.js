@@ -1,7 +1,7 @@
 // views/cadernoEntregasView.js
 const menuLateral = require("./menuLateral");
 
-function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = []) {
+function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = [], colaboradores = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
@@ -296,6 +296,15 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         ? `<button type="button" onclick="iniciarNavegacao(${paradasData.replace(/"/g, "'")})" class="btn btn-sm btn-success fw-bold px-3 shadow-sm"><i class="fa-solid fa-location-arrow me-1"></i> Iniciar Navegação</button>`
         : '';
 
+    // Lógica para carregar a foto correta nos modais de edição
+    const colabMotorista = colaboradores.find(col => col.nome === c.motorista) || {};
+    const imgMotEdit = colabMotorista.foto ? `/uploads/${colabMotorista.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.motorista || 'Motorista')}&background=0D5749&color=fff`;
+
+    const colabAjudante = colaboradores.find(col => col.nome === c.ajudante) || {};
+    const imgAjuEdit = c.ajudante 
+        ? (colabAjudante.foto ? `/uploads/${colabAjudante.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.ajudante)}&background=0D5749&color=fff`) 
+        : `https://ui-avatars.com/api/?name=Ajudante&background=e9ecef&color=6c757d`;
+
     return `
     <div class="modal fade" id="detalheModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -365,11 +374,23 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <div class="row g-3 mb-4">
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Motorista</label>
-                <input type="text" name="motorista" class="form-control form-control-sm" value="${c.motorista}" required>
+                <div class="d-flex align-items-center gap-2">
+                    <img id="fotoMotoristaEdit${c.id}" src="${imgMotEdit}" class="rounded shadow-sm border bg-white" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">
+                    <div class="autocomplete-container flex-grow-1">
+                        <input type="text" name="motorista" class="form-control form-control-sm shadow-sm" value="${c.motorista}" required placeholder="Digite ou selecione" oninput="handleColabInput(event, this, 'fotoMotoristaEdit${c.id}')" onclick="handleColabInput(event, this, 'fotoMotoristaEdit${c.id}')" autocomplete="off">
+                        <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                    </div>
+                </div>
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Ajudante</label>
-                <input type="text" name="ajudante" class="form-control form-control-sm" value="${c.ajudante || ''}">
+                <div class="d-flex align-items-center gap-2">
+                    <img id="fotoAjudanteEdit${c.id}" src="${imgAjuEdit}" class="rounded shadow-sm border bg-white" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">
+                    <div class="autocomplete-container flex-grow-1">
+                        <input type="text" name="ajudante" class="form-control form-control-sm shadow-sm" value="${c.ajudante || ''}" placeholder="Opcional" oninput="handleColabInput(event, this, 'fotoAjudanteEdit${c.id}')" onclick="handleColabInput(event, this, 'fotoAjudanteEdit${c.id}')" autocomplete="off">
+                        <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                    </div>
+                </div>
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Veículo</label>
@@ -606,7 +627,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <button class="btn btn-sm btn-success shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
                 <i class="fa-solid fa-plus me-1"></i> Caderno
             </button>
-            <a href="/exportar/caderno-entregas?data_inicio=${filtros.data_inicio || ''}&data_fim=${filtros.data_fim || ''}" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
+            <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
                 <i class="fa-solid fa-file-excel me-1"></i> Relatório
             </a>
         </div>
@@ -720,70 +741,72 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <h6 class="modal-title fw-bold">
                 <i class="fa-solid fa-users me-2"></i> Gerenciamento de Clientes (Maps)
                 </h6>
+                <div class="d-flex gap-2">
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+                    </div>
 
-            <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-4 bg-light">
 
-                <form 
-                method="POST" 
-                action="/caderno-entregas/clientes/novo" 
-                class="bg-white p-0 rounded border border-light shadow-sm mb-4" 
+                <form
+                method="POST"
+                action="/caderno-entregas/clientes/novo"
+                class="bg-white p-0 rounded border border-light shadow-sm mb-4"
                 onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')"
                 >
                 <h6 class="fw-bold text-primary mb-3" style="font-size: 0.85rem;">
                     <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente
                 </h6>
-
                 <div class="row g-2 align-items-end">
-                    <div class="col-12 col-md-4">
+              <div class="col-12 col-md-4">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
                         Nome / Pizzaria
                     </label>
-                    <input 
-                        type="text" 
-                        name="nome" 
-                        class="form-control form-control-sm shadow-sm" 
-                        required 
+                    <input
+                        type="text"
+                        name="nome"
+                        class="form-control form-control-sm shadow-sm"
+                        required
                         placeholder="Ex: Pizzaria Bella Napoli"
                     >
-                    </div>
-
+              </div>
                     <div class="col-12 col-md-3">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
                         Link do Maps
                     </label>
-                    <input 
-                        type="url" 
-                        name="link_endereco" 
-                        class="form-control form-control-sm shadow-sm" 
-                        placeholder="Cole o link aqui" 
+                    <input
+                        type="url"
+                        name="link_endereco"
+                        class="form-control form-control-sm shadow-sm"
+                        placeholder="Cole o link aqui"
                         oninput="extrairCoordenadasAoColar(this)"
                     >
-                    </div>
-
-                    <div class="col-12 col-md-3">
+                                    </div>
+                  <div class="col-12 col-md-3">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">
                         Coord. (Opcional)
                     </label>
-                    <input 
-                        type="text" 
-                        name="coordenadas" 
-                        class="form-control form-control-sm shadow-sm coord-input" 
+                    <input
+                        type="text"
+                        name="coordenadas"
+                        class="form-control form-control-sm shadow-sm coord-input"
                         placeholder="Lat, Lng"
                     >
-                    </div>
+                                  </div>
 
-                    <div class="col-12 col-md-2">
-                    <button 
-                        type="submit" 
-                        class="btn btn-sm btn-primary w-100 fw-bold shadow-sm" 
-                        title="Salvar"
-                    >
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm" title="Relatório Excel Clientes" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O relatório Excel dos clientes está sendo gerado e será baixado em breve.')">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </a>
+                        <button
+                            type="submit"
+                            class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"
+                            title="Salvar"
+                        >
                         <i class="fa-solid fa-save me-1"></i> Salvar
-                    </button>
-                    </div>
-                </div>
+                      </button>
+                  </div>
+                      </div>
                 </form>
 
                 <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">
@@ -795,26 +818,25 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     <i class="fa-solid fa-magnifying-glass text-muted"></i>
                 </span>
 
-                <input 
-                    type="text" 
-                    id="searchInputClientes" 
-                    class="form-control border-start-0 border-end-0" 
-                    placeholder="Pesquisar cliente por nome..." 
+                <input
+                    type="text"
+                    id="searchInputClientes"
+                    class="form-control border-start-0 border-end-0"
+                    placeholder="Pesquisar cliente por nome..."
                     onkeyup="filtrarClientes()"
                 >
 
-                <button 
-                    class="btn btn-outline-secondary bg-white border-start-0 text-danger" 
-                    type="button" 
-                    onclick="limparBuscaClientes()" 
+                <button
+                    class="btn btn-outline-secondary bg-white border-start-0 text-danger"
+                    type="button"
+                    onclick="limparBuscaClientes()"
                     title="Limpar pesquisa"
                 >
                     <i class="fa-solid fa-xmark"></i>
                 </button>
-                </div>
-
-                <div 
-                class="table-responsive bg-white rounded border border-light shadow-sm" 
+                      </div>
+                <div
+                class="table-responsive bg-white rounded border border-light shadow-sm"
                 style="height: 58vh; max-height: 560px; overflow-y: auto;"
                 >
                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
@@ -831,7 +853,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     </tbody>
                 </table>
                 </div>
-
             </div>
 
             <div class="modal-footer bg-white border-0">
@@ -842,7 +863,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
             </div>
         </div>
-        </div>
+    </div>
 
     <div class="modal fade" id="novoCadernoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -856,11 +877,23 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <div class="row g-3 mb-4">
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Motorista</label>
-                <input type="text" name="motorista" class="form-control form-control-sm shadow-sm" required placeholder="Nome do motorista">
+                <div class="d-flex align-items-center gap-2">
+                    <img id="fotoMotoristaNovo" src="https://ui-avatars.com/api/?name=Motorista&background=0D5749&color=fff" class="rounded shadow-sm border bg-white" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">
+                    <div class="autocomplete-container flex-grow-1">
+                        <input type="text" name="motorista" class="form-control form-control-sm shadow-sm" required placeholder="Digite ou selecione" oninput="handleColabInput(event, this, 'fotoMotoristaNovo')" onclick="handleColabInput(event, this, 'fotoMotoristaNovo')" autocomplete="off">
+                        <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                    </div>
+                </div>
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Ajudante</label>
-                <input type="text" name="ajudante" class="form-control form-control-sm shadow-sm" placeholder="Opcional">
+                <div class="d-flex align-items-center gap-2">
+                    <img id="fotoAjudanteNovo" src="https://ui-avatars.com/api/?name=Ajudante&background=e9ecef&color=6c757d" class="rounded shadow-sm border bg-white" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">
+                    <div class="autocomplete-container flex-grow-1">
+                        <input type="text" name="ajudante" class="form-control form-control-sm shadow-sm" placeholder="Opcional" oninput="handleColabInput(event, this, 'fotoAjudanteNovo')" onclick="handleColabInput(event, this, 'fotoAjudanteNovo')" autocomplete="off">
+                        <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
+                    </div>
+                </div>
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Veículo de Saída</label>
@@ -875,13 +908,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <h6 class="fw-bold text-primary mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-route me-1"></i> Locais de Entrega</h6>
                 <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 shadow-sm" onclick="addEntregaDinamica('containerEntregas')"><i class="fa-solid fa-plus me-1"></i> Adicionar Local</button>
             </div>
-            
+
             <div id="containerEntregas" class="pt-2 pb-2 px-1 container-entregas-dinamico">
                 <div class="row g-2 mb-3 entrega-item align-items-start border p-3 rounded bg-white position-relative shadow-sm mx-1">
                     <input type="hidden" name="id[]" value="">
                     <input type="hidden" name="entrega_id[]" value="">
                     <input type="hidden" name="id_entrega[]" value="">
-                    
+
                     <input type="hidden" name="itens_pedido[]" class="hidden-itens">
                     <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
@@ -900,7 +933,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
                         <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm coord-input shadow-sm" placeholder="Lat, Lng">
                     </div>
-                    
+
                     <div class="col-12 col-md-8 mt-2">
                         <label class="form-label text-dark fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
                         <div class="sub-itens-container bg-light p-2 rounded border border-opacity-50">
@@ -946,7 +979,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
-        
+
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
@@ -990,6 +1023,77 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       let dictClientes = ${JSON.stringify(historicoClientes)};
       let clientNames = Object.keys(dictClientes);
       const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
+      const listaColabDB = ${JSON.stringify(colaboradores || [])};
+
+      // =======================================================================
+      // AUTOCOMPLETAR DE COLABORADORES (MOTORISTA E AJUDANTE) COM FOTO
+      // =======================================================================
+      function handleColabInput(event, inputEl, imgId) {
+          const dropdown = inputEl.nextElementSibling;
+          let val = inputEl.value;
+          const searchVal = val.toLowerCase().trim();
+          dropdown.innerHTML = '';
+
+          const imgEl = document.getElementById(imgId);
+
+          const updateFoto = (nomeStr, fotoUrl) => {
+              if (imgEl) {
+                  if (fotoUrl) {
+                      imgEl.src = fotoUrl;
+                  } else {
+                      const fallbackName = nomeStr.trim() ? encodeURIComponent(nomeStr.trim()) : (inputEl.name === 'ajudante' ? 'Ajudante' : 'Motorista');
+                      imgEl.src = \`https://ui-avatars.com/api/?name=\${fallbackName}&background=\${inputEl.name === 'ajudante' && !nomeStr.trim() ? 'e9ecef' : '0D5749'}&color=\${inputEl.name === 'ajudante' && !nomeStr.trim() ? '6c757d' : 'fff'}\`;
+                  }
+              }
+          };
+
+          const matches = listaColabDB.filter(c => c.nome.toLowerCase().includes(searchVal));
+          const listToShow = searchVal ? matches : listaColabDB;
+
+          if (listToShow.length > 0) {
+              dropdown.style.display = 'block';
+              listToShow.forEach(match => {
+                  const item = document.createElement('div');
+                  item.className = 'autocomplete-item d-flex align-items-center gap-2';
+                  
+                  const fotoSrc = match.foto ? \`/uploads/\${match.foto}\` : \`https://ui-avatars.com/api/?name=\${encodeURIComponent(match.nome)}&background=0D5749&color=fff\`;
+                  
+                  let nomeDisplay = match.nome;
+                  if (searchVal) {
+                      const safeRegex = searchVal.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
+                      const regex = new RegExp(\`(\${safeRegex})\`, "gi");
+                      nomeDisplay = match.nome.replace(regex, "<strong>$1</strong>");
+                  }
+                  
+                  const badgeText = match.tipo_usuario ? match.tipo_usuario.replace('_', ' ').toUpperCase() : 'COLABORADOR';
+
+                  item.innerHTML = \`
+                      <img src="\${fotoSrc}" class="rounded border" style="width: 24px; height: 24px; object-fit: cover; flex-shrink: 0;">
+                      <div class="text-truncate">
+                          \${nomeDisplay} <span class="badge bg-secondary ms-1" style="font-size:0.6rem;">\${badgeText}</span>
+                      </div>
+                  \`;
+
+                  item.onmousedown = function(e) {
+                      e.preventDefault(); 
+                      inputEl.value = match.nome;
+                      updateFoto(match.nome, fotoSrc);
+                      dropdown.style.display = 'none';
+                  };
+                  dropdown.appendChild(item);
+              });
+          } else {
+              dropdown.style.display = 'none';
+          }
+
+          const exactMatch = listaColabDB.find(c => c.nome.toLowerCase() === searchVal);
+          if (exactMatch) {
+              const fotoSrc = exactMatch.foto ? \`/uploads/\${exactMatch.foto}\` : \`https://ui-avatars.com/api/?name=\${encodeURIComponent(exactMatch.nome)}&background=0D5749&color=fff\`;
+              updateFoto(exactMatch.nome, fotoSrc);
+          } else {
+              updateFoto(val, null);
+          }
+      }
 
       // =======================================================================
       // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO)
@@ -999,7 +1103,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           if (toastEl) {
               document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
               document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
-              
+
               const progressoContainer = document.getElementById('progressoContainer');
               if (tipo === 'sucesso' && progressoContainer) progressoContainer.style.display = 'none';
 
@@ -1009,7 +1113,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   timerEl.style.animation = 'none';
                   timerEl.offsetHeight; // Força o reflow para a animação reiniciar
                   timerEl.style.animation = 'shrinkToast 5s linear forwards';
-              }
+      }
 
               // Destrói a instância anterior para limpar a configuração "congelada" do "A Processar"
               const oldInstance = bootstrap.Toast.getInstance(toastEl);
@@ -1020,7 +1124,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   autohide: true,
                   delay: 5000
               });
-              
+
               toast.show();
           }
       }
@@ -1030,7 +1134,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           if(!successToastEl) return;
           document.getElementById('sucessoTitulo').innerText = "A Processar";
           document.getElementById('sucessoSub').innerText = mensagem;
-          
+
           const progressoContainer = document.getElementById('progressoContainer');
           if(progressoContainer) progressoContainer.style.display = 'none';
 
@@ -1066,11 +1170,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
           return html;
       }
-
       function mostrarSkeletonGlobais() {
           const tableContainer = document.querySelector('.content > .table-responsive');
           const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
-          
+
           if (document.getElementById('skeleton-temp-container')) return;
 
           const skeletonHTML = \`
@@ -1129,11 +1232,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {
           const urlParams = new URLSearchParams(window.location.search);
-          
+
           const cadernoCriadoId = urlParams.get('cadernoCriado');
           if (cadernoCriadoId) {
               mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
-              
+
               const btnImprimir = document.getElementById('btnImprimirNovoModal');
               if (btnImprimir) {
                   btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
@@ -1148,9 +1251,17 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
           if (urlParams.has('sucessoCliente')) {
               mostrarToast('sucesso', 'Sucesso!', 'Histórico de clientes atualizado com sucesso.');
-              
+
               const url = new URL(window.location.href);
               url.searchParams.delete('sucessoCliente');
+              window.history.replaceState({}, document.title, url.toString());
+          }
+
+          if (urlParams.has('erroExportacao')) {
+              mostrarToast('erro', 'Erro!', 'Não foi possível gerar o arquivo de clientes.');
+
+              const url = new URL(window.location.href);
+              url.searchParams.delete('erroExportacao');
               window.history.replaceState({}, document.title, url.toString());
           }
       });
@@ -1160,7 +1271,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       // =======================================================================
       async function prepararBuscaSimples(event, form, titleMsg) {
           if (event) event.preventDefault();
-          
+
           mostrarSkeletonGlobais();
 
           try {
@@ -1179,7 +1290,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   if (oldContent && newContent) {
                       oldContent.innerHTML = newContent.innerHTML;
                   }
-                  
+
                   atualizarModaisDinamicos(doc);
 
                   window.history.pushState({}, '', url);
@@ -1216,7 +1327,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   if (oldContent && newContent) {
                       oldContent.innerHTML = newContent.innerHTML;
                   }
-                  
+
                   atualizarModaisDinamicos(doc);
                   window.history.pushState({}, '', url);
               } else {
@@ -1268,11 +1379,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       function handleClientInput(event, inputEl) {
           const containerItem = inputEl.closest('.entrega-item');
           if (!containerItem) return;
-          
+
           const linkInput = containerItem.querySelector('.link-maps-input');
           const coordInput = containerItem.querySelector('.coord-input');
           const dropdown = inputEl.nextElementSibling;
-          
+
           let val = inputEl.value;
 
           if (event && event.inputType && event.inputType.startsWith('insert') && val.trim() !== '') {
@@ -1281,7 +1392,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   const currentLength = val.length;
                   inputEl.value = perfectMatch;
                   inputEl.setSelectionRange(currentLength, perfectMatch.length);
-                  val = inputEl.value; 
+                  val = inputEl.value;
               }
           }
 
@@ -1302,13 +1413,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               matches.forEach(match => {
                   const item = document.createElement('div');
                   item.className = 'autocomplete-item';
-                  
+
                   const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
                   const regex = new RegExp(\`(\${safeRegex})\`, "gi");
                   item.innerHTML = match.replace(regex, "<strong>$1</strong>");
 
                   item.onmousedown = function(e) {
-                      e.preventDefault(); 
+                      e.preventDefault();
                       inputEl.value = match;
                       if (linkInput) linkInput.value = dictClientes[match].link || '';
                       if (coordInput) coordInput.value = dictClientes[match].coord || '';
@@ -1350,7 +1461,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   const currentLength = val.length;
                   inputEl.value = perfectMatch;
                   inputEl.setSelectionRange(currentLength, perfectMatch.length);
-                  val = inputEl.value; 
+                  val = inputEl.value;
               }
           }
 
@@ -1369,13 +1480,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               matches.forEach(match => {
                   const item = document.createElement('div');
                   item.className = 'autocomplete-item';
-                  
+
                   const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
                   const regex = new RegExp(\`(\${safeRegex})\`, "gi");
                   item.innerHTML = match.replace(regex, "<strong>$1</strong>");
 
                   item.onmousedown = function(e) {
-                      e.preventDefault(); 
+                      e.preventDefault();
                       inputEl.value = match;
                       dropdown.style.display = 'none';
                   };
@@ -1406,7 +1517,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       function extrairCoordenadasAoColar(inputElement) {
           const container = inputElement.closest('.entrega-item') || inputElement.closest('form');
           if (!container) return;
-          
+
           const inputCoords = container.querySelector('input[name="coordenadas"]') || container.querySelector('input[name="coordenadas_rota[]"]');
           if (!inputCoords) return;
 
@@ -1452,7 +1563,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const sucessoIcon = document.getElementById('sucessoIcon');
           const timerEl = document.getElementById('sucessoTimer');
           const successToastEl = document.getElementById('sucessoToast');
-          
+
           // Desabilita o auto-hide para não fechar o toast durante o processamento do servidor
           successToastEl.setAttribute('data-bs-autohide', 'false');
           if (timerEl) timerEl.style.display = 'none';
@@ -1468,7 +1579,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
           let intervalProgress;
           if (titleMsg.toLowerCase().includes('otimizar')) {
-              sucessoIcon.className = "fa-solid fa-satellite-dish text-white fs-5 me-2"; 
+              sucessoIcon.className = "fa-solid fa-satellite-dish text-white fs-5 me-2";
               if(progressoContainer) progressoContainer.style.display = 'flex';
               if(barraProgresso) {
                  barraProgresso.style.width = '0%';
@@ -1484,7 +1595,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       if(barraProgresso) {
                           barraProgresso.style.width = progresso + '%';
                       }
-                      
+
                       if (progresso > 20 && progresso < 50) sucessoSub.innerText = "Consultando Google Maps API...";
                       if (progresso >= 50 && progresso < 80) sucessoSub.innerText = "Traçando rota inteligente...";
                       if (progresso >= 80) sucessoSub.innerText = "Gerando caderno e salvando dados da cidade...";
@@ -1492,10 +1603,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               }, 400);
 
           } else {
-              sucessoIcon.className = "fa-solid fa-circle-check text-white fs-5 me-2"; 
+              sucessoIcon.className = "fa-solid fa-circle-check text-white fs-5 me-2";
               if(progressoContainer) progressoContainer.style.display = 'none';
               sucessoSub.innerText = "Por favor, aguarde...";
-              
+
               // Se for apenas edição ou exclusão comum, podemos acionar o skeleton
               if(!titleMsg.toLowerCase().includes('cliente')) {
                  mostrarSkeletonGlobais();
@@ -1525,7 +1636,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   // Double-Fetch para garantir os dados 100% atualizados vindos da Base de Dados
                   const freshResponse = await fetch(window.location.href);
                   const html = await freshResponse.text();
-                  
+
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(html, 'text/html');
 
@@ -1579,13 +1690,21 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
                   dynamicContainers.forEach(el => el.remove());
 
+                  // Restaura as imagens default nos inputs
+                  const defaultImgMot = "https://ui-avatars.com/api/?name=Motorista&background=0D5749&color=fff";
+                  const defaultImgAju = "https://ui-avatars.com/api/?name=Ajudante&background=e9ecef&color=6c757d";
+                  const fotoMotNovo = document.getElementById('fotoMotoristaNovo');
+                  const fotoAjuNovo = document.getElementById('fotoAjudanteNovo');
+                  if (fotoMotNovo) fotoMotNovo.src = defaultImgMot;
+                  if (fotoAjuNovo) fotoAjuNovo.src = defaultImgAju;
+
                   // 5. Analisa a resposta para exibir os modais/toasts corretos
                   const responseUrl = new URL(response.url);
-                  
+
                   if (responseUrl.searchParams.has('cadernoCriado')) {
                       const cadernoCriadoId = responseUrl.searchParams.get('cadernoCriado');
                       mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
-                      
+
                       const btnImprimir = document.getElementById('btnImprimirNovoModal');
                       if (btnImprimir) {
                           btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
@@ -1618,7 +1737,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           const trs = tbody.getElementsByTagName("tr");
 
           for (let i = 0; i < trs.length; i++) {
-              if (trs[i].cells.length === 1) continue; 
+              if (trs[i].cells.length === 1) continue;
               const tdNome = trs[i].getElementsByTagName("td")[0];
               if (tdNome) {
                   const txtValue = tdNome.textContent || tdNome.innerText;
@@ -1631,7 +1750,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       function limparBuscaClientes() {
           const input = document.getElementById("searchInputClientes");
           input.value = "";
-          filtrarClientes(); 
+          filtrarClientes();
           input.focus();
       }
 
@@ -1661,7 +1780,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
                       <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm coord-input shadow-sm" placeholder="Lat, Lng">
                   </div>
-                  
+
                   <div class="col-12 col-md-8 mt-2">
                       <label class="form-label text-dark fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
                       <div class="sub-itens-container bg-light p-2 rounded border border-opacity-50">

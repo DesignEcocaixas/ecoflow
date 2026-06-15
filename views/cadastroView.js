@@ -17,6 +17,21 @@ function cadastroView(usuario, usuarios = []) {
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=0D5749&color=fff&size=120`;
             const imgSrc = u.foto ? `/uploads/${u.foto}` : defaultAvatar;
 
+            // Verificação de tipos "Sem Login"
+            const noLoginTypes = ['motorista_avulso', 'ajudante', 'diarista'];
+            const isNoLogin = noLoginTypes.includes(u.tipo_usuario);
+            const loginStyle = isNoLogin ? 'display: none;' : '';
+            const noLoginStyle = isNoLogin ? '' : 'display: none;';
+            const emailRequired = isNoLogin ? '' : 'required';
+
+            // Tratamento das cores dos Badges
+            let badgeColor = 'bg-primary text-white';
+            if (u.tipo_usuario === 'admin') badgeColor = 'bg-danger text-white';
+            else if (u.tipo_usuario === 'financeiro') badgeColor = 'bg-success text-white';
+            else if (u.tipo_usuario === 'design') badgeColor = 'bg-info text-dark';
+            else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-warning text-dark';
+            else if (isNoLogin) badgeColor = 'bg-secondary text-white';
+
             // Adiciona o Modal de Edição ao acumulador
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
@@ -36,13 +51,7 @@ function cadastroView(usuario, usuarios = []) {
                           </div>
                           <input type="file" name="foto" id="uploadFoto${u.id}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewFoto${u.id}')">
                           <h5 class="mt-3 mb-0 fw-bold text-dark">${u.nome}</h5>
-                          <span class="badge ${
-                            u.tipo_usuario === 'admin' ? 'bg-danger' : 
-                            u.tipo_usuario === 'financeiro' ? 'bg-success' : 
-                            u.tipo_usuario === 'design' ? 'bg-info text-dark' :
-                            u.tipo_usuario === 'logistica' ? 'bg-warning text-dark' :
-                            'bg-primary'
-                          } mt-1">${(u.tipo_usuario || "admin").toUpperCase()}</span>
+                          <span class="badge ${badgeColor} mt-1">${(u.tipo_usuario || "admin").replace('_', ' ').toUpperCase()}</span>
                       </div>
 
                       <hr class="text-muted opacity-25">
@@ -53,21 +62,29 @@ function cadastroView(usuario, usuarios = []) {
                           <input type="text" name="nome" class="form-control form-control-sm shadow-sm" value="${u.nome}" required>
                         </div>
                         <div class="col-12">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
-                          <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email}" required>
-                        </div>
-                        <div class="col-12">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Tipo de Usuário</label>
-                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm">
-                            <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
-                            <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista</option>
-                            <option value="financeiro" ${u.tipo_usuario === "financeiro" ? "selected" : ""}>Financeiro</option>
-                            <option value="design" ${u.tipo_usuario === "design" ? "selected" : ""}>Design</option>
-                            <option value="logistica" ${u.tipo_usuario === "logistica" ? "selected" : ""}>Logística</option>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Tipo de Perfil</label>
+                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" onchange="toggleRoleFields(this)" required>
+                            <optgroup label="Acesso ao Sistema">
+                                <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
+                                <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista Padrão</option>
+                                <option value="financeiro" ${u.tipo_usuario === "financeiro" ? "selected" : ""}>Financeiro</option>
+                                <option value="design" ${u.tipo_usuario === "design" ? "selected" : ""}>Design</option>
+                                <option value="logistica" ${u.tipo_usuario === "logistica" ? "selected" : ""}>Logística</option>
+                            </optgroup>
+                            <optgroup label="Colaboradores (Sem Login)">
+                                <option value="motorista_avulso" ${u.tipo_usuario === "motorista_avulso" ? "selected" : ""}>Motorista Avulso</option>
+                                <option value="ajudante" ${u.tipo_usuario === "ajudante" ? "selected" : ""}>Ajudante</option>
+                                <option value="diarista" ${u.tipo_usuario === "diarista" ? "selected" : ""}>Diarista</option>
+                            </optgroup>
                           </select>
                         </div>
-                        <div class="col-12 col-md-6">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nova Senha (opcional)</label>
+
+                        <div class="col-12 login-field" style="${loginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail de Acesso</label>
+                          <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired}>
+                        </div>
+                        <div class="col-12 col-md-6 login-field" style="${loginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nova Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
                             <input type="password" name="senha" id="senhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
                             <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaEdit${u.id}', this)">
@@ -75,8 +92,8 @@ function cadastroView(usuario, usuarios = []) {
                             </button>
                           </div>
                         </div>
-                        <div class="col-12 col-md-6">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Nova Senha</label>
+                        <div class="col-12 col-md-6 login-field" style="${loginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
                             <input type="password" name="confirma_senha" id="confirmaSenhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
                             <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaEdit${u.id}', this)">
@@ -84,11 +101,29 @@ function cadastroView(usuario, usuarios = []) {
                             </button>
                           </div>
                         </div>
+
+                        <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
+                          <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${u.cpf || ''}" placeholder="000.000.000-00">
+                        </div>
+                        <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
+                          <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${u.telefone || ''}" placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
+                          <input type="text" name="pix" class="form-control form-control-sm shadow-sm" value="${u.pix || ''}" placeholder="Chave do recebedor">
+                        </div>
+                        <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
+                          <input type="text" name="banco" class="form-control form-control-sm shadow-sm" value="${u.banco || ''}" placeholder="Ex: Nubank, Inter, Caixa...">
+                        </div>
                       </div>
+
                     </div>
                     <div class="modal-footer border-0 bg-light d-flex flex-nowrap">
                       <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
                     </div>
                   </form>
                 </div>
@@ -101,7 +136,7 @@ function cadastroView(usuario, usuarios = []) {
                       <div class="modal-body text-center p-4">
                         <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
                         <h6 class="mb-2 fw-bold">Excluir Usuário?</h6>
-                        <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja excluir permanentemente o acesso de <b>${u.nome}</b>?</p>
+                        <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja excluir permanentemente o cadastro de <b>${u.nome}</b>?</p>
                       </div>
                       <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
                         <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
@@ -125,20 +160,16 @@ function cadastroView(usuario, usuarios = []) {
                     ${u.nome}
                   </div>
                 </td>
-                <td class="text-muted py-2" style="font-size: 0.85rem;">${u.email}</td>
+                <td class="text-muted py-2" style="font-size: 0.85rem;">
+                  ${isNoLogin ? `<i class="fa-solid fa-phone me-1 opacity-50"></i> ${u.telefone || 'Sem contato'}` : `<i class="fa-solid fa-envelope me-1 opacity-50"></i> ${u.email}`}
+                </td>
                 <td class="py-2">
-                  <span class="badge ${
-                    u.tipo_usuario === 'admin' ? 'bg-danger text-white' : 
-                    u.tipo_usuario === 'financeiro' ? 'bg-success text-white' : 
-                    u.tipo_usuario === 'design' ? 'bg-info text-dark' :
-                    u.tipo_usuario === 'logistica' ? 'bg-warning text-dark' :
-                    'bg-primary text-white'
-                  } bg-opacity-75" style="font-size:0.7rem; letter-spacing: 0.5px;">
-                    ${(u.tipo_usuario || "admin").toUpperCase()}
+                  <span class="badge ${badgeColor} bg-opacity-75" style="font-size:0.7rem; letter-spacing: 0.5px;">
+                    ${(u.tipo_usuario || "admin").replace('_', ' ').toUpperCase()}
                   </span>
                 </td>
                 <td class="text-end text-nowrap py-2">
-                  <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm" onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirUsuario${u.id}')).show();" title="Excluir Acesso">
+                  <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm" onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirUsuario${u.id}')).show();" title="Excluir">
                     <i class="fa-solid fa-trash"></i>
                   </button>
                 </td>
@@ -156,7 +187,7 @@ function cadastroView(usuario, usuarios = []) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Usuários | Ecoflow</title>
+    <title>Colaboradores & Usuários | Ecoflow</title>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -173,16 +204,7 @@ function cadastroView(usuario, usuarios = []) {
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; position: relative; }
       .text-sm { font-size: 0.875rem; }
-      .usuario-badge {
-          background-color: white;
-          color: #0D5749;
-          padding: 6px 14px;
-          border-radius: 20px;
-          border: 1px solid rgba(13,87,73,0.2);
-          font-size: 0.85rem;
-          font-weight: 500;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      }
+      
       .erp-card {
           border-radius: 12px;
           background: #fff;
@@ -325,16 +347,16 @@ function cadastroView(usuario, usuarios = []) {
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
-            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-users text-muted me-2"></i>Gestão de Usuários</h4>
+            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-users-gear text-muted me-2"></i>Colaboradores</h4>
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
+      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light flex-wrap gap-2">
         <div>
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total de Cadastros: <strong>${usuarios.length}</strong></h6>
+            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total Registado: <strong>${usuarios.length}</strong> pessoas</h6>
         </div>
         <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
-          <i class="fa-solid fa-user-plus me-1"></i> Novo Usuário
+          <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo
         </button>
       </div>
 
@@ -343,8 +365,8 @@ function cadastroView(usuario, usuarios = []) {
           <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
             <thead>
               <tr>
-                <th>Nome Completo</th>
-                <th>E-mail</th>
+                <th>Nome / Colaborador</th>
+                <th>E-mail / Contato</th>
                 <th>Perfil de Acesso</th>
                 <th class="text-end" style="width: 80px;">Ações</th>
               </tr>
@@ -361,15 +383,15 @@ function cadastroView(usuario, usuarios = []) {
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Cadastro Realizado!')">
           <div class="modal-header bg-success border-0 text-white">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Novo Usuário</h6>
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Adicionar Colaborador</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-sm p-4 bg-light">
             <div class="row g-3">
               <div class="col-12 text-center mb-3">
-                  <label class="form-label text-muted mb-2 fw-bold d-block" style="font-size:0.8rem;">Foto de Perfil (Opcional)</label>
+                  <label class="form-label text-muted mb-2 fw-bold d-block" style="font-size:0.8rem;">Foto (Opcional)</label>
                   <div class="profile-upload-container position-relative mx-auto" onclick="document.getElementById('uploadFotoNovo').click()" title="Escolher Foto">
-                      <img id="previewFotoNovo" data-default-src="https://ui-avatars.com/api/?name=Novo+Usuario&background=e9ecef&color=6c757d&size=120" src="https://ui-avatars.com/api/?name=Novo+Usuario&background=e9ecef&color=6c757d&size=120" alt="Novo Usuário">
+                      <img id="previewFotoNovo" data-default-src="https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120" src="https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120" alt="Novo">
                       <div class="profile-upload-overlay d-flex align-items-center justify-content-center">
                           <span><i class="fa-solid fa-camera mb-1 d-block"></i> Escolher</span>
                       </div>
@@ -381,21 +403,30 @@ function cadastroView(usuario, usuarios = []) {
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nome Completo</label>
                 <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João da Silva">
               </div>
+              
               <div class="col-12">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
-                <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="joao@ecoflow.com">
-              </div>
-              <div class="col-12">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Perfil / Tipo de Usuário</label>
-                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" required>
-                  <option value="admin">Administrador</option>
-                  <option value="financeiro">Financeiro</option>
-                  <option value="motorista" selected>Motorista</option>
-                  <option value="design">Design</option>
-                  <option value="logistica">Logística</option>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Perfil / Tipo de Cadastro</label>
+                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" onchange="toggleRoleFields(this)" required>
+                  <optgroup label="Acesso ao Sistema">
+                      <option value="admin">Administrador</option>
+                      <option value="financeiro">Financeiro</option>
+                      <option value="motorista" selected>Motorista Padrão</option>
+                      <option value="design">Design</option>
+                      <option value="logistica">Logística</option>
+                  </optgroup>
+                  <optgroup label="Colaboradores (Sem Login)">
+                      <option value="motorista_avulso">Motorista Avulso</option>
+                      <option value="ajudante">Ajudante</option>
+                      <option value="diarista">Diarista</option>
+                  </optgroup>
                 </select>
               </div>
-              <div class="col-12 col-md-6">
+
+              <div class="col-12 login-field">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail de Acesso</label>
+                <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="email@ecoflow.com">
+              </div>
+              <div class="col-12 col-md-6 login-field">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha de Acesso</label>
                 <div class="input-group input-group-sm shadow-sm">
                   <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••">
@@ -404,7 +435,7 @@ function cadastroView(usuario, usuarios = []) {
                   </button>
                 </div>
               </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-6 login-field">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
                   <input type="password" name="confirma_senha" id="confirmaSenhaNovo" class="form-control border-end-0" required placeholder="••••••••">
@@ -413,11 +444,29 @@ function cadastroView(usuario, usuarios = []) {
                   </button>
                 </div>
               </div>
+
+              <div class="col-12 col-md-6 no-login-field" style="display: none;">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
+                <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" placeholder="000.000.000-00">
+              </div>
+              <div class="col-12 col-md-6 no-login-field" style="display: none;">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
+                <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" placeholder="(00) 00000-0000">
+              </div>
+              <div class="col-12 col-md-6 no-login-field" style="display: none;">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
+                <input type="text" name="pix" class="form-control form-control-sm shadow-sm" placeholder="Chave do recebedor">
+              </div>
+              <div class="col-12 col-md-6 no-login-field" style="display: none;">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
+                <input type="text" name="banco" class="form-control form-control-sm shadow-sm" placeholder="Ex: Nubank, Inter, Caixa...">
+              </div>
+
             </div>
           </div>
           <div class="modal-footer border-0 bg-white d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-check me-1"></i> Criar Acesso</button>
+            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-check me-1"></i> Salvar Cadastro</button>
           </div>
         </form>
       </div>
@@ -430,7 +479,7 @@ function cadastroView(usuario, usuarios = []) {
                     <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
                 <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
@@ -444,7 +493,7 @@ function cadastroView(usuario, usuarios = []) {
                     <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
                 <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
@@ -459,6 +508,53 @@ function cadastroView(usuario, usuarios = []) {
     <script src="./script/checkLogin.js"></script>
 
     <script>
+        // =======================================================================
+        // CONTROLE DINÂMICO DE CAMPOS DO FORMULÁRIO (LOGIN VS SEM LOGIN)
+        // =======================================================================
+        function toggleRoleFields(selectEl) {
+            const form = selectEl.closest('form');
+            const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(selectEl.value);
+            
+            const loginFields = form.querySelectorAll('.login-field');
+            const noLoginFields = form.querySelectorAll('.no-login-field');
+            
+            const emailInput = form.querySelector('input[name="email"]');
+            const senhaInput = form.querySelector('input[name="senha"]');
+            const confirmaInput = form.querySelector('input[name="confirma_senha"]');
+
+            if (isNoLogin) {
+                // Esconde E-mail e Senhas
+                loginFields.forEach(el => el.style.display = 'none');
+                // Mostra CPF, PIX, Banco, Telefone
+                noLoginFields.forEach(el => el.style.display = ''); 
+                
+                // Remove a obrigatoriedade dos campos de login
+                if (emailInput) emailInput.removeAttribute('required');
+                if (senhaInput && form.action.includes('/novo')) senhaInput.removeAttribute('required');
+                if (confirmaInput && form.action.includes('/novo')) confirmaInput.removeAttribute('required');
+            } else {
+                // Mostra E-mail e Senhas
+                loginFields.forEach(el => el.style.display = '');
+                // Esconde CPF, PIX, Banco, Telefone
+                noLoginFields.forEach(el => el.style.display = 'none');
+                
+                // Retorna a obrigatoriedade
+                if (emailInput) emailInput.setAttribute('required', 'true');
+                if (form.action.includes('/novo')) {
+                    if (senhaInput) senhaInput.setAttribute('required', 'true');
+                    if (confirmaInput) confirmaInput.setAttribute('required', 'true');
+                }
+            }
+        }
+
+        // Executa a verificação em todos os modais ao iniciar a página (para não deixar blocos abertos indevidamente)
+        function initRoleToggles() {
+            document.querySelectorAll('select[name="tipo_usuario"]').forEach(select => {
+                toggleRoleFields(select);
+            });
+        }
+        window.addEventListener('load', initRoleToggles);
+
         // =======================================================================
         // SKELETON LOADING
         // =======================================================================
@@ -527,10 +623,6 @@ function cadastroView(usuario, usuarios = []) {
             window.addEventListener('load', ocultarSkeletonGlobais);
         }
 
-        window.addEventListener('beforeunload', () => {
-            mostrarSkeletonGlobais();
-        });
-
         // =======================================================================
         // FUNÇÃO GENÉRICA DE TOASTS
         // =======================================================================
@@ -561,7 +653,7 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         // =======================================================================
-        // VISIBILIDADE DE SENHA (TOGGLE)
+        // VISIBILIDADE DE SENHA E VALIDAÇÃO
         // =======================================================================
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
@@ -578,6 +670,9 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         function validarSenhaConfirmacao(form) {
+            const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(form.querySelector('select[name="tipo_usuario"]').value);
+            if (isNoLogin) return true; // Se for sem login, não precisa validar as senhas pois estão inativas
+
             const senha = form.querySelector('input[name="senha"]');
             const confirma = form.querySelector('input[name="confirma_senha"]');
             
@@ -590,7 +685,7 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         // =======================================================================
-        // SUBMISSÃO AJAX COM SUPORTE A UPLOAD DE ARQUIVOS E SKELETON
+        // SUBMISSÃO AJAX COM SUPORTE A UPLOAD DE ARQUIVOS
         // =======================================================================
         let isSubmitting = false;
 
@@ -618,9 +713,7 @@ function cadastroView(usuario, usuarios = []) {
             document.body.classList.remove('modal-open');
             document.body.style = '';
 
-            // Mostrar Skeleton Loading ao invés de toast amarelo obstrutivo
             mostrarSkeletonGlobais();
-
             isSubmitting = true;
 
             try {
@@ -653,14 +746,16 @@ function cadastroView(usuario, usuarios = []) {
                     form.reset();
                     const previewImg = form.querySelector('img[id^="previewFoto"]');
                     if (previewImg) {
-                        previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Usuario&background=e9ecef&color=6c757d&size=120";
+                        previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120";
                     }
+
+                    initRoleToggles(); // Reaplica as máscaras/visibilidade aos selects renderizados no AJAX
 
                     const responseUrl = new URL(response.url);
                     let finalMsg = defaultMsg;
-                    if (responseUrl.searchParams.has('sucesso')) finalMsg = 'Novo usuário foi adicionado ao sistema.';
-                    if (responseUrl.searchParams.has('editado')) finalMsg = 'As informações do usuário foram salvas.';
-                    if (responseUrl.searchParams.has('excluido')) finalMsg = 'O usuário foi removido com sucesso.';
+                    if (responseUrl.searchParams.has('sucesso')) finalMsg = 'Novo colaborador adicionado ao sistema.';
+                    if (responseUrl.searchParams.has('editado')) finalMsg = 'As informações foram salvas.';
+                    if (responseUrl.searchParams.has('excluido')) finalMsg = 'O registo foi removido com sucesso.';
 
                     mostrarToast('sucesso', 'Concluído!', finalMsg);
                 } else {

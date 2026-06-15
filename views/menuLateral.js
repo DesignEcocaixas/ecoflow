@@ -24,7 +24,9 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
     { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
-    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" }
+    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
+    { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
+    { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" }
   ];
 
   const desLinks = [

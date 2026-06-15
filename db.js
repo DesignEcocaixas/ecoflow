@@ -1,4 +1,3 @@
-// db.js
 const mysql = require("mysql2");
 
 // Cria um pool de conexões (em vez de uma única conexão)
@@ -26,7 +25,6 @@ pool.getConnection((err, conn) => {
 
 module.exports = pool;
 
-// db.js
 /* const mysql = require("mysql2");
 const pool = mysql.createPool({
   host: "localhost",

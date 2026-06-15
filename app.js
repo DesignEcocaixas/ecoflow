@@ -22,6 +22,8 @@ const entregasView = require("./views/entregasView");
 const chapasView = require("./views/chapasView");
 const entradasSaidasView = require("./views/entradasSaidasView");
 const ordemProducaoView = require('./views/ordemProducaoView');
+const controlePagamentosView = require("./views/controlePagamentosView");
+const diaristasView = require("./views/diaristasView");
 
 const { Server } = require("socket.io");
 const app = express();
@@ -712,8 +714,8 @@ app.get("/cadastro", (req, res) => {
     if (req.session.user.tipo_usuario !== "admin")                   // só admin acessa
         return res.status(403).send("Acesso negado.");
 
-    // Atualizado para incluir a coluna 'foto' no SELECT
-    db.query("SELECT id, nome, email, tipo_usuario, foto FROM usuarios ORDER BY id DESC", (err, rows) => {
+    // Atualizado para incluir as novas colunas no SELECT
+    db.query("SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco FROM usuarios ORDER BY id DESC", (err, rows) => {
         if (err) {
             console.error("Erro ao listar usuários:", err);
             return res.status(500).send("Erro ao carregar usuários.");
@@ -729,25 +731,33 @@ app.post("/usuarios/novo", upload.single("foto"), (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     if (req.session.user.tipo_usuario !== "admin") return res.status(403).send("Acesso negado.");
 
-    const { nome, email, senha, tipo_usuario } = req.body;
+    const { nome, email, senha, tipo_usuario, cpf, telefone, pix, banco } = req.body;
     const foto = req.file ? req.file.filename : null; // Captura a foto do middleware
 
+    // Lógica para perfis com/sem login
+    const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipo_usuario);
+    const finalEmail = (isNoLogin || !email || email.trim() === '') ? null : email;
+    const finalSenha = isNoLogin ? null : senha;
+    const finalCpf = isNoLogin ? cpf : null;
+    const finalTelefone = isNoLogin ? telefone : null;
+    const finalPix = isNoLogin ? pix : null;
+    const finalBanco = isNoLogin ? banco : null;
+
     db.query(
-        "INSERT INTO usuarios (nome, email, senha, tipo_usuario, foto) VALUES (?, ?, ?, ?, ?)",
-        [nome, email, senha, tipo_usuario, foto],
+        "INSERT INTO usuarios (nome, email, senha, tipo_usuario, foto, cpf, telefone, pix, banco) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [nome, finalEmail, finalSenha, tipo_usuario, foto, finalCpf, finalTelefone, finalPix, finalBanco],
         (err) => {
             if (err) {
                 console.error("Erro ao cadastrar:", err);
-                // Recarrega a tela de cadastro com a lista e erro (incluindo a coluna foto)
                 return db.query(
-                    "SELECT id, nome, email, tipo_usuario, foto FROM usuarios ORDER BY id DESC",
+                    "SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco FROM usuarios ORDER BY id DESC",
                     (erro2, rows) => {
                         if (erro2) return res.status(500).send("Erro no sistema.");
                         return res.send(cadastroView(req.session.user, rows || []));
                     }
                 );
             }
-            return res.redirect("/cadastro");
+            return res.redirect("/cadastro?sucesso=1"); // Tag para acionar o Toast de sucesso
         }
     );
 });
@@ -759,31 +769,39 @@ app.post("/usuarios/editar/:id", upload.single("foto"), (req, res) => {
     if (req.session.user.tipo_usuario !== "admin") return res.status(403).send("Acesso negado.");
 
     const { id } = req.params;
-    const { nome, email, senha, tipo_usuario } = req.body;
+    const { nome, email, senha, tipo_usuario, cpf, telefone, pix, banco } = req.body;
     const novaFoto = req.file ? req.file.filename : null;
+
+    // Lógica para perfis com/sem login
+    const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipo_usuario);
+    const finalEmail = (isNoLogin || !email || email.trim() === '') ? null : email;
+    const finalCpf = isNoLogin ? cpf : null;
+    const finalTelefone = isNoLogin ? telefone : null;
+    const finalPix = isNoLogin ? pix : null;
+    const finalBanco = isNoLogin ? banco : null;
 
     // Função interna para rodar o UPDATE dependendo do cenário (com/sem senha, com/sem foto)
     const executarUpdate = () => {
         let sql;
         let params;
 
-        if (!senha || senha.trim() === "") {
-            // NÃO altera a senha
+        // Se o campo senha vier vazio OU se for um perfil sem login, a senha não é alterada.
+        if (!senha || senha.trim() === "" || isNoLogin) {
             if (novaFoto) {
-                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=?, foto=? WHERE id=?";
-                params = [nome, email, tipo_usuario, novaFoto, id];
+                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=?, foto=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?";
+                params = [nome, finalEmail, tipo_usuario, novaFoto, finalCpf, finalTelefone, finalPix, finalBanco, id];
             } else {
-                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=? WHERE id=?";
-                params = [nome, email, tipo_usuario, id];
+                sql = "UPDATE usuarios SET nome=?, email=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?";
+                params = [nome, finalEmail, tipo_usuario, finalCpf, finalTelefone, finalPix, finalBanco, id];
             }
         } else {
             // ALTERA a senha
             if (novaFoto) {
-                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=?, foto=? WHERE id=?";
-                params = [nome, email, senha, tipo_usuario, novaFoto, id];
+                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=?, foto=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?";
+                params = [nome, finalEmail, senha, tipo_usuario, novaFoto, finalCpf, finalTelefone, finalPix, finalBanco, id];
             } else {
-                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=? WHERE id=?";
-                params = [nome, email, senha, tipo_usuario, id];
+                sql = "UPDATE usuarios SET nome=?, email=?, senha=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?";
+                params = [nome, finalEmail, senha, tipo_usuario, finalCpf, finalTelefone, finalPix, finalBanco, id];
             }
         }
 
@@ -803,7 +821,7 @@ app.post("/usuarios/editar/:id", upload.single("foto"), (req, res) => {
             }
             // ---------------------------------------
 
-            return res.redirect("/cadastro");
+            return res.redirect("/cadastro?editado=1"); // Tag para acionar o Toast de edição
         });
     };
 
@@ -857,7 +875,7 @@ app.post("/usuarios/excluir/:id", (req, res) => {
                 console.error("Erro ao excluir usuário:", err);
                 return res.status(500).send("Erro ao excluir usuário.");
             }
-            return res.redirect("/cadastro");
+            return res.redirect("/cadastro?excluido=1"); // Tag para acionar o Toast de exclusão
         });
     });
 });
@@ -2491,7 +2509,7 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
 // MÓDULO: CADERNO DE ENTREGAS (ATUALIZADO)
 // ==========================================
 
-// 1. Listar Cadernos (Agora busca o histórico fixo de clientes e catálogo de itens)
+// 1. Listar Cadernos (Agora busca o histórico fixo de clientes, catálogo de itens e colaboradores)
 app.get("/caderno-entregas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
@@ -2543,6 +2561,9 @@ app.get("/caderno-entregas", async (req, res) => {
         // NOVO: Busca o catálogo de itens do pedido (as dezenas de caixas que inserimos via script SQL)
         const [itensCatalogo] = await db.promise().query("SELECT nome FROM itens_catalogo ORDER BY nome ASC");
 
+        // NOVO: Busca os colaboradores (Motoristas, Ajudantes, etc.) para o Autocomplete com foto
+        const [colaboradores] = await db.promise().query("SELECT id, nome, tipo_usuario, foto FROM usuarios WHERE tipo_usuario IN ('motorista', 'motorista_avulso', 'ajudante', 'diarista', 'logistica') ORDER BY nome ASC");
+
         res.send(require('./views/cadernoEntregasView')(
             req.session.user,
             cadernos,
@@ -2550,7 +2571,8 @@ app.get("/caderno-entregas", async (req, res) => {
             clientesDB,
             { page, totalPages, total },
             { data_inicio, data_fim },
-            itensCatalogo // <--- Passando o catálogo mágico para a View final!
+            itensCatalogo,
+            colaboradores // <--- Parâmetro dos colaboradores injetado aqui!
         ));
     } catch (error) {
         console.error("Erro no Caderno de Entregas:", error);
@@ -2657,7 +2679,7 @@ app.post("/caderno-entregas/editar/:id", (req, res) => {
 
     // 1. Tabela Correta: caderno_entregas (Singular)
     const sqlUpdateCaderno = "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?";
-    
+
     db.query(sqlUpdateCaderno, [motorista, ajudante, veiculo_id, cadernoId], (err) => {
         if (err) {
             console.error("Erro ao atualizar caderno:", err);
@@ -2669,7 +2691,7 @@ app.post("/caderno-entregas/editar/:id", (req, res) => {
         // 2. Tabela Correta: caderno_entregas_itens
         let sqlDelete = "DELETE FROM caderno_entregas_itens WHERE caderno_id = ?";
         let deleteParams = [cadernoId];
-        
+
         if (idsValidos.length > 0) {
             sqlDelete += " AND id NOT IN (?)";
             deleteParams.push(idsValidos);
@@ -2689,7 +2711,7 @@ app.post("/caderno-entregas/editar/:id", (req, res) => {
                 const link_endereco = links[index] || '';
                 const itens = itensPedido[index] || '';
                 const qtd = quantidades[index] || 1;
-                
+
                 // Tratamento seguro para valores vazios
                 let valor = valoresAbertos[index];
                 if (!valor || valor.trim() === '') valor = null;
@@ -2715,10 +2737,10 @@ app.post("/caderno-entregas/editar/:id", (req, res) => {
 
             function handleQueryEnd(err) {
                 if (err) console.error("Erro ao processar entrega individual:", err);
-                
+
                 queriesPendentes--;
                 if (queriesPendentes === 0) {
-                    res.redirect("/caderno-entregas"); 
+                    res.redirect("/caderno-entregas");
                 }
             }
         });
@@ -2847,6 +2869,61 @@ app.post("/caderno-entregas/clientes/excluir", async (req, res) => {
     } catch (error) {
         console.error("[ERRO AO EXCLUIR CLIENTE]:", error);
         res.status(500).send("Erro interno ao tentar excluir o cliente.");
+    }
+});
+
+// ==========================================
+// RELATÓRIO COM LISTA DE CLIENTES, CIDADE, LINK DO MAPS E COORDENADAS (EXCEL)
+// ==========================================
+app.get('/caderno-entregas/clientes/exportar-excel', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const [clientes] = await db.promise().query(`
+            SELECT nome, link_endereco, coordenadas, cidade
+            FROM clientes_historico 
+            ORDER BY nome ASC
+        `);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Clientes');
+
+        sheet.columns = [
+            { header: 'NOME / PIZZARIA', key: 'nome', width: 40 },
+            { header: 'CIDADE', key: 'cidade', width: 20 },
+            { header: 'LINK DO MAPS', key: 'link_endereco', width: 50 },
+            { header: 'COORDENADAS', key: 'coordenadas', width: 25 }
+        ];
+
+        sheet.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        clientes.forEach(c => {
+            sheet.addRow({
+                nome: c.nome,
+                cidade: c.cidade || '-',
+                link_endereco: c.link_endereco,
+                coordenadas: c.coordenadas
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=relatorio_clientes.xlsx');
+
+        // Escreve diretamente no stream de resposta
+        await workbook.xlsx.write(res);
+        return res.end();
+
+    } catch (error) {
+        console.error("[ERRO AO EXPORTAR CLIENTES]:", error);
+        // Em vez de redirect, vamos apenas enviar uma resposta de erro que o cliente pode tratar
+        // Como é um link de download, o redirecionamento pode falhar em alguns navegadores.
+        // O ideal é notificar o usuário na página principal.
+        res.status(500).send("Erro ao gerar o relatório.");
     }
 });
 
@@ -4693,6 +4770,311 @@ app.post('/admin/gabaritos/delete/:id', (req, res) => {
             res.redirect('/admin/gabaritos');
         });
     });
+});
+
+// =========================================================================
+// ROTA: CONTROLE DE PAGAMENTOS E CONFIGURAÇÕES
+// =========================================================================
+
+app.get("/pagamentos", async (req, res) => {
+    if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro" && req.session.user.tipo_usuario !== "logistica")) {
+        return res.redirect("/login");
+    }
+
+    try {
+        const page = parseInt(req.query.page || "1", 10);
+        const limit = 10;
+        const offset = (page - 1) * limit;
+        const { data_inicio, data_fim, colaborador, caderno_inicio, caderno_fim } = req.query;
+
+        // A. Busca a lógica de Degraus e Viagens Longas
+        const [configs] = await db.promise().query("SELECT chave, valor FROM configuracoes");
+        let taxas = {
+            mot_t1: 80, mot_t2: 95, mot_t3: 110,
+            aju_t1: 55, aju_t2: 65, aju_t3: 75,
+            val_almoco: 25,
+            vl_sulbahia: 200, vl_aracaju1: 160, vl_aracaju2: 200, vl_capimgrosso: 200
+        };
+        configs.forEach(c => {
+            if (taxas[c.chave] !== undefined) taxas[c.chave] = parseFloat(c.valor);
+        });
+
+        // B. Busca Colaboradores
+        const [colaboradores] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco FROM usuarios ORDER BY nome ASC");
+
+        // C. Busca Cadernos Pendentes (CORRIGIDO: Puxa o status e o VALOR EXATO pago para atualizar os cards)
+        let whereCad = [];
+        let paramsCad = [];
+        if (caderno_inicio) { whereCad.push("DATE(c.data_criacao) >= ?"); paramsCad.push(caderno_inicio); }
+        if (caderno_fim) { whereCad.push("DATE(c.data_criacao) <= ?"); paramsCad.push(caderno_fim); }
+        const whereCadSql = whereCad.length ? "WHERE " + whereCad.join(" AND ") : "";
+
+        const [cadernosPendentes] = await db.promise().query(`
+            SELECT c.*, v.modelo as veiculo_modelo,
+                (SELECT status FROM pagamentos_colaboradores p WHERE p.caderno_id = c.id AND p.colaborador_id = (SELECT id FROM usuarios WHERE nome = c.motorista LIMIT 1) ORDER BY id DESC LIMIT 1) as mot_status,
+                (SELECT valor_total FROM pagamentos_colaboradores p WHERE p.caderno_id = c.id AND p.colaborador_id = (SELECT id FROM usuarios WHERE nome = c.motorista LIMIT 1) ORDER BY id DESC LIMIT 1) as mot_valor,
+                (SELECT status FROM pagamentos_colaboradores p WHERE p.caderno_id = c.id AND p.colaborador_id = (SELECT id FROM usuarios WHERE nome = c.ajudante LIMIT 1) ORDER BY id DESC LIMIT 1) as aju_status,
+                (SELECT valor_total FROM pagamentos_colaboradores p WHERE p.caderno_id = c.id AND p.colaborador_id = (SELECT id FROM usuarios WHERE nome = c.ajudante LIMIT 1) ORDER BY id DESC LIMIT 1) as aju_valor
+            FROM caderno_entregas c
+            LEFT JOIN veiculos v ON c.veiculo_id = v.id
+            ${whereCadSql}
+            ORDER BY c.data_criacao DESC LIMIT 50 
+        `, paramsCad);
+
+        for (let c of cadernosPendentes) {
+            const [itens] = await db.promise().query(`SELECT i.*, ch.cidade FROM caderno_entregas_itens i LEFT JOIN clientes_historico ch ON i.local_entrega = ch.nome WHERE i.caderno_id = ? ORDER BY i.id ASC`, [c.id]);
+            c.entregas = itens;
+            c.qtd_entregas = itens.length;
+        }
+
+        // D. Busca Histórico Dinâmico
+        let whereHist = [];
+        let paramsHist = [];
+        if (data_inicio) { whereHist.push("DATE(p.data_servico) >= ?"); paramsHist.push(data_inicio); }
+        if (data_fim) { whereHist.push("DATE(p.data_servico) <= ?"); paramsHist.push(data_fim); }
+        if (colaborador) { whereHist.push("p.colaborador_id = ?"); paramsHist.push(colaborador); }
+
+        const whereHistSql = whereHist.length ? "WHERE " + whereHist.join(" AND ") : "";
+        const countQuery = `SELECT COUNT(*) AS total FROM pagamentos_colaboradores p ${whereHistSql}`;
+        const [[countResult]] = await db.promise().query(countQuery, paramsHist);
+
+        const total = countResult.total;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const queryParams = [...paramsHist, limit, offset];
+
+        const [pagamentos] = await db.promise().query(`
+            SELECT p.*, u.nome as nome_colaborador, u.tipo_usuario as tipo_colaborador 
+            FROM pagamentos_colaboradores p 
+            LEFT JOIN usuarios u ON p.colaborador_id = u.id 
+            ${whereHistSql} 
+            ORDER BY p.data_servico DESC, p.id DESC 
+            LIMIT ? OFFSET ?
+        `, queryParams);
+
+        const filtrosCompletos = { data_inicio, data_fim, colaborador, caderno_inicio, caderno_fim };
+
+        res.send(controlePagamentosView(
+            req.session.user, colaboradores, pagamentos, cadernosPendentes, filtrosCompletos, { page, totalPages }, taxas
+        ));
+
+    } catch (error) {
+        console.error("Erro no Controle de Pagamentos:", error);
+        res.status(500).send("Erro interno ao carregar a página.");
+    }
+});
+
+// NOVA ROTA: Salvar Configurações de Degraus e Viagens Longas
+app.post("/configuracoes/taxas", async (req, res) => {
+    if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro")) {
+        return res.status(403).send("Acesso negado.");
+    }
+
+    try {
+        const promises = Object.keys(req.body).map(chave => {
+            return db.promise().query("INSERT INTO configuracoes (chave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = ?", [chave, req.body[chave], req.body[chave]]);
+        });
+        await Promise.all(promises);
+        res.redirect("/pagamentos");
+    } catch (error) {
+        console.error("Erro ao salvar taxas:", error);
+        res.status(500).send("Erro ao salvar configurações.");
+    }
+});
+
+app.post("/pagamentos/novo", upload.single("comprovante"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { colaborador_id, data_servico, valor_total, ja_pago, caderno_id, is_viagem_longa, destino_longa, is_almoco, valor_almoco_bd } = req.body;
+    let { qtd_entregas } = req.body;
+
+    // BLINDAGEM: Se a quantidade vier como 0 ou vazia, o sistema lê direto do banco de dados para nunca falhar o histórico.
+    if ((!qtd_entregas || qtd_entregas == 0) && caderno_id) {
+        try {
+            const [[countItens]] = await db.promise().query("SELECT COUNT(id) as total FROM caderno_entregas_itens WHERE caderno_id = ?", [caderno_id]);
+            qtd_entregas = countItens ? countItens.total : 0;
+        } catch (e) {
+            qtd_entregas = 0;
+        }
+    }
+
+    const status = ja_pago === "sim" ? 'PAGO' : 'Pendente';
+    const comprovante = req.file ? req.file.filename : null;
+
+    const tipo_viagem = is_viagem_longa === "sim" ? destino_longa : 'Padrão';
+    const almoco = is_almoco === "sim" ? (valor_almoco_bd || 25.00) : 0.00;
+
+    try {
+        await db.promise().query(
+            "INSERT INTO pagamentos_colaboradores (colaborador_id, data_servico, qtd_entregas, valor_total, status, comprovante, caderno_id, almoco, tipo_viagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [colaborador_id, data_servico, qtd_entregas || 0, valor_total || 0, status, comprovante, caderno_id || null, almoco, tipo_viagem]
+        );
+        res.redirect("/pagamentos");
+    } catch (error) {
+        console.error("Erro ao registrar pagamento:", error);
+        res.status(500).send("Erro ao registrar o pagamento.");
+    }
+});
+
+// ATUALIZAR STATUS (POST)
+app.post("/pagamentos/baixar/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    try {
+        await db.promise().query("UPDATE pagamentos_colaboradores SET status = 'PAGO' WHERE id = ?", [req.params.id]);
+        res.redirect("/pagamentos");
+    } catch (error) {
+        res.status(500).send("Erro ao atualizar.");
+    }
+});
+
+// EXCLUIR (POST)
+app.post("/pagamentos/excluir/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    try {
+        await db.promise().query("DELETE FROM pagamentos_colaboradores WHERE id = ?", [req.params.id]);
+        res.redirect("/pagamentos");
+    } catch (error) {
+        res.status(500).send("Erro ao excluir.");
+    }
+});
+
+// EDITAR PAGAMENTO / DIÁRIA (POST)
+app.post("/pagamentos/editar/:id", upload.single("comprovante"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    
+    const id = req.params.id;
+    const { data_servico, qtd_entregas, valor_total, ja_pago, tipo_viagem, redirect_to } = req.body;
+    const status = ja_pago === "sim" ? 'PAGO' : 'Pendente';
+
+    let query = "UPDATE pagamentos_colaboradores SET data_servico=?, qtd_entregas=?, valor_total=?, status=?, tipo_viagem=? WHERE id=?";
+    let params = [data_servico, qtd_entregas || 1, valor_total || 0, status, tipo_viagem || 'Diária Padrão', id];
+
+    if (req.file) {
+        query = "UPDATE pagamentos_colaboradores SET data_servico=?, qtd_entregas=?, valor_total=?, status=?, tipo_viagem=?, comprovante=? WHERE id=?";
+        params = [data_servico, qtd_entregas || 1, valor_total || 0, status, tipo_viagem || 'Diária Padrão', req.file.filename, id];
+    }
+
+    try {
+        await db.promise().query(query, params);
+        res.redirect(redirect_to || "/diaristas");
+    } catch (error) {
+        console.error("Erro ao editar pagamento:", error);
+        res.status(500).send("Erro ao salvar edição.");
+    }
+});
+
+// 1. LER (GET) - Traz as Pastas e as suas Diárias Internas
+app.get("/diaristas", async (req, res) => {
+    if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro" && req.session.user.tipo_usuario !== "logistica")) {
+        return res.redirect("/login");
+    }
+
+    try {
+        const page = parseInt(req.query.page || "1", 10);
+        const limit = 10;
+        const offset = (page - 1) * limit;
+        const { data_inicio, data_fim, diarista_id } = req.query;
+
+        // A. Busca Taxas
+        const [configs] = await db.promise().query("SELECT chave, valor FROM configuracoes");
+        let taxas = {};
+        configs.forEach(c => {
+            if (['diaria_padrao', 'diaria_domingo', 'diaria_limpeza'].includes(c.chave)) taxas[c.chave] = parseFloat(c.valor);
+        });
+
+        // B. Busca Diaristas para os Cards
+        const [diaristas] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco, telefone FROM usuarios WHERE tipo_usuario = 'diarista' ORDER BY nome ASC");
+
+        // C. Filtros e Busca das PASTAS DE FECHAMENTO
+        let whereHist = [];
+        let paramsHist = [];
+        if (data_inicio) { whereHist.push("DATE(p.data_criacao) >= ?"); paramsHist.push(data_inicio); }
+        if (data_fim) { whereHist.push("DATE(p.data_criacao) <= ?"); paramsHist.push(data_fim); }
+        if (diarista_id) { whereHist.push("p.colaborador_id = ?"); paramsHist.push(diarista_id); }
+
+        const whereHistSql = whereHist.length ? "WHERE " + whereHist.join(" AND ") : "";
+        const countQuery = `SELECT COUNT(p.id) AS total FROM pastas_diaristas p ${whereHistSql}`;
+        const [[countResult]] = await db.promise().query(countQuery, paramsHist);
+        
+        const total = countResult.total;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const queryParams = [...paramsHist, limit, offset];
+        
+        const [pastas] = await db.promise().query(`
+            SELECT p.*, u.nome as nome_colaborador, u.foto as foto_colab, u.pix, u.banco, u.cpf,
+                IFNULL((SELECT SUM(valor_total) FROM pagamentos_colaboradores WHERE pasta_id = p.id), 0) as valor_total,
+                (SELECT COUNT(id) FROM pagamentos_colaboradores WHERE pasta_id = p.id) as qtd_diarias
+            FROM pastas_diaristas p 
+            LEFT JOIN usuarios u ON p.colaborador_id = u.id 
+            ${whereHistSql} 
+            ORDER BY p.data_criacao DESC LIMIT ? OFFSET ?
+        `, queryParams);
+
+        // Busca as diárias dentro de cada pasta para injetar no Modal da Tabela
+        for (let pt of pastas) {
+            const [itens] = await db.promise().query("SELECT * FROM pagamentos_colaboradores WHERE pasta_id = ? ORDER BY data_servico ASC", [pt.id]);
+            pt.itens = itens;
+        }
+
+        const filtros = { data_inicio, data_fim, diarista_id };
+
+        res.send(diaristasView(req.session.user, diaristas, pastas, filtros, { page, totalPages }, taxas));
+
+    } catch (error) {
+        console.error("Erro no Controle de Diaristas:", error);
+        res.status(500).send("Erro interno ao carregar a página.");
+    }
+});
+
+// 2. CRIAR NOVA PASTA DE FECHAMENTO (Vindo do Card)
+app.post("/diaristas/pasta/nova", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    try {
+        await db.promise().query("INSERT INTO pastas_diaristas (colaborador_id, status) VALUES (?, 'Aberta')", [req.body.colaborador_id]);
+        res.redirect("/diaristas");
+    } catch (error) {
+        res.status(500).send("Erro ao criar pasta.");
+    }
+});
+
+// 3. ADICIONAR DIÁRIA SOLTA DENTRO DA PASTA
+app.post("/diaristas/pasta/item", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const { pasta_id, colaborador_id, data_servico, qtd_entregas, valor_total, tipo_viagem } = req.body;
+    try {
+        await db.promise().query(
+            "INSERT INTO pagamentos_colaboradores (pasta_id, colaborador_id, data_servico, qtd_entregas, valor_total, status, tipo_viagem) VALUES (?, ?, ?, ?, ?, 'Pendente', ?)",
+            [pasta_id, colaborador_id, data_servico, qtd_entregas || 1, valor_total || 0, tipo_viagem]
+        );
+        res.redirect("/diaristas");
+    } catch (error) {
+        res.status(500).send("Erro ao adicionar diária na pasta.");
+    }
+});
+
+// 4. FECHAR PASTA INTEIRA (Pagar e Anexar Comprovante)
+app.post("/diaristas/pasta/fechar/:id", upload.single("comprovante"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const id = req.params.id;
+    const comprovante = req.file ? req.file.filename : null;
+    try {
+        // Marca a Pasta e TODOS os itens dentro dela como PAGO
+        await db.promise().query("UPDATE pastas_diaristas SET status = 'PAGO', comprovante = ? WHERE id = ?", [comprovante, id]);
+        await db.promise().query("UPDATE pagamentos_colaboradores SET status = 'PAGO' WHERE pasta_id = ?", [id]);
+        res.redirect("/diaristas");
+    } catch (error) {
+        res.status(500).send("Erro ao fechar pasta.");
+    }
+});
+
+// 5. EXCLUIR PASTA INTEIRA E SEUS ITENS
+app.post("/diaristas/pasta/excluir/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    try {
+        await db.promise().query("DELETE FROM pastas_diaristas WHERE id = ?", [req.params.id]);
+        res.redirect("/diaristas");
+    } catch (error) {
+        res.status(500).send("Erro ao excluir pasta.");
+    }
 });
 
 // Rota de Keep-Alive para manter a sessão ativa enquanto a aba estiver aberta

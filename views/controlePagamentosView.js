@@ -327,7 +327,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           if(p.tipo_colaborador === 'ajudante') {
              infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-info text-dark opacity-75" style="font-size: 0.60rem;"><i class="fa-solid fa-truck-ramp-box me-1"></i> AJUDANTE (${dataCaderno})</span></div>`;
           } else {
-             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary" style="font-size: 0.60rem;"><i class="fa-solid fa-steering-wheel me-1"></i> ROTA #${p.caderno_id} (${dataCaderno})</span></div>`;
+             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary" style="font-size: 0.60rem;"><i class="fa-solid fa-steering-wheel me-1"></i> Ajudante #${p.caderno_id} (${dataCaderno})</span></div>`;
           }
       }
 
@@ -511,10 +511,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();" title="Mensagem do Período (WhatsApp)">
-                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">WhatsApp</span>
+                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">Enviar relatório</span>
                 </button>
                 <a href="/pagamentos/exportar-excel${excelQueryString}" target="_blank" onclick="setTimeout(function(){ if(typeof ocultarSkeletonGlobais === 'function') ocultarSkeletonGlobais(); document.body.classList.remove('modal-open'); }, 1000);" class="btn btn-sm btn-outline-success fw-bold shadow-sm bg-white px-3" title="Exportar para Excel">
-                    <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Excel</span>
+                    <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Relatório Excel</span>
                 </a>
                 <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm bg-white px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias">
                    <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>

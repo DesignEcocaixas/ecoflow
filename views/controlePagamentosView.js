@@ -85,7 +85,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
            };
       }
       return {
-           nome: nomeBusca, id: '', pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado',
+           nome: nomeBusca, id: '', pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado', tipo_usuario: 'motorista',
            fotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeBusca)}&background=e9ecef&color=6c757d`
       };
   };
@@ -98,6 +98,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
   const cardsCadernos = cadernos.length > 0 ? cadernos.map(c => {
       const mot = getColabData(c.motorista);
       const aju = getColabData(c.ajudante);
+
+      // Regra Exigida: Se não for estritamente "motorista_avulso", é considerado Normal (Sem pagamentos avulsos)
+      const isMotAvulso = mot.tipo_usuario === 'motorista_avulso';
+      const isMotNormal = !isMotAvulso;
 
       // Histórico Motorista
       const pagMot = pagamentos.find(p => p.caderno_id == c.id && p.colaborador_id == mot.id);
@@ -118,15 +122,18 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       let cardBg = "bg-warning bg-opacity-10 border-warning";
       let headerBg = "bg-warning bg-opacity-25 border-bottom border-warning";
       
-      if (isMotPago && isAjuPago) {
+      // Motoristas fixos são sempre considerados resolvidos para a lógica de cores dos cards
+      const motResolvido = isMotNormal || isMotPago;
+
+      if (motResolvido && isAjuPago) {
           cardBg = "bg-success bg-opacity-10 border-success";
           headerBg = "bg-success bg-opacity-25 border-bottom border-success";
-      } else if (isMotPago || (c.ajudante && isAjuPago)) {
+      } else if (motResolvido || (c.ajudante && isAjuPago)) {
           cardBg = "bg-info bg-opacity-10 border-info";
           headerBg = "bg-info bg-opacity-25 border-bottom border-info";
       }
 
-      // WhatsApp Motorista Individual (Agora respeita o valor da tabela do banco se já estiver pago)
+      // WhatsApp Motorista Individual (Só útil se for avulso)
       const msgWppMot = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${mot.nome} (Motorista)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorMotCalc)}\n\n*Dados Bancários:*\n*PIX:* ${mot.pix}\n*Banco:* ${mot.banco}\n*CPF:* ${mot.cpf}`;
       const btnWppMot = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppMot)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></a>`;
 
@@ -134,6 +141,26 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       const btnMotHtml = isMotPago 
           ? `<button class="btn btn-sm btn-success fw-bold shadow-sm opacity-75" style="font-size: 0.65rem; padding: 2px 8px;" onclick="event.stopPropagation();" disabled><i class="fa-solid fa-check-double me-1"></i> Efetuado</button>`
           : `<button class="btn btn-sm btn-outline-success fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" onclick="event.stopPropagation(); abrirModalPagamento('${mot.id}', ${c.qtd_entregas}, 'motorista', '${c.id}')" ${btnMotDisabled}>Pagar</button>`;
+
+      let motPagamentoBlock = '';
+      if (isMotNormal) {
+          const btnWppDisabled = `<button disabled class="btn btn-sm btn-light border text-muted shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px; cursor: not-allowed;" title="WhatsApp desabilitado para mensalistas"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></button>`;
+          motPagamentoBlock = `
+             <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
+             <div class="d-flex gap-1 justify-content-end align-items-center">
+                 ${btnWppDisabled}
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
+             </div>
+          `;
+      } else {
+          motPagamentoBlock = `
+             <div class="text-success fw-bold motorista-calc" data-qtd="${c.qtd_entregas}" data-pago="${isMotPago ? 'true' : 'false'}" data-valor="${valorMotCalc}" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
+             <div class="d-flex gap-1 justify-content-end">
+                 ${btnWppMot}
+                 ${btnMotHtml}
+             </div>
+          `;
+      }
 
       let htmlAjudante = '';
       if (c.ajudante && c.ajudante.trim() !== '') {
@@ -255,14 +282,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                          <img src="${mot.fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
                          <div class="flex-grow-1" style="line-height: 1.1;">
                              <strong class="d-block text-dark text-truncate" style="font-size:0.8rem; max-width: 140px;" title="${mot.nome}">${mot.nome} <span class="badge bg-primary ms-1" style="font-size:0.55rem;">MOTORISTA</span></strong>
-                             <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>
+                             ${isMotNormal ? '' : `<span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>`}
                          </div>
                          <div class="text-end">
-                             <div class="text-success fw-bold motorista-calc" data-qtd="${c.qtd_entregas}" data-pago="${isMotPago ? 'true' : 'false'}" data-valor="${valorMotCalc}" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
-                             <div class="d-flex gap-1 justify-content-end">
-                                 ${btnWppMot}
-                                 ${btnMotHtml}
-                             </div>
+                             ${motPagamentoBlock}
                          </div>
                      </div>
                      ${htmlAjudante}
@@ -531,7 +554,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                     <i class="fa-solid fa-file-invoice-dollar fa-3x text-success mb-3"></i>
                     <h6 class="fw-bold text-dark">Gerar Relatório Geral</h6>
                     <p class="text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                        O sistema irá varrer <strong>todas as rotas</strong> listadas no período filtrado e organizar os colaboradores por data, calculando os valores totais e gerando a mensagem para pagamento.
+                        O sistema irá varrer <strong>todas as rotas</strong> listadas no período filtrado e organizar os colaboradores avulsos por data, calculando os valores totais e gerando a mensagem para pagamento.
                     </p>
                 </div>
                 <div class="modal-footer bg-white border-0 p-3">
@@ -945,13 +968,14 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       }
 
       // =======================================================================
-      // MENSAGEM DO PERÍODO COM CIDADES (TEXTO LIMPO)
+      // MENSAGEM DO PERÍODO COM CIDADES E FILTRO DE TIPO DE UTILIZADOR
       // =======================================================================
       function getColabDataJs(nomeBusca) {
           if (!nomeBusca) return null;
           const colab = listaDB.find(c => c.nome.toLowerCase() === nomeBusca.toLowerCase().trim());
           if (colab) return colab;
-          return { nome: nomeBusca, pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado' };
+          // Retorna um fallback sempre marcado como motorista normal/mensalista
+          return { nome: nomeBusca, pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado', tipo_usuario: 'motorista' };
       }
 
       function dispararMensagemPeriodo() {
@@ -972,29 +996,47 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           let totalGeral = 0;
 
           Object.keys(agrupadoPorData).forEach(data => {
-              msg += \`[ Data: \${data} ]\\n\`;
+              let msgDia = \`[ Data: \${data} ]\\n\`;
+              let adicionouAlguemNoDia = false;
               
               agrupadoPorData[data].forEach(c => {
+                  let msgRota = "";
+                  let adicionouAlguemNaRota = false;
+                  
                   const strCidades = c.cidades ? \` (\${c.cidades})\` : '';
-                  msg += \`* Rota #\${c.id}\${strCidades} - \${c.qtd_entregas} locais\\n\`;
+                  msgRota += \`* Rota #\${c.id}\${strCidades} - \${c.qtd_entregas} locais\\n\`;
                   
                   if (c.motorista) {
                       const mot = getColabDataJs(c.motorista);
-                      const valMot = getTierValue(c.qtd_entregas, 'mot');
-                      totalGeral += valMot;
-                      msg += \`   > MOT: \${mot.nome} - R$ \${valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                      msg += \`   > PIX: \${mot.pix} (\${mot.banco})\\n\`;
+                      const isMotAvulsoJs = mot.tipo_usuario === 'motorista_avulso';
+                      
+                      if (isMotAvulsoJs) {
+                          const valMot = getTierValue(c.qtd_entregas, 'mot');
+                          totalGeral += valMot;
+                          msgRota += \`   > MOT: \${mot.nome} - R$ \${valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
+                          msgRota += \`   > PIX: \${mot.pix} (\${mot.banco})\\n\`;
+                          adicionouAlguemNaRota = true;
+                      }
                   }
 
                   if (c.ajudante && c.ajudante.trim() !== "") {
                       const aju = getColabDataJs(c.ajudante);
                       const valAju = getTierValue(c.qtd_entregas, 'aju');
                       totalGeral += valAju;
-                      msg += \`   > AJU: \${aju.nome} - R$ \${valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                      msg += \`   > PIX: \${aju.pix} (\${aju.banco})\\n\`;
+                      msgRota += \`   > AJU: \${aju.nome} - R$ \${valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
+                      msgRota += \`   > PIX: \${aju.pix} (\${aju.banco})\\n\`;
+                      adicionouAlguemNaRota = true;
                   }
-                  msg += \`\\n\`;
+                  
+                  if (adicionouAlguemNaRota) {
+                      msgDia += msgRota + \`\\n\`;
+                      adicionouAlguemNoDia = true;
+                  }
               });
+              
+              if (adicionouAlguemNoDia) {
+                  msg += msgDia;
+              }
           });
 
           msg += \`------------------------\\n*TOTAL DO PERÍODO: R$ \${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}*\\n\`;

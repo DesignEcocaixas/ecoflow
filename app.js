@@ -792,6 +792,113 @@ app.get("/home", (req, res) => {
     );
 });
 
+// =========================================================
+// ROTA AJAX: Fornece apenas os dados do Gráfico para a Home
+// =========================================================
+app.get("/api/dashboard-chart", (req, res) => {
+    if (!req.session.user) return res.status(401).json({ error: "Não autorizado" });
+
+    const dataAtual = new Date();
+    let mesFiltro = req.query.mes ? parseInt(req.query.mes) : dataAtual.getMonth() + 1;
+    let anoFiltro = req.query.ano ? parseInt(req.query.ano) : dataAtual.getFullYear();
+    const modoFiltro = req.query.modo === 'mensal' ? 'mensal' : 'diario';
+
+    let queryGrafico = '';
+    let queryRanking = '';
+    let parametrosSQL = [];
+
+    if (modoFiltro === 'mensal') {
+        queryGrafico = `
+            SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
+            FROM caderno_entregas ce
+            JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+            WHERE YEAR(ce.data_criacao) = ?
+            GROUP BY MONTH(ce.data_criacao)
+            ORDER BY chave ASC
+        `;
+        queryRanking = `
+            SELECT MONTH(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
+            FROM caderno_entregas ce
+            JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+            WHERE YEAR(ce.data_criacao) = ?
+            GROUP BY MONTH(ce.data_criacao), cei.local_entrega
+            ORDER BY chave ASC, quantidade DESC
+        `;
+        parametrosSQL = [anoFiltro];
+    } else {
+        queryGrafico = `
+            SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
+            FROM caderno_entregas ce
+            JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+            WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+            GROUP BY DAY(ce.data_criacao)
+            ORDER BY chave ASC
+        `;
+        queryRanking = `
+            SELECT DAY(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
+            FROM caderno_entregas ce
+            JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+            WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+            GROUP BY DAY(ce.data_criacao), cei.local_entrega
+            ORDER BY chave ASC, quantidade DESC
+        `;
+        parametrosSQL = [mesFiltro, anoFiltro];
+    }
+
+    db.query(queryGrafico, parametrosSQL, (errGrafico, graficoRows) => {
+        if (errGrafico) return res.status(500).json({ error: "Erro ao consultar gráfico" });
+        
+        let labels = [];
+        let dadosGrafico = [];
+        const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        if (modoFiltro === 'mensal') {
+            labels = nomesMeses;
+            dadosGrafico = new Array(12).fill(0);
+            if (graficoRows) {
+                graficoRows.forEach(row => {
+                    if (row.chave >= 1 && row.chave <= 12) {
+                        dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
+                    }
+                });
+            }
+        } else {
+            const diasNoMes = new Date(anoFiltro, mesFiltro, 0).getDate();
+            labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'));
+            dadosGrafico = new Array(diasNoMes).fill(0);
+            if (graficoRows) {
+                graficoRows.forEach(row => {
+                    if (row.chave >= 1 && row.chave <= diasNoMes) {
+                        dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
+                    }
+                });
+            }
+        }
+
+        db.query(queryRanking, parametrosSQL, (errRanking, rankingRows) => {
+            if (errRanking) return res.status(500).json({ error: "Erro ao consultar ranking" });
+
+            const rankingObj = {};
+            if (rankingRows) {
+                rankingRows.forEach(row => {
+                    let chaveStr = modoFiltro === 'mensal' ? nomesMeses[row.chave - 1] : String(row.chave).padStart(2, '0');
+                    if (!rankingObj[chaveStr]) rankingObj[chaveStr] = [];
+                    rankingObj[chaveStr].push({
+                        cliente_nome: row.cliente_nome || "Desconhecido",
+                        quantidade: Number(row.quantidade) || 0
+                    });
+                });
+            }
+
+            // Devolve as informações puras em JSON (AJAX)
+            return res.json({
+                graficoMensal: { labels, data: dadosGrafico, ranking: rankingObj },
+                mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
+            });
+        });
+    });
+});
+
 app.get("/logout", (req, res) => {
     req.session.destroy((err) => {
         if (err) {

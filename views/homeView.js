@@ -171,7 +171,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   ).join('');
 
   // --- MONTAGEM DO SELECT DE MESES ---
-  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto bg-primary text-white border-0 shadow-sm fw-bold px-3 py-2" style="border-radius: 20px; cursor: pointer;" onchange="mudarFiltroDashboard(null, this.value)">`;
+  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto" onchange="mudarFiltroDashboard(null, this.value)">`;
   
   if (mesesDisponiveis.length === 0) {
       const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
@@ -544,17 +544,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
         .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
 
-        /* Estilização para que o Select pareça nativo, mas com a cor do badge */
-        #selectMesDashboard {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 16px 12px;
-        }
-
         /* SKELETON LOADING */
         .skeleton-view {
             background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
@@ -644,8 +633,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
                 
                 <div class="d-flex align-items-center gap-2">
                     <div class="btn-group shadow-sm" role="group">
-                        <button type="button" class="btn btn-sm ${modoVisao === 'diario' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('diario', null)">Diário</button>
-                        <button type="button" class="btn btn-sm ${modoVisao === 'mensal' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('mensal', null)">Mensal</button>
+                        <button id="btn-diario" type="button" class="btn btn-sm ${modoVisao === 'diario' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('diario', null)">Diário</button>
+                        <button id="btn-mensal" type="button" class="btn btn-sm ${modoVisao === 'mensal' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('mensal', null)">Mensal</button>
                     </div>
                     ${selectMesesHTML}
                 </div>
@@ -654,7 +643,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
               <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
                 <canvas id="graficoMensalCanvas"></canvas>
               </div>
-              <small class="text-muted text-center mt-2" style="font-size: 0.75rem;">
+              <small id="dica-grafico" class="text-muted text-center mt-2" style="font-size: 0.75rem;">
                 <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
               </small>
             </div>
@@ -731,10 +720,13 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-      const mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
+      // Variáveis globais para armazenar o estado atual
+      let mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
+      let chartData = ${JSON.stringify(graficoMensal)};
+      let chartInstance = null;
 
-      // Função para mudar a URL quando o modo (diario/mensal) ou o mês for alterado
-      function mudarFiltroDashboard(novoModo, novoValorSelect) {
+      // Função AJAX para buscar e atualizar os dados do gráfico
+      async function mudarFiltroDashboard(novoModo, novoValorSelect) {
           let mes = mesSelecionadoJS.mes;
           let ano = mesSelecionadoJS.ano;
           let modo = novoModo || mesSelecionadoJS.modo || 'diario';
@@ -745,16 +737,51 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
               ano = parts[1];
           }
 
-          window.location.href = \`/home?mes=\${mes}&ano=\${ano}&modo=\${modo}\`;
+          // Atualiza o aspeto visual dos botões
+          const btnDiario = document.getElementById('btn-diario');
+          const btnMensal = document.getElementById('btn-mensal');
+          
+          if (modo === 'diario') {
+              btnDiario.className = 'btn btn-sm btn-primary fw-bold';
+              btnMensal.className = 'btn btn-sm btn-light border text-muted';
+          } else {
+              btnMensal.className = 'btn btn-sm btn-primary fw-bold';
+              btnDiario.className = 'btn btn-sm btn-light border text-muted';
+          }
+          
+          // Atualiza a dica no rodapé do gráfico
+          document.getElementById('dica-grafico').innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+
+          try {
+              // Requisição AJAX para o novo endpoint
+              const response = await fetch(\`/api/dashboard-chart?mes=\${mes}&ano=\${ano}&modo=\${modo}\`);
+              if (!response.ok) throw new Error('Falha ao buscar dados do gráfico');
+              
+              const dadosResposta = await response.json();
+              
+              // Atualiza o estado global para que o Modal leia a informação correta ao clicar
+              chartData = dadosResposta.graficoMensal;
+              mesSelecionadoJS = dadosResposta.mesSelecionado;
+
+              // Atualiza as opções e os dados do Chart.js
+              if (chartInstance) {
+                  chartInstance.data.labels = chartData.labels;
+                  chartInstance.data.datasets[0].data = chartData.data;
+                  chartInstance.update();
+              }
+
+          } catch (error) {
+              console.error("Erro na requisição AJAX:", error);
+              alert("Não foi possível atualizar o gráfico. Tente novamente.");
+          }
       }
 
       document.addEventListener('DOMContentLoaded', function() {
         Chart.register(ChartDataLabels);
 
         const ctx = document.getElementById('graficoMensalCanvas').getContext('2d');
-        const chartData = ${JSON.stringify(graficoMensal)};
         
-        new Chart(ctx, {
+        chartInstance = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: chartData.labels,
@@ -780,15 +807,14 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
             onClick: (event, elements, chart) => {
               if (elements.length > 0) {
                 const index = elements[0].index;
-                const chaveClicada = chart.data.labels[index]; // Pode ser "05" (dia) ou "Mai" (Mês)
+                const chaveClicada = chart.data.labels[index]; 
                 
+                // Vai buscar os dados ao objeto global atualizado via AJAX
                 const rankingData = chartData.ranking ? chartData.ranking[chaveClicada] : [];
                 
                 if (mesSelecionadoJS.modo === 'mensal') {
-                    // Clicou no Mês (ex: Mai/2026)
                     document.getElementById('spanDiaModal').textContent = \`do Mês \${chaveClicada}/\${mesSelecionadoJS.ano}\`;
                 } else {
-                    // Clicou no Dia (ex: 05/05/2026)
                     const mesFormatadoModal = String(mesSelecionadoJS.mes).padStart(2, '0') + '/' + mesSelecionadoJS.ano;
                     document.getElementById('spanDiaModal').textContent = \`do Dia \${chaveClicada}/\${mesFormatadoModal}\`;
                 }

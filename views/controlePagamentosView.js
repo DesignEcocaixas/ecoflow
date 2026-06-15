@@ -32,6 +32,17 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Paginação e Query Strings para repassar aos botões (incluindo o Excel)
+  const qsParams = [];
+  if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
+  if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
+  if (filtros.colaborador) qsParams.push(`colaborador=${filtros.colaborador}`);
+  if (filtros.caderno_inicio) qsParams.push(`caderno_inicio=${filtros.caderno_inicio}`);
+  if (filtros.caderno_fim) qsParams.push(`caderno_fim=${filtros.caderno_fim}`);
+  
+  const baseQueryString = qsParams.length > 0 ? '&' + qsParams.join('&') : '';
+  const excelQueryString = qsParams.length > 0 ? '?' + qsParams.join('&') : '';
+
   // FUNÇÃO NO SERVIDOR PARA O CÁLCULO DE DEGRAUS E CÁLCULO DOS CARDS
   const getTierValueNode = (qtd, tipo) => {
       if (qtd <= 0) return 0;
@@ -99,16 +110,13 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       const mot = getColabData(c.motorista);
       const aju = getColabData(c.ajudante);
 
-      // Regra Exigida: Se não for estritamente "motorista_avulso", é considerado Normal (Sem pagamentos avulsos)
       const isMotAvulso = mot.tipo_usuario === 'motorista_avulso';
       const isMotNormal = !isMotAvulso;
 
-      // Histórico Motorista
       const pagMot = pagamentos.find(p => p.caderno_id == c.id && p.colaborador_id == mot.id);
       const isMotPago = c.mot_status === 'PAGO' || (pagMot && pagMot.status === 'PAGO');
       const valorMotCalc = pagMot ? parseFloat(pagMot.valor_total) : getTierValueNode(c.qtd_entregas, 'mot');
 
-      // Histórico Ajudante
       let isAjuPago = true;
       let pagAju = null;
       let valorAjuCalc = 0;
@@ -122,7 +130,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       let cardBg = "bg-warning bg-opacity-10 border-warning";
       let headerBg = "bg-warning bg-opacity-25 border-bottom border-warning";
       
-      // Motoristas fixos são sempre considerados resolvidos para a lógica de cores dos cards
       const motResolvido = isMotNormal || isMotPago;
 
       if (motResolvido && isAjuPago) {
@@ -133,7 +140,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           headerBg = "bg-info bg-opacity-25 border-bottom border-info";
       }
 
-      // WhatsApp Motorista Individual (Só útil se for avulso)
       const msgWppMot = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${mot.nome} (Motorista)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorMotCalc)}\n\n*Dados Bancários:*\n*PIX:* ${mot.pix}\n*Banco:* ${mot.banco}\n*CPF:* ${mot.cpf}`;
       const btnWppMot = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppMot)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></a>`;
 
@@ -149,7 +155,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
              <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
              <div class="d-flex gap-1 justify-content-end align-items-center">
                  ${btnWppDisabled}
-                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Efetivo</button>
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
              </div>
           `;
       } else {
@@ -164,7 +170,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       let htmlAjudante = '';
       if (c.ajudante && c.ajudante.trim() !== '') {
-          // WhatsApp Ajudante Individual
           const msgWppAju = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${aju.nome} (Ajudante)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorAjuCalc)}\n\n*Dados Bancários:*\n*PIX:* ${aju.pix}\n*Banco:* ${aju.banco}\n*CPF:* ${aju.cpf}`;
           const btnWppAju = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppAju)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></a>`;
 
@@ -298,35 +303,36 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
   const modaisDinamicosExcluir = [];
 
+  // =========================================================================
+  // TABELA DE HISTÓRICO - COMPACTADA COM ALTURA MÍNIMA (py-1 e foto 28px)
+  // =========================================================================
   const linhasPagamentos = pagamentos.length > 0 ? pagamentos.map(p => {
       const colab = colaboradores.find(c => c.id === p.colaborador_id) || {};
       const foto = colab.foto ? `/uploads/${colab.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome_colaborador || 'C')}&background=0D5749&color=fff`;
       
       let badgeStatus = p.status === 'PAGO' 
-        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-check-double"></i> Pago</span>' 
-        : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning"><i class="fa-solid fa-clock"></i> Pendente</span>';
+        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size:0.7rem;"><i class="fa-solid fa-check-double"></i> Pago</span>' 
+        : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning" style="font-size:0.7rem;"><i class="fa-solid fa-clock"></i> Pendente</span>';
 
       const extratoViagem = p.tipo_viagem && p.tipo_viagem !== 'Padrão' ? `\n*Destino Longo:* ${p.tipo_viagem}` : '';
       const extratoAlmoco = p.almoco > 0 ? `\n*Almoço:* R$ ${fmtMoeda(p.almoco)}` : '';
 
-      // IDENTIFICAÇÃO DO TIPO DE PAGAMENTO
       let infoPagamentoHtml = '';
       if(p.pasta_id){
-          infoPagamentoHtml = '<br><span class="badge bg-secondary opacity-75 mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-folder-open me-1"></i> DIARISTA</span>';
+          infoPagamentoHtml = '<div class="mt-1"><span class="badge bg-secondary opacity-75" style="font-size: 0.60rem;"><i class="fa-solid fa-folder-open me-1"></i> DIARISTA</span></div>';
       } else if(p.caderno_id) {
           const cadernoOrigem = cadernos.find(cad => cad.id == p.caderno_id);
           const dataCaderno = cadernoOrigem ? fmtData(cadernoOrigem.data_criacao) : 'Data não encontrada';
           
           if(p.tipo_colaborador === 'ajudante') {
-             infoPagamentoHtml = `<br><span class="badge bg-info text-dark opacity-75 mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-truck-ramp-box me-1"></i> AJUDANTE (${dataCaderno})</span>`;
+             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-info text-dark opacity-75" style="font-size: 0.60rem;"><i class="fa-solid fa-truck-ramp-box me-1"></i> AJUDANTE (${dataCaderno})</span></div>`;
           } else {
-             infoPagamentoHtml = `<br><span class="badge bg-primary bg-opacity-10 text-primary border border-primary mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-steering-wheel me-1"></i> Ajudante #${p.caderno_id} (${dataCaderno})</span>`;
+             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary" style="font-size: 0.60rem;"><i class="fa-solid fa-steering-wheel me-1"></i> ROTA #${p.caderno_id} (${dataCaderno})</span></div>`;
           }
       }
 
       const msgWppHist = `Relatório de Pagamento - Ecoflow\n\n[ Data do Serviço: ${fmtData(p.data_servico)} ]\n* Colaborador: ${p.nome_colaborador} (${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()})\n* Qtd. Entregas: ${p.qtd_entregas}${extratoViagem}${extratoAlmoco}\n\n* TOTAL A PAGAR: R$ ${fmtMoeda(p.valor_total)}\n\n* PIX: ${colab.pix || 'Não cadastrado'} (${colab.banco || 'Não cadastrado'})`;
-      const btnWppHist = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppHist)}" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm ms-1" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>`;
-
+      
       modaisDinamicosExcluir.push(`
         <div class="modal fade" id="excluirPagamentoModal${p.id}" tabindex="-1">
             <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -345,50 +351,44 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
         </div>
       `);
 
+      // Alterado os py-3 para py-1 e diminuido a imagem de 40px para 28px
       return `
-        <tr class="align-middle table-hover-row">
-            <td class="py-3 px-3">
+        <tr class="align-middle table-hover-row" style="height: 45px;">
+            <td class="py-1 px-2">
                 <div class="d-flex align-items-center">
-                    <img src="${foto}" alt="Foto" class="rounded-circle me-3 border shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
-                    <div>
-                        <strong class="text-dark d-block" style="font-size:0.9rem;">${p.nome_colaborador}</strong>
-                        <span class="text-muted" style="font-size:0.75rem;">${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()}</span>
+                    <img src="${foto}" alt="Foto" class="rounded-circle me-2 border shadow-sm" style="width: 28px; height: 28px; object-fit: cover;">
+                    <div style="line-height: 1.1;">
+                        <strong class="text-dark d-block" style="font-size:0.85rem;">${p.nome_colaborador}</strong>
+                        <span class="text-muted" style="font-size:0.65rem;">${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()}</span>
                     </div>
                 </div>
             </td>
-            <td class="text-muted py-3 px-3 fw-medium">
-                 <i class="fa-regular fa-calendar me-1"></i> ${fmtData(p.data_servico)}
-                 ${infoPagamentoHtml}
+            <td class="text-muted py-1 px-2 fw-medium" style="font-size: 0.8rem;">
+                 <div style="line-height: 1.2;">
+                     <i class="fa-regular fa-calendar me-1"></i> ${fmtData(p.data_servico)}
+                     ${infoPagamentoHtml}
+                 </div>
             </td>
-            <td class="py-3 px-3 text-center">
-                <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.8rem;"><i class="fa-solid fa-box-open text-primary me-1"></i> ${p.qtd_entregas}</span>
+            <td class="py-1 px-2 text-center">
+                <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.75rem;"><i class="fa-solid fa-box-open text-primary me-1"></i> ${p.qtd_entregas}</span>
             </td>
-            <td class="text-success fw-bold py-3 px-3" style="font-size:0.95rem;">R$ ${fmtMoeda(p.valor_total)}</td>
-            <td class="py-3 px-3 text-center">${badgeStatus}</td>
-            <td class="text-end py-3 px-3 text-nowrap">
+            <td class="text-success fw-bold py-1 px-2" style="font-size:0.9rem;">R$ ${fmtMoeda(p.valor_total)}</td>
+            <td class="py-1 px-2 text-center">${badgeStatus}</td>
+            <td class="text-end py-1 px-2 text-nowrap">
                 ${p.comprovante ? `
-                    <a href="/uploads/${p.comprovante}" target="_blank" class="btn btn-sm btn-light border text-info shadow-sm" title="Ver Comprovante"><i class="fa-solid fa-file-invoice"></i></a>
+                    <a href="/uploads/${p.comprovante}" target="_blank" class="btn btn-sm btn-light border text-info shadow-sm py-0 px-2" style="font-size: 0.75rem;" title="Ver Comprovante"><i class="fa-solid fa-file-invoice"></i></a>
                 ` : ''}
                 ${p.status === 'Pendente' ? `
                 <form method="POST" action="/pagamentos/baixar/${p.id}" class="d-inline" onsubmit="prepararSubmissaoSimples(event, this, 'Pagamento Efetivado!')">
-                    <button type="submit" class="btn btn-sm btn-success shadow-sm fw-bold ms-1" title="Marcar como Pago"><i class="fa-solid fa-check me-1"></i> Pagar</button>
+                    <button type="submit" class="btn btn-sm btn-success shadow-sm fw-bold ms-1 py-0 px-2" style="font-size: 0.75rem;" title="Marcar como Pago"><i class="fa-solid fa-check me-1"></i> Pagar</button>
                 </form>
                 ` : ''}
-                ${btnWppHist}
-                <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm ms-1" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPagamentoModal${p.id}')).show();" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                <a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppHist)}" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPagamentoModal${p.id}')).show();" title="Excluir"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
       `;
-  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-5 text-center-empty"><i class="fa-solid fa-file-invoice-dollar fa-3x opacity-25 mb-3"></i><p>Nenhum registo de pagamento encontrado no histórico.</p></td></tr>`;
-
-  // Paginação Inteligente (Sliding Window)
-  const qsParams = [];
-  if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
-  if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
-  if (filtros.colaborador) qsParams.push(`colaborador=${filtros.colaborador}`);
-  if (filtros.caderno_inicio) qsParams.push(`caderno_inicio=${filtros.caderno_inicio}`);
-  if (filtros.caderno_fim) qsParams.push(`caderno_fim=${filtros.caderno_fim}`);
-  const baseQueryString = qsParams.length > 0 ? '&' + qsParams.join('&') : '';
+  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="fa-solid fa-file-invoice-dollar fa-2x opacity-25 mb-2"></i><p style="font-size: 0.85rem;">Nenhum registo de pagamento encontrado no histórico.</p></td></tr>`;
 
   const paginacaoHtml = (() => {
       if (totalPages <= 1) return "";
@@ -453,7 +453,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading-view 1.5s infinite linear; border-radius: 4px; }
       .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
-      .skeleton-avatar-view { height: 40px; width: 40px; border-radius: 50%; }
+      .skeleton-avatar-view { height: 28px; width: 28px; border-radius: 50%; }
       @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
       @media (max-width: 767.98px) {
@@ -511,8 +511,11 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();" title="Mensagem do Período (WhatsApp)">
-                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">Gerar pagamentos</span>
+                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">WhatsApp</span>
                 </button>
+                <a href="/pagamentos/exportar-excel${excelQueryString}" target="_blank" onclick="setTimeout(function(){ if(typeof ocultarSkeletonGlobais === 'function') ocultarSkeletonGlobais(); document.body.classList.remove('modal-open'); }, 1000);" class="btn btn-sm btn-outline-success fw-bold shadow-sm bg-white px-3" title="Exportar para Excel">
+                    <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Excel</span>
+                </a>
                 <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm bg-white px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias">
                    <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>
                 </button>
@@ -1178,18 +1181,18 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           let html = '';
           for(let i=0; i<quantidade; i++) {
               html += \`
-              <tr class="align-middle">
-                  <td class="py-3 px-3">
+              <tr class="align-middle" style="height: 45px;">
+                  <td class="py-1 px-2">
                       <div class="d-flex align-items-center">
-                          <div class="skeleton-view skeleton-avatar-view me-3 flex-shrink-0"></div>
-                          <div class="skeleton-view skeleton-text-view" style="width: 140px; margin: 0;"></div>
+                          <div class="skeleton-view skeleton-avatar-view me-2 flex-shrink-0"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 120px; margin: 0; height: 12px;"></div>
                       </div>
                   </td>
-                  <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 100px; margin: 0;"></div></td>
-                  <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 50px; margin: 0 auto;"></div></td>
-                  <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0;"></div></td>
-                  <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70px; margin: 0 auto;"></div></td>
-                  <td class="text-end py-3 px-3"><div class="skeleton-view" style="height: 28px; width: 60px; border-radius: 4px; display: inline-block;"></div></td>
+                  <td class="py-1 px-2"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-1 px-2"><div class="skeleton-view skeleton-text-view" style="width: 40px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="py-1 px-2"><div class="skeleton-view skeleton-text-view" style="width: 60px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-1 px-2"><div class="skeleton-view skeleton-text-view" style="width: 60px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="text-end py-1 px-2"><div class="skeleton-view" style="height: 22px; width: 50px; border-radius: 4px; display: inline-block;"></div></td>
               </tr>\`;
           }
           return html;

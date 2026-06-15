@@ -899,6 +899,91 @@ app.get("/api/dashboard-chart", (req, res) => {
     });
 });
 
+// =========================================================================
+// ROTA PARA EXPORTAR RELATÓRIO DE PAGAMENTOS PARA EXCEL
+// =========================================================================
+app.get("/pagamentos/exportar-excel", async (req, res) => {
+    if (!req.session.user) return res.status(401).send("Acesso negado");
+
+    try {
+        const { data_inicio, data_fim, colaborador } = req.query;
+        
+        // CORREÇÃO: Tabela alterada de 'colaboradores' para 'usuarios'
+        let queryPagamentos = `
+            SELECT p.*, u.nome, u.cpf, u.pix, u.banco 
+            FROM pagamentos_colaboradores p
+            LEFT JOIN usuarios u ON p.colaborador_id = u.id
+            WHERE 1=1
+        `;
+        let params = [];
+
+        if (data_inicio) {
+            queryPagamentos += " AND p.data_servico >= ?";
+            params.push(data_inicio);
+        }
+        if (data_fim) {
+            queryPagamentos += " AND p.data_servico <= ?";
+            params.push(data_fim);
+        }
+        if (colaborador) {
+            queryPagamentos += " AND p.colaborador_id = ?";
+            params.push(colaborador);
+        }
+
+        queryPagamentos += " ORDER BY p.data_servico DESC, p.id DESC";
+
+        const [pagamentos] = await db.promise().query(queryPagamentos, params);
+
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Relatório de Pagamentos');
+
+        worksheet.columns = [
+            { header: 'Data Serviço', key: 'data', width: 15 },
+            { header: 'Colaborador', key: 'nome', width: 30 },
+            { header: 'CPF', key: 'cpf', width: 20 },
+            { header: 'PIX', key: 'pix', width: 25 },
+            { header: 'Banco', key: 'banco', width: 20 },
+            { header: 'Tipo Serviço', key: 'tipo', width: 25 },
+            { header: 'Qtd. Entregas', key: 'qtd', width: 15 },
+            { header: 'Valor Pago (R$)', key: 'valor', width: 15 },
+            { header: 'Status', key: 'status', width: 15 }
+        ];
+
+        // Estiliza o cabeçalho
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
+
+        pagamentos.forEach(p => {
+            let tipoServico = 'Lançamento Avulso';
+            if (p.pasta_id) tipoServico = 'Diarista (Pasta/Semana)';
+            else if (p.tipo_colaborador === 'ajudante') tipoServico = `Ajudante Rota #${p.caderno_id}`;
+            else if (p.caderno_id) tipoServico = `Motorista Rota #${p.caderno_id}`;
+
+            worksheet.addRow({
+                data: p.data_servico ? new Date(p.data_servico).toLocaleDateString('pt-BR') : '-',
+                nome: p.nome || p.nome_colaborador || 'Desconhecido',
+                cpf: p.cpf || 'Não cadastrado',
+                pix: p.pix || 'Não cadastrado',
+                banco: p.banco || 'Não cadastrado',
+                tipo: tipoServico,
+                qtd: p.qtd_entregas || 0,
+                valor: p.valor_total || 0,
+                status: p.status || 'Pendente'
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'Relatorio_Pagamentos.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error("Erro ao exportar excel:", error);
+        res.status(500).send("Erro ao gerar relatório Excel. Verifique os logs.");
+    }
+});
+
 app.get("/logout", (req, res) => {
     req.session.destroy((err) => {
         if (err) {

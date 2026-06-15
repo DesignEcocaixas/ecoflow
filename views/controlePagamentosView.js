@@ -151,7 +151,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                  <img src="${aju.fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
                  <div class="flex-grow-1" style="line-height: 1.1;">
                      <strong class="d-block text-dark text-truncate" style="font-size:0.8rem; max-width: 140px;" title="${aju.nome}">${aju.nome} <span class="badge bg-secondary ms-1" style="font-size:0.55rem;">AJUDANTE</span></strong>
-                     <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${aju.pix !== 'Não cadastrado' ? 'PIX OK' : 'S/ PIX'}</span>
+                     <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${aju.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>
                  </div>
                  <div class="text-end">
                      <div class="text-success fw-bold ajudante-calc" data-qtd="${c.qtd_entregas}" data-pago="${isAjuPago ? 'true' : 'false'}" data-valor="${valorAjuCalc}" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorAjuCalc)}</div>
@@ -609,7 +609,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           </div>
           <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">Salvar Valores Globais</button>
+            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">Salvar</button>
           </div>
         </form>
       </div>
@@ -652,7 +652,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
             <div class="row g-3 bg-white p-3 rounded border border-light shadow-sm">
                 <div class="col-12">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data do Serviço</label>
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
                     <input type="date" name="data_servico" class="form-control form-control-sm" required value="${new Date().toISOString().split('T')[0]}">
                 </div>
                 

@@ -52,11 +52,10 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   const rota = dashboard.rota || null;
   const rotaClientes = Array.isArray(rota?.clientes) ? rota.clientes : [];
 
-  // Dados para o Gráfico Mensal vindos do backend
-  // Formato esperado para o ranking: { '01': [{cliente: 'João', qtd: 50}, ...], '02': [...] }
+  // Dados para o Gráfico Mensal e Select vindos do backend
   const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {} };
-  const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
-  const badgeMesAtual = mesAtualStr.charAt(0).toUpperCase() + mesAtualStr.slice(1);
+  const mesesDisponiveis = Array.isArray(dashboard.mesesDisponiveis) ? dashboard.mesesDisponiveis : [];
+  const mesSelecionado = dashboard.mesSelecionado || { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
 
   // --- COMPONENTES DO DASHBOARD (Listas) ---
   const cardsManutencao = veiculos.length
@@ -169,6 +168,21 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   const carouselIndicators = carouselItemsHTML.map((_, index) => 
     `<button type="button" data-bs-target="#dashboardCarousel" data-bs-slide-to="${index}" class="${index === 0 ? 'active' : ''}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`
   ).join('');
+
+  // --- MONTAGEM DO SELECT DE MESES ---
+  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto d-inline-block bg-primary text-white border-0 shadow-sm fw-bold px-3 py-2" style="border-radius: 20px; cursor: pointer;" onchange="mudarMesDashboard(this.value)">`;
+  
+  if (mesesDisponiveis.length === 0) {
+      const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
+      const labelFallback = (mesAtualStr.charAt(0).toUpperCase() + mesAtualStr.slice(1)) + ' ' + new Date().getFullYear();
+      selectMesesHTML += `<option value="">${labelFallback}</option>`;
+  } else {
+      mesesDisponiveis.forEach(m => {
+          const isSelected = (m.mes == mesSelecionado.mes && m.ano == mesSelecionado.ano) ? "selected" : "";
+          selectMesesHTML += `<option value="${m.mes}-${m.ano}" ${isSelected}>${m.label}</option>`;
+      });
+  }
+  selectMesesHTML += `</select>`;
 
   // --- MODAIS DO DASHBOARD ---
   const modaisManutencao = veiculos.length
@@ -529,6 +543,17 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
         .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
 
+        /* Estilização para que o Select pareça nativo, mas com a cor do badge */
+        #selectMesDashboard {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
+        }
+
         /* SKELETON LOADING */
         .skeleton-view {
             background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
@@ -614,7 +639,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
             <div class="card-body p-3 d-flex flex-column">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i> Volume de Pedidos (Diário)</h6>
-                <span class="badge bg-primary px-3 py-2 shadow-sm">${badgeMesAtual}</span>
+                ${selectMesesHTML}
               </div>
               <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
                 <canvas id="graficoMensalCanvas"></canvas>
@@ -696,11 +721,19 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+      // Função para mudar a URL quando o mês é alterado no select
+      function mudarMesDashboard(valor) {
+          if (!valor) return;
+          const [mes, ano] = valor.split('-');
+          window.location.href = \`/home?mes=\${mes}&ano=\${ano}\`;
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
         Chart.register(ChartDataLabels);
 
         const ctx = document.getElementById('graficoMensalCanvas').getContext('2d');
         const chartData = ${JSON.stringify(graficoMensal)};
+        const mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
         
         new Chart(ctx, {
           type: 'bar',
@@ -712,7 +745,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
               backgroundColor: '#0D5749',
               borderRadius: 4,
               barPercentage: 0.6,
-              hoverBackgroundColor: '#093c32' // Escurece um pouco no hover
+              hoverBackgroundColor: '#093c32'
             }]
           },
           plugins: [ChartDataLabels],
@@ -722,24 +755,20 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
             layout: {
               padding: { top: 25 }
             },
-            // Faz o cursor virar "mãozinha" no hover
             onHover: (event, chartElement) => {
                 event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
             },
-            // EVENTO DE CLIQUE NA BARRA
             onClick: (event, elements, chart) => {
               if (elements.length > 0) {
                 const index = elements[0].index;
                 const dia = chart.data.labels[index];
                 
-                // Pega os dados do ranking específicos para este dia
                 const rankingData = chartData.ranking ? chartData.ranking[dia] : [];
                 
-                // Define o Título do Modal com a data
-                const mesAnoAtual = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
-                document.getElementById('spanDiaModal').textContent = \`\${dia}/\${mesAnoAtual}\`;
+                // Formata o mês e ano com base na seleção do dropdown, e não no new Date() atual
+                const mesFormatadoModal = String(mesSelecionadoJS.mes).padStart(2, '0') + '/' + mesSelecionadoJS.ano;
+                document.getElementById('spanDiaModal').textContent = \`\${dia}/\${mesFormatadoModal}\`;
                 
-                // Monta o HTML do Ranking
                 let htmlRanking = '';
                 if (rankingData && rankingData.length > 0) {
                     htmlRanking = '<ul class="list-group list-group-flush">';
@@ -761,7 +790,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
                     htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-2x opacity-25"></i><br>Nenhum pedido ou ranking encontrado para este dia.</div>';
                 }
                 
-                // Injeta no Modal e Exibe
                 document.getElementById('corpoModalRanking').innerHTML = htmlRanking;
                 const modal = new bootstrap.Modal(document.getElementById('modalRankingDia'));
                 modal.show();
@@ -803,7 +831,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
 
     <script>
       // =======================================================================
-      // SKELETON LOADING (Atualizado para o novo Layout 5 / 7)
+      // SKELETON LOADING
       // =======================================================================
       function gerarSkeletonCard() {
           let html = '';
@@ -877,17 +905,13 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     </script>
 
     <script>
-      // Verifica os parâmetros da URL assim que a Home carrega
       window.addEventListener('load', () => {
           const urlParams = new URLSearchParams(window.location.search);
-          
           if (urlParams.has('erro')) {
               const tipoErro = urlParams.get('erro');
-              
               if (tipoErro === 'acesso_negado') {
                   mostrarToast('erro', 'Acesso Restrito!', 'O seu perfil de utilizador não tem permissão para aceder a esta funcionalidade.');
               }
-              
               if (window.history.replaceState) {
                   const url = new URL(window.location.href);
                   url.searchParams.delete('erro');

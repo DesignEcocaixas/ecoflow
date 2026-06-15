@@ -55,7 +55,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   // Dados para o Gráfico Mensal e Select vindos do backend
   const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {} };
   const mesesDisponiveis = Array.isArray(dashboard.mesesDisponiveis) ? dashboard.mesesDisponiveis : [];
-  const mesSelecionado = dashboard.mesSelecionado || { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
+  const mesSelecionado = dashboard.mesSelecionado || { mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), modo: 'diario' };
+  const modoVisao = mesSelecionado.modo || 'diario';
 
   // --- COMPONENTES DO DASHBOARD (Listas) ---
   const cardsManutencao = veiculos.length
@@ -170,7 +171,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   ).join('');
 
   // --- MONTAGEM DO SELECT DE MESES ---
-  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto d-inline-block bg-primary text-white border-0 shadow-sm fw-bold px-3 py-2" style="border-radius: 20px; cursor: pointer;" onchange="mudarMesDashboard(this.value)">`;
+  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto bg-primary text-white border-0 shadow-sm fw-bold px-3 py-2" style="border-radius: 20px; cursor: pointer;" onchange="mudarFiltroDashboard(null, this.value)">`;
   
   if (mesesDisponiveis.length === 0) {
       const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
@@ -428,7 +429,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal">
           <div class="modal-header">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking do Dia <span id="spanDiaModal"></span></h6>
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking <span id="spanDiaModal"></span></h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 text-sm" id="corpoModalRanking">
@@ -637,15 +638,24 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         <div class="col-12 col-lg-7">
           <div class="card dashboard-section-card h-100 bg-white">
             <div class="card-body p-3 d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i> Volume de Pedidos (Diário)</h6>
-                ${selectMesesHTML}
+              
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i> Volume de Pedidos</h6>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group shadow-sm" role="group">
+                        <button type="button" class="btn btn-sm ${modoVisao === 'diario' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('diario', null)">Diário</button>
+                        <button type="button" class="btn btn-sm ${modoVisao === 'mensal' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('mensal', null)">Mensal</button>
+                    </div>
+                    ${selectMesesHTML}
+                </div>
               </div>
+
               <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
                 <canvas id="graficoMensalCanvas"></canvas>
               </div>
               <small class="text-muted text-center mt-2" style="font-size: 0.75rem;">
-                <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do dia.
+                <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
               </small>
             </div>
           </div>
@@ -721,11 +731,21 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-      // Função para mudar a URL quando o mês é alterado no select
-      function mudarMesDashboard(valor) {
-          if (!valor) return;
-          const [mes, ano] = valor.split('-');
-          window.location.href = \`/home?mes=\${mes}&ano=\${ano}\`;
+      const mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
+
+      // Função para mudar a URL quando o modo (diario/mensal) ou o mês for alterado
+      function mudarFiltroDashboard(novoModo, novoValorSelect) {
+          let mes = mesSelecionadoJS.mes;
+          let ano = mesSelecionadoJS.ano;
+          let modo = novoModo || mesSelecionadoJS.modo || 'diario';
+
+          if (novoValorSelect) {
+              const parts = novoValorSelect.split('-');
+              mes = parts[0];
+              ano = parts[1];
+          }
+
+          window.location.href = \`/home?mes=\${mes}&ano=\${ano}&modo=\${modo}\`;
       }
 
       document.addEventListener('DOMContentLoaded', function() {
@@ -733,7 +753,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
 
         const ctx = document.getElementById('graficoMensalCanvas').getContext('2d');
         const chartData = ${JSON.stringify(graficoMensal)};
-        const mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
         
         new Chart(ctx, {
           type: 'bar',
@@ -761,13 +780,18 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
             onClick: (event, elements, chart) => {
               if (elements.length > 0) {
                 const index = elements[0].index;
-                const dia = chart.data.labels[index];
+                const chaveClicada = chart.data.labels[index]; // Pode ser "05" (dia) ou "Mai" (Mês)
                 
-                const rankingData = chartData.ranking ? chartData.ranking[dia] : [];
+                const rankingData = chartData.ranking ? chartData.ranking[chaveClicada] : [];
                 
-                // Formata o mês e ano com base na seleção do dropdown, e não no new Date() atual
-                const mesFormatadoModal = String(mesSelecionadoJS.mes).padStart(2, '0') + '/' + mesSelecionadoJS.ano;
-                document.getElementById('spanDiaModal').textContent = \`\${dia}/\${mesFormatadoModal}\`;
+                if (mesSelecionadoJS.modo === 'mensal') {
+                    // Clicou no Mês (ex: Mai/2026)
+                    document.getElementById('spanDiaModal').textContent = \`do Mês \${chaveClicada}/\${mesSelecionadoJS.ano}\`;
+                } else {
+                    // Clicou no Dia (ex: 05/05/2026)
+                    const mesFormatadoModal = String(mesSelecionadoJS.mes).padStart(2, '0') + '/' + mesSelecionadoJS.ano;
+                    document.getElementById('spanDiaModal').textContent = \`do Dia \${chaveClicada}/\${mesFormatadoModal}\`;
+                }
                 
                 let htmlRanking = '';
                 if (rankingData && rankingData.length > 0) {
@@ -787,7 +811,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
                     });
                     htmlRanking += '</ul>';
                 } else {
-                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-2x opacity-25"></i><br>Nenhum pedido ou ranking encontrado para este dia.</div>';
+                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-2x opacity-25"></i><br>Nenhum pedido ou ranking encontrado.</div>';
                 }
                 
                 document.getElementById('corpoModalRanking').innerHTML = htmlRanking;

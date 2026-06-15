@@ -149,7 +149,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
              <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
              <div class="d-flex gap-1 justify-content-end align-items-center">
                  ${btnWppDisabled}
-                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Efetivo</button>
              </div>
           `;
       } else {
@@ -309,6 +309,21 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       const extratoViagem = p.tipo_viagem && p.tipo_viagem !== 'Padrão' ? `\n*Destino Longo:* ${p.tipo_viagem}` : '';
       const extratoAlmoco = p.almoco > 0 ? `\n*Almoço:* R$ ${fmtMoeda(p.almoco)}` : '';
 
+      // IDENTIFICAÇÃO DO TIPO DE PAGAMENTO
+      let infoPagamentoHtml = '';
+      if(p.pasta_id){
+          infoPagamentoHtml = '<br><span class="badge bg-secondary opacity-75 mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-folder-open me-1"></i> DIARISTA</span>';
+      } else if(p.caderno_id) {
+          const cadernoOrigem = cadernos.find(cad => cad.id == p.caderno_id);
+          const dataCaderno = cadernoOrigem ? fmtData(cadernoOrigem.data_criacao) : 'Data não encontrada';
+          
+          if(p.tipo_colaborador === 'ajudante') {
+             infoPagamentoHtml = `<br><span class="badge bg-info text-dark opacity-75 mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-truck-ramp-box me-1"></i> AJUDANTE (${dataCaderno})</span>`;
+          } else {
+             infoPagamentoHtml = `<br><span class="badge bg-primary bg-opacity-10 text-primary border border-primary mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-steering-wheel me-1"></i> Ajudante #${p.caderno_id} (${dataCaderno})</span>`;
+          }
+      }
+
       const msgWppHist = `Relatório de Pagamento - Ecoflow\n\n[ Data do Serviço: ${fmtData(p.data_servico)} ]\n* Colaborador: ${p.nome_colaborador} (${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()})\n* Qtd. Entregas: ${p.qtd_entregas}${extratoViagem}${extratoAlmoco}\n\n* TOTAL A PAGAR: R$ ${fmtMoeda(p.valor_total)}\n\n* PIX: ${colab.pix || 'Não cadastrado'} (${colab.banco || 'Não cadastrado'})`;
       const btnWppHist = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppHist)}" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm ms-1" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>`;
 
@@ -341,7 +356,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                     </div>
                 </div>
             </td>
-            <td class="text-muted py-3 px-3 fw-medium"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(p.data_servico)}</td>
+            <td class="text-muted py-3 px-3 fw-medium">
+                 <i class="fa-regular fa-calendar me-1"></i> ${fmtData(p.data_servico)}
+                 ${infoPagamentoHtml}
+            </td>
             <td class="py-3 px-3 text-center">
                 <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.8rem;"><i class="fa-solid fa-box-open text-primary me-1"></i> ${p.qtd_entregas}</span>
             </td>
@@ -853,7 +871,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           }
       }
 
-      // IMPORTANTE: Agora ele respeita o valor salvo no BD (data-pago) para não sobrescrever o preço fixo nos cards!
       function carregarTaxas() {
           document.querySelectorAll('.motorista-calc').forEach(el => {
               let isPago = el.getAttribute('data-pago') === 'true';
@@ -877,7 +894,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           });
       }
 
-      // Modificado para manter o campo de Qtd visível!
       function toggleViagemLonga(checkbox) {
           const divDestino = document.getElementById('divDestinoLonga');
           const switchAlmoco = document.getElementById('switchAlmoco');
@@ -953,7 +969,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           inputCaderno.value = cadernoId || "";
           inputTipo.value = tipoColab;
           
-          // Apenas motoristas têm o botão de viagem longa disponível
           if (tipoColab === 'motorista') {
               containerLonga.style.display = 'block';
           } else {
@@ -968,19 +983,44 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       }
 
       // =======================================================================
-      // MENSAGEM DO PERÍODO COM CIDADES E FILTRO DE TIPO DE UTILIZADOR
+      // MENSAGEM DO PERÍODO COM CIDADES E FILTRO DE TIPO DE UTILIZADOR E DATA
       // =======================================================================
       function getColabDataJs(nomeBusca) {
           if (!nomeBusca) return null;
           const colab = listaDB.find(c => c.nome.toLowerCase() === nomeBusca.toLowerCase().trim());
           if (colab) return colab;
-          // Retorna um fallback sempre marcado como motorista normal/mensalista
           return { nome: nomeBusca, pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado', tipo_usuario: 'motorista' };
       }
 
       function dispararMensagemPeriodo() {
-          const listaCadernosDB = ${cadernosSensiveis};
+          let listaCadernosDB = ${cadernosSensiveis};
           
+          // FORÇA A APLICAÇÃO DO FILTRO DE DATAS LOCALMENTE
+          const dtInicioStr = document.querySelector('input[name="caderno_inicio"]').value;
+          const dtFimStr = document.querySelector('input[name="caderno_fim"]').value;
+
+          if (dtInicioStr) {
+              listaCadernosDB = listaCadernosDB.filter(c => {
+                  if (!c.data_formatada || c.data_formatada === "-") return false;
+                  const p = c.data_formatada.split('/');
+                  if (p.length === 3) {
+                      return (p[2] + '-' + p[1] + '-' + p[0]) >= dtInicioStr;
+                  }
+                  return true;
+              });
+          }
+
+          if (dtFimStr) {
+              listaCadernosDB = listaCadernosDB.filter(c => {
+                  if (!c.data_formatada || c.data_formatada === "-") return false;
+                  const p = c.data_formatada.split('/');
+                  if (p.length === 3) {
+                      return (p[2] + '-' + p[1] + '-' + p[0]) <= dtFimStr;
+                  }
+                  return true;
+              });
+          }
+
           if(listaCadernosDB.length === 0) {
               mostrarToast('erro', 'Atenção', 'Nenhuma rota encontrada neste filtro para gerar relatório.');
               return;

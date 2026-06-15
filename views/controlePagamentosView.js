@@ -255,7 +255,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                          <img src="${mot.fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
                          <div class="flex-grow-1" style="line-height: 1.1;">
                              <strong class="d-block text-dark text-truncate" style="font-size:0.8rem; max-width: 140px;" title="${mot.nome}">${mot.nome} <span class="badge bg-primary ms-1" style="font-size:0.55rem;">MOTORISTA</span></strong>
-                             <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX OK' : 'S/ PIX'}</span>
+                             <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>
                          </div>
                          <div class="text-end">
                              <div class="text-success fw-bold motorista-calc" data-qtd="${c.qtd_entregas}" data-pago="${isMotPago ? 'true' : 'false'}" data-valor="${valorMotCalc}" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>

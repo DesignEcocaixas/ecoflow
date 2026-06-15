@@ -52,6 +52,12 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
   const rota = dashboard.rota || null;
   const rotaClientes = Array.isArray(rota?.clientes) ? rota.clientes : [];
 
+  // Dados para o Gráfico Mensal vindos do backend
+  // Formato esperado para o ranking: { '01': [{cliente: 'João', qtd: 50}, ...], '02': [...] }
+  const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {} };
+  const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
+  const badgeMesAtual = mesAtualStr.charAt(0).toUpperCase() + mesAtualStr.slice(1);
+
   // --- COMPONENTES DO DASHBOARD (Listas) ---
   const cardsManutencao = veiculos.length
     ? veiculos.slice(0, 3).map((v, i) => `
@@ -128,6 +134,41 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     `
     : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Sem rotas</div>`;
 
+  // --- MONTAGEM DOS ITENS DO CAROUSEL ---
+  const carouselItemsHTML = [
+    `
+    <div class="carousel-item active h-100">
+      <h6 class="dashboard-title"><i class="fa-solid fa-wrench"></i> Últimas Manutenções</h6>
+      ${cardsManutencao}
+    </div>
+    `,
+    `
+    <div class="carousel-item h-100">
+      <h6 class="dashboard-title"><i class="fa-solid fa-clipboard-list"></i> Últimos Checklists</h6>
+      ${cardsChecklist}
+    </div>
+    `
+  ];
+
+  if (usuario.tipo_usuario !== "motorista") {
+    carouselItemsHTML.push(`
+    <div class="carousel-item h-100">
+      <h6 class="dashboard-title"><i class="fa-solid fa-tags"></i> Atualizações de Preço</h6>
+      ${cardsPrecos}
+    </div>
+    `);
+  }
+
+  carouselItemsHTML.push(`
+    <div class="carousel-item h-100">
+      <h6 class="dashboard-title"><i class="fa-solid fa-truck-fast"></i> Última Rota</h6>
+      ${cardRota}
+    </div>
+  `);
+
+  const carouselIndicators = carouselItemsHTML.map((_, index) => 
+    `<button type="button" data-bs-target="#dashboardCarousel" data-bs-slide-to="${index}" class="${index === 0 ? 'active' : ''}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`
+  ).join('');
 
   // --- MODAIS DO DASHBOARD ---
   const modaisManutencao = veiculos.length
@@ -367,6 +408,25 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     `
     : "";
 
+  // Modal para exibir o Ranking dos clientes ao clicar na barra do gráfico
+  const modalRankingDia = `
+    <div class="modal fade" id="modalRankingDia" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal">
+          <div class="modal-header">
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking do Dia <span id="spanDiaModal"></span></h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-0 text-sm" id="corpoModalRanking">
+            </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
   const menuHTML = menuLateral(usuario, "/home");
 
   return `
@@ -383,6 +443,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
       <title>Início | Ecoflow</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
       <style>
         body { 
@@ -457,6 +519,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
         .chk-item { border-left: 3px solid #0D5749 !important; transition: background 0.2s; }
         .chk-item:hover { background-color: #f8f9fa; }
         
+        /* Animação suave para os cards do Carousel */
+        .carousel-item {
+            transition: transform 0.6s ease-in-out, opacity 0.6s ease-out;
+        }
+
         /* Modals */
         .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
@@ -527,40 +594,34 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
       </div>
 
       <div class="row g-3">
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-5">
           <div class="card dashboard-section-card h-100 bg-white">
-            <div class="card-body p-3">
-              <h6 class="dashboard-title"><i class="fa-solid fa-wrench"></i> Últimas Manutenções</h6>
-              ${cardsManutencao}
+            <div class="card-body p-3 d-flex flex-column pb-4">
+              <div id="dashboardCarousel" class="carousel carousel-dark slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
+                <div class="carousel-indicators mb-0" style="bottom: -20px;">
+                  ${carouselIndicators}
+                </div>
+                <div class="carousel-inner h-100">
+                  ${carouselItemsHTML.join("")}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-7">
           <div class="card dashboard-section-card h-100 bg-white">
-            <div class="card-body p-3">
-              <h6 class="dashboard-title"><i class="fa-solid fa-clipboard-list"></i> Últimos Checklists</h6>
-              ${cardsChecklist}
-            </div>
-          </div>
-        </div>
-
-        ${usuario.tipo_usuario !== "motorista" ? `
-        <div class="col-12 col-lg-6">
-          <div class="card dashboard-section-card h-100 bg-white">
-            <div class="card-body p-3">
-              <h6 class="dashboard-title"><i class="fa-solid fa-tags"></i> Atualizações de Preço</h6>
-              ${cardsPrecos}
-            </div>
-          </div>
-        </div>
-        ` : ""}
-
-        <div class="col-12 col-lg-6">
-          <div class="card dashboard-section-card h-100 bg-white">
-            <div class="card-body p-3">
-              <h6 class="dashboard-title"><i class="fa-solid fa-truck-fast"></i> Última Rota</h6>
-              ${cardRota}
+            <div class="card-body p-3 d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i> Volume de Pedidos (Diário)</h6>
+                <span class="badge bg-primary px-3 py-2 shadow-sm">${badgeMesAtual}</span>
+              </div>
+              <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
+                <canvas id="graficoMensalCanvas"></canvas>
+              </div>
+              <small class="text-muted text-center mt-2" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do dia.
+              </small>
             </div>
           </div>
         </div>
@@ -630,11 +691,119 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     ${modaisChecklist}
     ${modaisPrecos}
     ${modalRota}
+    ${modalRankingDia}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        Chart.register(ChartDataLabels);
+
+        const ctx = document.getElementById('graficoMensalCanvas').getContext('2d');
+        const chartData = ${JSON.stringify(graficoMensal)};
+        
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: chartData.labels,
+            datasets: [{
+              label: 'Quantidade Total de Pedidos',
+              data: chartData.data,
+              backgroundColor: '#0D5749',
+              borderRadius: 4,
+              barPercentage: 0.6,
+              hoverBackgroundColor: '#093c32' // Escurece um pouco no hover
+            }]
+          },
+          plugins: [ChartDataLabels],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+              padding: { top: 25 }
+            },
+            // Faz o cursor virar "mãozinha" no hover
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+            },
+            // EVENTO DE CLIQUE NA BARRA
+            onClick: (event, elements, chart) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const dia = chart.data.labels[index];
+                
+                // Pega os dados do ranking específicos para este dia
+                const rankingData = chartData.ranking ? chartData.ranking[dia] : [];
+                
+                // Define o Título do Modal com a data
+                const mesAnoAtual = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
+                document.getElementById('spanDiaModal').textContent = \`\${dia}/\${mesAnoAtual}\`;
+                
+                // Monta o HTML do Ranking
+                let htmlRanking = '';
+                if (rankingData && rankingData.length > 0) {
+                    htmlRanking = '<ul class="list-group list-group-flush">';
+                    rankingData.forEach((item, i) => {
+                        let medalha = '';
+                        if(i === 0) medalha = '<i class="fa-solid fa-medal text-warning me-2 fa-lg"></i>';
+                        else if(i === 1) medalha = '<i class="fa-solid fa-medal text-secondary me-2 fa-lg"></i>';
+                        else if(i === 2) medalha = '<i class="fa-solid fa-medal me-2 fa-lg" style="color: #cd7f32;"></i>';
+                        else medalha = \`<span class="me-2 text-muted fw-bold ms-1" style="width:20px; display:inline-block;">\${i+1}º</span>\`;
+
+                        htmlRanking += \`
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-3">
+                            <div>\${medalha} <strong class="text-dark">\${item.cliente_nome}</strong></div>
+                            <span class="badge bg-primary rounded-pill px-2 py-1">\${item.quantidade} un.</span>
+                        </li>\`;
+                    });
+                    htmlRanking += '</ul>';
+                } else {
+                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-2x opacity-25"></i><br>Nenhum pedido ou ranking encontrado para este dia.</div>';
+                }
+                
+                // Injeta no Modal e Exibe
+                document.getElementById('corpoModalRanking').innerHTML = htmlRanking;
+                const modal = new bootstrap.Modal(document.getElementById('modalRankingDia'));
+                modal.show();
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.parsed.y + ' caixas solicitadas';
+                  }
+                }
+              },
+              datalabels: {
+                anchor: 'end',
+                align: 'top',
+                color: '#0D5749',
+                font: { weight: 'bold', size: 11 },
+                formatter: function(value) { return value > 0 ? value : ''; }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } },
+              x: {
+                grid: { display: false },
+                ticks: {
+                  autoSkip: false,
+                  maxRotation: window.innerWidth < 768 ? 90 : 0,
+                  minRotation: 0,
+                  font: { size: window.innerWidth < 768 ? 9 : 11 }
+                }
+              }
+            }
+          }
+        });
+      });
+    </script>
+
     <script>
       // =======================================================================
-      // SKELETON LOADING
+      // SKELETON LOADING (Atualizado para o novo Layout 5 / 7)
       // =======================================================================
       function gerarSkeletonCard() {
           let html = '';
@@ -659,36 +828,22 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
 
           const skeletonHTML = \`
           <div id="skeleton-temp-container" class="row g-3 skeleton-container">
-              <div class="col-12 col-lg-6">
+              <div class="col-12 col-lg-5">
                   <div class="card dashboard-section-card h-100 bg-white">
                       <div class="card-body p-3">
-                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
+                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
                           \${gerarSkeletonCard()}
                       </div>
                   </div>
               </div>
-              <div class="col-12 col-lg-6">
+              <div class="col-12 col-lg-7">
                   <div class="card dashboard-section-card h-100 bg-white">
-                      <div class="card-body p-3">
-                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
-                          \${gerarSkeletonCard()}
-                      </div>
-                  </div>
-              </div>
-              ${usuario.tipo_usuario !== "motorista" ? `
-              <div class="col-12 col-lg-6">
-                  <div class="card dashboard-section-card h-100 bg-white">
-                      <div class="card-body p-3">
-                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
-                          \${gerarSkeletonCard()}
-                      </div>
-                  </div>
-              </div>` : ""}
-              <div class="col-12 col-lg-6">
-                  <div class="card dashboard-section-card h-100 bg-white">
-                      <div class="card-body p-3">
-                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 20px;"></div>
-                          \${gerarSkeletonCard()}
+                      <div class="card-body p-3 d-flex flex-column">
+                          <div class="d-flex justify-content-between mb-3">
+                              <div class="skeleton-view skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
+                              <div class="skeleton-view skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
+                          </div>
+                          <div class="skeleton-view w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
                       </div>
                   </div>
               </div>
@@ -733,7 +888,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
                   mostrarToast('erro', 'Acesso Restrito!', 'O seu perfil de utilizador não tem permissão para aceder a esta funcionalidade.');
               }
               
-              // Limpa a URL para o erro não voltar a aparecer se ele atualizar a página
               if (window.history.replaceState) {
                   const url = new URL(window.location.href);
                   url.searchParams.delete('erro');

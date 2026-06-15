@@ -632,64 +632,147 @@ app.get("/home", (req, res) => {
                             precos = [];
                         }
 
+                        // =========================================================
+                        // NOVA QUERY 1: TOTAL MENSAL (Dias x Quantidade)
+                        // =========================================================
                         db.query(`
-                            SELECT *
-                            FROM entregas_pedidos
-                            ORDER BY criado_em DESC, id DESC
-                            LIMIT 1
-                        `, (errRota, rotaRows) => {
-                            if (errRota) {
-                                console.error("Erro rota:", errRota);
-                                return res.send(homeView(req.session.user, notificacoes, {
-                                    veiculos,
-                                    checklists,
-                                    precos,
-                                    rota: null
-                                }));
+                            SELECT 
+                                DAY(ce.data_criacao) AS dia, 
+                                SUM(cei.quantidade) AS total_quantidade
+                            FROM caderno_entregas ce
+                            JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                            WHERE MONTH(ce.data_criacao) = MONTH(CURRENT_DATE())
+                              AND YEAR(ce.data_criacao) = YEAR(CURRENT_DATE())
+                            GROUP BY DAY(ce.data_criacao)
+                            ORDER BY dia ASC
+                        `, (errGrafico, graficoRows) => {
+                            if (errGrafico) {
+                                console.error("Erro ao buscar dados do gráfico mensal:", errGrafico);
+                                graficoRows = [];
                             }
 
-                            const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+                            // Processamento dinâmico dos dias do mês
+                            const dataAtual = new Date();
+                            const diasNoMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth() + 1, 0).getDate();
+                            const labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'));
+                            const dadosGrafico = new Array(diasNoMes).fill(0);
 
-                            if (!rota) {
-                                return res.send(homeView(req.session.user, notificacoes, {
-                                    veiculos,
-                                    checklists,
-                                    precos,
-                                    rota: null
-                                }));
+                            if (graficoRows && graficoRows.length > 0) {
+                                graficoRows.forEach(row => {
+                                    if (row.dia && row.dia >= 1 && row.dia <= diasNoMes) {
+                                        dadosGrafico[row.dia - 1] = Number(row.total_quantidade) || 0;
+                                    }
+                                });
                             }
 
+                            // =========================================================
+                            // NOVA QUERY 2: RANKING DIÁRIO DE CLIENTES
+                            // =========================================================
                             db.query(`
                                 SELECT 
-                                    id,
-                                    pedido_id,
-                                    cliente_nome,
-                                    status,
-                                    observacao,
-                                    atualizado_por,
-                                    atualizado_em
-                                FROM entregas_clientes
-                                WHERE pedido_id = ?
-                                ORDER BY id DESC
-                            `, [rota.id], (errClientes, clientes) => {
-                                if (errClientes) {
-                                    console.error("Erro clientes da rota:", errClientes);
-                                    clientes = [];
+                                    DAY(ce.data_criacao) AS dia, 
+                                    cei.local_entrega AS cliente_nome,
+                                    SUM(cei.quantidade) AS quantidade
+                                FROM caderno_entregas ce
+                                JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                WHERE MONTH(ce.data_criacao) = MONTH(CURRENT_DATE())
+                                AND YEAR(ce.data_criacao) = YEAR(CURRENT_DATE())
+                                GROUP BY DAY(ce.data_criacao), cei.local_entrega
+                                ORDER BY dia ASC, quantidade DESC
+                            `, (errRanking, rankingRows) => {
+                                if (errRanking) {
+                                    console.error("Erro ao buscar dados do ranking:", errRanking);
+                                    rankingRows = [];
                                 }
 
-                                const dashboard = {
-                                    veiculos,
-                                    checklists,
-                                    precos,
-                                    rota: {
-                                        ...rota,
-                                        clientes
-                                    }
-                                };
+                                // Agrupando os dados de ranking por dia ('01', '02', etc.)
+                                const rankingObj = {};
+                                if (rankingRows && rankingRows.length > 0) {
+                                    rankingRows.forEach(row => {
+                                        const diaStr = String(row.dia).padStart(2, '0');
+                                        
+                                        if (!rankingObj[diaStr]) {
+                                            rankingObj[diaStr] = [];
+                                        }
+                                        
+                                        rankingObj[diaStr].push({
+                                            cliente_nome: row.cliente_nome || "Cliente Desconhecido",
+                                            quantidade: Number(row.quantidade) || 0
+                                        });
+                                    });
+                                }
 
-                                return res.send(homeView(req.session.user, notificacoes, dashboard));
-                            });
-                        });
+                                // Montando o objeto final que vai para o Chart.js e Modal
+                                const graficoMensal = {
+                                    labels: labels,
+                                    data: dadosGrafico,
+                                    ranking: rankingObj // <-- Incluindo o ranking aqui!
+                                };
+                                // =========================================================
+
+                                db.query(`
+                                    SELECT *
+                                    FROM entregas_pedidos
+                                    ORDER BY criado_em DESC, id DESC
+                                    LIMIT 1
+                                `, (errRota, rotaRows) => {
+                                    if (errRota) {
+                                        console.error("Erro rota:", errRota);
+                                        return res.send(homeView(req.session.user, notificacoes, {
+                                            veiculos,
+                                            checklists,
+                                            precos,
+                                            rota: null,
+                                            graficoMensal
+                                        }));
+                                    }
+
+                                    const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+
+                                    if (!rota) {
+                                        return res.send(homeView(req.session.user, notificacoes, {
+                                            veiculos,
+                                            checklists,
+                                            precos,
+                                            rota: null,
+                                            graficoMensal
+                                        }));
+                                    }
+
+                                    db.query(`
+                                        SELECT 
+                                            id,
+                                            pedido_id,
+                                            cliente_nome,
+                                            status,
+                                            observacao,
+                                            atualizado_por,
+                                            atualizado_em
+                                        FROM entregas_clientes
+                                        WHERE pedido_id = ?
+                                        ORDER BY id DESC
+                                    `, [rota.id], (errClientes, clientes) => {
+                                        if (errClientes) {
+                                            console.error("Erro clientes da rota:", errClientes);
+                                            clientes = [];
+                                        }
+
+                                        const dashboard = {
+                                            veiculos,
+                                            checklists,
+                                            precos,
+                                            graficoMensal,
+                                            rota: {
+                                                ...rota,
+                                                clientes
+                                            }
+                                        };
+
+                                        return res.send(homeView(req.session.user, notificacoes, dashboard));
+                                    });
+                                });
+                            }); // Fim query ranking
+                        }); // Fim query grafico
                     });
                 });
             });
@@ -4940,7 +5023,7 @@ app.post("/pagamentos/excluir/:id", async (req, res) => {
 // EDITAR PAGAMENTO / DIÁRIA (POST)
 app.post("/pagamentos/editar/:id", upload.single("comprovante"), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    
+
     const id = req.params.id;
     const { data_servico, qtd_entregas, valor_total, ja_pago, tipo_viagem, redirect_to } = req.body;
     const status = ja_pago === "sim" ? 'PAGO' : 'Pendente';
@@ -4994,11 +5077,11 @@ app.get("/diaristas", async (req, res) => {
         const whereHistSql = whereHist.length ? "WHERE " + whereHist.join(" AND ") : "";
         const countQuery = `SELECT COUNT(p.id) AS total FROM pastas_diaristas p ${whereHistSql}`;
         const [[countResult]] = await db.promise().query(countQuery, paramsHist);
-        
+
         const total = countResult.total;
         const totalPages = Math.max(1, Math.ceil(total / limit));
         const queryParams = [...paramsHist, limit, offset];
-        
+
         const [pastas] = await db.promise().query(`
             SELECT p.*, u.nome as nome_colaborador, u.foto as foto_colab, u.pix, u.banco, u.cpf,
                 IFNULL((SELECT SUM(valor_total) FROM pagamentos_colaboradores WHERE pasta_id = p.id), 0) as valor_total,

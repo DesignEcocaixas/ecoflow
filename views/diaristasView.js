@@ -239,7 +239,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         </div>
       </div>
 
-      <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-address-card text-primary me-2"></i> Diaristas (Clique para Iniciar uma Pasta de Fechamento)</h6>
       <div class="row g-3" id="diaristasGrid">
          ${cardsDiaristas}
       </div>

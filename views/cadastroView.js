@@ -80,7 +80,7 @@ function cadastroView(usuario, usuarios = []) {
                         </div>
 
                         <div class="col-12 login-field" style="${loginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail de Acesso</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
                           <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired}>
                         </div>
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
@@ -123,7 +123,7 @@ function cadastroView(usuario, usuarios = []) {
                     </div>
                     <div class="modal-footer border-0 bg-light d-flex flex-nowrap">
                       <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                     </div>
                   </form>
                 </div>
@@ -410,7 +410,7 @@ function cadastroView(usuario, usuarios = []) {
                   <optgroup label="Acesso ao Sistema">
                       <option value="admin">Administrador</option>
                       <option value="financeiro">Financeiro</option>
-                      <option value="motorista" selected>Motorista Padrão</option>
+                      <option value="motorista" selected>Motorista</option>
                       <option value="design">Design</option>
                       <option value="logistica">Logística</option>
                   </optgroup>
@@ -427,7 +427,7 @@ function cadastroView(usuario, usuarios = []) {
                 <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="email@ecoflow.com">
               </div>
               <div class="col-12 col-md-6 login-field">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha de Acesso</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
                   <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••">
                   <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaNovo', this)">

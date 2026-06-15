@@ -356,7 +356,7 @@ function cadastroView(usuario, usuarios = []) {
             <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total Registado: <strong>${usuarios.length}</strong> pessoas</h6>
         </div>
         <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
-          <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo
+          <i class="fa-solid fa-user-plus me-1"></i>Novo usuário
         </button>
       </div>
 

@@ -254,7 +254,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                 <button type="button" class="btn btn-sm btn-light border" onclick="limparFiltros()"><i class="fa-solid fa-eraser"></i></button>
             </form>
             <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm bg-white px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias Diaristas">
-               <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Configurar Valores</span>
+               <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>
             </button>
          </div>
       </div>

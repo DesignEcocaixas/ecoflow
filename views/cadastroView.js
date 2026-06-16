@@ -36,7 +36,7 @@ function cadastroView(usuario, usuarios = []) {
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                  <form method="POST" action="/usuarios/editar/${u.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Perfil Atualizado!')">
+                  <form method="POST" action="/usuarios/editar/${u.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Perfil Atualizado!')">
                     <div class="modal-header bg-white border-0 pb-0">
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
@@ -59,7 +59,7 @@ function cadastroView(usuario, usuarios = []) {
                       <div class="row g-3">
                         <div class="col-12">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nome Completo</label>
-                          <input type="text" name="nome" class="form-control form-control-sm shadow-sm" value="${u.nome}" required>
+                          <input type="text" name="nome" class="form-control form-control-sm shadow-sm" value="${u.nome}" required autocomplete="off">
                         </div>
                         <div class="col-12">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Tipo de Perfil</label>
@@ -81,12 +81,12 @@ function cadastroView(usuario, usuarios = []) {
 
                         <div class="col-12 login-field" style="${loginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
-                          <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired}>
+                          <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired} autocomplete="new-password">
                         </div>
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nova Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
-                            <input type="password" name="senha" id="senhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
+                            <input type="password" name="senha" id="senhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••" autocomplete="new-password">
                             <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaEdit${u.id}', this)">
                               <i class="fa-solid fa-eye text-muted"></i>
                             </button>
@@ -95,7 +95,7 @@ function cadastroView(usuario, usuarios = []) {
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
-                            <input type="password" name="confirma_senha" id="confirmaSenhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••">
+                            <input type="password" name="confirma_senha" id="confirmaSenhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••" autocomplete="new-password">
                             <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaEdit${u.id}', this)">
                               <i class="fa-solid fa-eye text-muted"></i>
                             </button>
@@ -104,19 +104,19 @@ function cadastroView(usuario, usuarios = []) {
 
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
-                          <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${u.cpf || ''}" placeholder="000.000.000-00">
+                          <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${u.cpf || ''}" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
-                          <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${u.telefone || ''}" placeholder="(00) 00000-0000">
+                          <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${u.telefone || ''}" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
-                          <input type="text" name="pix" class="form-control form-control-sm shadow-sm" value="${u.pix || ''}" placeholder="Chave do recebedor">
+                          <input type="text" name="pix" class="form-control form-control-sm shadow-sm" value="${u.pix || ''}" placeholder="Chave do recebedor" autocomplete="off">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
-                          <input type="text" name="banco" class="form-control form-control-sm shadow-sm" value="${u.banco || ''}" placeholder="Ex: Nubank, Inter, Caixa...">
+                          <input type="text" name="banco" class="form-control form-control-sm shadow-sm" value="${u.banco || ''}" placeholder="Ex: Nubank, Inter, Caixa..." autocomplete="off">
                         </div>
                       </div>
 
@@ -381,7 +381,7 @@ function cadastroView(usuario, usuarios = []) {
 
     <div class="modal fade" id="novoUsuarioModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Cadastro Realizado!')">
+        <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Cadastro Realizado!')">
           <div class="modal-header bg-success border-0 text-white">
             <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Adicionar Colaborador</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -401,7 +401,7 @@ function cadastroView(usuario, usuarios = []) {
 
               <div class="col-12">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nome Completo</label>
-                <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João da Silva">
+                <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João da Silva" autocomplete="off">
               </div>
               
               <div class="col-12">
@@ -424,12 +424,12 @@ function cadastroView(usuario, usuarios = []) {
 
               <div class="col-12 login-field">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail de Acesso</label>
-                <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="email@ecoflow.com">
+                <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="email@ecoflow.com" autocomplete="new-password">
               </div>
               <div class="col-12 col-md-6 login-field">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
-                  <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••">
+                  <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••" autocomplete="new-password">
                   <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaNovo', this)">
                     <i class="fa-solid fa-eye text-muted"></i>
                   </button>
@@ -438,7 +438,7 @@ function cadastroView(usuario, usuarios = []) {
               <div class="col-12 col-md-6 login-field">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
-                  <input type="password" name="confirma_senha" id="confirmaSenhaNovo" class="form-control border-end-0" required placeholder="••••••••">
+                  <input type="password" name="confirma_senha" id="confirmaSenhaNovo" class="form-control border-end-0" required placeholder="••••••••" autocomplete="new-password">
                   <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaNovo', this)">
                     <i class="fa-solid fa-eye text-muted"></i>
                   </button>
@@ -447,19 +447,19 @@ function cadastroView(usuario, usuarios = []) {
 
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
-                <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" placeholder="000.000.000-00">
+                <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
-                <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" placeholder="(00) 00000-0000">
+                <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
-                <input type="text" name="pix" class="form-control form-control-sm shadow-sm" placeholder="Chave do recebedor">
+                <input type="text" name="pix" class="form-control form-control-sm shadow-sm" placeholder="Chave do recebedor" autocomplete="off">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
-                <input type="text" name="banco" class="form-control form-control-sm shadow-sm" placeholder="Ex: Nubank, Inter, Caixa...">
+                <input type="text" name="banco" class="form-control form-control-sm shadow-sm" placeholder="Ex: Nubank, Inter, Caixa..." autocomplete="off">
               </div>
 
             </div>
@@ -508,6 +508,39 @@ function cadastroView(usuario, usuarios = []) {
     <script src="./script/checkLogin.js"></script>
 
     <script>
+        // =======================================================================
+        // MÁSCARAS DE INPUT PARA CPF E TELEFONE
+        // =======================================================================
+        function maskPhone(v) {
+            v = v.replace(/\\D/g, "");
+            if (v.length > 11) v = v.slice(0, 11);
+            
+            if (v.length > 10) {
+                v = v.replace(/^(\\d{2})(\\d{1})(\\d{4})(\\d{4}).*/, "($1) $2 $3-$4");
+            } else if (v.length > 6) {
+                v = v.replace(/^(\\d{2})(\\d{4})(\\d{0,4}).*/, "($1) $2-$3");
+            } else if (v.length > 2) {
+                v = v.replace(/^(\\d{2})(\\d{0,5})/, "($1) $2");
+            } else if (v.length > 0) {
+                v = v.replace(/^(\\d*)/, "($1");
+            }
+            return v;
+        }
+
+        function maskCPF(v) {
+            v = v.replace(/\\D/g, "");
+            if (v.length > 11) v = v.slice(0, 11);
+            
+            if (v.length > 9) {
+                v = v.replace(/^(\\d{3})(\\d{3})(\\d{3})(\\d{2}).*/, "$1.$2.$3-$4");
+            } else if (v.length > 6) {
+                v = v.replace(/^(\\d{3})(\\d{3})(\\d{0,3}).*/, "$1.$2.$3");
+            } else if (v.length > 3) {
+                v = v.replace(/^(\\d{3})(\\d{0,3})/, "$1.$2");
+            }
+            return v;
+        }
+
         // =======================================================================
         // CONTROLE DINÂMICO DE CAMPOS DO FORMULÁRIO (LOGIN VS SEM LOGIN)
         // =======================================================================

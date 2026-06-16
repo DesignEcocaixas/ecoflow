@@ -521,10 +521,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();" title="Mensagem do Período (WhatsApp)">
-                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">WhatsApp</span>
+                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">Gerar relatório</span>
                 </button>
                 <a href="/pagamentos/exportar-excel${excelQueryString}" target="_blank" onclick="setTimeout(function(){ if(typeof ocultarSkeletonGlobais === 'function') ocultarSkeletonGlobais(); document.body.classList.remove('modal-open'); }, 1000);" class="btn btn-sm btn-outline-success fw-bold shadow-sm bg-white px-3" title="Exportar para Excel">
-                   <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Excel</span>
+                   <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Relatório Excel</span>
                 </a>
                 <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm bg-white px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias">
                    <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>

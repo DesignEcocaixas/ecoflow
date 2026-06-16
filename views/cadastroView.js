@@ -6,6 +6,28 @@ function cadastroView(usuario, usuarios = []) {
   // Fallback seguro
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
+  // Funções de formatação para injetar os valores já com máscara no HTML gerado
+  const applyMaskPhone = (v) => {
+      if (!v) return "";
+      v = String(v).replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 10) return v.replace(/^(\d{2})(\d{1})(\d{4})(\d{4}).*/, "($1) $2 $3-$4");
+      if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+      if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+      if (v.length > 0) return v.replace(/^(\d*)/, "($1");
+      return v;
+  };
+
+  const applyMaskCPF = (v) => {
+      if (!v) return "";
+      v = String(v).replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 9) return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
+      if (v.length > 6) return v.replace(/^(\d{3})(\d{3})(\d{0,3}).*/, "$1.$2.$3");
+      if (v.length > 3) return v.replace(/^(\d{3})(\d{0,3})/, "$1.$2");
+      return v;
+  };
+
   // Acumuladores para separar o conteúdo da tabela dos modais
   const listaModais = [];
 
@@ -31,6 +53,10 @@ function cadastroView(usuario, usuarios = []) {
             else if (u.tipo_usuario === 'design') badgeColor = 'bg-info text-dark';
             else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-warning text-dark';
             else if (isNoLogin) badgeColor = 'bg-secondary text-white';
+
+            // Aplica as máscaras para usar no Modal e na Tabela
+            const cpfFormatado = applyMaskCPF(u.cpf);
+            const telefoneFormatado = applyMaskPhone(u.telefone);
 
             // Adiciona o Modal de Edição ao acumulador
             listaModais.push(`
@@ -104,11 +130,11 @@ function cadastroView(usuario, usuarios = []) {
 
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
-                          <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${u.cpf || ''}" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
+                          <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${cpfFormatado}" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
-                          <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${u.telefone || ''}" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
+                          <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${telefoneFormatado}" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
@@ -148,7 +174,7 @@ function cadastroView(usuario, usuarios = []) {
               </div>
             `);
 
-            // Retorna apenas a linha da tabela CLICÁVEL
+            // Retorna apenas a linha da tabela CLICÁVEL (agora com o telefone também formatado na listagem)
             return `
               <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
                 <td class="fw-medium text-dark py-2">
@@ -161,7 +187,7 @@ function cadastroView(usuario, usuarios = []) {
                   </div>
                 </td>
                 <td class="text-muted py-2" style="font-size: 0.85rem;">
-                  ${isNoLogin ? `<i class="fa-solid fa-phone me-1 opacity-50"></i> ${u.telefone || 'Sem contato'}` : `<i class="fa-solid fa-envelope me-1 opacity-50"></i> ${u.email}`}
+                  ${isNoLogin ? `<i class="fa-solid fa-phone me-1 opacity-50"></i> ${telefoneFormatado || 'Sem contato'}` : `<i class="fa-solid fa-envelope me-1 opacity-50"></i> ${u.email}`}
                 </td>
                 <td class="py-2">
                   <span class="badge ${badgeColor} bg-opacity-75" style="font-size:0.7rem; letter-spacing: 0.5px;">

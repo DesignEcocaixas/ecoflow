@@ -545,251 +545,257 @@ app.get("/home", (req, res) => {
     let anoFiltro = req.query.ano ? parseInt(req.query.ano) : dataAtual.getFullYear();
     const modoFiltro = req.query.modo === 'mensal' ? 'mensal' : 'diario'; // Novo Modo
 
-    db.query(
-        "SELECT id, mensagem, tipo, criado_em FROM notificacoes ORDER BY criado_em DESC",
-        (errNotif, notificacoes) => {
-            if (errNotif) {
-                console.error("Erro ao buscar notificações:", errNotif);
-                notificacoes = [];
-            }
+    // 1. NOVA BUSCA: Notificação Global Ativa
+    db.query("SELECT * FROM notificacoes_globais WHERE status = 'ATIVA' ORDER BY criado_em DESC LIMIT 1", (errGlobal, resultGlobal) => {
+        if (errGlobal) console.error("Erro ao buscar notificação global:", errGlobal);
+        const notificacaoAtiva = (resultGlobal && resultGlobal.length > 0) ? resultGlobal[0] : null;
 
-            db.query(`
-                SELECT 
-                    v.id,
-                    v.marca,
-                    v.modelo,
-                    v.ano,
-                    v.km,
-                    c.servico,
-                    c.oficina,
-                    c.mecanico,
-                    c.valor,
-                    c.data_servico,
-                    c.km_servico,
-                    c.documento,
-                    c.atualizado_por
-                FROM veiculos v
-                LEFT JOIN veiculo_checklists c 
-                    ON c.id = (
-                        SELECT vc.id
-                        FROM veiculo_checklists vc
-                        WHERE vc.veiculo_id = v.id
-                        ORDER BY vc.data_servico DESC, vc.id DESC
-                        LIMIT 1
-                    )
-                ORDER BY c.data_servico DESC, v.id DESC
-                LIMIT 5
-            `, (errVeiculos, veiculos) => {
-                if (errVeiculos) {
-                    console.error("Erro veículos:", errVeiculos);
-                    veiculos = [];
+        db.query(
+            "SELECT id, mensagem, tipo, criado_em FROM notificacoes ORDER BY criado_em DESC",
+            (errNotif, notificacoes) => {
+                if (errNotif) {
+                    console.error("Erro ao buscar notificações:", errNotif);
+                    notificacoes = [];
                 }
 
                 db.query(`
                     SELECT 
-                        id,
-                        veiculo,
-                        oleo,
-                        agua,
-                        freio,
-                        direcao,
-                        combustivel,
-                        pneu_calibragem,
-                        pneu_estado,
-                        luzes,
-                        ruidos,
-                        lixo,
-                        responsavel,
-                        motorista,
-                        observacao,
-                        foto,
-                        registrado_por,
-                        criado_em,
-                        atualizado_em,
-                        atualizado_por
-                    FROM checklists
-                    ORDER BY criado_em DESC
+                        v.id,
+                        v.marca,
+                        v.modelo,
+                        v.ano,
+                        v.km,
+                        c.servico,
+                        c.oficina,
+                        c.mecanico,
+                        c.valor,
+                        c.data_servico,
+                        c.km_servico,
+                        c.documento,
+                        c.atualizado_por
+                    FROM veiculos v
+                    LEFT JOIN veiculo_checklists c 
+                        ON c.id = (
+                            SELECT vc.id
+                            FROM veiculo_checklists vc
+                            WHERE vc.veiculo_id = v.id
+                            ORDER BY vc.data_servico DESC, vc.id DESC
+                            LIMIT 1
+                        )
+                    ORDER BY c.data_servico DESC, v.id DESC
                     LIMIT 5
-                `, (errCheck, checklists) => {
-                    if (errCheck) {
-                        console.error("Erro checklists:", errCheck);
-                        checklists = [];
+                `, (errVeiculos, veiculos) => {
+                    if (errVeiculos) {
+                        console.error("Erro veículos:", errVeiculos);
+                        veiculos = [];
                     }
 
                     db.query(`
                         SELECT 
-                            c.id,
-                            c.codigo,
-                            c.modelo,
-                            c.preco_parda,
-                            c.preco_branca,
-                            c.atualizado_em,
-                            c.atualizado_por,
-                            f.nome AS fornecedor_nome,
-                            f.porcentagem AS fornecedor_pct
-                        FROM caixas c
-                        LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
-                        ORDER BY c.atualizado_em DESC, c.id DESC
+                            id,
+                            veiculo,
+                            oleo,
+                            agua,
+                            freio,
+                            direcao,
+                            combustivel,
+                            pneu_calibragem,
+                            pneu_estado,
+                            luzes,
+                            ruidos,
+                            lixo,
+                            responsavel,
+                            motorista,
+                            observacao,
+                            foto,
+                            registrado_por,
+                            criado_em,
+                            atualizado_em,
+                            atualizado_por
+                        FROM checklists
+                        ORDER BY criado_em DESC
                         LIMIT 5
-                    `, (errPreco, precos) => {
-                        if (errPreco) {
-                            console.error("Erro preços:", errPreco);
-                            precos = [];
+                    `, (errCheck, checklists) => {
+                        if (errCheck) {
+                            console.error("Erro checklists:", errCheck);
+                            checklists = [];
                         }
 
-                        // =========================================================
-                        // MESES DISPONÍVEIS NO SELECT
-                        // =========================================================
                         db.query(`
-                            SELECT DISTINCT MONTH(data_criacao) AS mes, YEAR(data_criacao) AS ano 
-                            FROM caderno_entregas 
-                            ORDER BY ano DESC, mes DESC
-                        `, (errMeses, mesesRows) => {
-                            if (errMeses) {
-                                console.error("Erro ao buscar meses disponíveis:", errMeses);
-                                mesesRows = [];
+                            SELECT 
+                                c.id,
+                                c.codigo,
+                                c.modelo,
+                                c.preco_parda,
+                                c.preco_branca,
+                                c.atualizado_em,
+                                c.atualizado_por,
+                                f.nome AS fornecedor_nome,
+                                f.porcentagem AS fornecedor_pct
+                            FROM caixas c
+                            LEFT JOIN fornecedores f ON c.fornecedor_id = f.id
+                            ORDER BY c.atualizado_em DESC, c.id DESC
+                            LIMIT 5
+                        `, (errPreco, precos) => {
+                            if (errPreco) {
+                                console.error("Erro preços:", errPreco);
+                                precos = [];
                             }
 
-                            const mesesDisponiveis = mesesRows.map(row => {
-                                const dateObj = new Date(row.ano, row.mes - 1, 1);
-                                const mesNome = dateObj.toLocaleString('pt-BR', { month: 'long' });
-                                return {
-                                    mes: row.mes,
-                                    ano: row.ano,
-                                    label: mesNome.charAt(0).toUpperCase() + mesNome.slice(1) + ' ' + row.ano
-                                };
-                            });
-
-                            if (!req.query.mes && !req.query.ano && mesesDisponiveis.length > 0) {
-                                const mesAtualTemDados = mesesDisponiveis.some(m => m.mes === mesFiltro && m.ano === anoFiltro);
-                                if (!mesAtualTemDados) {
-                                    mesFiltro = mesesDisponiveis[0].mes;
-                                    anoFiltro = mesesDisponiveis[0].ano;
+                            // =========================================================
+                            // MESES DISPONÍVEIS NO SELECT
+                            // =========================================================
+                            db.query(`
+                                SELECT DISTINCT MONTH(data_criacao) AS mes, YEAR(data_criacao) AS ano 
+                                FROM caderno_entregas 
+                                ORDER BY ano DESC, mes DESC
+                            `, (errMeses, mesesRows) => {
+                                if (errMeses) {
+                                    console.error("Erro ao buscar meses disponíveis:", errMeses);
+                                    mesRows = [];
                                 }
-                            }
 
-                            // =========================================================
-                            // NOVA LÓGICA: CONSULTAS DO GRÁFICO (DIÁRIO ou MENSAL)
-                            // =========================================================
-                            let queryGrafico = '';
-                            let queryRanking = '';
-                            let parametrosSQL = [];
+                                const mesesDisponiveis = mesesRows.map(row => {
+                                    const dateObj = new Date(row.ano, row.mes - 1, 1);
+                                    const mesNome = dateObj.toLocaleString('pt-BR', { month: 'long' });
+                                    return {
+                                        mes: row.mes,
+                                        ano: row.ano,
+                                        label: mesNome.charAt(0).toUpperCase() + mesNome.slice(1) + ' ' + row.ano
+                                    };
+                                });
 
-                            if (modoFiltro === 'mensal') {
-                                // Agrupa por Mês
-                                queryGrafico = `
-                                    SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
-                                    FROM caderno_entregas ce
-                                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
-                                    WHERE YEAR(ce.data_criacao) = ?
-                                    GROUP BY MONTH(ce.data_criacao)
-                                    ORDER BY chave ASC
-                                `;
-                                queryRanking = `
-                                    SELECT MONTH(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
-                                    FROM caderno_entregas ce
-                                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
-                                    WHERE YEAR(ce.data_criacao) = ?
-                                    GROUP BY MONTH(ce.data_criacao), cei.local_entrega
-                                    ORDER BY chave ASC, quantidade DESC
-                                `;
-                                parametrosSQL = [anoFiltro];
-                            } else {
-                                // Agrupa por Dia
-                                queryGrafico = `
-                                    SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
-                                    FROM caderno_entregas ce
-                                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
-                                    WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
-                                    GROUP BY DAY(ce.data_criacao)
-                                    ORDER BY chave ASC
-                                `;
-                                queryRanking = `
-                                    SELECT DAY(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
-                                    FROM caderno_entregas ce
-                                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
-                                    WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
-                                    GROUP BY DAY(ce.data_criacao), cei.local_entrega
-                                    ORDER BY chave ASC, quantidade DESC
-                                `;
-                                parametrosSQL = [mesFiltro, anoFiltro];
-                            }
+                                if (!req.query.mes && !req.query.ano && mesesDisponiveis.length > 0) {
+                                    const mesAtualTemDados = mesesDisponiveis.some(m => m.mes === mesFiltro && m.ano === anoFiltro);
+                                    if (!mesAtualTemDados) {
+                                        mesFiltro = mesesDisponiveis[0].mes;
+                                        anoFiltro = mesesDisponiveis[0].ano;
+                                    }
+                                }
 
-                            db.query(queryGrafico, parametrosSQL, (errGrafico, graficoRows) => {
-                                if (errGrafico) console.error("Erro gráfico:", errGrafico);
-                                
-                                let labels = [];
-                                let dadosGrafico = [];
-                                const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                                // =========================================================
+                                // CONSULTAS DO GRÁFICO (DIÁRIO ou MENSAL)
+                                // =========================================================
+                                let queryGrafico = '';
+                                let queryRanking = '';
+                                let parametrosSQL = [];
 
                                 if (modoFiltro === 'mensal') {
-                                    labels = nomesMeses;
-                                    dadosGrafico = new Array(12).fill(0);
-                                    if (graficoRows) {
-                                        graficoRows.forEach(row => {
-                                            if (row.chave >= 1 && row.chave <= 12) {
-                                                dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
-                                            }
-                                        });
-                                    }
+                                    // Agrupa por Mês
+                                    queryGrafico = `
+                                        SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
+                                        FROM caderno_entregas ce
+                                        JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                        WHERE YEAR(ce.data_criacao) = ?
+                                        GROUP BY MONTH(ce.data_criacao)
+                                        ORDER BY chave ASC
+                                    `;
+                                    queryRanking = `
+                                        SELECT MONTH(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
+                                        FROM caderno_entregas ce
+                                        JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                        WHERE YEAR(ce.data_criacao) = ?
+                                        GROUP BY MONTH(ce.data_criacao), cei.local_entrega
+                                        ORDER BY chave ASC, quantidade DESC
+                                    `;
+                                    parametrosSQL = [anoFiltro];
                                 } else {
-                                    const diasNoMes = new Date(anoFiltro, mesFiltro, 0).getDate();
-                                    labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'));
-                                    dadosGrafico = new Array(diasNoMes).fill(0);
-                                    if (graficoRows) {
-                                        graficoRows.forEach(row => {
-                                            if (row.chave >= 1 && row.chave <= diasNoMes) {
-                                                dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
-                                            }
-                                        });
-                                    }
+                                    // Agrupa por Dia
+                                    queryGrafico = `
+                                        SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
+                                        FROM caderno_entregas ce
+                                        JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                        WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                                        GROUP BY DAY(ce.data_criacao)
+                                        ORDER BY chave ASC
+                                    `;
+                                    queryRanking = `
+                                        SELECT DAY(ce.data_criacao) AS chave, cei.local_entrega AS cliente_nome, SUM(cei.quantidade) AS quantidade
+                                        FROM caderno_entregas ce
+                                        JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                        WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                                        GROUP BY DAY(ce.data_criacao), cei.local_entrega
+                                        ORDER BY chave ASC, quantidade DESC
+                                    `;
+                                    parametrosSQL = [mesFiltro, anoFiltro];
                                 }
 
-                                db.query(queryRanking, parametrosSQL, (errRanking, rankingRows) => {
-                                    if (errRanking) console.error("Erro ranking:", errRanking);
+                                db.query(queryGrafico, parametrosSQL, (errGrafico, graficoRows) => {
+                                    if (errGrafico) console.error("Erro gráfico:", errGrafico);
+                                    
+                                    let labels = [];
+                                    let dadosGrafico = [];
+                                    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-                                    const rankingObj = {};
-                                    if (rankingRows) {
-                                        rankingRows.forEach(row => {
-                                            let chaveStr = modoFiltro === 'mensal' ? nomesMeses[row.chave - 1] : String(row.chave).padStart(2, '0');
-                                            if (!rankingObj[chaveStr]) rankingObj[chaveStr] = [];
-                                            rankingObj[chaveStr].push({
-                                                cliente_nome: row.cliente_nome || "Desconhecido",
-                                                quantidade: Number(row.quantidade) || 0
+                                    if (modoFiltro === 'mensal') {
+                                        labels = nomesMeses;
+                                        dadosGrafico = new Array(12).fill(0);
+                                        if (graficoRows) {
+                                            graficoRows.forEach(row => {
+                                                if (row.chave >= 1 && row.chave <= 12) {
+                                                    dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
+                                                }
                                             });
-                                        });
+                                        }
+                                    } else {
+                                        const diasNoMes = new Date(anoFiltro, mesFiltro, 0).getDate();
+                                        labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'));
+                                        dadosGrafico = new Array(diasNoMes).fill(0);
+                                        if (graficoRows) {
+                                            graficoRows.forEach(row => {
+                                                if (row.chave >= 1 && row.chave <= diasNoMes) {
+                                                    dadosGrafico[row.chave - 1] = Number(row.total_quantidade) || 0;
+                                                }
+                                            });
+                                        }
                                     }
 
-                                    const graficoMensal = { labels, data: dadosGrafico, ranking: rankingObj };
+                                    db.query(queryRanking, parametrosSQL, (errRanking, rankingRows) => {
+                                        if (errRanking) console.error("Erro ranking:", errRanking);
 
-                                    db.query(`SELECT * FROM entregas_pedidos ORDER BY criado_em DESC, id DESC LIMIT 1`, (errRota, rotaRows) => {
-                                        if (errRota) console.error("Erro rota:", errRota);
-                                        const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
-
-                                        if (!rota) {
-                                            return res.send(homeView(req.session.user, notificacoes, {
-                                                veiculos, checklists, precos, rota: null,
-                                                graficoMensal, mesesDisponiveis, mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
-                                            }));
+                                        const rankingObj = {};
+                                        if (rankingRows) {
+                                            rankingRows.forEach(row => {
+                                                let chaveStr = modoFiltro === 'mensal' ? nomesMeses[row.chave - 1] : String(row.chave).padStart(2, '0');
+                                                if (!rankingObj[chaveStr]) rankingObj[chaveStr] = [];
+                                                rankingObj[chaveStr].push({
+                                                    cliente_nome: row.cliente_nome || "Desconhecido",
+                                                    quantidade: Number(row.quantidade) || 0
+                                                });
+                                            });
                                         }
 
-                                        db.query(`SELECT id, pedido_id, cliente_nome, status, observacao, atualizado_por, atualizado_em FROM entregas_clientes WHERE pedido_id = ? ORDER BY id DESC`, [rota.id], (errClientes, clientes) => {
-                                            if (errClientes) console.error("Erro clientes rota:", errClientes);
-                                            return res.send(homeView(req.session.user, notificacoes, {
-                                                veiculos, checklists, precos, graficoMensal, mesesDisponiveis,
-                                                mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro },
-                                                rota: { ...rota, clientes: clientes || [] }
-                                            }));
+                                        const graficoMensal = { labels, data: dadosGrafico, ranking: rankingObj };
+
+                                        db.query(`SELECT * FROM entregas_pedidos ORDER BY criado_em DESC, id DESC LIMIT 1`, (errRota, rotaRows) => {
+                                            if (errRota) console.error("Erro rota:", errRota);
+                                            const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+
+                                            if (!rota) {
+                                                return res.send(homeView(req.session.user, notificacoes, {
+                                                    veiculos, checklists, precos, rota: null,
+                                                    graficoMensal, mesesDisponiveis, mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
+                                                }, notificacaoAtiva)); // REPASSANDO notificacaoAtiva AQUI
+                                            }
+
+                                            db.query(`SELECT id, pedido_id, cliente_nome, status, observacao, atualizado_por, atualizado_em FROM entregas_clientes WHERE pedido_id = ? ORDER BY id DESC`, [rota.id], (errClientes, clientes) => {
+                                                if (errClientes) console.error("Erro clientes rota:", errClientes);
+                                                return res.send(homeView(req.session.user, notificacoes, {
+                                                    veiculos, checklists, precos, graficoMensal, mesesDisponiveis,
+                                                    mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro },
+                                                    rota: { ...rota, clientes: clientes || [] }
+                                                }, notificacaoAtiva)); // E REPASSANDO notificacaoAtiva AQUI
+                                            });
                                         });
-                                    });
+                                    }); 
                                 }); 
                             }); 
-                        }); 
+                        });
                     });
                 });
-            });
-        }
-    );
+            }
+        );
+    });
 });
 
 // =========================================================
@@ -5362,6 +5368,154 @@ app.post("/diaristas/pasta/excluir/:id", async (req, res) => {
     } catch (error) {
         res.status(500).send("Erro ao excluir pasta.");
     }
+});
+
+// =========================================================================
+// ROTA: TELA DE CONFIGURAÇÕES GERAIS E NOTIFICAÇÕES
+// =========================================================================
+app.get("/configuracoes", (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.redirect("/home?erro=acesso_negado");
+    }
+
+    // Busca as taxas respeitando a estrutura CHAVE/VALOR do Ecoflow
+    db.query("SELECT chave, valor FROM configuracoes", (errConfig, resultConfig) => {
+        if (errConfig) {
+            console.error("Erro ao buscar configurações:", errConfig);
+            return res.status(500).send("Erro interno");
+        }
+        
+        // Converte o array de chaves e valores num objeto direto para a View
+        const taxas = {};
+        resultConfig.forEach(row => {
+            taxas[row.chave] = row.valor;
+        });
+
+        // Busca o histórico de notificações globais
+        db.query("SELECT * FROM notificacoes_globais ORDER BY criado_em DESC", (errNotif, resultNotif) => {
+            if (errNotif) {
+                console.error("Erro ao buscar notificações:", errNotif);
+                return res.status(500).send("Erro interno");
+            }
+
+            const configView = require('./views/configView');
+            const html = configView(req.session.user, taxas, resultNotif);
+            res.send(html);
+        });
+    });
+});
+
+// =========================================================================
+// ROTA: NOVA NOTIFICAÇÃO GLOBAL
+// =========================================================================
+app.post("/notificacoes/global/nova", upload.single('imagem_notificacao'), (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(401).send("Acesso negado");
+    }
+
+    const { titulo_notificacao, mensagem_notificacao } = req.body;
+    const imagem = req.file ? req.file.filename : null;
+
+    db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE status = 'ATIVA'", (errDesativa) => {
+        if (errDesativa) console.error("Erro ao desativar notificações antigas:", errDesativa);
+
+        const query = "INSERT INTO notificacoes_globais (titulo, mensagem, imagem, status) VALUES (?, ?, ?, 'ATIVA')";
+        db.query(query, [titulo_notificacao, mensagem_notificacao, imagem], (err) => {
+            if (err) {
+                console.error("Erro ao inserir notificação global:", err);
+                return res.status(500).send("Erro interno");
+            }
+            res.redirect("/configuracoes?sucesso=1");
+        });
+    });
+});
+
+// =========================================================================
+// ROTA: DESATIVAR NOTIFICAÇÃO GLOBAL
+// =========================================================================
+app.post("/notificacoes/global/desativar/:id", (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(401).send("Acesso negado");
+    }
+
+    const notifId = req.params.id;
+
+    db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id = ?", [notifId], (err) => {
+        if (err) {
+            console.error("Erro ao desativar notificação:", err);
+            return res.status(500).send("Erro interno");
+        }
+        res.redirect("/configuracoes?excluido=1");
+    });
+});
+
+// =========================================================================
+// ROTA: EDITAR NOTIFICAÇÃO GLOBAL
+// =========================================================================
+app.post("/notificacoes/global/editar/:id", upload.single('imagem_notificacao'), (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(401).send("Acesso negado");
+    }
+
+    const notifId = req.params.id;
+    const { titulo_notificacao, mensagem_notificacao, status_notificacao } = req.body;
+    
+    // Lógica para se alterar a imagem ou manter a antiga
+    if (req.file) {
+        const imagem = req.file.filename;
+        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, imagem = ? WHERE id = ?";
+        
+        // Se a que estamos a editar for passar para 'ATIVA', inativamos as outras primeiro
+        if (status_notificacao === 'ATIVA') {
+            db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
+                db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, notifId], (err) => {
+                    if (err) return res.status(500).send("Erro interno");
+                    res.redirect("/configuracoes?editado=1");
+                });
+            });
+        } else {
+            db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, notifId], (err) => {
+                if (err) return res.status(500).send("Erro interno");
+                res.redirect("/configuracoes?editado=1");
+            });
+        }
+    } else {
+        // Atualiza sem alterar a imagem
+        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ? WHERE id = ?";
+        
+        if (status_notificacao === 'ATIVA') {
+            db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
+                db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, notifId], (err) => {
+                    if (err) return res.status(500).send("Erro interno");
+                    res.redirect("/configuracoes?editado=1");
+                });
+            });
+        } else {
+            db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, notifId], (err) => {
+                if (err) return res.status(500).send("Erro interno");
+                res.redirect("/configuracoes?editado=1");
+            });
+        }
+    }
+});
+
+// =========================================================================
+// ROTA: DELETAR NOTIFICAÇÃO GLOBAL (EXCLUIR)
+// =========================================================================
+app.post("/notificacoes/global/deletar/:id", (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(401).send("Acesso negado");
+    }
+
+    const notifId = req.params.id;
+
+    db.query("DELETE FROM notificacoes_globais WHERE id = ?", [notifId], (err) => {
+        if (err) {
+            console.error("Erro ao deletar notificação:", err);
+            return res.status(500).send("Erro interno");
+        }
+        res.redirect("/configuracoes?excluido=1");
+    });
 });
 
 // Rota de Keep-Alive para manter a sessão ativa enquanto a aba estiver aberta

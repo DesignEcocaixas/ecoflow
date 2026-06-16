@@ -115,18 +115,28 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   // --- CONTAINER DO PERFIL DO USUÁRIO (NOVO LAYOUT) ---
   const fotoUrl = usuario && usuario.foto ? `/uploads/${usuario.foto}` : null;
+  
+  // Imagem agora com tag <a> para abrir e classe css para hover
   const renderFoto = fotoUrl
-    ? `<img src="${fotoUrl}" alt="Foto de perfil" class="shadow-lg" style="width: 85px; height: 85px; object-fit: cover; border-radius: 18px; border: 3px solid rgba(255,255,255,0.15);">`
-    : `<div class="d-flex align-items-center justify-content-center shadow-lg" style="width: 85px; height: 85px; border-radius: 18px; background-color: rgba(255,255,255,0.08); border: 3px solid rgba(255,255,255,0.15);"><i class="fa-solid fa-user text-white-50" style="font-size: 2.2rem;"></i></div>`;
+    ? `<a href="${fotoUrl}" target="_blank" title="Visualizar Foto"><img src="${fotoUrl}" alt="Foto de perfil" class="shadow-lg rounded-circle img-profile-clickable" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid rgba(255,255,255,0.15);"></a>`
+    : `<div class="d-flex align-items-center justify-content-center shadow-lg rounded-circle" style="width: 100px; height: 100px; background-color: rgba(255,255,255,0.08); border: 3px solid rgba(255,255,255,0.15);"><i class="fa-solid fa-user text-white-50" style="font-size: 2.5rem;"></i></div>`;
 
+  // Engrenagem exclusiva para administradores
+  const btnConfigAdmin = tipo === "admin"
+    ? `<a href="/configuracoes" class="text-white ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center profile-config-btn" title="Configurações do Sistema" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1;">
+         <i class="fa-solid fa-gear" style="font-size: 0.9rem;"></i>
+       </a>`
+    : "";
+
+  // Removido py-4 e substituído por pb-4 pt-1 para remover o padding superior
   const userProfileHtml = `
-    <div class="user-profile-container px-3 py-4 mb-3 border-bottom border-light border-opacity-10 text-white position-relative text-center">
+    <div class="user-profile-container px-3 pb-4 pt-1 mb-3 border-bottom border-light border-opacity-10 text-white position-relative text-center">
       
       <button type="button"
         id="btnAbrirNotificacoes"
         class="text-white-50 transition-btn p-1 rounded d-flex align-items-center justify-content-center border-0 bg-transparent position-absolute"
         title="Notificações"
-        style="top: 12px; right: 12px; text-decoration: none; width: 32px; height: 32px;">
+        style="top: 8px; right: 12px; text-decoration: none; width: 32px; height: 32px;">
         <i class="fa-solid fa-bell fs-5"></i>
         <span id="contadorNotificacoes"
           class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
@@ -136,7 +146,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       </button>
 
       <div class="d-flex flex-column align-items-center justify-content-center">
-        <div class="profile-avatar-box mb-3 position-relative">
+        <div class="profile-avatar-box mb-3 position-relative mt-2">
           ${renderFoto}
         </div>
 
@@ -144,9 +154,12 @@ function menuLateral(usuario, rotaAtiva = "") {
           <div class="fw-bold text-truncate text-white mb-2 profile-name-text" style="font-size: 1.05rem;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
             ${usuario && usuario.nome ? usuario.nome : "Usuário"}
           </div>
-          <span class="badge bg-white bg-opacity-25 text-white profile-badge-type" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
-            <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
-          </span>
+          <div class="d-flex align-items-center justify-content-center">
+            <span class="badge bg-white bg-opacity-25 text-white profile-badge-type" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
+              <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
+            </span>
+            ${btnConfigAdmin}
+          </div>
         </div>
       </div>
     </div>
@@ -161,11 +174,11 @@ function menuLateral(usuario, rotaAtiva = "") {
         <span class="sidebar-text">Desenvolvido por <strong class="text-white">71dev</strong></span>
 
         <div class="d-flex align-items-center justify-content-center gap-2">
-          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);" title="Instagram">
+          <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-white mb-0 transition-btn d-flex align-items-center justify-content-center" title="Instagram" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1;">
             <i class="fa-brands fa-instagram fa-lg"></i>
           </a>
 
-          <a href="https://wa.me/557183174920" target="_blank" class="text-decoration-none" style="color: rgba(255,255,255,0.6);" title="WhatsApp">
+          <a href="https://wa.me/557183174920" target="_blank" class="text-white mb-0 transition-btn d-flex align-items-center justify-content-center" title="WhatsApp" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1;">
             <i class="fa-brands fa-whatsapp fa-lg"></i>
           </a>
         </div>
@@ -213,6 +226,9 @@ function menuLateral(usuario, rotaAtiva = "") {
           
           const btnNotif = document.getElementById('btnAbrirNotificacoes');
           if (btnNotif) btnNotif.classList.add('skeleton');
+          
+          const btnConfig = document.querySelector('.profile-config-btn');
+          if (btnConfig) btnConfig.classList.add('skeleton');
 
           // 2. Elementos dos Links (Aplicado individualmente no texto e ícone para manter o layout limpo)
           const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
@@ -238,6 +254,9 @@ function menuLateral(usuario, rotaAtiva = "") {
           
           const btnNotif = document.getElementById('btnAbrirNotificacoes');
           if (btnNotif) btnNotif.classList.remove('skeleton');
+
+          const btnConfig = document.querySelector('.profile-config-btn');
+          if (btnConfig) btnConfig.classList.remove('skeleton');
 
           const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
           linksSpans.forEach(el => el.classList.remove('skeleton'));
@@ -503,6 +522,16 @@ function menuLateral(usuario, rotaAtiva = "") {
       .transition-btn:hover {
         background: rgba(255,255,255,0.1);
         color: #fff !important;
+      }
+
+      /* Hover para a foto de perfil */
+      .img-profile-clickable {
+        transition: transform 0.2s ease, filter 0.2s ease;
+      }
+
+      .img-profile-clickable:hover {
+        transform: scale(1.05);
+        filter: brightness(1.1);
       }
 
       .logout-btn-sidebar {

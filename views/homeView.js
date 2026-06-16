@@ -1,7 +1,7 @@
 // views/homeView.js
 const menuLateral = require("./menuLateral");
 
-function homeView(usuario, notificacoes = [], dashboard = {}) {
+function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva = null) {
   const qtdNotificacoes = notificacoes.length;
 
   const fmtData = (data) => {
@@ -717,6 +717,27 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
     ${modalRota}
     ${modalRankingDia}
 
+    ${notificacaoAtiva ? `
+    <div class="modal fade" id="modalAvisoGlobal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-modal shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+          <div class="modal-header bg-primary text-white border-0 p-3">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-bullhorn me-2"></i> Mensagem da Administração</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-light text-center">
+            ${notificacaoAtiva.imagem ? `<img src="/uploads/${notificacaoAtiva.imagem}" class="img-fluid rounded shadow-sm mb-3" style="max-height: 250px; width: 100%; object-fit: cover;">` : '<i class="fa-solid fa-circle-exclamation fa-3x text-primary mb-3 opacity-50"></i>'}
+            <h5 class="fw-bold text-dark mb-3">${notificacaoAtiva.titulo}</h5>
+            <p class="text-muted mb-0" style="font-size: 0.9rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">${notificacaoAtiva.mensagem}</p>
+          </div>
+          <div class="modal-footer bg-white border-0 justify-content-center p-3">
+            <button type="button" class="btn btn-primary px-5 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
@@ -953,6 +974,28 @@ function homeView(usuario, notificacoes = [], dashboard = {}) {
           mostrarSkeletonGlobais();
       });
     </script>
+
+    ${notificacaoAtiva ? `
+    <script>
+      window.addEventListener('load', () => {
+          // Identificador único para a notificação atual
+          const notifId = 'aviso_${notificacaoAtiva.id}';
+          
+          // Verifica se o aviso já foi mostrado nesta sessão
+          if (!sessionStorage.getItem(notifId)) {
+              setTimeout(() => {
+                  const modalEl = document.getElementById('modalAvisoGlobal');
+                  if (modalEl) {
+                      const modal = new bootstrap.Modal(modalEl);
+                      modal.show();
+                      // Regista no navegador que o utilizador já visualizou
+                      sessionStorage.setItem(notifId, 'true');
+                  }
+              }, 600); // 600ms de atraso para a página terminar as suas próprias animações
+          }
+      });
+    </script>
+    ` : ''}
 
     <script>
       window.addEventListener('load', () => {

@@ -110,13 +110,16 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       const mot = getColabData(c.motorista);
       const aju = getColabData(c.ajudante);
 
+      // Regra Exigida: Se não for estritamente "motorista_avulso", é considerado Normal (Sem pagamentos avulsos)
       const isMotAvulso = mot.tipo_usuario === 'motorista_avulso';
       const isMotNormal = !isMotAvulso;
 
+      // Histórico Motorista
       const pagMot = pagamentos.find(p => p.caderno_id == c.id && p.colaborador_id == mot.id);
       const isMotPago = c.mot_status === 'PAGO' || (pagMot && pagMot.status === 'PAGO');
       const valorMotCalc = pagMot ? parseFloat(pagMot.valor_total) : getTierValueNode(c.qtd_entregas, 'mot');
 
+      // Histórico Ajudante
       let isAjuPago = true;
       let pagAju = null;
       let valorAjuCalc = 0;
@@ -130,6 +133,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       let cardBg = "bg-warning bg-opacity-10 border-warning";
       let headerBg = "bg-warning bg-opacity-25 border-bottom border-warning";
       
+      // Motoristas fixos são sempre considerados resolvidos para a lógica de cores dos cards
       const motResolvido = isMotNormal || isMotPago;
 
       if (motResolvido && isAjuPago) {
@@ -140,6 +144,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           headerBg = "bg-info bg-opacity-25 border-bottom border-info";
       }
 
+      // WhatsApp Motorista Individual (Só útil se for avulso)
       const msgWppMot = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${mot.nome} (Motorista)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorMotCalc)}\n\n*Dados Bancários:*\n*PIX:* ${mot.pix}\n*Banco:* ${mot.banco}\n*CPF:* ${mot.cpf}`;
       const btnWppMot = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppMot)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></a>`;
 
@@ -155,7 +160,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
              <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
              <div class="d-flex gap-1 justify-content-end align-items-center">
                  ${btnWppDisabled}
-                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Efetivo</button>
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
              </div>
           `;
       } else {
@@ -305,7 +310,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
   const modaisDinamicosExcluir = [];
 
   // =========================================================================
-  // TABELA DE HISTÓRICO
+  // TABELA DE HISTÓRICO - COMPACTADA COM ALTURA MÍNIMA (py-1 e foto 28px)
   // =========================================================================
   const linhasPagamentos = pagamentos.length > 0 ? pagamentos.map(p => {
       const colab = colaboradores.find(c => c.id === p.colaborador_id) || {};
@@ -328,7 +333,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           if(p.tipo_colaborador === 'ajudante') {
              infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-info text-dark opacity-75" style="font-size: 0.60rem;"><i class="fa-solid fa-truck-ramp-box me-1"></i> AJUDANTE (${dataCaderno})</span></div>`;
           } else {
-             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary" style="font-size: 0.60rem;"><i class="fa-solid fa-steering-wheel me-1"></i> Ajudante #${p.caderno_id} (${dataCaderno})</span></div>`;
+             infoPagamentoHtml = `<div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary" style="font-size: 0.60rem;"><i class="fa-solid fa-steering-wheel me-1"></i> ROTA #${p.caderno_id} (${dataCaderno})</span></div>`;
           }
       }
 
@@ -446,11 +451,16 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           border-color: #198754 !important;
       }
 
+      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
       .toast-timer { height: 6px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+      .modal.show .modal-dialog { transform: scale(1) translateY(0); }
+
+      /* SKELETON LOADING */
       .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading-view 1.5s infinite linear; border-radius: 4px; }
       .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
       .skeleton-avatar-view { height: 28px; width: 28px; border-radius: 50%; }
@@ -564,8 +574,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       ${paginacaoHtml}
     </div>
 
-    <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
-            style="position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; z-index: 1050; transition: transform 0.2s;" 
+    <button type="button" class="btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
+            style="position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background-color: #0D5749; border-color: #0D5749; z-index: 1050; transition: transform 0.2s;" 
             data-bs-toggle="modal" data-bs-target="#modalInstrucoesPagamentos" title="Instruções de Uso"
             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
         <i class="fa-solid fa-question fs-4"></i>
@@ -574,7 +584,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
     <div class="modal fade" id="modalInstrucoesPagamentos" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg">
-          <div class="modal-header bg-primary text-white border-0">
+          <div class="modal-header text-white border-0" style="background-color: #0D5749;">
             <h6 class="modal-title fw-bold"><i class="fa-solid fa-circle-info me-2"></i> Instruções de Uso - Pagamentos</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
@@ -1232,6 +1242,38 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           }
       }
 
+      // =======================================================================
+      // AJAX E SUBMISSÃO ESTRUTURAL (SKELETON GENERATORS)
+      // =======================================================================
+      function gerarSkeletonCards(quantidade = 3) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="col-12 col-md-6 col-xl-4">
+                  <div class="card erp-card shadow-sm h-100 bg-white border-light p-2">
+                      <div class="card-header p-2 d-flex justify-content-between align-items-center bg-transparent border-bottom">
+                          <div class="skeleton-view skeleton-text-view" style="width: 50%; height: 14px; margin-bottom: 4px;"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 25%; height: 16px; border-radius: 12px; margin-bottom: 0;"></div>
+                      </div>
+                      <div class="card-body p-2 mt-2">
+                          <div class="d-flex align-items-center mb-2">
+                              <div class="skeleton-view skeleton-avatar-view me-2 flex-shrink-0" style="width: 32px; height: 32px;"></div>
+                              <div style="flex-grow: 1;">
+                                  <div class="skeleton-view skeleton-text-view mb-1" style="width: 70%; height: 12px;"></div>
+                                  <div class="skeleton-view skeleton-text-view mb-0" style="width: 40%; height: 10px;"></div>
+                              </div>
+                              <div class="text-end">
+                                  <div class="skeleton-view skeleton-text-view mb-1" style="width: 40px; height: 14px; margin-left: auto;"></div>
+                                  <div class="skeleton-view skeleton-text-view" style="width: 60px; height: 20px; border-radius: 4px; margin-left: auto;"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>\`;
+          }
+          return html;
+      }
+
       function gerarSkeletonTabela(quantidade = 4) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
@@ -1239,7 +1281,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               <tr class="align-middle" style="height: 45px;">
                   <td class="py-1 px-2">
                       <div class="d-flex align-items-center">
-                          <div class="skeleton-view skeleton-avatar-view me-2 flex-shrink-0"></div>
+                          <div class="skeleton-view skeleton-avatar-view me-2 flex-shrink-0" style="width: 28px; height: 28px;"></div>
                           <div class="skeleton-view skeleton-text-view" style="width: 120px; margin: 0; height: 12px;"></div>
                       </div>
                   </td>
@@ -1255,35 +1297,42 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       function mostrarSkeletonGlobais() {
           const container = document.getElementById('tabelaContainer');
+          const grid = document.getElementById('cadernosGrid');
           const emptyState = document.querySelector('.content > .text-center-empty');
           
           if (document.getElementById('skeleton-temp-container')) return;
 
           const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
-              <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                 <thead class="table-light">
-                   <tr>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Colaborador</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Data do Serviço</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Entregas</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Valor Total</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Status</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Ações</th>
-                   </tr>
-                 </thead>
-                 <tbody class="border-top-0">
-                    \${gerarSkeletonTabela(4)}
-                 </tbody>
-              </table>
+          <div id="skeleton-temp-container" class="skeleton-container">
+              <div class="row g-3 mb-4">
+                  \${gerarSkeletonCards(3)}
+              </div>
+              <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+                  <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                     <thead class="table-light">
+                       <tr>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Colaborador</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Data do Serviço</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Entregas</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Valor Total</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Status</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Ações</th>
+                       </tr>
+                     </thead>
+                     <tbody class="border-top-0">
+                        \${gerarSkeletonTabela(4)}
+                     </tbody>
+                  </table>
+              </div>
           </div>\`;
 
-          if (container && !container.classList.contains('skeleton-container')) {
-              container.style.display = 'none';
-              container.insertAdjacentHTML('beforebegin', skeletonHTML);
-          } else if (emptyState) {
-              emptyState.style.display = 'none';
-              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          if (container) container.style.display = 'none';
+          if (grid) grid.style.display = 'none';
+          if (emptyState) emptyState.style.display = 'none';
+          
+          const insertTarget = grid || container || emptyState;
+          if (insertTarget) {
+              insertTarget.insertAdjacentHTML('beforebegin', skeletonHTML);
           }
       }
 
@@ -1292,9 +1341,11 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           if (tempSkeleton) tempSkeleton.remove();
 
           const container = document.getElementById('tabelaContainer');
+          const grid = document.getElementById('cadernosGrid');
           const emptyState = document.querySelector('.content > .text-center-empty');
 
           if (container) container.style.display = '';
+          if (grid) grid.style.display = '';
           if (emptyState) emptyState.style.display = '';
       }
 

@@ -614,39 +614,39 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Rotas Registradas</h6>
-        
-        <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-sm btn-outline-warning shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#migracaoModal" title="Sincronizar clientes antigos">
-                <i class="fa-solid fa-satellite-dish me-1"></i> Sincronizar GPS
-            </button>
-            <button class="btn btn-sm btn-outline-primary shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
-                <i class="fa-solid fa-users me-1"></i> Clientes
-            </button>
-            <button class="btn btn-sm btn-success shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
-                <i class="fa-solid fa-plus me-1"></i> Caderno
-            </button>
-            <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm px-3" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
-                <i class="fa-solid fa-file-excel me-1"></i> Relatório
-            </a>
-        </div>
-      </div>
+      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+         <h6 class="fw-bold text-dark mb-0 text-nowrap"><i class="fa-solid fa-list-ul text-primary me-2"></i> Rotas Registradas</h6>
+         
+         <div class="d-flex align-items-center flex-wrap flex-md-nowrap gap-3 justify-content-xl-end">
+            <form id="formFiltroCaderno" class="d-flex align-items-center mb-0" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
+                <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;">
+                    <span class="input-group-text bg-light text-muted d-none d-sm-block"><i class="fa-regular fa-calendar"></i></span>
+                    <input type="date" name="data_inicio" class="form-control" value="${filtros.data_inicio || ''}" title="Data Inicial" style="max-width: 130px;">
+                    <span class="input-group-text bg-light text-muted">até</span>
+                    <input type="date" name="data_fim" class="form-control" value="${filtros.data_fim || ''}" title="Data Final" style="max-width: 130px;">
+                    <button type="submit" class="btn btn-primary px-3" title="Filtrar Período"><i class="fa-solid fa-filter"></i></button>
+                    <button type="button" class="btn btn-light border px-2 text-danger" onclick="limparFiltrosCaderno()" title="Limpar Filtro"><i class="fa-solid fa-eraser"></i></button>
+                </div>
+            </form>
 
-      <form id="formFiltroCaderno" class="row g-2 align-items-end border-top mb-4" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-          <div class="col-12 col-md-4">
-              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
-              <input type="date" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
-          </div>
-          <div class="col-12 col-md-4">
-              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
-              <input type="date" name="data_fim" class="form-control form-control-sm shadow-sm" value="${filtros.data_fim || ''}">
-          </div>
-          <div class="col-12 col-md-4 d-flex gap-2">
-              <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar Período</button>
-              <button type="button" class="btn btn-sm btn-light border text-center shadow-sm px-3" onclick="limparFiltrosCaderno()"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-      </form>
+            <div class="vr d-none d-md-block m-0"></div>
+
+            <div class="d-flex gap-2 flex-nowrap">
+                <button class="btn btn-sm btn-outline-warning shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#migracaoModal" title="Sincronizar clientes antigos">
+                    <i class="fa-solid fa-satellite-dish"></i> <span class="d-none d-md-inline ms-1">Sincronizar GPS</span>
+                </button>
+                <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
+                    <i class="fa-solid fa-users"></i> <span class="d-none d-md-inline ms-1">Clientes</span>
+                </button>
+                <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
+                    <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
+                </a>
+                <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
+                    <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">Novo</span>
+                </button>
+            </div>
+         </div>
+      </div>
 
       ${cadernos.length > 0 
         ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">

@@ -52,7 +52,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
   }));
 
   // =========================================================================
-  // GERAÇÃO DOS CARDS DE DIARISTAS (CRIAR PASTA)
+  // GERAÇÃO DOS CARDS DE DIARISTAS (CRIAR PASTA) - LAYOUT COMPACTO
   // =========================================================================
   const cardsDiaristas = diaristas.length > 0 ? diaristas.map(d => {
       const fotoUrl = d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=0D5749&color=fff`;
@@ -61,15 +61,15 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       return `
          <div class="col-12 col-sm-6 col-md-4 col-xl-3 diarista-card-item">
              <div class="card erp-card shadow-sm h-100 bg-white" style="cursor: pointer;" onclick="abrirModalCriarPasta('${d.id}')" title="Abrir uma nova pasta de fechamento para este colaborador">
-                 <div class="card-body text-center p-4 d-flex flex-column justify-content-center align-items-center">
-                     <div class="position-relative mb-3">
-                         <img src="${fotoUrl}" class="rounded-circle shadow-sm border border-2 border-light" style="width: 80px; height: 80px; object-fit: cover;">
-                         <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" title="Ativo"></span>
+                 <div class="card-body text-center p-3 d-flex flex-column justify-content-center align-items-center">
+                     <div class="position-relative mb-2">
+                         <img src="${fotoUrl}" class="rounded-circle shadow-sm border border-2 border-light" style="width: 55px; height: 55px; object-fit: cover;">
+                         <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" style="width: 12px; height: 12px;" title="Ativo"></span>
                      </div>
-                     <h6 class="fw-bold text-dark mb-1 w-100 text-truncate px-2" title="${d.nome}">${d.nome}</h6>
-                     <span class="badge bg-secondary mb-3 px-3 py-1" style="font-size: 0.65rem; letter-spacing: 1px;">DIARISTA</span>
+                     <h6 class="fw-bold text-dark mb-1 w-100 text-truncate px-2" style="font-size: 0.9rem;" title="${d.nome}">${d.nome}</h6>
+                     <span class="badge bg-secondary mb-2 px-2 py-1" style="font-size: 0.60rem; letter-spacing: 0.5px;">DIARISTA</span>
                      
-                     <div class="w-100 border-top pt-3 text-muted" style="font-size: 0.75rem;">
+                     <div class="w-100 border-top pt-2 text-muted" style="font-size: 0.70rem;">
                          <div class="mb-1 text-truncate"><i class="fa-solid fa-id-card opacity-75 me-1"></i> CPF: ${d.cpf || 'N/A'}</div>
                          <div class="text-truncate">${pixStatus}</div>
                      </div>
@@ -80,15 +80,15 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
   }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-3x opacity-25 mb-3"></i><p>Nenhum diarista cadastrado no sistema.</p></div>`;
 
   // =========================================================================
-  // GERAÇÃO DO HISTÓRICO DE PASTAS
+  // GERAÇÃO DO HISTÓRICO DE PASTAS - TABELA COMPACTADA (py-1 e fotos de 28px)
   // =========================================================================
   const modaisDinamicosExcluir = [];
   const linhasPastas = pastas.length > 0 ? pastas.map(p => {
       const fotoUrl = p.foto_colab ? `/uploads/${p.foto_colab}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome_colaborador || 'C')}&background=0D5749&color=fff`;
       
       let badgeStatus = p.status === 'PAGO' 
-        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-check-double"></i> Paga (Fechada)</span>' 
-        : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning"><i class="fa-solid fa-folder-open"></i> Aberta</span>';
+        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.7rem;"><i class="fa-solid fa-check-double"></i> Paga (Fechada)</span>' 
+        : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning" style="font-size: 0.7rem;"><i class="fa-solid fa-folder-open"></i> Aberta</span>';
 
       modaisDinamicosExcluir.push(`
         <div class="modal fade" id="excluirPastaModal${p.id}" tabindex="-1">
@@ -109,25 +109,25 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       `);
 
       return `
-        <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="abrirPastaFechamento('${p.id}')" title="Clique para gerenciar as diárias desta pasta">
-            <td class="py-3 px-3">
+        <tr class="align-middle table-hover-row" style="cursor: pointer; height: 45px;" onclick="abrirPastaFechamento('${p.id}')" title="Clique para gerenciar as diárias desta pasta">
+            <td class="py-1 px-3">
                 <div class="d-flex align-items-center">
-                    <img src="${fotoUrl}" alt="Foto" class="rounded-circle me-3 border shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
-                    <div>
-                        <strong class="text-dark d-block" style="font-size:0.9rem;">${p.nome_colaborador}</strong>
-                        <span class="text-muted" style="font-size:0.75rem;">Pasta #${p.id}</span>
+                    <img src="${fotoUrl}" alt="Foto" class="rounded-circle me-2 border shadow-sm" style="width: 28px; height: 28px; object-fit: cover;">
+                    <div style="line-height: 1.1;">
+                        <strong class="text-dark d-block" style="font-size:0.85rem;">${p.nome_colaborador}</strong>
+                        <span class="text-muted" style="font-size:0.65rem;">Pasta #${p.id}</span>
                     </div>
                 </div>
             </td>
-            <td class="text-muted py-3 px-3 fw-medium"><i class="fa-regular fa-folder-open me-1"></i> ${fmtData(p.data_criacao)}</td>
-            <td class="py-3 px-3 text-center">
-                <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 shadow-sm" style="font-size:0.8rem;"><i class="fa-solid fa-calendar-day text-primary me-1"></i> ${p.qtd_diarias} Registros</span>
+            <td class="text-muted py-1 px-3 fw-medium" style="font-size: 0.8rem;"><i class="fa-regular fa-folder-open me-1"></i> ${fmtData(p.data_criacao)}</td>
+            <td class="py-1 px-3 text-center">
+                <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 shadow-sm" style="font-size:0.75rem;"><i class="fa-solid fa-calendar-day text-primary me-1"></i> ${p.qtd_diarias} Regs</span>
             </td>
-            <td class="text-success fw-bold py-3 px-3" style="font-size:0.95rem;">R$ ${fmtMoeda(p.valor_total)}</td>
-            <td class="py-3 px-3 text-center">${badgeStatus}</td>
-            <td class="text-end py-3 px-3 text-nowrap" onclick="event.stopPropagation();">
-                <button type="button" class="btn btn-sm btn-primary shadow-sm fw-bold ms-1" onclick="abrirPastaFechamento('${p.id}')" title="Gerenciar Pasta"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Abrir</button>
-                <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm ms-1" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPastaModal${p.id}')).show();" title="Excluir Pasta"><i class="fa-solid fa-trash"></i></button>
+            <td class="text-success fw-bold py-1 px-3" style="font-size:0.9rem;">R$ ${fmtMoeda(p.valor_total)}</td>
+            <td class="py-1 px-3 text-center">${badgeStatus}</td>
+            <td class="text-end py-1 px-3 text-nowrap" onclick="event.stopPropagation();">
+                <button type="button" class="btn btn-sm btn-primary shadow-sm fw-bold ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="abrirPastaFechamento('${p.id}')" title="Gerenciar Pasta"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Abrir</button>
+                <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPastaModal${p.id}')).show();" title="Excluir Pasta"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
       `;
@@ -730,12 +730,12 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           for(let i=0; i<quantidade; i++) {
               html += \`
               <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                  <div class="card erp-card shadow-sm h-100 bg-white p-4 border-light text-center d-flex flex-column align-items-center">
-                      <div class="skeleton-view skeleton-avatar-view mb-3" style="width: 80px; height: 80px;"></div>
+                  <div class="card erp-card shadow-sm h-100 bg-white p-3 border-light text-center d-flex flex-column align-items-center">
+                      <div class="skeleton-view skeleton-avatar-view mb-2" style="width: 55px; height: 55px;"></div>
                       <div class="skeleton-view skeleton-text-view mb-2" style="width: 60%; height: 14px;"></div>
-                      <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 12px; border-radius: 12px;"></div>
-                      <div class="w-100 border-top pt-3 mt-2">
-                          <div class="skeleton-view skeleton-text-view mx-auto" style="width: 70%; height: 10px;"></div>
+                      <div class="skeleton-view skeleton-text-view mb-2" style="width: 40%; height: 12px; border-radius: 12px;"></div>
+                      <div class="w-100 border-top pt-2 mt-2">
+                          <div class="skeleton-view skeleton-text-view mx-auto mb-1" style="width: 70%; height: 10px;"></div>
                           <div class="skeleton-view skeleton-text-view mx-auto" style="width: 50%; height: 10px; margin-bottom: 0;"></div>
                       </div>
                   </div>
@@ -749,17 +749,17 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           for(let i=0; i<quantidade; i++) {
               html += \`
               <tr class="align-middle" style="height: 45px;">
-                  <td class="py-2 px-3">
+                  <td class="py-1 px-3">
                       <div class="d-flex align-items-center">
-                          <div class="skeleton-view skeleton-avatar-view me-3 flex-shrink-0" style="width: 40px; height: 40px;"></div>
-                          <div class="skeleton-view skeleton-text-view" style="width: 130px; margin: 0; height: 12px;"></div>
+                          <div class="skeleton-view skeleton-avatar-view me-2 flex-shrink-0" style="width: 28px; height: 28px;"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 120px; margin: 0; height: 12px;"></div>
                       </div>
                   </td>
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0; height: 12px;"></div></td>
-                  <td class="py-2 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 65px; margin: 0 auto; height: 12px;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0; height: 12px;"></div></td>
-                  <td class="py-2 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0 auto; height: 12px;"></div></td>
-                  <td class="text-end py-2 px-3"><div class="skeleton-view" style="height: 28px; width: 70px; border-radius: 4px; display: inline-block;"></div></td>
+                  <td class="py-1 px-3"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-1 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 65px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="py-1 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-1 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="text-end py-1 px-3"><div class="skeleton-view" style="height: 22px; width: 60px; border-radius: 4px; display: inline-block;"></div></td>
               </tr>\`;
           }
           return html;
@@ -817,6 +817,30 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           if (container) container.style.display = '';
           if (grid) grid.style.display = '';
           if (emptyState) emptyState.style.display = '';
+      }
+
+      mostrarSkeletonGlobais();
+      window.addEventListener('load', () => {
+          ocultarSkeletonGlobais();
+          renderCardsPage(1); 
+      });
+
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; 
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+              new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 }).show();
+          }
       }
 
       let isSubmitting = false;
@@ -885,6 +909,8 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           let keepPastaIdOpen = null;
           if (form.id === 'formInserirItem') {
               keepPastaIdOpen = document.getElementById('formItemPastaId').value;
+          } else if (form.action.includes('/diaristas/pasta/excluir/') && form.closest('#modalGerenciarPasta')) {
+              keepPastaIdOpen = document.getElementById('visorPastaId').innerText;
           } else if (form.action.includes('/pagamentos/excluir/') && form.closest('#modalGerenciarPasta')) {
               keepPastaIdOpen = document.getElementById('visorPastaId').innerText;
           }

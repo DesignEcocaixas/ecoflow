@@ -42,7 +42,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           nome_colaborador: p.nome_colaborador,
           pix: p.pix || 'Não cadastrado',
           banco: p.banco || '',
-          cpf: p.cpf || 'Não cadastrado', // Adicionado para o envio do WhatsApp
+          cpf: p.cpf || 'Não cadastrado',
           data_abertura: dtStr,
           status: p.status,
           comprovante: p.comprovante,
@@ -190,11 +190,16 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       .table-hover-row { transition: background-color 0.2s; }
       .table-hover-row:hover > td { background-color: rgba(13, 87, 73, 0.06) !important; }
 
+      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
       .toast-timer { height: 6px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+      .modal.show .modal-dialog { transform: scale(1) translateY(0); }
+
+      /* SKELETON LOADING STYLE */
       .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading-view 1.5s infinite linear; border-radius: 4px; }
       .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
       .skeleton-avatar-view { height: 40px; width: 40px; border-radius: 50%; }
@@ -278,6 +283,58 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       </div>
 
       ${paginacaoHtml}
+    </div>
+
+    <button type="button" class="btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
+            style="position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background-color: #0D5749; border-color: #0D5749; z-index: 1050; transition: transform 0.2s;" 
+            data-bs-toggle="modal" data-bs-target="#modalInstrucoesDiaristas" title="Instruções de Uso"
+            onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fa-solid fa-question fs-4"></i>
+    </button>
+
+    <div class="modal fade" id="modalInstrucoesDiaristas" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg">
+          <div class="modal-header text-white border-0" style="background-color: #0D5749;">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-circle-info me-2"></i> Instruções de Uso - Diaristas</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-light text-sm">
+            <h6 class="fw-bold text-dark border-bottom pb-2"><i class="fa-solid fa-users-gear text-primary me-2"></i> Como funciona este módulo?</h6>
+            <p class="text-muted mb-4">Este módulo foi desenhado para gerir de forma eficiente os colaboradores classificados como <strong>Diaristas</strong>, permitindo o agrupamento das suas diárias de trabalho em <b>Pastas de Fechamento (Semanas)</b>.</p>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-folder-plus text-success me-1"></i> Criação de Pastas</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Para iniciar o registo de trabalho de um diarista, clique no card do colaborador. Isto irá criar uma nova <strong>Pasta de Fechamento Aberta</strong> no histórico, que agrupará todas as diárias daquela semana.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-list-check text-warning me-1"></i> Inserção de Diárias</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Ao clicar em "Abrir" numa pasta, você acede ao painel interno. Lá pode registar o tipo de diária (Padrão, Limpeza, Domingo), definir os dias e adicionar o valor acumulado.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-brands fa-whatsapp text-success me-1"></i> Relatório WhatsApp</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Dentro da pasta, antes de fechar, pode clicar no ícone do WhatsApp para enviar ao colaborador um resumo detalhado de todas as diárias lançadas e o valor total a receber.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-lock text-danger me-1"></i> Fechamento e Pagamento</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Após o pagamento, anexe o comprovativo e clique em "Pagar e Fechar Pasta". A pasta será trancada (nenhum novo registo poderá ser adicionado) e passará para o estado <strong>Pago</strong>.</p>
+                    </div>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button type="button" class="btn btn-sm btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal fade" id="modalConfigTaxas" tabindex="-1">
@@ -528,7 +585,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
           if(p.itens && p.itens.length > 0) {
               p.itens.forEach(item => {
-                  msg += \`> \${fmtDataJs(item.data_servico)} - \${item.tipo_viagem} (\${item.qtd_entregas} dia: R$ \${parseFloat(item.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}\\n\`;
+                  msg += \`> \${fmtDataJs(item.data_servico)} - \${item.tipo_viagem} (\${item.qtd_entregas} dia): R$ \${parseFloat(item.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}\\n\`;
               });
           }
 
@@ -666,54 +723,101 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       }
 
       // =======================================================================
-      // AJAX E SUBMISSÃO ESTRUTURAL
+      // AJAX E SUBMISSÃO ESTRUTURAL (SKELETON GENERATORS)
       // =======================================================================
-      function mostrarToast(tipo, titulo, mensagem) {
-          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
-          if (toastEl) {
-              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
-              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
-              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
-              if (timerEl) {
-                  timerEl.style.display = 'block';
-                  timerEl.style.animation = 'none';
-                  timerEl.offsetHeight; 
-                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
-              }
-              const oldInstance = bootstrap.Toast.getInstance(toastEl);
-              if (oldInstance) oldInstance.dispose();
-              new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 }).show();
+      function gerarSkeletonCards(quantidade = 4) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                  <div class="card erp-card shadow-sm h-100 bg-white p-4 border-light text-center d-flex flex-column align-items-center">
+                      <div class="skeleton-view skeleton-avatar-view mb-3" style="width: 80px; height: 80px;"></div>
+                      <div class="skeleton-view skeleton-text-view mb-2" style="width: 60%; height: 14px;"></div>
+                      <div class="skeleton-view skeleton-text-view mb-3" style="width: 40%; height: 12px; border-radius: 12px;"></div>
+                      <div class="w-100 border-top pt-3 mt-2">
+                          <div class="skeleton-view skeleton-text-view mx-auto" style="width: 70%; height: 10px;"></div>
+                          <div class="skeleton-view skeleton-text-view mx-auto" style="width: 50%; height: 10px; margin-bottom: 0;"></div>
+                      </div>
+                  </div>
+              </div>\`;
           }
+          return html;
       }
 
       function gerarSkeletonTabela(quantidade = 4) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
-              html += \`<tr class="align-middle"><td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 140px;"></div></td><td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 100px;"></div></td><td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px;"></div></td><td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70px; margin: 0 auto;"></div></td><td class="text-end py-3 px-3"><div class="skeleton-view" style="height: 28px; width: 60px; border-radius: 4px; display: inline-block;"></div></td></tr>\`;
+              html += \`
+              <tr class="align-middle" style="height: 45px;">
+                  <td class="py-2 px-3">
+                      <div class="d-flex align-items-center">
+                          <div class="skeleton-view skeleton-avatar-view me-3 flex-shrink-0" style="width: 40px; height: 40px;"></div>
+                          <div class="skeleton-view skeleton-text-view" style="width: 130px; margin: 0; height: 12px;"></div>
+                      </div>
+                  </td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-2 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 65px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0; height: 12px;"></div></td>
+                  <td class="py-2 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 90px; margin: 0 auto; height: 12px;"></div></td>
+                  <td class="text-end py-2 px-3"><div class="skeleton-view" style="height: 28px; width: 70px; border-radius: 4px; display: inline-block;"></div></td>
+              </tr>\`;
           }
           return html;
       }
 
       function mostrarSkeletonGlobais() {
           const container = document.getElementById('tabelaContainer');
+          const grid = document.getElementById('diaristasGrid');
+          const emptyState = document.querySelector('.content > .text-center-empty');
+          
           if (document.getElementById('skeleton-temp-container')) return;
-          if (container) {
-              container.style.display = 'none';
-              container.insertAdjacentHTML('beforebegin', \`<div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container"><table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;"><thead class="table-light"><tr><th class="py-2 px-3 fw-bold text-muted border-0">Carregando...</th></tr></thead><tbody class="border-top-0">\${gerarSkeletonTabela(3)}</tbody></table></div>\`);
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="skeleton-container">
+              <div class="row g-3 mb-5">
+                  \${gerarSkeletonCards(4)}
+              </div>
+              <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+                  <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                     <thead class="table-light">
+                       <tr>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Colaborador / Pasta</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Data Abertura</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Registros Inseridos</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Valor Total</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Status da Pasta</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Ações</th>
+                       </tr>
+                     </thead>
+                     <tbody class="border-top-0">
+                        \${gerarSkeletonTabela(4)}
+                     </tbody>
+                  </table>
+              </div>
+          </div>\`;
+
+          if (container) container.style.display = 'none';
+          if (grid) grid.style.display = 'none';
+          if (emptyState) emptyState.style.display = 'none';
+
+          const insertTarget = grid || container || emptyState;
+          if (insertTarget) {
+              insertTarget.insertAdjacentHTML('beforebegin', skeletonHTML);
           }
       }
 
       function ocultarSkeletonGlobais() {
           const tempSkeleton = document.getElementById('skeleton-temp-container');
           if (tempSkeleton) tempSkeleton.remove();
-          const container = document.getElementById('tabelaContainer');
-          if (container) container.style.display = '';
-      }
 
-      window.addEventListener('load', () => {
-          ocultarSkeletonGlobais();
-          renderCardsPage(1); 
-      });
+          const container = document.getElementById('tabelaContainer');
+          const grid = document.getElementById('diaristasGrid');
+          const emptyState = document.querySelector('.content > .text-center-empty');
+
+          if (container) container.style.display = '';
+          if (grid) grid.style.display = '';
+          if (emptyState) emptyState.style.display = '';
+      }
 
       let isSubmitting = false;
 

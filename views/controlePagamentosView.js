@@ -155,7 +155,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
              <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
              <div class="d-flex gap-1 justify-content-end align-items-center">
                  ${btnWppDisabled}
-                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Efetivo</button>
              </div>
           `;
       } else {
@@ -170,6 +170,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       let htmlAjudante = '';
       if (c.ajudante && c.ajudante.trim() !== '') {
+          // WhatsApp Ajudante Individual
           const msgWppAju = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${aju.nome} (Ajudante)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorAjuCalc)}\n\n*Dados Bancários:*\n*PIX:* ${aju.pix}\n*Banco:* ${aju.banco}\n*CPF:* ${aju.cpf}`;
           const btnWppAju = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppAju)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-light border text-success shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.9rem;"></i></a>`;
 
@@ -304,7 +305,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
   const modaisDinamicosExcluir = [];
 
   // =========================================================================
-  // TABELA DE HISTÓRICO - COMPACTADA COM ALTURA MÍNIMA (py-1 e foto 28px)
+  // TABELA DE HISTÓRICO
   // =========================================================================
   const linhasPagamentos = pagamentos.length > 0 ? pagamentos.map(p => {
       const colab = colaboradores.find(c => c.id === p.colaborador_id) || {};
@@ -351,7 +352,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
         </div>
       `);
 
-      // Alterado os py-3 para py-1 e diminuido a imagem de 40px para 28px
       return `
         <tr class="align-middle table-hover-row" style="height: 45px;">
             <td class="py-1 px-2">
@@ -511,10 +511,10 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();" title="Mensagem do Período (WhatsApp)">
-                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">Enviar relatório</span>
+                   <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">WhatsApp</span>
                 </button>
                 <a href="/pagamentos/exportar-excel${excelQueryString}" target="_blank" onclick="setTimeout(function(){ if(typeof ocultarSkeletonGlobais === 'function') ocultarSkeletonGlobais(); document.body.classList.remove('modal-open'); }, 1000);" class="btn btn-sm btn-outline-success fw-bold shadow-sm bg-white px-3" title="Exportar para Excel">
-                    <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Relatório Excel</span>
+                   <i class="fa-solid fa-file-excel fs-6"></i> <span class="d-none d-sm-inline ms-1">Excel</span>
                 </a>
                 <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm bg-white px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias">
                    <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>
@@ -562,6 +562,61 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       </div>
 
       ${paginacaoHtml}
+    </div>
+
+    <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
+            style="position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; z-index: 1050; transition: transform 0.2s;" 
+            data-bs-toggle="modal" data-bs-target="#modalInstrucoesPagamentos" title="Instruções de Uso"
+            onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fa-solid fa-question fs-4"></i>
+    </button>
+
+    <div class="modal fade" id="modalInstrucoesPagamentos" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg">
+          <div class="modal-header bg-primary text-white border-0">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-circle-info me-2"></i> Instruções de Uso - Pagamentos</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-light text-sm">
+            <h6 class="fw-bold text-dark border-bottom pb-2"><i class="fa-solid fa-money-check-dollar text-primary me-2"></i> Como funciona este módulo?</h6>
+            <p class="text-muted mb-4">Este módulo permite o controle, lançamento e acompanhamento dos pagamentos de diárias e rotas, focando especialmente nos <strong>Colaboradores Avulsos</strong> (Ajudantes, Diaristas e Motoristas Avulsos).</p>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-building-user text-warning me-1"></i> Mensalistas vs Avulsos</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Motoristas normais (mensalistas) aparecem nos cards com o valor riscado e não geram pagamentos avulsos via WhatsApp. Apenas perfis estritamente definidos como <strong>"Motorista Avulso"</strong> ou <strong>"Ajudante"</strong> recebem o tratamento de diária aqui.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-stairs text-success me-1"></i> Cálculo por Entregas (Degraus)</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">O sistema calcula o valor automaticamente baseando-se no número de entregas da rota (1-6, 7-9, 10-15). Você pode ajustar estes valores a qualquer momento no botão <strong>Valores</strong> (engrenagem).</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-route text-danger me-1"></i> Viagens Longas e Almoço</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">Ao clicar em "Pagar" num card, você pode classificar a rota como "Viagem Longa" (selecionando o destino para aplicar a taxa fixa) e adicionar o valor do "Almoço".</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="bg-white p-3 rounded border shadow-sm h-100">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fa-solid fa-file-export text-info me-1"></i> Relatórios</h6>
+                        <p class="text-muted mb-0" style="font-size:0.75rem;">
+                            <strong>WhatsApp:</strong> Gera uma mensagem de texto pronta com o agrupamento de todas as rotas e pix dos avulsos.<br>
+                            <strong>Excel:</strong> Exporta uma planilha detalhada respeitando exatamente os filtros de data e colaborador aplicados na tela.
+                        </p>
+                    </div>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button type="button" class="btn btn-sm btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Entendi</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal fade" id="modalMensagemPeriodo" tabindex="-1">

@@ -3,6 +3,7 @@ const menuLateral = require("./menuLateral");
 
 function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva = null) {
   const qtdNotificacoes = notificacoes.length;
+  const isMotorista = usuario && usuario.tipo_usuario === "motorista";
 
   const fmtData = (data) => {
     if (!data) return "-";
@@ -150,7 +151,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     `
   ];
 
-  if (usuario.tipo_usuario !== "motorista") {
+  if (!isMotorista) {
     carouselItemsHTML.push(`
     <div class="carousel-item h-100">
       <h6 class="dashboard-title"><i class="fa-solid fa-tags"></i> Atualizações de Preço</h6>
@@ -609,7 +610,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       </div>
 
       <div class="row g-3">
-        <div class="col-12 col-lg-5">
+        <div class="${isMotorista ? 'col-12' : 'col-12 col-lg-5'}">
           <div class="card dashboard-section-card h-100 bg-white">
             <div class="card-body p-3 d-flex flex-column pb-4">
               <div id="dashboardCarousel" class="carousel carousel-dark slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
@@ -624,6 +625,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           </div>
         </div>
 
+        ${!isMotorista ? `
         <div class="col-12 col-lg-7">
           <div class="card dashboard-section-card h-100 bg-white">
             <div class="card-body p-3 d-flex flex-column">
@@ -649,6 +651,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             </div>
           </div>
         </div>
+        ` : ''}
       </div>
 
     </div>
@@ -762,16 +765,21 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const btnDiario = document.getElementById('btn-diario');
           const btnMensal = document.getElementById('btn-mensal');
           
-          if (modo === 'diario') {
-              btnDiario.className = 'btn btn-sm btn-primary fw-bold';
-              btnMensal.className = 'btn btn-sm btn-light border text-muted';
-          } else {
-              btnMensal.className = 'btn btn-sm btn-primary fw-bold';
-              btnDiario.className = 'btn btn-sm btn-light border text-muted';
+          if (btnDiario && btnMensal) {
+              if (modo === 'diario') {
+                  btnDiario.className = 'btn btn-sm btn-primary fw-bold';
+                  btnMensal.className = 'btn btn-sm btn-light border text-muted';
+              } else {
+                  btnMensal.className = 'btn btn-sm btn-primary fw-bold';
+                  btnDiario.className = 'btn btn-sm btn-light border text-muted';
+              }
           }
           
           // Atualiza a dica no rodapé do gráfico
-          document.getElementById('dica-grafico').innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+          const dicaObj = document.getElementById('dica-grafico');
+          if (dicaObj) {
+              dicaObj.innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+          }
 
           try {
               // Requisição AJAX para o novo endpoint
@@ -798,9 +806,12 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       }
 
       document.addEventListener('DOMContentLoaded', function() {
+        const canvasObj = document.getElementById('graficoMensalCanvas');
+        if (!canvasObj) return; // Segurança para perfil Motorista que não exibe o gráfico
+
         Chart.register(ChartDataLabels);
 
-        const ctx = document.getElementById('graficoMensalCanvas').getContext('2d');
+        const ctx = canvasObj.getContext('2d');
         
         chartInstance = new Chart(ctx, {
           type: 'bar',
@@ -925,9 +936,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const mainContainer = document.querySelector('.content > .row.g-3');
           if (document.getElementById('skeleton-temp-container')) return;
 
+          const isMotoristaStr = ${isMotorista};
+
           const skeletonHTML = \`
           <div id="skeleton-temp-container" class="row g-3 skeleton-container">
-              <div class="col-12 col-lg-5">
+              <div class="\${isMotoristaStr ? 'col-12' : 'col-12 col-lg-5'}">
                   <div class="card dashboard-section-card h-100 bg-white">
                       <div class="card-body p-3">
                           <div class="skeleton-view skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
@@ -935,6 +948,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                       </div>
                   </div>
               </div>
+              \${!isMotoristaStr ? \`
               <div class="col-12 col-lg-7">
                   <div class="card dashboard-section-card h-100 bg-white">
                       <div class="card-body p-3 d-flex flex-column">
@@ -946,6 +960,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                       </div>
                   </div>
               </div>
+              \` : ''}
           </div>\`;
 
           if (mainContainer && !mainContainer.classList.contains('skeleton-container')) {
@@ -1003,7 +1018,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (urlParams.has('erro')) {
               const tipoErro = urlParams.get('erro');
               if (tipoErro === 'acesso_negado') {
-                  mostrarToast('erro', 'Acesso Restrito!', 'O seu perfil de utilizador não tem permissão para aceder a esta funcionalidade.');
+                  // Reutiliza a lógica de modal/toast existente do sistema
+                  alert('Acesso Restrito! O seu perfil não tem permissão para aceder a esta funcionalidade.');
               }
               if (window.history.replaceState) {
                   const url = new URL(window.location.href);

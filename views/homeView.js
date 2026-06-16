@@ -646,7 +646,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <canvas id="graficoMensalCanvas"></canvas>
               </div>
               <small id="dica-grafico" class="text-muted text-center mt-2" style="font-size: 0.75rem;">
-                Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
+                Clique na barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
               </small>
             </div>
           </div>

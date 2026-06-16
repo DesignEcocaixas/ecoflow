@@ -160,7 +160,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
              <div class="text-muted fw-bold text-decoration-line-through" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorMotCalc)}</div>
              <div class="d-flex gap-1 justify-content-end align-items-center">
                  ${btnWppDisabled}
-                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Mensalista</button>
+                 <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm" style="font-size: 0.65rem; padding: 2px 8px;" disabled>Efetivo</button>
              </div>
           `;
       } else {

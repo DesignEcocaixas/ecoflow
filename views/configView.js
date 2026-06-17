@@ -202,14 +202,14 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-5">
               <form method="POST" action="/notificacoes/global/nova" enctype="multipart/form-data" class="card erp-card shadow-sm border-light h-100" id="formNovaNotificacao" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação enviada a todos os usuários!')">
                   <div class="card-header bg-primary text-white border-0 p-3">
-                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Criar Novo Aviso Geral</h6>
+                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Configurar aviso</h6>
                   </div>
                   <div class="card-body p-4 bg-light">
                       <p class="text-muted" style="font-size: 0.8rem;">Esta mensagem aparecerá como um Modal (Pop-up) na tela de todos os utilizadores ativos do sistema ao carregarem o painel principal.</p>
                       
                       <div class="mb-3">
                           <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título do Aviso</label>
-                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Manutenção do Sistema, Reunião de Equipa..." required maxlength="100">
+                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Atualização do Sistema" required maxlength="100">
                       </div>
                       
                       <div class="mb-3">
@@ -218,7 +218,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       </div>
 
                       <div class="mb-4">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-image text-primary me-1"></i> Imagem de Destaque (Opcional)</label>
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-image text-primary me-1"></i> Imagem (Opcional)</label>
                           <div class="image-upload-wrapper shadow-sm" onclick="document.getElementById('imgNotificacaoInput').click()">
                               <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2" id="iconUploadNotificacao"></i>
                               <p class="text-muted mb-0" id="textUploadNotificacao" style="font-size: 0.75rem;">Clique para anexar um banner ou imagem descritiva.</p>
@@ -238,7 +238,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-7">
               <div class="card erp-card shadow-sm border-light h-100">
                   <div class="card-header bg-white border-bottom p-3">
-                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos Globais Ativos & Histórico</h6>
+                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos Ativos e Histórico</h6>
                   </div>
                   <div class="card-body p-0">
                       <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">

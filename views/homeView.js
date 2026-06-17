@@ -778,7 +778,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           // Atualiza a dica no rodapé do gráfico
           const dicaObj = document.getElementById('dica-grafico');
           if (dicaObj) {
-              dicaObj.innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+              dicaObj.innerHTML = \`Clique em uma barra para ver o ranking do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
           }
 
           try {

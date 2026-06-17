@@ -215,7 +215,10 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     return `
     <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();">
-      <td class="text-muted fw-medium py-1 px-3"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
+      <td class="text-muted fw-medium py-1 px-3">
+        <span class="badge bg-light border text-secondary me-2" title="ID do Caderno">#${c.id}</span>
+        <i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}
+      </td>
       <td class="text-dark fw-bold py-1 px-3"><i class="fa-solid fa-id-card text-muted me-1"></i> ${c.motorista}</td>
       <td class="text-dark py-1 px-3">${c.veiculo_modelo || '<span class="text-muted small">Não informado</span>'}</td>
       <td class="text-center py-1 px-3">
@@ -310,7 +313,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal border-0 shadow">
           <div class="modal-header bg-light">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-route text-primary me-2"></i> Detalhes da Rota</h6>
+            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-route text-primary me-2"></i> Detalhes da Rota <span class="badge bg-secondary ms-1" style="font-size:0.75rem;">#${c.id}</span></h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-light">
@@ -653,7 +656,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
                <thead class="table-light">
                  <tr>
-                   <th class="py-2 px-3 fw-bold text-muted border-0">Data de Saída</th>
+                   <th class="py-2 px-3 fw-bold text-muted border-0">ID / Data de Saída</th>
                    <th class="py-2 px-3 fw-bold text-muted border-0">Motorista</th>
                    <th class="py-2 px-3 fw-bold text-muted border-0">Veículo</th>
                    <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Entregas</th>

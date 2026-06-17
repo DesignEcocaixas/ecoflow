@@ -14,6 +14,19 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       }
   };
 
+  // Formatador especial para os inputs do tipo datetime-local
+  const fmtInputDateTime = (d) => {
+      try {
+          if (!d) return "";
+          const dt = new Date(d);
+          // Ajusta o fuso horário local para exibir corretamente no input
+          dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+          return dt.toISOString().slice(0, 16);
+      } catch {
+          return "";
+      }
+  };
+
   const modaisDinamicos = [];
 
   // Histórico de Notificações Globais Lançadas
@@ -39,15 +52,26 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem</label>
+                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem Detalhada</label>
                             <textarea name="mensagem_notificacao" class="form-control form-control-sm shadow-sm" rows="4" required>${n.mensagem}</textarea>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Exibir a partir de:</label>
+                                <input type="datetime-local" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${fmtInputDateTime(n.data_inicio)}" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Ocultar após:</label>
+                                <input type="datetime-local" name="data_fim" class="form-control form-control-sm shadow-sm" value="${fmtInputDateTime(n.data_fim)}" required>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Status da Notificação</label>
                             <select name="status_notificacao" class="form-select form-select-sm shadow-sm">
-                                <option value="ATIVA" ${n.status === 'ATIVA' ? 'selected' : ''}>ATIVA (Visível para todos)</option>
-                                <option value="INATIVA" ${n.status === 'INATIVA' ? 'selected' : ''}>INATIVA (Oculta)</option>
+                                <option value="ATIVA" ${n.status === 'ATIVA' ? 'selected' : ''}>ATIVA (Visível no período)</option>
+                                <option value="INATIVA" ${n.status === 'INATIVA' ? 'selected' : ''}>INATIVA (Oculta forçadamente)</option>
                             </select>
                         </div>
 
@@ -94,7 +118,10 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   ${imgHtml}
                   <div>
                       <strong class="text-dark d-block text-truncate" style="max-width: 200px; font-size: 0.85rem;" title="${n.titulo}">${n.titulo}</strong>
-                      <span class="text-muted" style="font-size: 0.75rem;">${fmtDataHora(n.criado_em)}</span>
+                      <span class="text-muted d-block mt-1" style="font-size: 0.7rem;" title="Período de Exibição">
+                          <i class="fa-regular fa-calendar-check text-success me-1"></i>${n.data_inicio ? fmtDataHora(n.data_inicio) : '-'} <br>
+                          <i class="fa-regular fa-calendar-xmark text-danger me-1"></i>${n.data_fim ? fmtDataHora(n.data_fim) : '-'}
+                      </span>
                   </div>
               </div>
           </td>
@@ -202,23 +229,34 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-5">
               <form method="POST" action="/notificacoes/global/nova" enctype="multipart/form-data" class="card erp-card shadow-sm border-light h-100" id="formNovaNotificacao" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação enviada a todos os usuários!')">
                   <div class="card-header bg-primary text-white border-0 p-3">
-                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Configurar aviso</h6>
+                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Criar Novo Aviso Geral</h6>
                   </div>
                   <div class="card-body p-4 bg-light">
-                      <p class="text-muted" style="font-size: 0.8rem;">Esta mensagem aparecerá como um Modal (Pop-up) na tela de todos os utilizadores ativos do sistema ao carregarem o painel principal.</p>
+                      <p class="text-muted" style="font-size: 0.8rem;">Defina o período em que esta mensagem aparecerá como um Pop-up na tela inicial de todos os colaboradores.</p>
                       
                       <div class="mb-3">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título</label>
-                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Atualização do Sistema" required maxlength="100">
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título do Aviso</label>
+                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Manutenção do Sistema, Reunião de Equipa..." required maxlength="100">
                       </div>
                       
                       <div class="mb-3">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem</label>
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem Detalhada</label>
                           <textarea name="mensagem_notificacao" class="form-control form-control-sm shadow-sm" rows="4" placeholder="Escreva aqui as instruções ou o aviso para os colaboradores..." required></textarea>
                       </div>
 
+                      <div class="row g-2 mb-3">
+                          <div class="col-6">
+                              <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Exibir a partir de:</label>
+                              <input type="datetime-local" name="data_inicio" class="form-control form-control-sm shadow-sm" required>
+                          </div>
+                          <div class="col-6">
+                              <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Ocultar após:</label>
+                              <input type="datetime-local" name="data_fim" class="form-control form-control-sm shadow-sm" required>
+                          </div>
+                      </div>
+
                       <div class="mb-4">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-image text-primary me-1"></i> Imagem (Opcional)</label>
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-image text-primary me-1"></i> Imagem de Destaque (Opcional)</label>
                           <div class="image-upload-wrapper shadow-sm" onclick="document.getElementById('imgNotificacaoInput').click()">
                               <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2" id="iconUploadNotificacao"></i>
                               <p class="text-muted mb-0" id="textUploadNotificacao" style="font-size: 0.75rem;">Clique para anexar um banner ou imagem descritiva.</p>
@@ -230,7 +268,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   </div>
                   <div class="card-footer bg-white border-top p-3 text-end">
                       <button type="button" class="btn btn-sm btn-outline-secondary me-2 px-3" onclick="resetFormNotificacao()">Limpar</button>
-                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Publicar</button>
+                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Disparar para Todos</button>
                   </div>
               </form>
           </div>
@@ -238,16 +276,16 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-7">
               <div class="card erp-card shadow-sm border-light h-100">
                   <div class="card-header bg-white border-bottom p-3">
-                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos ativos e histórico</h6>
+                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos Globais Ativos & Histórico</h6>
                   </div>
                   <div class="card-body p-0">
                       <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
                           <table class="table table-hover align-middle mb-0">
                               <thead class="table-light sticky-top">
                                   <tr>
-                                      <th class="border-0 px-3 fw-bold text-muted" style="font-size: 0.75rem;">Aviso / Data</th>
+                                      <th class="border-0 px-3 fw-bold text-muted" style="font-size: 0.75rem;">Aviso / Intervalo de Exibição</th>
                                       <th class="border-0 px-3 fw-bold text-muted" style="font-size: 0.75rem;">Conteúdo</th>
-                                      <th class="border-0 px-3 text-center fw-bold text-muted" style="font-size: 0.75rem;">Estado</th>
+                                      <th class="border-0 px-3 text-center fw-bold text-muted" style="font-size: 0.75rem;">Estado Manual</th>
                                       <th class="border-0 px-3 text-end fw-bold text-muted" style="font-size: 0.75rem;">Ações</th>
                                   </tr>
                               </thead>

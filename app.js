@@ -5413,14 +5413,14 @@ app.post("/notificacoes/global/nova", upload.single('imagem_notificacao'), (req,
         return res.status(401).send("Acesso negado");
     }
 
-    const { titulo_notificacao, mensagem_notificacao } = req.body;
+    const { titulo_notificacao, mensagem_notificacao, data_inicio, data_fim } = req.body;
     const imagem = req.file ? req.file.filename : null;
 
     db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE status = 'ATIVA'", (errDesativa) => {
         if (errDesativa) console.error("Erro ao desativar notificações antigas:", errDesativa);
 
-        const query = "INSERT INTO notificacoes_globais (titulo, mensagem, imagem, status) VALUES (?, ?, ?, 'ATIVA')";
-        db.query(query, [titulo_notificacao, mensagem_notificacao, imagem], (err) => {
+        const query = "INSERT INTO notificacoes_globais (titulo, mensagem, imagem, status, data_inicio, data_fim) VALUES (?, ?, ?, 'ATIVA', ?, ?)";
+        db.query(query, [titulo_notificacao, mensagem_notificacao, imagem, data_inicio || null, data_fim || null], (err) => {
             if (err) {
                 console.error("Erro ao inserir notificação global:", err);
                 return res.status(500).send("Erro interno");
@@ -5458,40 +5458,42 @@ app.post("/notificacoes/global/editar/:id", upload.single('imagem_notificacao'),
     }
 
     const notifId = req.params.id;
-    const { titulo_notificacao, mensagem_notificacao, status_notificacao } = req.body;
+    const { titulo_notificacao, mensagem_notificacao, status_notificacao, data_inicio, data_fim } = req.body;
     
     // Lógica para se alterar a imagem ou manter a antiga
     if (req.file) {
         const imagem = req.file.filename;
-        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, imagem = ? WHERE id = ?";
+        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, imagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?";
+        const params = [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, data_inicio || null, data_fim || null, notifId];
         
         // Se a que estamos a editar for passar para 'ATIVA', inativamos as outras primeiro
         if (status_notificacao === 'ATIVA') {
             db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
-                db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, notifId], (err) => {
+                db.query(query, params, (err) => {
                     if (err) return res.status(500).send("Erro interno");
                     res.redirect("/configuracoes?editado=1");
                 });
             });
         } else {
-            db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, notifId], (err) => {
+            db.query(query, params, (err) => {
                 if (err) return res.status(500).send("Erro interno");
                 res.redirect("/configuracoes?editado=1");
             });
         }
     } else {
         // Atualiza sem alterar a imagem
-        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ? WHERE id = ?";
+        const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, data_inicio = ?, data_fim = ? WHERE id = ?";
+        const params = [titulo_notificacao, mensagem_notificacao, status_notificacao, data_inicio || null, data_fim || null, notifId];
         
         if (status_notificacao === 'ATIVA') {
             db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
-                db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, notifId], (err) => {
+                db.query(query, params, (err) => {
                     if (err) return res.status(500).send("Erro interno");
                     res.redirect("/configuracoes?editado=1");
                 });
             });
         } else {
-            db.query(query, [titulo_notificacao, mensagem_notificacao, status_notificacao, notifId], (err) => {
+            db.query(query, params, (err) => {
                 if (err) return res.status(500).send("Erro interno");
                 res.redirect("/configuracoes?editado=1");
             });

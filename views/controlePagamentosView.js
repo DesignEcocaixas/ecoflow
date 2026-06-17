@@ -1136,7 +1136,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                           const valMot = getTierValue(c.qtd_entregas, 'mot');
                           totalGeral += valMot;
                           msgRota += \`   > MOT: \${mot.nome} - R$ \${valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                          msgRota += \`   > PIX: \${mot.pix} (\${mot.banco})\\n\`;
+                          msgRota += \`   > PIX: \${mot.pix} (\${mot.banco}) / CPF: \${mot.cpf}\\n\`;
                           adicionouAlguemNaRota = true;
                       }
                   }
@@ -1146,7 +1146,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                       const valAju = getTierValue(c.qtd_entregas, 'aju');
                       totalGeral += valAju;
                       msgRota += \`   > AJU: \${aju.nome} - R$ \${valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                      msgRota += \`   > PIX: \${aju.pix} (\${aju.banco})\\n\`;
+                      msgRota += \`   > PIX: \${aju.pix} (\${aju.banco}) / CPF: \${aju.cpf}\\n\`;
                       adicionouAlguemNaRota = true;
                   }
                   

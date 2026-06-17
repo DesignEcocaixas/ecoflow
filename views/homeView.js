@@ -730,12 +730,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           </div>
           <div class="modal-body p-4 bg-light text-center">
             ${notificacaoAtiva.imagem ? `<img src="/uploads/${notificacaoAtiva.imagem}" class="img-fluid rounded shadow-sm mb-3" style="max-height: 350px; width: 100%; object-fit: cover;">` : '<i class="fa-solid fa-circle-exclamation fa-3x text-primary mb-3 opacity-50"></i>'}
-            <h5 class="fw-bold text-dark mb-3 text-start">
-              ${notificacaoAtiva.titulo}
-            </h5>
-            <p class="text-muted mb-0" style="font-size: 1rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">
-              ${notificacaoAtiva.mensagem}
-            </p>
+            <h5 class="fw-bold text-dark mb-3">${notificacaoAtiva.titulo}</h5>
+            <p class="text-muted mb-0" style="font-size: 1rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">${notificacaoAtiva.mensagem}</p>
           </div>
           <div class="modal-footer bg-white border-0 justify-content-center p-3">
             <button type="button" class="btn btn-primary px-5 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>

@@ -42,7 +42,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
             <div class="modal-dialog modal-dialog-centered">
                 <form method="POST" action="/notificacoes/global/editar/${n.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação Atualizada!')">
                     <div class="modal-header bg-primary text-white border-0 p-3">
-                        <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Aviso Global #${n.id}</h6>
+                        <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Aviso #${n.id}</h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4 bg-light">
@@ -52,7 +52,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem Detalhada</label>
+                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem</label>
                             <textarea name="mensagem_notificacao" class="form-control form-control-sm shadow-sm" rows="4" required>${n.mensagem}</textarea>
                         </div>
 
@@ -143,7 +143,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           </td>
       </tr>
       `;
-  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.85rem;">Nenhum disparo de notificação global encontrado no histórico.</span></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.85rem;">Nenhum disparo de notificação encontrado no histórico.</span></td></tr>`;
 
   const menuHTML = menuLateral(user, "/configuracoes");
 
@@ -229,14 +229,14 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-5">
               <form method="POST" action="/notificacoes/global/nova" enctype="multipart/form-data" class="card erp-card shadow-sm border-light h-100" id="formNovaNotificacao" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação enviada a todos os usuários!')">
                   <div class="card-header bg-primary text-white border-0 p-3">
-                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Criar Novo Aviso Geral</h6>
+                      <h6 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> Configurar aviso</h6>
                   </div>
                   <div class="card-body p-4 bg-light">
                       <p class="text-muted" style="font-size: 0.8rem;">Defina o período em que esta mensagem aparecerá como um Pop-up na tela inicial de todos os colaboradores.</p>
                       
                       <div class="mb-3">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título do Aviso</label>
-                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Manutenção do Sistema, Reunião de Equipa..." required maxlength="100">
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título</label>
+                          <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Atualização do sistema" required maxlength="100">
                       </div>
                       
                       <div class="mb-3">
@@ -268,7 +268,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   </div>
                   <div class="card-footer bg-white border-top p-3 text-end">
                       <button type="button" class="btn btn-sm btn-outline-secondary me-2 px-3" onclick="resetFormNotificacao()">Limpar</button>
-                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Disparar para Todos</button>
+                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Publicar</button>
                   </div>
               </form>
           </div>
@@ -276,7 +276,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-7">
               <div class="card erp-card shadow-sm border-light h-100">
                   <div class="card-header bg-white border-bottom p-3">
-                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos Globais Ativos & Histórico</h6>
+                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos ativos e histórico</h6>
                   </div>
                   <div class="card-body p-0">
                       <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">

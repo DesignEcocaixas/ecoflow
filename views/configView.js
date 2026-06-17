@@ -259,7 +259,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                           <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-image text-primary me-1"></i> Imagem (Opcional)</label>
                           <div class="image-upload-wrapper shadow-sm" onclick="document.getElementById('imgNotificacaoInput').click()">
                               <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2" id="iconUploadNotificacao"></i>
-                              <p class="text-muted mb-0" id="textUploadNotificacao" style="font-size: 0.75rem;">Clique para anexar um banner ou imagem descritiva.</p>
+                              <p class="text-muted mb-0" id="textUploadNotificacao" style="font-size: 0.75rem;">Clique para anexar</p>
                               <img id="previewImgNotificacao" src="" style="display: none; width: 100%;" class="mt-2">
                           </div>
                           <input type="file" name="imagem_notificacao" id="imgNotificacaoInput" class="d-none" accept="image/*" onchange="previewNotificationImage(this)">

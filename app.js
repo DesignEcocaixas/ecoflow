@@ -257,19 +257,17 @@ function calcularDistanciaReta(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// 3. Comunica com a nova Google Routes API (Ponto mais distante como Destino Fixo)
+// =========================================================================
+// FUNÇÃO: COMUNICA COM A NOVA GOOGLE ROUTES API (CORREÇÃO DE PONTO ÚNICO)
+// =========================================================================
 async function otimizarRotaGoogleAPI(entregas) {
-    // Validação cega: Se houver apenas 1 entrega, não há o que otimizar
-    if (!entregas || entregas.length <= 1) return entregas;
+    if (!entregas || entregas.length <= 1) return entregas || [];
 
     try {
-        // Usa a coordenada da fábrica ou o centro de Camaçari por padrão
         const coordFabrica = extrairLatLon(ENDERECO_FABRICA) || { lat: -12.6974, lon: -38.3241 };
-
         let indiceMaisDistante = 0;
         let maiorDistancia = -1;
 
-        // 1. O Sistema descobre matematicamente qual é o cliente mais longe da fábrica
         for (let i = 0; i < entregas.length; i++) {
             if (!entregas[i]) continue;
             const coordEntrega = extrairLatLon(entregas[i].queryLocation);
@@ -282,20 +280,21 @@ async function otimizarRotaGoogleAPI(entregas) {
             }
         }
 
-        // Proteção extra de índice
         if (!entregas[indiceMaisDistante]) indiceMaisDistante = 0;
 
-        // 2. Extrai o mais distante e o define como PONTO FINAL obrigatório
         const entregaDestino = entregas[indiceMaisDistante];
         const entregasIntermediarias = entregas.filter((_, index) => index !== indiceMaisDistante && entregas[index]);
 
-        // Se após remover o destino não sobrar mais nada na rota, retorna
-        if (entregasIntermediarias.length === 0) return [entregaDestino];
+        if (entregasIntermediarias.length === 0) return entregas;
 
-        // 3. Monta a requisição: Origem -> Intermediários (Misturados) -> Destino Fixo (Mais Longe)
         const originAPI = formatarParaRoutesAPI(ENDERECO_FABRICA);
         const destinationAPI = formatarParaRoutesAPI(entregaDestino.queryLocation);
         const intermediatesAPI = entregasIntermediarias.map(e => formatarParaRoutesAPI(e.queryLocation));
+
+        console.log("\n[API GOOGLE] Enviando requisição para Google Routes...");
+        console.log("- Origem (Fábrica):", JSON.stringify(originAPI));
+        console.log("- Destino (Mais distante):", JSON.stringify(destinationAPI));
+        console.log("- Intermediários (Qtd):", intermediatesAPI.length);
 
         const requestBody = {
             origin: originAPI,
@@ -314,16 +313,20 @@ async function otimizarRotaGoogleAPI(entregas) {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
                     'X-Goog-FieldMask': 'routes.optimizedIntermediateWaypointIndex'
-                }
+                },
+                timeout: 5000
             }
         );
 
         if (res.data && res.data.routes && res.data.routes.length > 0) {
+            console.log("[API GOOGLE] Rota calculada e recebida com sucesso!");
+
+            // O Google só retorna este índice se houver mais de 1 intermediário para reordenar
             const ordemOtimizada = res.data.routes[0].optimizedIntermediateWaypointIndex;
             let entregasReordenadas = [];
 
-            // Verifica se a API devolveu a ordem dos intermediários de forma íntegra
             if (Array.isArray(ordemOtimizada) && ordemOtimizada.length === entregasIntermediarias.length) {
+                console.log("[API GOOGLE] Reordenando múltiplos pontos intermediários...");
                 for (let i = 0; i < ordemOtimizada.length; i++) {
                     const wpIndex = ordemOtimizada[i];
                     if (entregasIntermediarias[wpIndex]) {
@@ -331,22 +334,30 @@ async function otimizarRotaGoogleAPI(entregas) {
                     }
                 }
             } else {
-                // Caso o Google não tenha reordenado (ex: havia só 1 intermediário)
+                // CORREÇÃO AQUI: Se a API respondeu OK mas não enviou índices, significa que
+                // a ordem dos intermediários já está correta (ex: quando só há 1 ponto intermediário)
+                console.log("[API GOOGLE] Ponto intermediário único ou ordem mantida pela API.");
                 entregasReordenadas = [...entregasIntermediarias];
             }
 
-            // Por fim, anexa a entrega mais distante obrigatoriamente na ÚLTIMA posição
+            // Garante o ponto final mais distante na última posição da rota
             entregasReordenadas.push(entregaDestino);
 
-            return entregasReordenadas;
+            if (entregasReordenadas.length === entregas.length) {
+                return entregasReordenadas;
+            }
+        } else {
+            console.log("[API GOOGLE AVISO] Sem rotas retornadas estruturalmente.");
         }
 
+        console.warn("[FALLBACK] Usando ordem padrão recebida.");
         return entregas;
     } catch (error) {
-        console.error("Erro na Google Routes API:", error.response ? JSON.stringify(error.response.data) : error.message);
-        return entregas; // Retorna intacto para não causar crash
+        console.error("\n[API GOOGLE ERRO]:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        return entregas;
     }
 }
+
 // =======================================================
 // NOVA FUNÇÃO: DESCOBRIR CIDADE PELAS COORDENADAS
 // =======================================================
@@ -722,7 +733,7 @@ app.get("/home", (req, res) => {
 
                                 db.query(queryGrafico, parametrosSQL, (errGrafico, graficoRows) => {
                                     if (errGrafico) console.error("Erro gráfico:", errGrafico);
-                                    
+
                                     let labels = [];
                                     let dadosGrafico = [];
                                     const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -787,9 +798,9 @@ app.get("/home", (req, res) => {
                                                 }, notificacaoAtiva)); // E REPASSANDO notificacaoAtiva AQUI
                                             });
                                         });
-                                    }); 
-                                }); 
-                            }); 
+                                    });
+                                });
+                            });
                         });
                     });
                 });
@@ -853,7 +864,7 @@ app.get("/api/dashboard-chart", (req, res) => {
 
     db.query(queryGrafico, parametrosSQL, (errGrafico, graficoRows) => {
         if (errGrafico) return res.status(500).json({ error: "Erro ao consultar gráfico" });
-        
+
         let labels = [];
         let dadosGrafico = [];
         const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -913,7 +924,7 @@ app.get("/pagamentos/exportar-excel", async (req, res) => {
 
     try {
         const { data_inicio, data_fim, colaborador } = req.query;
-        
+
         // CORREÇÃO: Tabela alterada de 'colaboradores' para 'usuarios'
         let queryPagamentos = `
             SELECT p.*, u.nome, u.cpf, u.pix, u.banco 
@@ -2955,12 +2966,21 @@ app.post("/caderno-entregas/novo", async (req, res) => {
     }
 });
 
-// Rota de Edição do Caderno (Substitua no seu backend - app.js)
-app.post("/caderno-entregas/editar/:id", (req, res) => {
+// =========================================================================
+// ROTA: EDITAR CADERNO (COM RECALCULO E OTIMIZAÇÃO DE ROTA) + DEBUG
+// =========================================================================
+app.post("/caderno-entregas/editar/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
     const cadernoId = req.params.id;
     const { motorista, ajudante, veiculo_id } = req.body;
 
-    // Força a padronização para Array para evitar problemas de sincronia
+    console.log(`\n\n======================================================`);
+    console.log(`[DEBUG] INICIANDO EDIÇÃO DO CADERNO #${cadernoId}`);
+    console.log(`[DEBUG] BODY RECEBIDO DO FORMULÁRIO:`);
+    console.log(JSON.stringify(req.body, null, 2));
+    console.log(`======================================================\n`);
+
+    // Força a padronização para Array para evitar problemas de sincronia de 1 único item vs múltiplos itens
     const forceArray = (val) => Array.isArray(val) ? val : (val ? [val] : []);
 
     const ids = forceArray(req.body['id[]'] || req.body.id);
@@ -2969,75 +2989,116 @@ app.post("/caderno-entregas/editar/:id", (req, res) => {
     const itensPedido = forceArray(req.body['itens_pedido[]'] || req.body.itens_pedido);
     const quantidades = forceArray(req.body['quantidade[]'] || req.body.quantidade);
     const valoresAbertos = forceArray(req.body['valor_aberto[]'] || req.body.valor_aberto);
+    // Recupera as coordenadas preenchidas no front-end durante a edição
+    const coordsForm = forceArray(req.body['coordenadas_rota[]'] || req.body.coordenadas_rota);
 
-    // 1. Tabela Correta: caderno_entregas (Singular)
-    const sqlUpdateCaderno = "UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?";
+    console.log(`[DEBUG] Arrays processados:`);
+    console.log(`- Qtd Locais: ${locais.length}`);
+    console.log(`- Qtd IDs: ${ids.length}`);
+    console.log(`- Locais Extraídos:`, locais);
 
-    db.query(sqlUpdateCaderno, [motorista, ajudante, veiculo_id, cadernoId], (err) => {
-        if (err) {
-            console.error("Erro ao atualizar caderno:", err);
-            return res.status(500).send("Erro no servidor.");
+    try {
+        // 1. Atualiza caderno principal
+        await db.promise().query("UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?", [motorista, ajudante || null, veiculo_id || null, cadernoId]);
+        console.log(`[DEBUG] 1. Caderno principal atualizado com sucesso.`);
+
+        if (locais.length === 0) {
+            console.log(`[DEBUG] Nenhum local recebido no formulário. Apagando todos os itens da rota...`);
+            await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
+            return res.redirect("/caderno-entregas");
         }
 
-        const idsValidos = ids.filter(id => id !== undefined && id !== null && id.trim() !== '');
-
-        // 2. Tabela Correta: caderno_entregas_itens
-        let sqlDelete = "DELETE FROM caderno_entregas_itens WHERE caderno_id = ?";
-        let deleteParams = [cadernoId];
-
-        if (idsValidos.length > 0) {
-            sqlDelete += " AND id NOT IN (?)";
-            deleteParams.push(idsValidos);
-        }
-
-        db.query(sqlDelete, deleteParams, (err) => {
-            if (err) console.error("Erro ao deletar entregas removidas:", err);
-
-            if (locais.length === 0) {
-                return res.redirect("/caderno-entregas");
-            }
-
-            let queriesPendentes = locais.length;
-
-            locais.forEach((local_entrega, index) => {
-                const entregaId = ids[index];
-                const link_endereco = links[index] || '';
-                const itens = itensPedido[index] || '';
-                const qtd = quantidades[index] || 1;
-
-                // Tratamento seguro para valores vazios
-                let valor = valoresAbertos[index];
-                if (!valor || valor.trim() === '') valor = null;
-
-                if (entregaId && entregaId.trim() !== '') {
-                    // UPDATE: Removida a coluna 'coordenadas' que não existe nesta tabela
-                    const sqlUpdateEntrega = `
-                        UPDATE caderno_entregas_itens 
-                        SET local_entrega = ?, link_endereco = ?, itens_pedido = ?, quantidade = ?, valor_aberto = ?
-                        WHERE id = ? AND caderno_id = ?
-                    `;
-                    db.query(sqlUpdateEntrega, [local_entrega, link_endereco, itens, qtd, valor, entregaId, cadernoId], handleQueryEnd);
-                } else {
-                    // INSERT: Ajuste da tabela, remoção de coordenadas e 'Pendente' com letra maiúscula
-                    const sqlInsertEntrega = `
-                        INSERT INTO caderno_entregas_itens 
-                        (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, 'Pendente')
-                    `;
-                    db.query(sqlInsertEntrega, [cadernoId, local_entrega, link_endereco, itens, qtd, valor], handleQueryEnd);
-                }
-            });
-
-            function handleQueryEnd(err) {
-                if (err) console.error("Erro ao processar entrega individual:", err);
-
-                queriesPendentes--;
-                if (queriesPendentes === 0) {
-                    res.redirect("/caderno-entregas");
-                }
-            }
+        // 2. Busca status atuais para manter (Ex: Pendente, Em Rota, etc.)
+        const [itensAntigos] = await db.promise().query("SELECT id, status FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
+        const statusMap = {};
+        itensAntigos.forEach(item => {
+            statusMap[item.id] = item.status || 'Pendente';
         });
-    });
+        console.log(`[DEBUG] 2. Mapa de Status dos itens antigos carregado:`, statusMap);
+
+        // 3. Monta o array para otimização e resolve coordenadas pendentes
+        let entregasParaProcessar = [];
+
+        for (let i = 0; i < locais.length; i++) {
+            const nomeCli = locais[i].trim();
+            const linkCli = links[i] || null;
+            let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
+            const entregaId = ids[i];
+
+            // Mantém o status original ou define como Pendente se for um local recém-adicionado
+            let currentStatus = (entregaId && statusMap[entregaId]) ? statusMap[entregaId] : 'Pendente';
+
+            if (nomeCli !== '') {
+                console.log(`[DEBUG] 3. Processando Cliente [${i}]: ${nomeCli} | Status herdado: ${currentStatus}`);
+
+                // Inteligência: Se não tem coordenada mas tem link, tenta decodificar agora
+                if (!coordCli && linkCli) {
+                    const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
+                    if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
+                        coordCli = localizacaoResolvida.trim();
+                        console.log(`   -> [INFO] Coordenada extraída do Link para ${nomeCli}: ${coordCli}`);
+                    }
+                }
+
+                // Se conseguiu a coordenada, descobre a cidade
+                let cidadeCli = null;
+                if (coordCli) {
+                    cidadeCli = await obterCidadeDasCoordenadas(coordCli);
+                }
+
+                // Atualiza o histórico de clientes com os dados mais recentes
+                await db.promise().query(`
+                    INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE 
+                        link_endereco = COALESCE(?, link_endereco),
+                        coordenadas = COALESCE(?, coordenadas),
+                        cidade = COALESCE(?, cidade)
+                `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
+
+                // Estrutura exigida pelo 'otimizarRotaGoogleAPI'
+                entregasParaProcessar.push({
+                    nome: nomeCli,
+                    link: linkCli,
+                    itens: itensPedido[i] || null,
+                    qtd: quantidades[i] && quantidades[i].trim() !== '' ? parseInt(quantidades[i], 10) : null,
+                    valor: valoresAbertos[i] && valoresAbertos[i].trim() !== '' ? parseFloat(valoresAbertos[i]) : null,
+                    queryLocation: coordCli || await obterLocalizacao(nomeCli, linkCli),
+                    status: currentStatus
+                });
+            } else {
+                console.log(`   -> [AVISO] Nome do cliente na posição [${i}] estava em branco. Ignorado.`);
+            }
+        }
+
+        console.log(`[DEBUG] 4. Array 'entregasParaProcessar' finalizado com ${entregasParaProcessar.length} itens. Enviando para Google Routes API...`);
+
+        // 4. CHAMA O ALGORITMO GOOGLE ROUTES PARA RECALCULAR A ROTA
+        const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
+
+        console.log(`[DEBUG] 5. Google Routes devolveu um array com ${rotaFinal.length} itens reordenados.`);
+
+        // 5. Deleta antigos e insere os novos na ordem perfeitamente otimizada
+        await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
+        console.log(`[DEBUG] 6. Itens desatualizados do BD foram deletados.`);
+
+        let insertedCount = 0;
+        for (let item of rotaFinal) {
+            await db.promise().query(
+                "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [cadernoId, item.nome, item.link, item.itens, item.qtd, item.valor, item.status]
+            );
+            insertedCount++;
+        }
+
+        console.log(`[DEBUG] 7. Concluído! ${insertedCount} novos itens inseridos na ordem correta.`);
+        console.log(`======================================================\n`);
+
+        res.redirect("/caderno-entregas");
+
+    } catch (error) {
+        console.error("\n[ERRO FATAL AO EDITAR CADERNO E OTIMIZAR]:", error);
+        res.status(500).send("Erro interno ao tentar editar e re-otimizar o caderno.");
+    }
 });
 
 
@@ -5388,7 +5449,7 @@ app.get("/configuracoes", (req, res) => {
             console.error("Erro ao buscar configurações:", errConfig);
             return res.status(500).send("Erro interno");
         }
-        
+
         // Converte o array de chaves e valores num objeto direto para a View
         const taxas = {};
         resultConfig.forEach(row => {
@@ -5463,13 +5524,13 @@ app.post("/notificacoes/global/editar/:id", upload.single('imagem_notificacao'),
 
     const notifId = req.params.id;
     const { titulo_notificacao, mensagem_notificacao, status_notificacao, data_inicio, data_fim } = req.body;
-    
+
     // Lógica para se alterar a imagem ou manter a antiga
     if (req.file) {
         const imagem = req.file.filename;
         const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, imagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?";
         const params = [titulo_notificacao, mensagem_notificacao, status_notificacao, imagem, data_inicio || null, data_fim || null, notifId];
-        
+
         // Se a que estamos a editar for passar para 'ATIVA', inativamos as outras primeiro
         if (status_notificacao === 'ATIVA') {
             db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
@@ -5488,7 +5549,7 @@ app.post("/notificacoes/global/editar/:id", upload.single('imagem_notificacao'),
         // Atualiza sem alterar a imagem
         const query = "UPDATE notificacoes_globais SET titulo = ?, mensagem = ?, status = ?, data_inicio = ?, data_fim = ? WHERE id = ?";
         const params = [titulo_notificacao, mensagem_notificacao, status_notificacao, data_inicio || null, data_fim || null, notifId];
-        
+
         if (status_notificacao === 'ATIVA') {
             db.query("UPDATE notificacoes_globais SET status = 'INATIVA' WHERE id != ?", [notifId], () => {
                 db.query(query, params, (err) => {

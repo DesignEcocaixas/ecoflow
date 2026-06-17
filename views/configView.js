@@ -230,7 +230,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   </div>
                   <div class="card-footer bg-white border-top p-3 text-end">
                       <button type="button" class="btn btn-sm btn-outline-secondary me-2 px-3" onclick="resetFormNotificacao()">Limpar</button>
-                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Disparar para Todos</button>
+                      <button type="submit" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm"><i class="fa-solid fa-bullhorn me-1"></i> Publicar</button>
                   </div>
               </form>
           </div>

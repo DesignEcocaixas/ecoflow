@@ -32,6 +32,14 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Abrevia o nome mantendo Primeiro e Último nome (Ex: João Marcos Silva -> João Silva)
+  const abreviarNome = (nome) => {
+      if (!nome) return '';
+      const partes = nome.trim().split(' ');
+      if (partes.length <= 1) return nome;
+      return partes[0] + ' ' + partes[partes.length - 1];
+  };
+
   // Paginação e Query Strings para repassar aos botões (incluindo o Excel)
   const qsParams = [];
   if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
@@ -186,12 +194,15 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
           htmlAjudante = `
              <div class="d-flex align-items-center mt-2 pt-2 border-top">
-                 <img src="${aju.fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
-                 <div class="flex-grow-1" style="line-height: 1.1;">
-                     <strong class="d-block text-dark text-truncate" style="font-size:0.8rem; max-width: 140px;" title="${aju.nome}">${aju.nome} <span class="badge bg-secondary ms-1" style="font-size:0.55rem;">AJUDANTE</span></strong>
-                     <span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${aju.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>
+                 <img src="${aju.fotoUrl}" class="rounded-circle me-2 border shadow-sm flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
+                 <div class="flex-grow-1" style="line-height: 1.1; min-width: 0;">
+                     <div class="d-flex align-items-center mb-1">
+                         <strong class="text-dark text-truncate" style="font-size:0.8rem;" title="${aju.nome}">${abreviarNome(aju.nome)}</strong>
+                         <span class="badge bg-secondary ms-1 flex-shrink-0" style="font-size:0.55rem;">AJUDANTE</span>
+                     </div>
+                     <span class="text-muted d-block text-truncate" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${aju.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>
                  </div>
-                 <div class="text-end">
+                 <div class="text-end flex-shrink-0 ms-1">
                      <div class="text-success fw-bold ajudante-calc" data-qtd="${c.qtd_entregas}" data-pago="${isAjuPago ? 'true' : 'false'}" data-valor="${valorAjuCalc}" style="font-size:0.8rem; margin-bottom: 2px;">R$ ${fmtMoeda(valorAjuCalc)}</div>
                      <div class="d-flex gap-1 justify-content-end">
                          ${btnWppAju}
@@ -279,7 +290,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       `);
 
       return `
-         <div class="col-12 col-md-6 col-xl-4 caderno-card-item">
+         <div class="col-12 col-md-6 col-lg-4 col-xl-3 caderno-card-item">
              <div class="card erp-card shadow-sm h-100 ${cardBg}" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheRotaModal${c.id}')).show();" title="Clique para ver os locais de entrega e detalhes do caderno">
                  <div class="card-header p-2 d-flex justify-content-between align-items-center ${headerBg}">
                      <div>
@@ -290,12 +301,15 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                  </div>
                  <div class="card-body p-2">
                      <div class="d-flex align-items-center">
-                         <img src="${mot.fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
-                         <div class="flex-grow-1" style="line-height: 1.1;">
-                             <strong class="d-block text-dark text-truncate" style="font-size:0.8rem; max-width: 140px;" title="${mot.nome}">${mot.nome} <span class="badge bg-primary ms-1" style="font-size:0.55rem;">MOTORISTA</span></strong>
-                             ${isMotNormal ? '' : `<span class="text-muted" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>`}
+                         <img src="${mot.fotoUrl}" class="rounded-circle me-2 border shadow-sm flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
+                         <div class="flex-grow-1" style="line-height: 1.1; min-width: 0;">
+                             <div class="d-flex align-items-center mb-1">
+                                 <strong class="text-dark text-truncate" style="font-size:0.8rem;" title="${mot.nome}">${abreviarNome(mot.nome)}</strong>
+                                 <span class="badge bg-primary ms-1 flex-shrink-0" style="font-size:0.55rem;">MOTORISTA</span>
+                             </div>
+                             ${isMotNormal ? '' : `<span class="text-muted d-block text-truncate" style="font-size:0.65rem;"><i class="fa-brands fa-pix text-success"></i> ${mot.pix !== 'Não cadastrado' ? 'PIX' : 'Cadastrar PIX'}</span>`}
                          </div>
-                         <div class="text-end">
+                         <div class="text-end flex-shrink-0 ms-1">
                              ${motPagamentoBlock}
                          </div>
                      </div>
@@ -870,7 +884,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       // LÓGICA DE PAGINAÇÃO DOS CARDS DE CADERNOS
       // =======================================================================
       let currentPageCadernos = 1;
-      const itemsPerPageCadernos = 6;
+      const itemsPerPageCadernos = 8; // Adaptado para 4 colunas em 2 linhas
       
       function renderCadernosPage(page) {
           const items = document.querySelectorAll('.caderno-card-item');
@@ -1245,11 +1259,11 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       // =======================================================================
       // AJAX E SUBMISSÃO ESTRUTURAL (SKELETON GENERATORS)
       // =======================================================================
-      function gerarSkeletonCards(quantidade = 3) {
+      function gerarSkeletonCards(quantidade = 4) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
               html += \`
-              <div class="col-12 col-md-6 col-xl-4">
+              <div class="col-12 col-md-6 col-lg-4 col-xl-3">
                   <div class="card erp-card shadow-sm h-100 bg-white border-light p-2">
                       <div class="card-header p-2 d-flex justify-content-between align-items-center bg-transparent border-bottom">
                           <div class="skeleton-view skeleton-text-view" style="width: 50%; height: 14px; margin-bottom: 4px;"></div>
@@ -1305,7 +1319,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           const skeletonHTML = \`
           <div id="skeleton-temp-container" class="skeleton-container">
               <div class="row g-3 mb-4">
-                  \${gerarSkeletonCards(3)}
+                  \${gerarSkeletonCards(4)}
               </div>
               <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
                   <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">

@@ -1162,7 +1162,6 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           });
 
           msg += \`------------------------\\n*TOTAL DO PERÍODO: R$ \${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}*\\n\`;
-          msg += \`(Valores baseados nas diárias por escala. Viagens longas e almoço são registados no lançamento individual.)\`;
 
           const url = \`https://wa.me/\${NUMERO_WPP}?text=\${encodeURIComponent(msg)}\`;
           window.open(url, '_blank');

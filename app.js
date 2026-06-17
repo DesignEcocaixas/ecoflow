@@ -3766,11 +3766,14 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
               AND (coordenadas IS NULL OR coordenadas = '' OR cidade IS NULL OR cidade = '')
         `);
 
+        // Cabeçalhos essenciais para forçar o Streaming e desativar o Buffering em Produção
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Accel-Buffering', 'no'); // <--- A MÁGICA PARA O NGINX EM PRODUÇÃO AQUI
+        res.setHeader('Connection', 'keep-alive');
 
         if (clientes.length === 0) {
             return res.send(`
@@ -3781,6 +3784,7 @@ app.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
             `);
         }
 
+        // Envia um "padding" inicial para forçar os browsers/proxies mais teimosos a começarem o stream
         res.write(' '.repeat(1024));
 
         res.write(`

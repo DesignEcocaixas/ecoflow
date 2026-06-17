@@ -85,7 +85,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                     </div>
                     <div class="modal-footer bg-white border-top p-3 d-flex flex-nowrap">
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-sm btn-primary fw-bold w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
+                        <button type="submit" class="btn btn-sm btn-primary fw-bold w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                     </div>
                 </form>
             </div>

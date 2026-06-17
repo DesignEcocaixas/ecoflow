@@ -238,7 +238,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12 col-lg-7">
               <div class="card erp-card shadow-sm border-light h-100">
                   <div class="card-header bg-white border-bottom p-3">
-                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos Ativos e Histórico</h6>
+                      <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos ativos e histórico</h6>
                   </div>
                   <div class="card-body p-0">
                       <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">

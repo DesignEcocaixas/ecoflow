@@ -213,7 +213,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       </div>
                       
                       <div class="mb-3">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem Detalhada</label>
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem</label>
                           <textarea name="mensagem_notificacao" class="form-control form-control-sm shadow-sm" rows="4" placeholder="Escreva aqui as instruções ou o aviso para os colaboradores..." required></textarea>
                       </div>
 

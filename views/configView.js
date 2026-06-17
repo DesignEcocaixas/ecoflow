@@ -39,7 +39,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem Detalhada</label>
+                            <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Mensagem</label>
                             <textarea name="mensagem_notificacao" class="form-control form-control-sm shadow-sm" rows="4" required>${n.mensagem}</textarea>
                         </div>
 
@@ -208,7 +208,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       <p class="text-muted" style="font-size: 0.8rem;">Esta mensagem aparecerá como um Modal (Pop-up) na tela de todos os utilizadores ativos do sistema ao carregarem o painel principal.</p>
                       
                       <div class="mb-3">
-                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título do Aviso</label>
+                          <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Título</label>
                           <input type="text" name="titulo_notificacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Atualização do Sistema" required maxlength="100">
                       </div>
                       

@@ -1184,6 +1184,74 @@ app.post("/usuarios/excluir/:id", (req, res) => {
     });
 });
 
+// =========================================================================
+// ROTAS CRUD: GESTÃO DE EQUIPE (USUÁRIOS / COLABORADORES)
+// =========================================================================
+
+// 1. CADASTRAR NOVO COLABORADOR
+app.post("/cadastros/usuarios/novo", upload.single("foto"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    
+    const { nome, tipo_usuario, cpf, telefone, pix, banco, redirect_to } = req.body;
+    const foto = req.file ? req.file.filename : null;
+
+    try {
+        await db.promise().query(
+            "INSERT INTO usuarios (nome, tipo_usuario, cpf, telefone, pix, banco, foto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [nome, tipo_usuario, cpf || null, telefone || null, pix || null, banco || null, foto]
+        );
+        // O redirect_to garante que a requisição AJAX da view sabe para onde voltar
+        res.redirect(redirect_to || "/diaristas");
+    } catch (error) {
+        console.error("Erro ao cadastrar colaborador:", error);
+        res.status(500).send("Erro interno ao salvar colaborador.");
+    }
+});
+
+// 2. EDITAR COLABORADOR EXISTENTE
+app.post("/cadastros/usuarios/editar/:id", upload.single("foto"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    
+    const id = req.params.id;
+    const { nome, tipo_usuario, cpf, telefone, pix, banco, redirect_to } = req.body;
+
+    try {
+        if (req.file) {
+            // Atualiza todos os dados INCLUINDO a nova foto
+            await db.promise().query(
+                "UPDATE usuarios SET nome=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=?, foto=? WHERE id=?",
+                [nome, tipo_usuario, cpf, telefone, pix, banco, req.file.filename, id]
+            );
+        } else {
+            // Atualiza os dados MANTENDO a foto antiga
+            await db.promise().query(
+                "UPDATE usuarios SET nome=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?",
+                [nome, tipo_usuario, cpf, telefone, pix, banco, id]
+            );
+        }
+        res.redirect(redirect_to || "/diaristas");
+    } catch (error) {
+        console.error("Erro ao editar colaborador:", error);
+        res.status(500).send("Erro interno ao atualizar colaborador.");
+    }
+});
+
+// 3. EXCLUIR COLABORADOR
+app.post("/cadastros/usuarios/excluir/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    
+    const id = req.params.id;
+    const redirect_to = req.body.redirect_to || "/diaristas";
+
+    try {
+        await db.promise().query("DELETE FROM usuarios WHERE id = ?", [id]);
+        res.redirect(redirect_to);
+    } catch (error) {
+        console.error("Erro ao excluir colaborador:", error);
+        res.status(500).send("Erro ao excluir. Verifique se existem registos dependentes deste colaborador.");
+    }
+});
+
 app.get("/tabela-precos", (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 

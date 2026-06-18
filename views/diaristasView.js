@@ -20,13 +20,43 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Funções de formatação para injetar os valores já com máscara no HTML gerado da tabela
+  const applyMaskPhone = (v) => {
+      if (!v) return "";
+      v = String(v).replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 10) return v.replace(/^(\d{2})(\d{1})(\d{4})(\d{4}).*/, "($1) $2 $3-$4");
+      if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+      if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+      if (v.length > 0) return v.replace(/^(\d*)/, "($1");
+      return v;
+  };
+
+  const applyMaskCPF = (v) => {
+      if (!v) return "";
+      v = String(v).replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 9) return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
+      if (v.length > 6) return v.replace(/^(\d{3})(\d{3})(\d{0,3}).*/, "$1.$2.$3");
+      if (v.length > 3) return v.replace(/^(\d{3})(\d{0,3})/, "$1.$2");
+      return v;
+  };
+
   const valPadrao = taxas.diaria_padrao || 85.00;
   const valDomingo = taxas.diaria_domingo || 95.00;
   const valLimpeza = taxas.diaria_limpeza || 75.00;
 
   // Arrays de Dados Serializados para o JavaScript Frontend
   const diaristasJson = JSON.stringify(diaristas.map(d => ({
-      id: d.id, nome: d.nome, foto: d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=0D5749&color=fff`
+      id: d.id, 
+      nome: d.nome, 
+      tipo_usuario: d.tipo_usuario,
+      cpf: d.cpf || '',
+      telefone: d.telefone || '',
+      pix: d.pix || '',
+      banco: d.banco || '',
+      foto: d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=0D5749&color=fff`,
+      fotoRaw: d.foto || ''
   })));
 
   const pastasJson = JSON.stringify(pastas.map(p => {
@@ -52,9 +82,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
   }));
 
   // =========================================================================
-  // GERAÇÃO DOS CARDS DE DIARISTAS (CRIAR PASTA) - LAYOUT COMPACTO
+  // GERAÇÃO DOS CARDS (APENAS DIARISTAS NA TELA PRINCIPAL)
   // =========================================================================
-  const cardsDiaristas = diaristas.length > 0 ? diaristas.map(d => {
+  const apenasDiaristas = diaristas.filter(d => d.tipo_usuario === 'diarista');
+  const cardsDiaristas = apenasDiaristas.length > 0 ? apenasDiaristas.map(d => {
       const fotoUrl = d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=0D5749&color=fff`;
       const pixStatus = d.pix && d.pix.trim() !== '' ? '<span class="text-success"><i class="fa-brands fa-pix"></i> Cadastrado</span>' : '<span class="text-danger"><i class="fa-brands fa-pix"></i> Pendente</span>';
 
@@ -70,7 +101,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                      <span class="badge bg-secondary mb-2 px-2 py-1" style="font-size: 0.60rem; letter-spacing: 0.5px;">DIARISTA</span>
                      
                      <div class="w-100 border-top pt-2 text-muted" style="font-size: 0.70rem;">
-                         <div class="mb-1 text-truncate"><i class="fa-solid fa-id-card opacity-75 me-1"></i> CPF: ${d.cpf || 'N/A'}</div>
+                         <div class="mb-1 text-truncate"><i class="fa-solid fa-id-card opacity-75 me-1"></i> CPF: ${applyMaskCPF(d.cpf) || 'N/A'}</div>
                          <div class="text-truncate">${pixStatus}</div>
                      </div>
                  </div>
@@ -80,7 +111,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
   }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-3x opacity-25 mb-3"></i><p>Nenhum diarista cadastrado no sistema.</p></div>`;
 
   // =========================================================================
-  // GERAÇÃO DO HISTÓRICO DE PASTAS - TABELA COMPACTADA (py-1 e fotos de 28px)
+  // GERAÇÃO DO HISTÓRICO DE PASTAS
   // =========================================================================
   const modaisDinamicosExcluir = [];
   const linhasPastas = pastas.length > 0 ? pastas.map(p => {
@@ -132,6 +163,48 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         </tr>
       `;
   }).join('') : `<tr><td colspan="6" class="text-center text-muted py-5 text-center-empty"><i class="fa-solid fa-folder-open fa-3x opacity-25 mb-3"></i><p>Nenhuma pasta de fechamento encontrada no período.</p></td></tr>`;
+
+  // =========================================================================
+  // GERAÇÃO DA TABELA DO MODAL GESTÃO DE EQUIPE (TODOS OS COLABORADORES)
+  // =========================================================================
+  const getTipoBadge = (tipo) => {
+    switch (tipo) {
+      case 'diarista': return '<span class="badge bg-info text-dark">Diarista</span>';
+      case 'ajudante': return '<span class="badge bg-warning text-dark">Ajudante</span>';
+      case 'motorista': return '<span class="badge bg-primary">Motorista</span>';
+      case 'motorista_avulso': return '<span class="badge bg-danger">Mot. Avulso</span>';
+      default: return `<span class="badge bg-secondary">${tipo}</span>`;
+    }
+  };
+
+  const linhasGestaoEquipe = diaristas.length > 0 ? diaristas.map(c => {
+      const fotoUrl = c.foto ? `/uploads/${c.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nome)}&background=0D5749&color=fff`;
+      
+      return `
+      <tr class="align-middle colab-row-filtro table-hover-row" style="cursor: pointer;" onclick="abrirModalFormColaborador('${c.id}')" title="Clique para editar este colaborador">
+          <td class="py-2 px-3">
+              <div class="d-flex align-items-center">
+                  <img src="${fotoUrl}" class="rounded-circle me-2 border shadow-sm" style="width: 35px; height: 35px; object-fit: cover;">
+                  <div style="line-height: 1.1;">
+                      <strong class="text-dark d-block colab-nome-filtro" style="font-size:0.85rem;">${c.nome}</strong>
+                      <span class="mt-1 colab-funcao-filtro" style="font-size:0.6rem; letter-spacing: 0.5px;">${getTipoBadge(c.tipo_usuario)}</span>
+                  </div>
+              </div>
+          </td>
+          <td class="py-2 px-3 text-muted" style="font-size: 0.8rem;">
+              <div><i class="fa-solid fa-id-card me-1 opacity-75"></i> ${applyMaskCPF(c.cpf) || '-'}</div>
+              <div class="mt-1"><i class="fa-solid fa-phone me-1 opacity-75"></i> ${applyMaskPhone(c.telefone) || '-'}</div>
+          </td>
+          <td class="py-2 px-3 text-muted" style="font-size: 0.8rem;">
+              <div class="text-success fw-bold"><i class="fa-brands fa-pix me-1"></i> ${c.pix || '-'}</div>
+              <div class="mt-1"><i class="fa-solid fa-building-columns me-1 opacity-75"></i> ${c.banco || '-'}</div>
+          </td>
+          <td class="py-2 px-3 text-end text-nowrap" onclick="event.stopPropagation();">
+              <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm py-1 px-2 ms-1" onclick="abrirModalExcluirColaborador('${c.id}')" title="Excluir"><i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i></button>
+          </td>
+      </tr>
+      `;
+  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-3x mb-3 opacity-25"></i><br>Nenhum colaborador cadastrado.</td></tr>`;
 
   // Paginação
   const qsParams = [];
@@ -199,6 +272,39 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
+      /* CONTAINER DE FOTO DE PERFIL (Para Upload) */
+      .profile-upload-container {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          overflow: hidden;
+          background-color: #f0f0f0;
+          border: 3px solid #fff;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          cursor: pointer;
+      }
+      .profile-upload-container img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+      }
+      .profile-upload-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 35%;
+          background: rgba(0,0,0,0.65);
+          color: white;
+          font-size: 0.7rem;
+          font-weight: 600;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+      }
+      .profile-upload-container:hover .profile-upload-overlay {
+          opacity: 1;
+      }
+
       /* SKELETON LOADING STYLE */
       .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading-view 1.5s infinite linear; border-radius: 4px; }
       .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
@@ -234,7 +340,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
             <div>
@@ -242,6 +348,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Equipe avulsa, limpeza e serviços gerais</span>
             </div>
         </div>
+        
+        <button class="btn btn-sm btn-primary shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalGerirColaboradores">
+           <i class="fa-solid fa-users me-1"></i> Gestão Diaristas
+        </button>
       </div>
 
       <div class="row g-3" id="diaristasGrid">
@@ -335,6 +445,127 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="modal fade" id="modalGerirColaboradores" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg border-0">
+          <div class="modal-header text-white border-0" style="background-color: #0D5749;">
+            <h6 class="modal-title fw-bold"><i class="fa-solid fa-users-gear me-2"></i> Gestão de Diaristas</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-light">
+             <div class="d-flex justify-content-between mb-3 gap-2 flex-wrap align-items-end">
+                 <h6 class="fw-bold text-dark mb-0" style="font-size: 0.85rem;">
+                     <i class="fa-solid fa-list me-1"></i> Diaristas
+                 </h6>
+                 <button class="btn btn-sm btn-success fw-bold shadow-sm" onclick="abrirModalFormColaborador()">
+                     <i class="fa-solid fa-user-plus me-1"></i> Adicionar
+                 </button>
+             </div>
+
+             <div class="input-group input-group-sm mb-2 shadow-sm">
+                 <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                 <input type="text" class="form-control border-start-0" id="buscaEquipe" placeholder="Buscar colaborador..." onkeyup="filtrarTabelaEquipe()">
+                 <button class="btn btn-outline-secondary bg-white border-start-0 text-danger" type="button" onclick="limparBuscaEquipe()" title="Limpar pesquisa"><i class="fa-solid fa-xmark"></i></button>
+             </div>
+             
+             <div class="table-responsive bg-white rounded shadow-sm border border-light" style="max-height: 50vh; overflow-y: auto;">
+                 <table class="table table-hover align-middle mb-0 text-sm">
+                     <thead class="table-light sticky-top" style="z-index: 1;">
+                         <tr>
+                             <th class="border-0 px-3 py-2 text-muted">Colaborador</th>
+                             <th class="border-0 px-3 py-2 text-muted">Contato</th>
+                             <th class="border-0 px-3 py-2 text-muted">Dados Bancários</th>
+                             <th class="border-0 px-3 py-2 text-end text-muted">Ações</th>
+                         </tr>
+                     </thead>
+                     <tbody id="tabelaGestaoEquipe">
+                         ${linhasGestaoEquipe}
+                     </tbody>
+                 </table>
+             </div>
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button type="button" class="btn btn-sm btn-secondary w-100 fw-bold" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalFormColaborador" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="formColaborador" method="POST" action="/cadastros/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Colaborador Salvo com Sucesso!')">
+                <input type="hidden" name="redirect_to" value="/diaristas">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h6 class="modal-title fw-bold" id="formColabMainTitle"><i class="fa-solid fa-user-plus me-2"></i> Formulário de Colaborador</h6>
+                    <button type="button" class="btn-close btn-close-white" onclick="voltarParaGestaoModal('modalFormColaborador')"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="text-center mb-3">
+                        <div class="profile-upload-container position-relative mx-auto" onclick="document.getElementById('uploadFotoColab').click()" title="Clique para alterar a foto">
+                            <img id="previewFotoColab" src="https://ui-avatars.com/api/?name=Novo&background=0D5749&color=fff" data-default-src="https://ui-avatars.com/api/?name=Novo&background=0D5749&color=fff" alt="Foto">
+                            <div class="profile-upload-overlay d-flex align-items-center justify-content-center">
+                                <span><i class="fa-solid fa-camera mb-1 d-block"></i> Alterar</span>
+                            </div>
+                        </div>
+                        <input type="file" name="foto" id="uploadFotoColab" class="d-none" accept="image/*" onchange="previewImage(this, 'previewFotoColab')">
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Nome Completo</label>
+                            <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Perfil / Tipo de cadastro</label>
+                            <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" required>
+                                <option value="diarista">Diarista</option>
+                                <option value="ajudante">Ajudante</option>
+                                <option value="motorista_avulso">Motorista Avulso</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Celular / Telefone</label>
+                            <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" placeholder="(00) 00000-0000" oninput="this.value = maskPhone(this.value)">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">CPF</label>
+                            <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" placeholder="000.000.000-00" oninput="this.value = maskCPF(this.value)">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Banco</label>
+                            <input type="text" name="banco" class="form-control form-control-sm shadow-sm" placeholder="Ex: Nubank">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Chave PIX</label>
+                            <input type="text" name="pix" class="form-control form-control-sm shadow-sm">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="voltarParaGestaoModal('modalFormColaborador')">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalExcluirColaborador" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <form id="formExcluirColaborador" method="POST" action="" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Colaborador Excluído!')">
+                <input type="hidden" name="redirect_to" value="/diaristas">
+                <div class="modal-body p-4 text-center">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                    <h6 class="fw-bold text-dark mb-2">Excluir Colaborador?</h6>
+                    <p class="text-muted mb-0" style="font-size:0.85rem;">Esta ação removerá o acesso e os dados de perfil de <strong id="excluirColaboradorNome"></strong> do sistema!</p>
+                </div>
+                <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
+                    <button type="button" class="btn btn-sm btn-secondary w-100" onclick="voltarParaGestaoModal('modalExcluirColaborador')">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Excluir</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="modal fade" id="modalConfigTaxas" tabindex="-1">
@@ -489,7 +720,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -530,6 +761,119 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       };
 
       // =======================================================================
+      // MÁSCARAS DE INPUT PARA CPF E TELEFONE NO FRONT-END
+      // =======================================================================
+      function maskPhone(v) {
+          v = v.replace(/\\D/g, "");
+          if (v.length > 11) v = v.slice(0, 11);
+          if (v.length > 10) return v.replace(/^(\\d{2})(\\d{1})(\\d{4})(\\d{4}).*/, "($1) $2 $3-$4");
+          if (v.length > 6) return v.replace(/^(\\d{2})(\\d{4})(\\d{0,4}).*/, "($1) $2-$3");
+          if (v.length > 2) return v.replace(/^(\\d{2})(\\d{0,5})/, "($1) $2");
+          if (v.length > 0) return v.replace(/^(\\d*)/, "($1");
+          return v;
+      }
+
+      function maskCPF(v) {
+          v = v.replace(/\\D/g, "");
+          if (v.length > 11) v = v.slice(0, 11);
+          if (v.length > 9) return v.replace(/^(\\d{3})(\\d{3})(\\d{3})(\\d{2}).*/, "$1.$2.$3-$4");
+          if (v.length > 6) return v.replace(/^(\\d{3})(\\d{3})(\\d{0,3}).*/, "$1.$2.$3");
+          if (v.length > 3) return v.replace(/^(\\d{3})(\\d{0,3})/, "$1.$2");
+          return v;
+      }
+
+      function previewImage(inputElement, imgId) {
+          if (inputElement.files && inputElement.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  document.getElementById(imgId).src = e.target.result;
+              }
+              reader.readAsDataURL(inputElement.files[0]);
+          }
+      }
+
+      // =======================================================================
+      // FILTRO E BUSCA DE COLABORADORES DO MODAL
+      // =======================================================================
+      function filtrarTabelaEquipe() {
+          const input = document.getElementById("buscaEquipe");
+          const filter = input.value.toLowerCase();
+          const tbody = document.getElementById("tabelaGestaoEquipe");
+          const trs = tbody.getElementsByTagName("tr");
+
+          for (let i = 0; i < trs.length; i++) {
+              const tdNome = trs[i].querySelector(".colab-nome-filtro");
+              if (tdNome) {
+                  const txtValue = tdNome.textContent || tdNome.innerText;
+                  trs[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+              }
+          }
+      }
+
+      function limparBuscaEquipe() {
+          const input = document.getElementById("buscaEquipe");
+          input.value = "";
+          filtrarTabelaEquipe();
+          input.focus();
+      }
+
+      function abrirModalFormColaborador(id = null) {
+          const modalEl = document.getElementById('modalFormColaborador');
+          const form = document.getElementById('formColaborador');
+          const formTitle = modalEl.querySelector('.modal-title');
+          const preview = document.getElementById('previewFotoColab');
+
+          form.reset();
+          preview.src = 'https://ui-avatars.com/api/?name=Novo&background=0D5749&color=fff';
+          document.getElementById('uploadFotoColab').value = '';
+
+          if (id) {
+              const c = listaDB.find(x => x.id == id);
+              formTitle.innerHTML = '<i class="fa-solid fa-user-pen me-2"></i> Editar Colaborador';
+              form.action = '/cadastros/usuarios/editar/' + id;
+              
+              form.nome.value = c.nome;
+              form.tipo_usuario.value = c.tipo_usuario;
+              form.cpf.value = maskCPF(c.cpf || '');
+              form.telefone.value = maskPhone(c.telefone || '');
+              form.banco.value = c.banco;
+              form.pix.value = c.pix;
+              
+              if(c.fotoRaw) {
+                  preview.src = c.foto;
+              } else {
+                  preview.src = \`https://ui-avatars.com/api/?name=\${encodeURIComponent(c.nome)}&background=0D5749&color=fff\`;
+              }
+          } else {
+              formTitle.innerHTML = '<i class="fa-solid fa-user-plus me-2"></i> Novo Colaborador';
+              form.action = '/cadastros/usuarios/novo';
+          }
+
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGerirColaboradores')).hide();
+          setTimeout(() => {
+              bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          }, 400);
+      }
+
+      function abrirModalExcluirColaborador(id) {
+          const c = listaDB.find(x => x.id == id);
+          document.getElementById('excluirColaboradorNome').innerText = c.nome;
+          document.getElementById('formExcluirColaborador').action = '/cadastros/usuarios/excluir/' + id;
+          
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGerirColaboradores')).hide();
+          setTimeout(() => {
+              bootstrap.Modal.getOrCreateInstance(document.getElementById('modalExcluirColaborador')).show();
+          }, 400);
+      }
+
+      function voltarParaGestaoModal(idModalAtual) {
+          bootstrap.Modal.getInstance(document.getElementById(idModalAtual)).hide();
+          setTimeout(() => {
+              bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGerirColaboradores')).show();
+          }, 400);
+      }
+
+      // =======================================================================
       // LÓGICA DE PAGINAÇÃO DOS CARDS
       // =======================================================================
       let currentPageCards = 1;
@@ -567,13 +911,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       // =======================================================================
       // LÓGICA DOS MODAIS E WHATSAPP
       // =======================================================================
-      function fmtDataJs(dStr) {
-          if(!dStr) return '-';
-          const onlyDate = dStr.split('T')[0];
-          const [ano, mes, dia] = onlyDate.split('-');
-          return \`\${dia}/\${mes}/\${ano}\`;
-      }
-
       function enviarWppPasta(pastaId) {
           const p = pastasDB.find(x => x.id == pastaId);
           if(!p) return;
@@ -907,12 +1244,16 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           if (isSubmitting) return;
 
           let keepPastaIdOpen = null;
+          let keepGestaoEquipeOpen = false;
+
           if (form.id === 'formInserirItem') {
               keepPastaIdOpen = document.getElementById('formItemPastaId').value;
           } else if (form.action.includes('/diaristas/pasta/excluir/') && form.closest('#modalGerenciarPasta')) {
               keepPastaIdOpen = document.getElementById('visorPastaId').innerText;
           } else if (form.action.includes('/pagamentos/excluir/') && form.closest('#modalGerenciarPasta')) {
               keepPastaIdOpen = document.getElementById('visorPastaId').innerText;
+          } else if (form.id === 'formColaborador' || form.id === 'formExcluirColaborador') {
+              keepGestaoEquipeOpen = true;
           }
 
           const modalEl = form.closest('.modal');
@@ -953,6 +1294,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   if (keepPastaIdOpen) {
                       setTimeout(() => {
                           abrirPastaFechamento(keepPastaIdOpen);
+                      }, 200);
+                  } else if (keepGestaoEquipeOpen) {
+                      setTimeout(() => {
+                          bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGestaoEquipe')).show();
                       }, 200);
                   }
 

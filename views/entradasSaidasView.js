@@ -314,7 +314,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
       }
       .modal.show .modal-dialog {
-          transform: scale(1) translateY(0); /* Cresce e encaixa na original */
+          transform: scale(1) translateY(0); /* Cresce e encaixa na posição original */
       }
 
       /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
@@ -406,11 +406,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         </div>
       </div>
 
-      <!-- GRID PARA RESUMO E GRÁFICO LADO A LADO -->
       <div class="row g-3 mb-3">
         
-        <!-- Coluna 1: Resumo Financeiro e Filtros -->
-        <div class="col-12 col-xl-7">
+        <div class="col-12 col-xl-5">
           <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column">
             
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
@@ -451,41 +449,40 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
             </div>
 
             <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top pt-2" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-6 col-xxl-3">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
                     <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-6 col-xxl-3">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
                     <input type="date" name="data_fim" class="form-control form-control-sm" value="${filtros.data_fim || ''}">
                 </div>
-                <div class="col-12 col-md-3">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo de Movimentação</label>
+                <div class="col-12 col-md-6 col-xxl-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo</label>
                     <select name="tipo" class="form-select form-select-sm">
-                        <option value="">Tudo (Entradas e Saídas)</option>
+                        <option value="">Tudo (Entradas/Saídas)</option>
                         <option value="entrada" ${filtros.tipo === 'entrada' ? 'selected' : ''}>Apenas Entradas</option>
                         <option value="saida" ${filtros.tipo === 'saida' ? 'selected' : ''}>Apenas Saídas</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-3 d-flex gap-2">
+                <div class="col-12 col-md-6 col-xxl-3 d-flex gap-2">
                     <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                    <button type="button" class="btn btn-sm btn-light border text-center shadow-sm flex-grow-1" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" class="btn btn-sm btn-light border text-center shadow-sm" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </form>
           </div>
         </div>
 
-        <!-- Coluna 2: Gráfico -->
-        <div class="col-12 col-xl-5">
+        <div class="col-12 col-xl-7">
           <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column" id="containerGrafico">
-              <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 flex-nowrap">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-nowrap">
                   <h6 class="mb-0 fw-bold text-dark text-nowrap"><i class="fa-solid fa-chart-line text-primary me-2"></i> Fluxo Financeiro</h6>
                   <div class="d-flex gap-2 align-items-center flex-nowrap">
-                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-bold" style="width: auto; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
+                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-medium" style="width: auto; min-width: 110px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
                           <option value="">Carregando...</option>
                       </select>
-                      <button id="btnToggleVisaoGrafico" class="btn btn-sm btn-light border shadow-sm fw-bold text-nowrap" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
-                          <i class="fa-solid fa-calendar-days me-1"></i> Visão Mensal
+                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary shadow-sm fw-medium py-1 px-2 text-nowrap" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
+                          <i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês
                       </button>
                   </div>
               </div>
@@ -496,8 +493,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         </div>
 
       </div>
-      <!-- FIM DA GRID -->
-
       ${movimentacoes.length > 0 
         ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
@@ -724,7 +719,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     ${modais}
 
-    <!-- BIBLIOTECA CHART.JS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -798,17 +792,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       // =======================================================================
-      // LÓGICA DO GRÁFICO (NOVO) E DIAS DO MÊS INFALÍVEL
+      // LÓGICA DO GRÁFICO (NOVO)
       // =======================================================================
       let chartFluxo = null;
       let visaoGraficoAtual = 'dia'; 
       let periodosDisponiveisGrafico = [];
-
-      function obterDiasNoMes(m, a) {
-          const dias = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-          if (m === 2 && ((a % 4 === 0 && a % 100 !== 0) || a % 400 === 0)) return 29;
-          return dias[m - 1];
-      }
 
       async function carregarFiltrosGrafico() {
           try {
@@ -866,9 +854,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const btn = document.getElementById('btnToggleVisaoGrafico');
           
           if (visaoGraficoAtual === 'dia') {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1"></i> Visão Mensal';
+              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês';
           } else {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1"></i> Visão Diária';
+              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1"></i> Ver por Dia';
           }
           
           atualizarDropdownGrafico();
@@ -891,31 +879,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               const res = await fetch(url);
               if (res.ok) {
                   const dados = await res.json();
-                  
-                  if (visaoGraficoAtual === 'dia') {
-                      const [m, a] = val.split('-');
-                      const totalDiasCerto = obterDiasNoMes(parseInt(m, 10), parseInt(a, 10));
-                      
-                      if (!dados.labels || dados.labels.length !== totalDiasCerto) {
-                          const novosLabels = Array.from({length: totalDiasCerto}, (_, i) => String(i + 1).padStart(2, '0'));
-                          const novasEntradas = new Array(totalDiasCerto).fill(0);
-                          const novasSaidas = new Array(totalDiasCerto).fill(0);
-                          
-                          if (dados.labels) {
-                              dados.labels.forEach((lbl, idx) => {
-                                  const diaReal = parseInt(lbl, 10) - 1;
-                                  if (diaReal >= 0 && diaReal < totalDiasCerto) {
-                                      novasEntradas[diaReal] = dados.entradas[idx] || 0;
-                                      novasSaidas[diaReal] = dados.saidas[idx] || 0;
-                                  }
-                              });
-                          }
-                          dados.labels = novosLabels;
-                          dados.entradas = novasEntradas;
-                          dados.saidas = novasSaidas;
-                      }
-                  }
-                  
                   renderizarGrafico(dados.labels, dados.entradas, dados.saidas);
               } else {
                   renderizarMockGrafico();
@@ -939,8 +902,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   ano = parseInt(partes[1], 10);
               }
               
-              const diasNoMes = obterDiasNoMes(mes, ano);
-              labels = Array.from({length: diasNoMes}, (_, i) => String(i + 1).padStart(2, '0'));
+              const diasNoMes = new Date(ano, mes, 0).getDate();
+              labels = Array.from({length: diasNoMes}, (_, i) => i + 1);
           } else {
               labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
           }
@@ -1016,9 +979,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                       x: { 
                           grid: { display: false }, 
                           ticks: { 
-                              font: { size: 10 }, // Reduzido um pouco para caber todos os números
-                              autoSkip: false,    // FORÇA A EXIBIÇÃO DE TODOS OS DIAS DO MÊS
-                              maxRotation: 0      // Evita que os números girem e fiquem de lado
+                              font: { size: 10 },
+                              autoSkip: false,
+                              maxRotation: 0
                           } 
                       }
                   }
@@ -1058,10 +1021,10 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const skeletonHTML = \`
           <div id="skeleton-temp-container" class="skeleton-container">
               <div class="row g-3 mb-3">
-                  <div class="col-12 col-xl-7">
+                  <div class="col-12 col-xl-5">
                       <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
                   </div>
-                  <div class="col-12 col-xl-5">
+                  <div class="col-12 col-xl-7">
                       <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
                   </div>
               </div>

@@ -1008,8 +1008,19 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                       }
                   },
                   scales: {
-                      y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { font: { size: 10 }, callback: function(value) { return 'R$ ' + value; } } },
-                      x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                      y: { 
+                          beginAtZero: true, 
+                          grid: { color: 'rgba(0, 0, 0, 0.05)' }, 
+                          ticks: { font: { size: 10 }, callback: function(value) { return 'R$ ' + value; } } 
+                      },
+                      x: { 
+                          grid: { display: false }, 
+                          ticks: { 
+                              font: { size: 10 }, // Reduzido um pouco para caber todos os números
+                              autoSkip: false,    // FORÇA A EXIBIÇÃO DE TODOS OS DIAS DO MÊS
+                              maxRotation: 0      // Evita que os números girem e fiquem de lado
+                          } 
+                      }
                   }
               }
           });

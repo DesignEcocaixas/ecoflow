@@ -2809,6 +2809,194 @@ app.post("/movimentacoes/excluir/:id", (req, res) => {
     });
 });
 
+// =========================================================================
+// ROTA AJAX: DADOS DO GRÁFICO DE ENTRADAS E SAÍDAS (DIA / MÊS)
+// =========================================================================
+app.get('/api/movimentacoes/grafico', async (req, res) => {
+    // Validação de segurança idêntica à view principal
+    if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro")) {
+        return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const { visao, mes, ano } = req.query;
+
+    if (!visao || !ano) {
+        return res.status(400).json({ error: "Parâmetros insuficientes." });
+    }
+
+    try {
+        let query = '';
+        let params = [];
+        let labels = [];
+        let entradas = [];
+        let saidas = [];
+
+        if (visao === 'dia') {
+            if (!mes) return res.status(400).json({ error: "Mês não informado para a visão diária." });
+
+            // Descobre quantos dias tem o mês selecionado para montar o eixo X do gráfico
+            const diasNoMes = new Date(ano, mes, 0).getDate();
+            labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'));
+            entradas = new Array(diasNoMes).fill(0);
+            saidas = new Array(diasNoMes).fill(0);
+
+            // Soma agrupando pelo DIA
+            query = `
+                SELECT DAY(data) as chave, tipo, SUM(valor) as total
+                FROM movimentacoes
+                WHERE MONTH(data) = ? AND YEAR(data) = ?
+                GROUP BY DAY(data), tipo
+            `;
+            params = [mes, ano];
+
+        } else if (visao === 'mes') {
+            // Eixo X padrão para o ano todo
+            labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            entradas = new Array(12).fill(0);
+            saidas = new Array(12).fill(0);
+
+            // Soma agrupando pelo MÊS
+            query = `
+                SELECT MONTH(data) as chave, tipo, SUM(valor) as total
+                FROM movimentacoes
+                WHERE YEAR(data) = ?
+                GROUP BY MONTH(data), tipo
+            `;
+            params = [ano];
+        } else {
+            return res.status(400).json({ error: "Visão inválida." });
+        }
+
+        const [rows] = await db.promise().query(query, params);
+
+        // Preenche os arrays corretos substituindo os zeros onde há dados no banco
+        rows.forEach(row => {
+            const index = row.chave - 1; // As funções DAY() e MONTH() no MySQL começam em 1
+            const valorTotal = parseFloat(row.total) || 0;
+
+            if (row.tipo === 'entrada') {
+                entradas[index] = valorTotal;
+            } else if (row.tipo === 'saida') {
+                saidas[index] = valorTotal;
+            }
+        });
+
+        // Retorna o formato exato que o Chart.js na view está esperando
+        res.json({ labels, entradas, saidas });
+
+    } catch (error) {
+        console.error("[Erro API Gráfico] Falha ao buscar dados das movimentações:", error);
+        res.status(500).json({ error: "Erro interno do servidor." });
+    }
+});
+
+app.get('/movimentacoes/comprovante/:id', (req, res) => {
+    // Valida permissão básica
+    if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro")) {
+        return res.status(403).send("Acesso negado");
+    }
+
+    const id = req.params.id;
+
+    db.query("SELECT * FROM movimentacoes WHERE id = ?", [id], (err, results) => {
+        if (err || results.length === 0) return res.status(404).send("Movimentação não encontrada.");
+
+        const m = results[0];
+
+        if (m.tipo !== 'saida') return res.status(400).send("Comprovantes são apenas para retiradas.");
+
+        // Usa a variável em minúsculo conforme a sua importação
+        const doc = new pdfkit({ margin: 50 });
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename=comprovante_retirada_${m.id}.pdf`);
+        doc.pipe(res);
+
+        // =========================================================
+        // CABEÇALHO DA EMPRESA (LOGO + NOME + CNPJ)
+        // =========================================================
+        
+        // Monta o caminho exato do arquivo da logo
+        const logoPath = path.join(__dirname, 'public', 'img', 'logo-ecocaixas.png')
+        
+        /* NOTA: Se a sua logo estiver dentro da pasta "img" (public/img/logo-ecocaixas.png),
+           comente a linha acima e descomente a linha abaixo: */
+        // const logoPath = path.join(__dirname, 'public', 'img', 'logo-ecocaixas.png');
+
+        // Checa se a imagem realmente existe antes de tentar desenhar para evitar crash
+        if (fs.existsSync(logoPath)) {
+            // Desenha a imagem centralizada (largura da página padrão é 612. Com imagem de 140px, calculamos o meio)
+            doc.image(logoPath, (doc.page.width - 140) / 2, doc.y, { width: 140 });
+            doc.moveDown(6); // Empurra o cursor (Y) para baixo da imagem
+        }
+
+        doc.fontSize(14).font('Helvetica-Bold').text("Ecocaixas BA Soluções em embalagens", { align: 'center' });
+        doc.fontSize(10).font('Helvetica').text("CNPJ: 22.570.982/0001-90", { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(11).font('Helvetica').text("COMPROVANTE DE RETIRADA DE CAIXA", { align: 'center' });
+        doc.moveDown(2);
+
+        // =========================================================
+        // CAIXA DE DADOS PRINCIPAIS
+        // =========================================================
+        doc.rect(50, doc.y, 500, 100).stroke();
+        doc.moveDown(1);
+        doc.fontSize(12).font('Helvetica-Bold').text(" DADOS DA RETIRADA:", 60, doc.y);
+        doc.moveDown(0.5);
+        
+        const dataFormatada = new Date(m.data).toLocaleDateString('pt-BR');
+        const valorFormatado = Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        
+        doc.font('Helvetica').text(`  Data: ${dataFormatada}`);
+        doc.text(`  Valor Retirado: R$ ${valorFormatado}`);
+        doc.text(`  Retirado por: ${m.nome_assinante}`);
+        doc.text(`  Registrado por: ${m.responsavel || 'Sistema'}`);
+        doc.moveDown(3);
+
+        // =========================================================
+        // DESCRIÇÃO E OBSERVAÇÕES
+        // =========================================================
+        doc.font('Helvetica-Bold').text(" DESCRIÇÃO:", 50, doc.y);
+        doc.font('Helvetica').text(m.descricao || "Nenhuma", 50, doc.y);
+        doc.moveDown(1);
+        
+        doc.font('Helvetica-Bold').text(" OBSERVAÇÕES:", 50, doc.y);
+        doc.font('Helvetica').text(m.observacao || "Nenhuma observação registada.", 50, doc.y);
+        doc.moveDown(4);
+
+        // =========================================================
+        // ASSINATURA
+        // =========================================================
+        // Linha para assinar
+        doc.moveTo(150, doc.y).lineTo(450, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.font('Helvetica-Bold').text(m.nome_assinante, { align: 'center' });
+        doc.fontSize(10).font('Helvetica').text("Assinatura do Recebedor", { align: 'center', color: 'grey' });
+
+        // Inserção da Imagem da Assinatura desenhada na tela (Base64)
+        if (m.assinatura_base64) {
+            try {
+                // Remove o prefixo "data:image/png;base64," para o Buffer conseguir converter
+                const base64Data = m.assinatura_base64.replace(/^data:image\/\w+;base64,/, "");
+                const imageBuffer = Buffer.from(base64Data, "base64");
+                
+                // Desenha a assinatura um pouco acima da linha
+                doc.image(imageBuffer, (doc.page.width - 200) / 2, doc.y - 120, { width: 200 });
+            } catch (e) {
+                console.error("Erro ao renderizar assinatura no PDF:", e);
+            }
+        }
+
+        // =========================================================
+        // RODAPÉ
+        // =========================================================
+        doc.moveDown(4);
+        doc.fontSize(8).fillColor('grey').text(`Documento gerado eletronicamente em ${new Date().toLocaleString('pt-BR')} - Ecoflow ERP`, { align: 'center' });
+
+        doc.end();
+    });
+});
+
 // ==========================================
 // MÓDULO: CADERNO DE ENTREGAS (ATUALIZADO)
 // ==========================================

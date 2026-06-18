@@ -116,10 +116,12 @@ function menuLateral(usuario, rotaAtiva = "") {
   // --- CONTAINER DO PERFIL DO USUÁRIO (NOVO LAYOUT) ---
   const fotoUrl = usuario && usuario.foto ? `/uploads/${usuario.foto}` : null;
   
-  // Imagem agora com tag <a> para abrir e classe css para hover
+  // A imagem agora tem `rounded-circle` e `display: block` aplicados diretamente nela
   const renderFoto = fotoUrl
-    ? `<a href="${fotoUrl}" target="_blank" title="Visualizar Foto"><img src="${fotoUrl}" alt="Foto de perfil" class="shadow-lg rounded-circle img-profile-clickable" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid rgba(255,255,255,0.15);"></a>`
-    : `<div class="d-flex align-items-center justify-content-center shadow-lg rounded-circle" style="width: 100px; height: 100px; background-color: rgba(255,255,255,0.08); border: 3px solid rgba(255,255,255,0.15);"><i class="fa-solid fa-user text-white-50" style="font-size: 2.5rem;"></i></div>`;
+    ? `<a href="#" data-bs-toggle="modal" data-bs-target="#modalFotoPerfil" title="Visualizar Foto" class="d-block shadow-lg img-profile-clickable rounded-circle" style="width: 100px; height: 100px; border: 3px solid rgba(255,255,255,0.15); overflow: hidden; margin: 0 auto; padding: 0;">
+         <img src="${fotoUrl}" alt="Foto de perfil" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
+       </a>`
+    : `<div class="d-flex align-items-center justify-content-center shadow-lg rounded-circle" style="width: 100px; height: 100px; background-color: rgba(255,255,255,0.08); border: 3px solid rgba(255,255,255,0.15); margin: 0 auto;"><i class="fa-solid fa-user text-white-50" style="font-size: 2.5rem;"></i></div>`;
 
   // Engrenagem exclusiva para administradores
   const btnConfigAdmin = tipo === "admin"
@@ -128,25 +130,18 @@ function menuLateral(usuario, rotaAtiva = "") {
        </a>`
     : "";
 
-  // Removido py-4 e substituído por pb-4 pt-1 para remover o padding superior
-  const userProfileHtml = `
-    <div class="user-profile-container px-3 pb-4 pt-1 mb-3 border-bottom border-light border-opacity-10 text-white position-relative text-center">
-      
-      <button type="button"
-        id="btnAbrirNotificacoes"
-        class="text-white-50 transition-btn p-1 rounded d-flex align-items-center justify-content-center border-0 bg-transparent position-absolute"
-        title="Notificações"
-        style="top: 8px; right: 12px; text-decoration: none; width: 32px; height: 32px;">
-        <i class="fa-solid fa-bell fs-5"></i>
-        <span id="contadorNotificacoes"
-          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
-          style="font-size: 0.55rem; min-width: 18px; height: 18px; display: none; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid #0D5749;">
-          0
-        </span>
-      </button>
+  // Botão de Notificações, agora semelhante à engrenagem de configurações
+  const btnNotificacoes = `
+    <button type="button" id="btnAbrirNotificacoes" class="text-white ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center border-0 bg-transparent position-relative profile-notif-btn" title="Notificações" style="padding: 2px; line-height: 1;">
+       <i class="fa-solid fa-bell" style="font-size: 0.9rem;"></i>
+       <span id="contadorNotificacoes" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm" style="font-size: 0.5rem; min-width: 16px; height: 16px; display: none; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #0D5749;">0</span>
+    </button>
+  `;
 
+  const userProfileHtml = `
+    <div class="user-profile-container px-3 pb-4 pt-0 mb-3 border-bottom border-light border-opacity-10 text-white position-relative text-center">
       <div class="d-flex flex-column align-items-center justify-content-center">
-        <div class="profile-avatar-box mb-3 position-relative mt-2">
+        <div class="profile-avatar-box mb-3 position-relative d-flex justify-content-center">
           ${renderFoto}
         </div>
 
@@ -158,12 +153,29 @@ function menuLateral(usuario, rotaAtiva = "") {
             <span class="badge bg-white bg-opacity-25 text-white profile-badge-type" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 8px;">
               <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
             </span>
+            ${btnNotificacoes}
             ${btnConfigAdmin}
           </div>
         </div>
       </div>
     </div>
   `;
+
+  // --- MODAL DA FOTO DE PERFIL ---
+  const modalFotoHtml = fotoUrl ? `
+    <div class="modal fade" id="modalFotoPerfil" tabindex="-1" aria-hidden="true" style="z-index: 2060;">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+          <div class="modal-header border-0 d-flex justify-content-end p-0 mb-2">
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body text-center p-0">
+            <img src="${fotoUrl}" alt="Foto ampliada" class="img-fluid rounded shadow-lg" style="max-height: 75vh; object-fit: contain;">
+          </div>
+        </div>
+      </div>
+    </div>
+  ` : '';
 
   // --- RODAPÉ 71DEV ---
   const footerHTML = `
@@ -215,7 +227,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       // =======================================================================
       window.mostrarSkeletonMenuLateral = function() {
           // 1. Elementos do Perfil
-          const avatar = document.querySelector('.profile-avatar-box img') || document.querySelector('.profile-avatar-box div');
+          const avatar = document.querySelector('.profile-avatar-box a') || document.querySelector('.profile-avatar-box div');
           if (avatar) avatar.classList.add('skeleton');
           
           const nome = document.querySelector('.user-profile-container .profile-name-text');
@@ -243,7 +255,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       };
 
       window.ocultarSkeletonMenuLateral = function() {
-          const avatar = document.querySelector('.profile-avatar-box img') || document.querySelector('.profile-avatar-box div');
+          const avatar = document.querySelector('.profile-avatar-box a') || document.querySelector('.profile-avatar-box div');
           if (avatar) avatar.classList.remove('skeleton');
           
           const nome = document.querySelector('.user-profile-container .profile-name-text');
@@ -524,9 +536,10 @@ function menuLateral(usuario, rotaAtiva = "") {
         color: #fff !important;
       }
 
-      /* Hover para a foto de perfil */
+      /* Hover para a foto de perfil agora aplicado ao link circular */
       .img-profile-clickable {
         transition: transform 0.2s ease, filter 0.2s ease;
+        display: block;
       }
 
       .img-profile-clickable:hover {
@@ -675,7 +688,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       }
     </style>
 
-    <div class="d-flex flex-column h-100 pt-2">
+    <div class="d-flex flex-column h-100 pt-0">
       <div class="flex-grow-1 sidebar-scroll-area" id="sidebarMenuContainer">
         ${userProfileHtml}
         ${menuLinks}
@@ -685,6 +698,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     </div>
 
     ${notificacoesPanelHtml}
+    ${modalFotoHtml}
   `;
 }
 

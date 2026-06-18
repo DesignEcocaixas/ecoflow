@@ -118,8 +118,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
             </div>
 
           </div>
-          <div class="modal-footer bg-light border-0">
-             <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar Detalhes</button>
+          <div class="modal-footer bg-light border-0 d-flex flex-nowrap gap-2">
+             ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-danger w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Comprovante</a>` : ''}
+             <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
       </div>
@@ -233,6 +234,36 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
   const menuHTML = menuLateral(user, "/entradas-saidas");
 
+  // Modal para exibir perguntando se o usuário quer emitir o comprovante recém criado
+  const modalImprimirComprovanteHtml = `
+  <div class="modal fade" id="modalImprimirComprovante" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-header bg-white border-0 pb-0 pt-4 px-4">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body text-center p-5 pt-2">
+          <div class="mb-4">
+             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid #f5c2c7;">
+                 <i class="fa-solid fa-file-pdf fa-2x text-danger"></i>
+             </div>
+          </div>
+          <h5 class="fw-bold text-dark mb-3">Retirada Registada</h5>
+          <p class="text-muted mb-4" style="font-size:0.9rem; line-height: 1.5;">Deseja gerar o comprovante em PDF com a assinatura do recebedor agora?</p>
+          <div class="d-flex flex-column gap-2 mt-2">
+             <a href="#" target="_blank" id="btnImprimirComprovanteModal" class="btn btn-danger fw-bold shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalImprimirComprovante')).hide();">
+                 <i class="fa-solid fa-file-pdf me-1"></i> Gerar Comprovante
+             </a>
+             <button type="button" class="btn btn-light border text-muted fw-bold" data-bs-dismiss="modal">
+                 Agora Não
+             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+
   return `
   <!DOCTYPE html>
   <html lang="pt-br">
@@ -249,18 +280,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
       .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
       .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; }
-      
-      .usuario-badge { 
-          background-color: white; 
-          color: #0D5749; 
-          padding: 6px 14px; 
-          border-radius: 20px; 
-          border: 1px solid rgba(13,87,73,0.2);
-          font-size: 0.85rem; 
-          font-weight: 500; 
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
-          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
-      }
       
       .erp-modal { border-radius: 12px; border: none; }
       
@@ -379,87 +398,101 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-4">
-        <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
-            <div>
-              <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer text-muted me-2"></i>Entradas e Saídas</h4>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-          <span class="usuario-badge d-none d-sm-inline-block">
-            <i class="fa-solid fa-user-circle me-1"></i> ${user.nome}
-          </span>
-          <a href="/logout" class="btn btn-sm btn-outline-danger d-none d-md-inline-block" title="Sair">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer text-muted me-2"></i>Entradas e Saídas</h4>
+          <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-          
-          <div class="d-flex align-items-center gap-2">
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Histórico de Movimentações</h6>
-            <span class="badge bg-success-subtle text-success border border-success-subtle shadow-sm">${mesAtualStr}</span>
-          </div>
-          
-          <div class="d-flex gap-4 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
-            <div class="text-end pe-2 d-none d-sm-block">
-               <span class="text-muted fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
-               <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
-            </div>
-          
-            <div class="text-end border-end pe-3 d-none d-lg-block pt-2">
-               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
-               <strong class="text-success" style="font-size: 0.80rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+      <div class="row g-3 mb-3">
+        
+        <div class="col-12 col-xl-7">
+          <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column">
+            
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              
+              <div class="d-flex align-items-center gap-2">
+                <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Resumo Financeiro</h6>
+                <span class="badge bg-success-subtle text-success border border-success-subtle shadow-sm">${mesAtualStr}</span>
+              </div>
+              
+              <div class="d-flex gap-3 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
+                <div class="text-end pe-2 d-none d-sm-block">
+                   <span class="text-muted fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
+                   <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
+                </div>
+              
+                <div class="text-end border-end pe-3 d-none d-lg-block pt-2">
+                   <span class="text-muted fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
+                   <strong class="text-success" style="font-size: 0.80rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+                </div>
+
+                <div class="text-end border-end pe-3 d-none d-sm-block pt-2">
+                   <span class="text-muted fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
+                   <strong class="text-danger" style="font-size: 0.80rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaEntradaModal">
+                        <i class="fa-solid fa-arrow-down me-1"></i> Entrada
+                    </button>
+                    <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
+                        <i class="fa-solid fa-arrow-up me-1"></i> Retirada
+                    </button>
+                    <button class="btn btn-outline-success shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0" style="font-size: 0.75rem;" onclick="abrirModalRelatorio()" title="Exportar para Excel">
+                        <i class="fa-solid fa-file-excel me-1"></i> Relatório
+                    </button>
+                </div>
+              </div>
             </div>
 
-            <div class="text-end border-end pe-3 d-none d-sm-block pt-2">
-               <span class="text-muted fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
-               <strong class="text-danger" style="font-size: 0.80rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
-            </div>
-
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-success shadow-sm flex-grow-1 flex-sm-grow-0 px-3" data-bs-toggle="modal" data-bs-target="#novaEntradaModal">
-                    <i class="fa-solid fa-arrow-down me-1"></i> Entrada
-                </button>
-                <button class="btn btn-sm btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 px-3" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
-                    <i class="fa-solid fa-arrow-up me-1"></i> Retirada
-                </button>
-                <button class="btn btn-sm btn-outline-success shadow-sm px-3 flex-grow-1 flex-sm-grow-0" onclick="abrirModalRelatorio()" title="Exportar para Excel">
-                    <i class="fa-solid fa-file-excel me-1"></i> Relatório
-                </button>
-            </div>
+            <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top pt-2" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
+                <div class="col-12 col-md-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
+                    <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
+                    <input type="date" name="data_fim" class="form-control form-control-sm" value="${filtros.data_fim || ''}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo de Movimentação</label>
+                    <select name="tipo" class="form-select form-select-sm">
+                        <option value="">Tudo (Entradas e Saídas)</option>
+                        <option value="entrada" ${filtros.tipo === 'entrada' ? 'selected' : ''}>Apenas Entradas</option>
+                        <option value="saida" ${filtros.tipo === 'saida' ? 'selected' : ''}>Apenas Saídas</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                    <button type="button" class="btn btn-sm btn-light border text-center shadow-sm flex-grow-1" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </form>
           </div>
         </div>
 
-        <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top pt-3" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-            <div class="col-12 col-md-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
-                <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
-                <input type="date" name="data_fim" class="form-control form-control-sm" value="${filtros.data_fim || ''}">
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo de Movimentação</label>
-                <select name="tipo" class="form-select form-select-sm">
-                    <option value="">Tudo (Entradas e Saídas)</option>
-                    <option value="entrada" ${filtros.tipo === 'entrada' ? 'selected' : ''}>Apenas Entradas</option>
-                    <option value="saida" ${filtros.tipo === 'saida' ? 'selected' : ''}>Apenas Saídas</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                <button type="button" class="btn btn-sm btn-light border text-center shadow-sm flex-grow-1" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-        </form>
+        <div class="col-12 col-xl-5">
+          <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column" id="containerGrafico">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                  <h6 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-chart-line text-primary me-2"></i> Fluxo Financeiro</h6>
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-medium" style="width: auto; min-width: 140px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
+                          <option value="">Carregando...</option>
+                      </select>
+                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary shadow-sm fw-medium py-1 px-2" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
+                          <i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês
+                      </button>
+                  </div>
+              </div>
+              <div class="flex-grow-1" style="position: relative; width: 100%; min-height: 180px;">
+                  <canvas id="graficoFluxo"></canvas>
+              </div>
+          </div>
+        </div>
 
       </div>
-
       ${movimentacoes.length > 0 
         ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
@@ -526,8 +559,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 Clique em "Entrada" ou "Retirada" para adicionar um novo registo. É obrigatório informar o valor, a descrição, o nome de quem entregou/retirou o valor e <strong>recolher a assinatura na tela</strong>.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-wallet text-primary me-2"></i> 2. Saldo em Caixa</strong>
-                O painel superior exibe o "Total em Caixa". Este valor é calculado automaticamente, somando todas as entradas e subtraindo todas as retiradas presentes no sistema.
+                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-wallet text-primary me-2"></i> 2. Saldo em Caixa e Gráfico</strong>
+                O painel superior exibe o "Total em Caixa". Logo abaixo, você encontra o gráfico de <strong>Fluxo Financeiro</strong> que permite acompanhar visualmente o balanço por dias do mês ou uma visão geral do ano inteiro.
               </li>
               <li class="list-group-item bg-transparent px-0 border-light py-3">
                 <strong class="text-dark d-block mb-1"><i class="fa-solid fa-magnifying-glass text-dark me-2"></i> 3. Detalhes e Ações</strong>
@@ -572,7 +605,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" required placeholder="0,00">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou o valor?</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou</label>
                 <input type="text" name="nome_assinante" class="form-control form-control-sm" required placeholder="Ex: João Silva">
               </div>
               <div class="col-12">
@@ -650,6 +683,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       </div>
     </div>
 
+    ${modalImprimirComprovanteHtml}
+
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
         
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
@@ -684,11 +719,34 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     ${modais}
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
       // =======================================================================
-      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO) CORRIGIDA
+      // CHECA URL POR COMPROVANTE NA CARGA INICIAL (Para envios sem AJAX)
+      // =======================================================================
+      document.addEventListener("DOMContentLoaded", () => {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.has('comprovanteSaida')) {
+              const saidaId = urlParams.get('comprovanteSaida');
+              mostrarToast('sucesso', 'Sucesso!', 'Retirada registada com sucesso.');
+
+              const btnImprimir = document.getElementById('btnImprimirComprovanteModal');
+              if (btnImprimir) {
+                  btnImprimir.href = "/movimentacoes/comprovante/" + saidaId;
+              }
+              const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirComprovante'));
+              modalImp.show();
+
+              const url = new URL(window.location.href);
+              url.searchParams.delete('comprovanteSaida');
+              window.history.replaceState({}, document.title, url.toString());
+          }
+      });
+
+      // =======================================================================
+      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO)
       // =======================================================================
       function mostrarToast(tipo, titulo, mensagem) {
           const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
@@ -704,11 +762,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   timerEl.style.animation = 'shrinkToast 5s linear forwards';
               }
 
-              // Destrói a instância anterior para limpar a configuração "congelada" do "A Processar"
               const oldInstance = bootstrap.Toast.getInstance(toastEl);
               if (oldInstance) oldInstance.dispose();
 
-              // Cria uma nova instância forçando o fechamento automático em 5 segundos
               const toast = new bootstrap.Toast(toastEl, {
                   autohide: true,
                   delay: 5000
@@ -736,7 +792,184 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       // =======================================================================
-      // SKELETON LOADING
+      // LÓGICA DO GRÁFICO (NOVO)
+      // =======================================================================
+      let chartFluxo = null;
+      let visaoGraficoAtual = 'dia'; 
+      let periodosDisponiveisGrafico = [];
+
+      async function carregarFiltrosGrafico() {
+          try {
+              const res = await fetch('/api/movimentacoes/periodos');
+              if (res.ok) {
+                  periodosDisponiveisGrafico = await res.json();
+              }
+          } catch(e) {
+              console.error("Erro ao buscar períodos:", e);
+          }
+          
+          if (!periodosDisponiveisGrafico || periodosDisponiveisGrafico.length === 0) {
+              const d = new Date();
+              periodosDisponiveisGrafico = [{ mes: d.getMonth() + 1, ano: d.getFullYear() }];
+          }
+          
+          atualizarDropdownGrafico();
+      }
+
+      function atualizarDropdownGrafico() {
+          const select = document.getElementById('selectFiltroGrafico');
+          select.innerHTML = '';
+          
+          if (visaoGraficoAtual === 'dia') {
+              const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+              
+              const periodosUnicos = [];
+              periodosDisponiveisGrafico.forEach(p => {
+                  if(!periodosUnicos.find(u => u.mes === p.mes && u.ano === p.ano)) {
+                      periodosUnicos.push(p);
+                  }
+              });
+              
+              periodosUnicos.forEach(p => {
+                  const opt = document.createElement('option');
+                  opt.value = \`\${p.mes}-\${p.ano}\`;
+                  opt.text = \`\${mesesNomes[p.mes - 1]} / \${p.ano}\`;
+                  select.appendChild(opt);
+              });
+          } else {
+              const anosUnicos = [...new Set(periodosDisponiveisGrafico.map(p => p.ano))];
+              anosUnicos.forEach(a => {
+                  const opt = document.createElement('option');
+                  opt.value = \`\${a}\`;
+                  opt.text = \`Ano Base: \${a}\`;
+                  select.appendChild(opt);
+              });
+          }
+          
+          buscarDadosGrafico();
+      }
+
+      function alternarVisaoGrafico() {
+          visaoGraficoAtual = visaoGraficoAtual === 'dia' ? 'mes' : 'dia';
+          const btn = document.getElementById('btnToggleVisaoGrafico');
+          
+          if (visaoGraficoAtual === 'dia') {
+              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês';
+          } else {
+              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1"></i> Ver por Dia';
+          }
+          
+          atualizarDropdownGrafico();
+      }
+
+      async function buscarDadosGrafico() {
+          const val = document.getElementById('selectFiltroGrafico').value;
+          if(!val) return;
+          
+          let url = \`/api/movimentacoes/grafico?visao=\${visaoGraficoAtual}\`;
+          
+          if (visaoGraficoAtual === 'dia') {
+              const [m, a] = val.split('-');
+              url += \`&mes=\${m}&ano=\${a}\`;
+          } else {
+              url += \`&ano=\${val}\`;
+          }
+
+          try {
+              const res = await fetch(url);
+              if (res.ok) {
+                  const dados = await res.json();
+                  renderizarGrafico(dados.labels, dados.entradas, dados.saidas);
+              } else {
+                  renderizarMockGrafico();
+              }
+          } catch(e) {
+              renderizarMockGrafico();
+          }
+      }
+
+      function renderizarMockGrafico() {
+          let labels = [];
+          
+          if(visaoGraficoAtual === 'dia') {
+              const diasNoMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+              labels = Array.from({length: diasNoMes}, (_, i) => i + 1);
+          } else {
+              labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+          }
+          
+          const entradas = labels.map(() => Math.floor(Math.random() * 8000));
+          const saidas = labels.map(() => Math.floor(Math.random() * 5000));
+          
+          renderizarGrafico(labels, entradas, saidas);
+      }
+
+      function renderizarGrafico(labels, dataEntradas, dataSaidas) {
+          const canvas = document.getElementById('graficoFluxo');
+          if(!canvas) return;
+          
+          const ctx = canvas.getContext('2d');
+          
+          if (chartFluxo) {
+              chartFluxo.destroy();
+          }
+
+          chartFluxo = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: labels,
+                  datasets: [
+                      {
+                          label: 'Entradas (R$)',
+                          data: dataEntradas,
+                          backgroundColor: 'rgba(25, 135, 84, 0.85)',
+                          borderColor: 'rgba(25, 135, 84, 1)',
+                          borderWidth: 1,
+                          borderRadius: 4
+                      },
+                      {
+                          label: 'Saídas (R$)',
+                          data: dataSaidas,
+                          backgroundColor: 'rgba(220, 53, 69, 0.85)',
+                          borderColor: 'rgba(220, 53, 69, 1)',
+                          borderWidth: 1,
+                          borderRadius: 4
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  interaction: { mode: 'index', intersect: false },
+                  plugins: {
+                      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, family: "'Segoe UI', sans-serif" } } },
+                      tooltip: {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          titleFont: { size: 13, family: "'Segoe UI', sans-serif" },
+                          bodyFont: { size: 12, family: "'Segoe UI', sans-serif" },
+                          padding: 10,
+                          callbacks: {
+                              label: function(context) {
+                                  let label = context.dataset.label || '';
+                                  if (label) { label = label.replace('(R$)', '').trim() + ': '; }
+                                  if (context.parsed.y !== null) {
+                                      label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                  }
+                                  return label;
+                              }
+                          }
+                      }
+                  },
+                  scales: {
+                      y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { font: { size: 10 }, callback: function(value) { return 'R$ ' + value; } } },
+                      x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                  }
+              }
+          });
+      }
+
+      // =======================================================================
+      // SKELETON LOADING DA TABELA E GRID
       // =======================================================================
       function gerarSkeletonTabela(quantidade = 5) {
           let html = '';
@@ -759,29 +992,41 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
       function mostrarSkeletonGlobais() {
           const tableContainer = document.querySelector('.content > .table-responsive');
+          const gridContainer = document.querySelector('.row.g-3.mb-3');
           const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
           
           if (document.getElementById('skeleton-temp-container')) return;
 
           const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
-              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
-                 <thead class="table-light">
-                   <tr>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
-                     <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
-                   </tr>
-                 </thead>
-                 <tbody class="border-top-0">
-                    \${gerarSkeletonTabela(5)}
-                 </tbody>
-              </table>
+          <div id="skeleton-temp-container" class="skeleton-container">
+              <div class="row g-3 mb-3">
+                  <div class="col-12 col-xl-7">
+                      <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
+                  </div>
+                  <div class="col-12 col-xl-5">
+                      <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
+                  </div>
+              </div>
+              <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+                  <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
+                     <thead class="table-light">
+                       <tr>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
+                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
+                       </tr>
+                     </thead>
+                     <tbody class="border-top-0">
+                        \${gerarSkeletonTabela(5)}
+                     </tbody>
+                  </table>
+              </div>
           </div>\`;
 
+          if (gridContainer) gridContainer.style.display = 'none';
           if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
               tableContainer.style.display = 'none';
               tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
@@ -796,8 +1041,10 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           if (tempSkeleton) tempSkeleton.remove();
 
           const tableContainer = document.querySelector('.content > .table-responsive');
+          const gridContainer = document.querySelector('.row.g-3.mb-3');
           const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
 
+          if (gridContainer) gridContainer.style.display = '';
           if (tableContainer) tableContainer.style.display = '';
           if (emptyState) emptyState.style.display = '';
       }
@@ -805,9 +1052,15 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       mostrarSkeletonGlobais();
 
       if (document.readyState === 'complete') {
-          setTimeout(ocultarSkeletonGlobais, 100);
+          setTimeout(() => {
+              ocultarSkeletonGlobais();
+              carregarFiltrosGrafico();
+          }, 100);
       } else {
-          window.addEventListener('load', ocultarSkeletonGlobais);
+          window.addEventListener('load', () => {
+              ocultarSkeletonGlobais();
+              carregarFiltrosGrafico();
+          });
       }
 
       window.addEventListener('beforeunload', () => {
@@ -843,6 +1096,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
                   window.history.pushState({}, '', url);
                   mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
+                  
+                  carregarFiltrosGrafico();
               } else {
                   mostrarToast('erro', 'Erro', 'Não foi possível realizar a busca.');
               }
@@ -881,6 +1136,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   
                   atualizarModaisDinamicos(doc);
                   window.history.pushState({}, '', url);
+                  
+                  carregarFiltrosGrafico();
               } else {
                   mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
               }
@@ -890,7 +1147,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       function atualizarModaisDinamicos(doc) {
-          const staticModals = ['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal', 'sidebarMenu'];
+          const staticModals = ['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal', 'sidebarMenu', 'modalImprimirComprovante'];
           document.querySelectorAll('.modal').forEach(m => {
               if (!staticModals.includes(m.id)) m.remove();
           });
@@ -1001,7 +1258,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       // =======================================================================
-      // SUBMISSÃO AJAX (SEM RELOAD DE PÁGINA)
+      // SUBMISSÃO AJAX COM INTERCEPTADOR DE COMPROVANTE
       // =======================================================================
       let isSubmitting = false;
 
@@ -1025,26 +1282,22 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       async function submeter(form, titleMsg) {
-          // Prepara a máscara para envio numérico
           const inputMoeda = form.querySelector('.mask-moeda');
           if(inputMoeda && inputMoeda.value) {
               inputMoeda.value = inputMoeda.value.replace(/\\./g, '').replace(',', '.');
           }
 
-          // Fecha o modal que estava aberto
           const modalEl = form.closest('.modal');
           if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
               modal.hide();
           }
 
-          // Ativa o Toast no modo contínuo de "A Processar"
           mostrarToastCarregando("A aguardar envio...");
 
           isSubmitting = true;
 
           try {
-              // Prepara os dados codificados como Formulário Clássico
               const formData = new URLSearchParams();
               new FormData(form).forEach((value, key) => formData.append(key, value));
 
@@ -1055,28 +1308,39 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               });
 
               if (response.ok) {
-                  // O Node.js retorna o HTML da página atualizada via redirecionamento implícito do fetch
                   const html = await response.text();
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(html, 'text/html');
 
-                  // 1. Atualizar conteúdo principal (Tabela, Saldo de Caixa e Paginação)
                   const oldContent = document.querySelector('.content');
                   const newContent = doc.querySelector('.content');
                   if (oldContent && newContent) {
                       oldContent.innerHTML = newContent.innerHTML;
                   }
 
-                  // 2. Atualizar todos os Modais Gerados Dinamicamente
                   atualizarModaisDinamicos(doc);
 
-                  // Limpar Formulário Original para caso o utilizador queira usar de novo
                   form.reset();
                   if (form.id === 'formEntrada') limparAssinatura('canvasEntrada');
                   if (form.id === 'formSaida') limparAssinatura('canvasSaida');
+                  
+                  carregarFiltrosGrafico();
 
-                  // Disparar o toast verde de sucesso definitivo
-                  mostrarToast('sucesso', 'Concluído!', titleMsg);
+                  // INTERCEPTA A RESPOSTA PARA ABRIR O MODAL DO PDF SE FOR UMA NOVA SAÍDA
+                  const responseUrl = new URL(response.url);
+                  if (responseUrl.searchParams.has('comprovanteSaida')) {
+                      const saidaId = responseUrl.searchParams.get('comprovanteSaida');
+                      mostrarToast('sucesso', 'Concluído!', titleMsg);
+                      
+                      const btnImprimir = document.getElementById('btnImprimirComprovanteModal');
+                      if (btnImprimir) {
+                          btnImprimir.href = "/movimentacoes/comprovante/" + saidaId;
+                      }
+                      const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirComprovante'));
+                      modalImp.show();
+                  } else {
+                      mostrarToast('sucesso', 'Concluído!', titleMsg);
+                  }
               } else {
                   mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
               }

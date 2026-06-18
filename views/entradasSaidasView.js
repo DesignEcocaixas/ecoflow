@@ -120,7 +120,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           </div>
           <div class="modal-footer bg-light border-0 d-flex flex-nowrap gap-2">
              ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-danger w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Comprovante</a>` : ''}
-             <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar</button>
+             <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar Detalhes</button>
           </div>
         </div>
       </div>
@@ -475,13 +475,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
         <div class="col-12 col-xl-5">
           <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column" id="containerGrafico">
-              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                  <h6 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-chart-line text-primary me-2"></i> Fluxo Financeiro</h6>
-                  <div class="d-flex gap-2 align-items-center flex-wrap">
-                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-medium" style="width: auto; min-width: 140px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-nowrap">
+                  <h6 class="mb-0 fw-bold text-dark text-nowrap"><i class="fa-solid fa-chart-line text-primary me-2"></i> Fluxo Financeiro</h6>
+                  <div class="d-flex gap-2 align-items-center flex-nowrap">
+                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-medium" style="width: auto; min-width: 110px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
                           <option value="">Carregando...</option>
                       </select>
-                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary shadow-sm fw-medium py-1 px-2" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
+                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary shadow-sm fw-medium py-1 px-2 text-nowrap" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
                           <i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês
                       </button>
                   </div>
@@ -605,7 +605,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" required placeholder="0,00">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou o valor?</label>
                 <input type="text" name="nome_assinante" class="form-control form-control-sm" required placeholder="Ex: João Silva">
               </div>
               <div class="col-12">
@@ -892,7 +892,17 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           let labels = [];
           
           if(visaoGraficoAtual === 'dia') {
-              const diasNoMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+              let ano = new Date().getFullYear();
+              let mes = new Date().getMonth() + 1;
+              const val = document.getElementById('selectFiltroGrafico').value;
+              
+              if (val && val.includes('-')) {
+                  const partes = val.split('-');
+                  mes = parseInt(partes[0], 10);
+                  ano = parseInt(partes[1], 10);
+              }
+              
+              const diasNoMes = new Date(ano, mes, 0).getDate();
               labels = Array.from({length: diasNoMes}, (_, i) => i + 1);
           } else {
               labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];

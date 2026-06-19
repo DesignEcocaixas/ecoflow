@@ -2740,51 +2740,63 @@ app.get("/entradas-saidas", (req, res) => {
     }
 
     const limit = 20;
-
     const { data_inicio, data_fim, tipo } = req.query;
-    let where = [];
-    let params = [];
+    
+    // -------------------------------------------------------------
+    // FILTROS DA LISTA E DA PAGINAÇÃO (Respeita data e tipo)
+    // -------------------------------------------------------------
+    let whereList = [];
+    let paramsList = [];
+    
+    if (data_inicio) { whereList.push("data >= ?"); paramsList.push(data_inicio); }
+    if (data_fim) { whereList.push("data <= ?"); paramsList.push(data_fim); }
+    if (tipo === "entrada" || tipo === "saida") { whereList.push("tipo = ?"); paramsList.push(tipo); }
+    
+    const whereListSql = whereList.length ? "WHERE " + whereList.join(" AND ") : "";
+    console.log(`[Filtros Lista] SQL Dinâmico: ${whereListSql || "Nenhum filtro aplicado"} | Parâmetros:`, paramsList);
 
-    if (data_inicio) {
-        where.push("data >= ?");
-        params.push(data_inicio);
+    // -------------------------------------------------------------
+    // FILTROS DOS INDICADORES DE ENTRADA E SAÍDA (Respeita apenas datas ou Mês Atual)
+    // -------------------------------------------------------------
+    let whereIndic = [];
+    let paramsIndic = [];
+    
+    if (data_inicio) { whereIndic.push("data >= ?"); paramsIndic.push(data_inicio); }
+    if (data_fim) { whereIndic.push("data <= ?"); paramsIndic.push(data_fim); }
+    
+    // NOVO: Se não houver filtro de data, restringe Entradas e Saídas estritamente ao mês atual!
+    if (!data_inicio && !data_fim) {
+        whereIndic.push("MONTH(data) = MONTH(CURRENT_DATE()) AND YEAR(data) = YEAR(CURRENT_DATE())");
     }
-    if (data_fim) {
-        where.push("data <= ?");
-        params.push(data_fim);
-    }
-    if (tipo === "entrada" || tipo === "saida") {
-        where.push("tipo = ?");
-        params.push(tipo);
-    }
+    
+    const whereIndicSql = whereIndic.length ? "WHERE " + whereIndic.join(" AND ") : "";
 
-    const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-
-    console.log(`[Filtros] SQL Dinâmico: ${whereSql || "Nenhum filtro aplicado"} | Parâmetros:`, params);
-
-    // NOVO: Query para buscar a SOMA TOTAL REAL do banco, ignorando a paginação!
-    db.query(`
+    // -------------------------------------------------------------
+    // QUERY 1: BUSCA DE TODOS OS TOTAIS COM PRECISÃO EM UMA SÓ CONSULTA
+    // -------------------------------------------------------------
+    const sqlTotais = `
         SELECT 
-            COUNT(*) AS total,
-            SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END) AS total_entradas,
-            SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END) AS total_saidas
-        FROM movimentacoes ${whereSql}
-    `, params, (errCount, rowsCount) => {
-        if (errCount) {
-            console.error("[Erro Banco de Dados] Falha ao contar movimentações e somar totais:", errCount);
+            (SELECT COUNT(*) FROM movimentacoes ${whereListSql}) AS total_itens,
+            (SELECT COALESCE(SUM(valor), 0) FROM movimentacoes ${whereIndicSql} ${whereIndic.length ? 'AND' : 'WHERE'} tipo = 'entrada') AS total_entradas,
+            (SELECT COALESCE(SUM(valor), 0) FROM movimentacoes ${whereIndicSql} ${whereIndic.length ? 'AND' : 'WHERE'} tipo = 'saida') AS total_saidas,
+            (SELECT COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE -valor END), 0) FROM movimentacoes) AS total_caixa
+    `;
+    
+    // Mapeamento milimétrico de parâmetros para as subqueries (a do caixa geral não leva parâmetros)
+    const paramsTotais = [...paramsList, ...paramsIndic, ...paramsIndic];
+
+    db.query(sqlTotais, paramsTotais, (errTotais, rowsTotais) => {
+        if (errTotais) {
+            console.error("[Erro Banco de Dados] Falha ao contar movimentações e somar totais:", errTotais);
             return res.status(500).send("Erro interno do servidor.");
         }
 
-        if (!rowsCount || rowsCount.length === 0) {
-            console.warn("[Aviso] A consulta de totais retornou indefinida ou vazia.");
-        }
+        const total = rowsTotais[0]?.total_itens || 0;
+        const totalEntradas = rowsTotais[0]?.total_entradas || 0;
+        const totalSaidas = rowsTotais[0]?.total_saidas || 0;
+        const totalCaixa = rowsTotais[0]?.total_caixa || 0;
 
-        const total = rowsCount[0]?.total || 0;
-        const totalEntradas = rowsCount[0]?.total_entradas || 0;
-        const totalSaidas = rowsCount[0]?.total_saidas || 0;
-        const totalCaixa = totalEntradas - totalSaidas;
-
-        console.log(`[Cálculos de Caixa] Entradas: ${totalEntradas} | Saídas: ${totalSaidas} | Saldo: ${totalCaixa}`);
+        console.log(`[Cálculos do Período] Entradas: ${totalEntradas} | Saídas: ${totalSaidas} | Saldo Geral (Todo Período): ${totalCaixa}`);
 
         const totalPages = Math.max(1, Math.ceil(total / limit));
         const currentPage = Math.min(Math.max(page, 1), totalPages);
@@ -2792,10 +2804,13 @@ app.get("/entradas-saidas", (req, res) => {
 
         console.log(`[Paginação] Total Itens: ${total} | Páginas: ${totalPages} | Atual: ${currentPage} | Offset: ${currentOffset}`);
 
-        const queryParams = [...params, limit, currentOffset];
+        // -------------------------------------------------------------
+        // QUERY 2: BUSCAR APENAS OS REGISTROS DA PÁGINA ATUAL (COM LIMIT/OFFSET)
+        // -------------------------------------------------------------
+        const queryParamsLista = [...paramsList, limit, currentOffset];
 
-        db.query(`SELECT * FROM movimentacoes ${whereSql} ORDER BY data DESC, id DESC LIMIT ? OFFSET ?`,
-            queryParams,
+        db.query(`SELECT * FROM movimentacoes ${whereListSql} ORDER BY data DESC, id DESC LIMIT ? OFFSET ?`,
+            queryParamsLista,
             (errMov, movimentacoes) => {
                 if (errMov) {
                     console.error("[Erro Banco de Dados] Falha ao buscar as movimentações paginadas:", errMov);
@@ -2804,7 +2819,8 @@ app.get("/entradas-saidas", (req, res) => {
 
                 try {
                     console.log(`[Sucesso] Renderizando view com ${movimentacoes.length} registros para o usuário ${usuario.nome}.`);
-                    // Repassando os valores corretos calculados no banco para a view
+                    
+                    // A view agora recebe os totais blindados e corretos vindos do Banco de Dados
                     res.send(require('./views/entradasSaidasView')(
                         usuario,
                         movimentacoes,
@@ -2815,7 +2831,8 @@ app.get("/entradas-saidas", (req, res) => {
                     console.error("[Erro Crítico] Falha na renderização da View 'entradasSaidasView':", renderError);
                     res.status(500).send("Ocorreu um erro interno ao tentar exibir a interface.");
                 }
-            });
+            }
+        );
     });
 });
 

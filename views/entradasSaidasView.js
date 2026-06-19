@@ -22,7 +22,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
   const dataAtual = new Date();
   const mesAtualStr = meses[dataAtual.getMonth()] + ' de ' + dataAtual.getFullYear();
 
-  // Valores reais vindos diretamente do banco de dados (ignorando a paginação)
+  // =======================================================================
+  // VALORES EXATOS VINDO DO BACKEND (Ignorando qualquer limite de paginação)
+  // =======================================================================
   const totalEntradas = paginacao.totalEntradas || 0;
   const totalSaidas = paginacao.totalSaidas || 0;
   const totalCaixaCalc = paginacao.totalCaixa || 0;

@@ -1225,8 +1225,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                               pix: mot.pix, banco: mot.banco, cpf: mot.cpf
                           };
                       }
-                      colaboradoresPagamentos[mot.nome].rotas.push(\`Rota #\${c.id}  |  \${c.data_formatada}\`);
-                      colaboradoresPagamentos[mot.nome].registros.push(\`> \${c.data_formatada} - R$ \${valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\`);
+                      colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + " | " + c.data_formatada);
+                      colaboradoresPagamentos[mot.nome].registros.push("> " + c.data_formatada + " - R$ " + valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
                       colaboradoresPagamentos[mot.nome].total += valMot;
                   }
               }
@@ -1243,35 +1243,40 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                           pix: aju.pix, banco: aju.banco, cpf: aju.cpf
                       };
                   }
-                  colaboradoresPagamentos[aju.nome].rotas.push(\`Rota #\${c.id}  |  \${c.data_formatada}\`);
-                  colaboradoresPagamentos[aju.nome].registros.push(\`> \${c.data_formatada} - R$ \${valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\`);
+                  colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + " | " + c.data_formatada);
+                  colaboradoresPagamentos[aju.nome].registros.push("> " + c.data_formatada + " - R$ " + valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
                   colaboradoresPagamentos[aju.nome].total += valAju;
               }
           });
 
-          let msg = \`Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow\\n\\n\`;
+          let msg = "Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow\\n\\n";
 
           Object.keys(colaboradoresPagamentos).forEach(nome => {
               const d = colaboradoresPagamentos[nome];
-              msg += \`[ \${d.tipo}: \${nome} ]\\n\`;
-              msg += d.rotas.join('\\n') + \`\\n\\n\`;
               
-              msg += \`Resumo de Registros:\\n\`;
-              msg += d.registros.join('\\n') + \`\\n\`;
+              msg += "[ " + d.tipo + ": " + nome + " ]\\n";
+              msg += d.rotas.join("\\n") + "\\n\\n";
               
-              msg += \`Dados Bancários:\\n\`;
-              msg += \`> PIX: \${d.pix || 'Não cadastrado'}\\n\`;
-              msg += \`> Banco: \${d.banco || 'Não cadastrado'}\\n\`;
-              msg += \`> CPF: \${d.cpf || 'Não cadastrado'}\\n\`;
-              msg += \`> TOTAL A PAGAR: R$ \${d.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\\n\`;
+              msg += "Resumo de Registros:\\n";
+              msg += d.registros.join("\\n") + "\\n";
               
-              msg += \`--------------------------------------------------------\\n\\n\`;
+              msg += "Dados Bancários:\\n";
+              msg += "> PIX: " + (d.pix || 'Não cadastrado') + "\\n";
+              msg += "> Banco: " + (d.banco || 'Não cadastrado') + "\\n";
+              msg += "> CPF: " + (d.cpf || 'Não cadastrado') + "\\n";
+              msg += "> TOTAL A PAGAR: R$ " + d.total.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + "\\n\\n";
+              
+              msg += "--------------------------------------------------------\\n\\n";
           });
 
-          const url = \`https://wa.me/\${NUMERO_WPP}?text=\${encodeURIComponent(msg)}\`;
+          const url = "https://wa.me/" + NUMERO_WPP + "?text=" + encodeURIComponent(msg);
           window.open(url, '_blank');
           
-          bootstrap.Modal.getInstance(document.getElementById('modalMensagemPeriodo')).hide();
+          const modalEl = document.getElementById('modalMensagemPeriodo');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              if(modal) modal.hide();
+          }
       }
 
       function togglePagoState(checkbox) {

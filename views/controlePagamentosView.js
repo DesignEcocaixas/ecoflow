@@ -1172,7 +1172,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               
               // Bloco 1: Lista das Rotas
               dados.rotas.forEach(r => {
-                  msg += \`Rota #\${r.caderno.id}  |  \${r.caderno.data_formatada}\\n\`;
+                  msg += \`ROTA #\${r.caderno.id}  |  \${r.caderno.data_formatada}\\n\`;
               });
               
               msg += \`\\nResumo de Registros:\\n\`;

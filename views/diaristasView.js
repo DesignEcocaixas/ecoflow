@@ -927,22 +927,22 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           if(!p) return;
 
           let msg = \`Relatório de Fechamento de Diárias - Ecoflow\\n\\n\`;
-          msg += \`[ Colaborador: \${p.nome_colaborador} ]\\n\`;
-          msg += \`Pasta #\${p.id}  |  Abertura: \${p.data_abertura}\\n\\n\`;
-          msg += \`*Resumo de Registros:*\\n\`;
+          msg += \`[Diarista: \${p.nome_colaborador} ]\\n\`;
+          msg += \`Pasta #\${p.id}  |  Início: \${p.data_abertura}\\n\\n\`;
+          msg += \`Resumo de Registros:\\n\`;
 
           if(p.itens && p.itens.length > 0) {
               p.itens.forEach(item => {
-                  msg += \`> \${fmtDataJs(item.data_servico)} - \${item.tipo_viagem} (\${item.qtd_entregas} dia): R$ \${parseFloat(item.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}\\n\`;
+                  msg += \`> \${fmtDataJs(item.data_servico)} - \${item.tipo_viagem}: R$ \${parseFloat(item.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}\\n\`;
               });
           }
 
-          msg += \`\\n------------------------\\n\`;
-          msg += \`*TOTAL A PAGAR: R$ \${parseFloat(p.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}*\\n\\n\`;
-          msg += \`*Dados Bancários:*\\n\`;
+          msg += \`\\n-------------------------------------------------\\n\\n\`;
+          msg += \`Dados Bancários:\\n\`;
           msg += \`> PIX: \${p.pix}\\n\`;
           msg += \`> Banco: \${p.banco}\\n\`;
-          msg += \`> CPF: \${p.cpf}\`;
+          msg += \`> CPF: \${p.cpf}\\n\`;
+          msg += \`> TOTAL A PAGAR: R$ \${parseFloat(p.valor_total).toLocaleString('pt-BR', {minimumFractionDigits:2})}\`;
 
           const url = \`https://wa.me/557196785385?text=\${encodeURIComponent(msg)}\`;
           window.open(url, '_blank');

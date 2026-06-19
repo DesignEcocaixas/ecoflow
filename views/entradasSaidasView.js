@@ -23,15 +23,15 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
   const mesAtualStr = meses[dataAtual.getMonth()] + ' de ' + dataAtual.getFullYear();
 
   // =======================================================================
-  // VALORES EXATOS VINDO DO BACKEND (Ignorando qualquer limite de paginação)
+  // VALORES EXATOS VINDO DO BACKEND (Sem limite de paginação)
   // =======================================================================
   const totalEntradas = paginacao.totalEntradas || 0;
   const totalSaidas = paginacao.totalSaidas || 0;
   const totalCaixaCalc = paginacao.totalCaixa || 0;
 
-  // Se o caixa for menor que 0, trava em 0
+  // Se o caixa for menor que 0, trava em 0 na exibição
   const displayTotalCaixa = totalCaixaCalc < 0 ? 0 : totalCaixaCalc;
-  const corTotal = displayTotalCaixa > 0 ? 'success' : 'secondary';
+  const corTotal = displayTotalCaixa > 0 ? 'accent' : 'secondary';
   const sinalTotal = displayTotalCaixa > 0 ? '+' : '';
 
   // GERAR AS LINHAS DA TABELA
@@ -43,32 +43,32 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     return `
     <tr style="cursor: pointer;" class="align-middle table-hover-row" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
-      <td class="text-muted fw-medium py-1 px-3"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
-      <td class="py-1 px-3">
-        <span class="badge bg-${corClass}-subtle text-${corClass} border border-${corClass}-subtle px-2 py-1" style="width: 85px; display: inline-block; text-align: center;">
+      <td class="text-white-50 fw-medium py-2 px-3"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
+      <td class="py-2 px-3">
+        <span class="badge bg-${corClass} bg-opacity-10 text-${corClass} border border-${corClass} border-opacity-50 px-2 py-1" style="width: 85px; display: inline-block; text-align: center;">
           <i class="fa-solid ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
         </span>
       </td>
-      <td class="py-1 px-3">
-        <div class="text-truncate text-dark fw-medium" style="max-width: 250px;" title="${m.descricao}">
+      <td class="py-2 px-3">
+        <div class="text-truncate text-white fw-medium" style="max-width: 250px;" title="${m.descricao}">
           ${m.descricao || "Sem descrição"}
         </div>
       </td>
-      <td class="py-1 px-3">
-        <div class="text-truncate text-dark" style="max-width: 200px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
-          <i class="fa-solid fa-pen-nib text-muted me-1"></i> ${m.nome_assinante || 'Não informado'}
+      <td class="py-2 px-3">
+        <div class="text-truncate text-white-50" style="max-width: 200px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
+          <i class="fa-solid fa-pen-nib text-accent me-1"></i> ${m.nome_assinante || 'Não informado'}
         </div>
       </td>
-      <td class="text-end fw-bold text-${corClass} py-1 px-3">
+      <td class="text-end fw-bold text-${corClass} py-2 px-3">
          ${sinal} R$ ${fmtMoeda(m.valor)}
       </td>
-      <td class="text-center py-1 px-3">
+      <td class="text-center py-2 px-3">
         <div class="btn-group">
-          <button type="button" class="btn btn-sm btn-light border text-warning py-1 px-2 shadow-sm" 
+          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-warning py-1 px-2 shadow-sm" 
                   onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${m.id}')).show();" title="Editar">
             <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
           </button>
-          <button type="button" class="btn btn-sm btn-light border text-danger py-1 px-2 shadow-sm" 
+          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger py-1 px-2 shadow-sm ms-1" 
                   onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirModal${m.id}')).show();" title="Excluir">
             <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
           </button>
@@ -86,43 +86,43 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     return `
     <div class="modal fade" id="detalheModal${m.id}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content erp-modal border-0">
-          <div class="modal-header bg-light">
-            <h6 class="modal-title fw-bold text-dark">Detalhes da Movimentação</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+          <div class="modal-header modal-header-dark border-custom">
+            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-money-bill-transfer text-accent me-2"></i> Detalhes da Movimentação</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4">
+          <div class="modal-body p-4 bg-custom-dark">
             <div class="text-center mb-4">
-              <span class="badge bg-${corClass} mb-2 px-3 py-2" style="font-size:0.8rem; letter-spacing: 1px;">
+              <span class="badge bg-${corClass} bg-opacity-10 text-${corClass} border border-${corClass} border-opacity-50 mb-2 px-3 py-2" style="font-size:0.8rem; letter-spacing: 1px;">
                 MOVIMENTAÇÃO DE ${isEntrada ? 'ENTRADA' : 'SAÍDA'}
               </span>
               <h2 class="fw-bold text-${corClass}">${sinal} R$ ${fmtMoeda(m.valor)}</h2>
-              <p class="text-muted mb-0"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</p>
+              <p class="text-white-50 mb-0"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</p>
             </div>
             
-            <div class="bg-light p-3 rounded-3 mb-3 border">
-              <h6 class="fw-bold" style="font-size:0.85rem;">Descrição:</h6>
-              <p class="mb-2 text-dark" style="font-size:0.85rem;">${m.descricao}</p>
+            <div class="bg-custom-darker p-3 rounded-3 mb-3 border border-custom shadow-sm">
+              <h6 class="fw-bold text-white" style="font-size:0.85rem;">Descrição:</h6>
+              <p class="mb-2 text-white-50" style="font-size:0.85rem;">${m.descricao}</p>
               
-              <h6 class="fw-bold mt-3" style="font-size:0.85rem;">Observações:</h6>
-              <p class="mb-0 text-muted" style="font-size:0.8rem;">${m.observacao || "Nenhuma observação registada."}</p>
+              <h6 class="fw-bold mt-3 text-white" style="font-size:0.85rem;">Observações:</h6>
+              <p class="mb-0 text-white-50" style="font-size:0.8rem;">${m.observacao || "Nenhuma observação registada."}</p>
               
-              <h6 class="fw-bold mt-3" style="font-size:0.85rem;">Registrado no sistema por:</h6>
-              <p class="mb-0 text-muted" style="font-size:0.8rem;"><i class="fa-solid fa-desktop me-1"></i> ${m.responsavel || "Sistema"}</p>
+              <h6 class="fw-bold mt-3 text-white" style="font-size:0.85rem;">Registrado no sistema por:</h6>
+              <p class="mb-0 text-white-50" style="font-size:0.8rem;"><i class="fa-solid fa-desktop text-accent me-1"></i> ${m.responsavel || "Sistema"}</p>
             </div>
 
-            <div class="border rounded-3 p-3 text-center bg-white shadow-sm">
-              <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;">Assinatura de: ${m.nome_assinante || "Não informado"}</h6>
+            <div class="border border-custom rounded-3 p-3 text-center bg-custom-darker shadow-sm">
+              <h6 class="fw-bold text-white mb-2" style="font-size:0.85rem;">Assinatura de: ${m.nome_assinante || "Não informado"}</h6>
               ${m.assinatura_base64 
-                ? `<img src="${m.assinatura_base64}" alt="Assinatura" style="max-width: 100%; height: auto; max-height: 150px; border-bottom: 2px solid #eee; padding-bottom: 5px;">` 
+                ? `<img src="${m.assinatura_base64}" alt="Assinatura" style="max-width: 100%; height: auto; max-height: 150px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; filter: invert(1) brightness(2);">` 
                 : `<div class="text-muted py-3" style="font-size:0.8rem;"><i class="fa-solid fa-signature fa-2x opacity-25 mb-2"></i><br>Nenhuma assinatura capturada.</div>`
               }
             </div>
 
           </div>
-          <div class="modal-footer bg-light border-0 d-flex flex-nowrap gap-2">
-             ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-danger w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Comprovante</a>` : ''}
-             <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Fechar Detalhes</button>
+          <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap gap-2">
+             ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Comprovante</a>` : ''}
+             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Fechar Detalhes</button>
           </div>
         </div>
       </div>
@@ -130,38 +130,38 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="editarModal${m.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="/movimentacoes/editar/${m.id}" class="modal-content erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Atualizado!')">
-          <div class="modal-header bg-light">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> Editar Registo</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form method="POST" action="/movimentacoes/editar/${m.id}" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Atualizado!')">
+          <div class="modal-header modal-header-dark border-custom">
+            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> Editar Registo</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 bg-white">
+          <div class="modal-body p-4 bg-custom-dark">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
-                <input type="date" name="data" class="form-control form-control-sm" value="${String(m.data).slice(0,10)}" required>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.8rem;">Data</label>
+                <input type="date" name="data" class="form-control form-control-sm shadow-sm" value="${String(m.data).slice(0,10)}" required>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Valor (R$)</label>
-                <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" value="${fmtMoeda(m.valor)}" required>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.8rem;">Valor (R$)</label>
+                <input type="text" name="valor" class="form-control form-control-sm mask-moeda shadow-sm" oninput="maskMoeda(this)" value="${fmtMoeda(m.valor)}" required>
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Nome de quem ${isEntrada ? 'entregou' : 'retirou'}</label>
-                <input type="text" name="nome_assinante" class="form-control form-control-sm" value="${m.nome_assinante || ""}" required placeholder="Nome do assinante">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.8rem;">Nome de quem ${isEntrada ? 'entregou' : 'retirou'}</label>
+                <input type="text" name="nome_assinante" class="form-control form-control-sm shadow-sm" value="${m.nome_assinante || ""}" required placeholder="Nome do assinante">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Descrição</label>
-                <input type="text" name="descricao" class="form-control form-control-sm" value="${m.descricao}" required>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.8rem;">Descrição</label>
+                <input type="text" name="descricao" class="form-control form-control-sm shadow-sm" value="${m.descricao}" required>
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Observações</label>
-                <textarea name="observacao" class="form-control form-control-sm" rows="2">${m.observacao || ""}</textarea>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.8rem;">Observações</label>
+                <textarea name="observacao" class="form-control form-control-sm shadow-sm" rows="2">${m.observacao || ""}</textarea>
               </div>
             </div>
           </div>
-          <div class="modal-footer bg-light border-0 d-flex flex-nowrap">
-             <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-             <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
+             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+             <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="fa-solid fa-save me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -169,16 +169,16 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="excluirModal${m.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content erp-modal border-0">
+        <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <form method="POST" action="/movimentacoes/excluir/${m.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Excluído!')">
-            <div class="modal-body text-center p-4">
+            <div class="modal-body text-center p-4 bg-custom-darker">
               <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>
-              <h6 class="fw-bold">Excluir este registo?</h6>
-              <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação é irreversível.</p>
+              <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Excluir este registo?</h6>
+              <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação é irreversível e afetará o saldo.</p>
             </div>
-            <div class="modal-footer bg-light border-0 d-flex flex-nowrap">
-              <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Não</button>
-              <button type="submit" class="btn btn-sm btn-danger w-100">Sim, Excluir</button>
+            <div class="modal-footer modal-footer-dark border-0 justify-content-center d-flex flex-nowrap">
+              <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Não</button>
+              <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold shadow-sm">Sim, Excluir</button>
             </div>
           </form>
         </div>
@@ -208,12 +208,12 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     paginas.forEach(p => {
       if (ultima) {
         if (p - ultima === 2) {
-          html += `<li class="page-item"><a class="page-link text-dark" href="/entradas-saidas?page=${ultima + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">${ultima + 1}</a></li>`;
+          html += `<li class="page-item"><a class="page-link" href="/entradas-saidas?page=${ultima + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">${ultima + 1}</a></li>`;
         } else if (p - ultima > 2) {
-          html += `<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>`;
+          html += `<li class="page-item disabled"><span class="page-link border-0">...</span></li>`;
         }
       }
-      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link ${p === page ? "fw-bold text-dark" : "text-dark"}" href="/entradas-saidas?page=${p}${baseQueryString}" onclick="navegarPagina(event, this.href)">${p}</a></li>`;
+      html += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link" href="/entradas-saidas?page=${p}${baseQueryString}" onclick="navegarPagina(event, this.href)">${p}</a></li>`;
       ultima = p;
     });
 
@@ -224,11 +224,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <nav aria-label="Paginação" class="mt-4">
       <ul class="pagination pagination-sm justify-content-center mb-4">
         <li class="page-item ${page <= 1 ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&laquo;</a>
+          <a class="page-link" href="/entradas-saidas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&laquo;</a>
         </li>
         ${pageLinks}
         <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-          <a class="page-link text-dark" href="/entradas-saidas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&raquo;</a>
+          <a class="page-link" href="/entradas-saidas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -240,23 +240,23 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
   const modalImprimirComprovanteHtml = `
   <div class="modal fade" id="modalImprimirComprovante" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-header bg-white border-0 pb-0 pt-4 px-4">
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
+        <div class="modal-header bg-custom-darker border-0 pb-0 pt-4 px-4">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body text-center p-5 pt-2">
           <div class="mb-4">
-             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid #f5c2c7;">
+             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid rgba(220,53,69,0.3);">
                  <i class="fa-solid fa-file-pdf fa-2x text-danger"></i>
              </div>
           </div>
-          <h5 class="fw-bold text-dark mb-3">Retirada Registada</h5>
-          <p class="text-muted mb-4" style="font-size:0.9rem; line-height: 1.5;">Deseja gerar o comprovante em PDF com a assinatura do recebedor agora?</p>
+          <h5 class="fw-bold text-white mb-3">Retirada Registada</h5>
+          <p class="text-white-50 mb-4" style="font-size:0.85rem; line-height: 1.5;">Deseja gerar o comprovante em PDF com a assinatura do recebedor agora?</p>
           <div class="d-flex flex-column gap-2 mt-2">
              <a href="#" target="_blank" id="btnImprimirComprovanteModal" class="btn btn-danger fw-bold shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalImprimirComprovante')).hide();">
                  <i class="fa-solid fa-file-pdf me-1"></i> Gerar Comprovante
              </a>
-             <button type="button" class="btn btn-light border text-muted fw-bold" data-bs-dismiss="modal">
+             <button type="button" class="btn btn-outline-secondary border-custom text-white-50 fw-bold" data-bs-dismiss="modal">
                  Agora Não
              </button>
           </div>
@@ -277,105 +277,88 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
-      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
-      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
-      .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-      .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; }
-      
-      .erp-modal { border-radius: 12px; border: none; }
-      
-      .signature-pad {
-          border: 2px dashed #ccc;
-          border-radius: 8px;
-          background-color: #fff;
-          cursor: crosshair;
-          width: 100%;
-          height: 180px;
-          touch-action: none;
+      /* Scrollbars Globais (Dark & Green) */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+      html, body, .content, .table-responsive, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
+
+      /* TEMA ESCURO GLOBAL */
+      :root {
+          --bg-color: #151515;
+          --surface-color: #1f1f1f;
+          --verde-ecoflow: #08c068;
+          --verde-hover: #06a056;
       }
 
-      /* Hover forcado para as linhas da tabela */
-      .table-hover-row { transition: background-color 0.2s; }
-      .table-hover-row:hover > td {
-          background-color: rgba(13, 87, 73, 0.06) !important;
-      }
+      body { display: flex; height: 100vh; margin: 0; background-color: var(--bg-color); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+      
+      .sidebar { width: 240px; background-color: var(--surface-color); border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; }
+      .content { flex: 1; padding: 24px; overflow-y: auto; background-color: var(--bg-color); scrollbar-width: none; -ms-overflow-style: none; }
+      .content::-webkit-scrollbar { display: none; }
+      
+      .bg-custom-dark { background-color: #2a2a2a !important; }
+      .bg-custom-darker { background-color: #222222 !important; }
+      .bg-surface { background-color: var(--surface-color) !important; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+      .text-accent { color: var(--verde-ecoflow) !important; }
+      .bg-verde { background-color: var(--verde-ecoflow) !important; color: #1f1f1f !important; }
+
+      .btn-primary, .btn-success { background-color: var(--verde-ecoflow); border-color: var(--verde-ecoflow); color: #1f1f1f; }
+      .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: var(--verde-hover) !important; border-color: var(--verde-hover) !important; color: #1f1f1f !important; }
+      
+      .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+      .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+
+      .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
+      .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: var(--verde-ecoflow); color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
+      .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
+
+      .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+      .modal-header-dark { background-color: #151515; border-bottom: 1px solid rgba(255,255,255,0.05); }
+      .modal-footer-dark { background-color: #151515; border-top: 1px solid rgba(255,255,255,0.05); }
+      
+      .signature-pad { border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; background-color: #e0e0e0; cursor: crosshair; width: 100%; height: 180px; touch-action: none; }
+
+      .table { --bs-table-bg: transparent; --bs-table-color: #fff; --bs-table-hover-bg: rgba(255,255,255,0.06); --bs-table-hover-color: #fff; color: #fff; margin-bottom: 0; }
+      .table thead th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; }
+      .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.05) !important; background-color: transparent !important; color: #fff !important; }
+      .table-hover-row { transition: background-color 0.2s ease; }
+      .table-hover-row:hover > td, .table-hover-row:hover > * { background-color: rgba(255,255,255,0.06) !important; color: #fff !important; box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03); }
+
+      .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+      .pagination .page-item.active .page-link { background-color: var(--verde-ecoflow); border-color: var(--verde-ecoflow); color: #1f1f1f !important; }
+      .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
+      .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); }
 
       /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
-      .toast {
-          transform: translateX(120%); /* Mantém o toast escondido fora da tela */
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
-      }
-      .toast.showing, .toast.show {
-          transform: translateX(0); /* Desliza para dentro da tela */
-      }
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; background-color: #2a2a2a !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.08) !important; }
+      .toast.showing, .toast.show { transform: translateX(0); }
+      .toast-timer { height: 4px; background: var(--verde-ecoflow); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+      @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
       /* ANIMAÇÃO DE ENTRADA E SAÍDA DOS MODAIS */
-      .modal.fade .modal-dialog {
-          transform: scale(0.85) translateY(30px); /* Começa menor e mais abaixo */
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-      }
-      .modal.show .modal-dialog {
-          transform: scale(1) translateY(0); /* Cresce e encaixa na posição original */
-      }
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+      .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
-      .toast-timer {
-          height: 6px;
-          background: rgba(255, 255, 255, 0.4);
-          width: 100%;
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          transform-origin: left;
-      }
-      @keyframes shrinkToast {
-          from { width: 100%; }
-          to { width: 0%; }
-      }
-
-      /* SKELETON LOADING (Isolado para não conflitar com a sidebar) */
-      .skeleton-view {
-          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-          background-size: 200% 100%;
-          animation: skeleton-loading-view 1.5s infinite linear;
-          border-radius: 4px;
-      }
+      /* SKELETON LOADING (Dark) */
+      .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
+      .skeleton-dark * { visibility: hidden !important; }
       .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
       .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
-      @keyframes skeleton-loading-view {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-      }
+      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-      /* Botão Flutuante de Ajuda */
-      .btn-flutuante {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 55px;
-        height: 55px;
-        border-radius: 50%;
-        background-color: #0D5749;
-        color: white;
-        border: none;
-        box-shadow: 0 4px 15px rgba(13, 87, 73, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.6rem;
-        z-index: 1050;
-        transition: all 0.3s ease;
-      }
-      .btn-flutuante:hover {
-        transform: scale(1.1);
-        background-color: #0a4338;
-        color: white;
-        box-shadow: 0 6px 20px rgba(13, 87, 73, 0.6);
-      }
+      /* Botão Flutuante */
+      .btn-flutuante { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background-color: var(--verde-ecoflow); color: #1f1f1f; border: none; box-shadow: 0 4px 15px rgba(8, 192, 104, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; z-index: 1050; transition: all 0.3s ease; }
+      .btn-flutuante:hover { transform: scale(1.1); background-color: var(--verde-hover); color: #1f1f1f; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.6); }
+
+      .hover-verde:hover { color: var(--verde-ecoflow) !important; }
+
+      .offcanvas { background-color: #1f1f1f !important; }
 
       @media (max-width: 767.98px) {
-        body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
+        body { flex-direction: column; } .sidebar { display: none; } .content { width: 100%; padding: 16px; }
       }
     </style>
   </head>
@@ -386,105 +369,105 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       <div class="flex-grow-1">${menuHTML}</div>
     </div>
 
-    <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-      <div class="offcanvas-header border-bottom border-secondary">
-        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+    <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu" style="background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05);">
+      <div class="offcanvas-header border-bottom border-custom">
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
         <div class="text-center mb-4 mt-2"><img src="/img/logo.png" class="img-fluid" style="max-width:140px;"></div>
         ${menuHTML}
-        <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+        <hr class="border-custom mt-4">
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
     <div class="content">
       <div class="d-flex align-items-center gap-3 mb-3">
-        <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+        <button class="btn btn-sm btn-outline-secondary border-custom d-md-none hover-verde" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
         <div>
-          <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer text-muted me-2"></i>Entradas e Saídas</h4>
-          <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
+          <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-money-bill-transfer text-white-50 me-2"></i>Entradas e Saídas</h4>
+          <span class="text-white-50 d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
         </div>
       </div>
 
       <div class="row g-3 mb-3">
         
         <div class="col-12 col-xl-5">
-          <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column">
             
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
               
               <div class="d-flex align-items-center gap-2">
-                <h6 class="mb-0 text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Resumo Financeiro</h6>
-                <span class="badge bg-success-subtle text-success border border-success-subtle shadow-sm">${mesAtualStr}</span>
+                <h6 class="mb-0 text-white-50" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Resumo Financeiro</h6>
+                <span class="badge bg-custom-dark border border-custom text-accent shadow-sm" style="background-color: rgba(8,192,104,0.1) !important;">${mesAtualStr}</span>
               </div>
               
               <div class="d-flex gap-3 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
                 <div class="text-end pe-2 d-none d-sm-block">
-                   <span class="text-muted fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
+                   <span class="text-white-50 fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
                    <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
                 </div>
               
-                <div class="text-end border-end pe-3 d-none d-lg-block pt-2">
-                   <span class="text-muted fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
-                   <strong class="text-success" style="font-size: 0.80rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+                <div class="text-end border-end border-custom pe-3 d-none d-lg-block pt-2">
+                   <span class="text-white-50 fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
+                   <strong class="text-accent" style="font-size: 0.80rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
                 </div>
 
-                <div class="text-end border-end pe-3 d-none d-sm-block pt-2">
-                   <span class="text-muted fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
+                <div class="text-end border-end border-custom pe-3 d-none d-sm-block pt-2">
+                   <span class="text-white-50 fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
                    <strong class="text-danger" style="font-size: 0.80rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button class="btn btn-success shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaEntradaModal">
+                    <button class="btn btn-success shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold text-dark border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaEntradaModal">
                         <i class="fa-solid fa-arrow-down me-1"></i> Entrada
                     </button>
-                    <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
+                    <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
                         <i class="fa-solid fa-arrow-up me-1"></i> Retirada
                     </button>
-                    <button class="btn btn-outline-success shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0" style="font-size: 0.75rem;" onclick="abrirModalRelatorio()" title="Exportar para Excel">
-                        <i class="fa-solid fa-file-excel me-1"></i> Relatório
+                    <button class="btn btn-outline-secondary border-custom text-white shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0 hover-verde" style="font-size: 0.75rem;" onclick="abrirModalRelatorio()" title="Exportar para Excel">
+                        <i class="fa-solid fa-file-excel me-1 text-accent"></i> Relatório
                     </button>
                 </div>
               </div>
             </div>
 
-            <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top pt-2" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
+            <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top border-custom pt-2" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
                 <div class="col-12 col-md-6 col-xxl-3">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
-                    <input type="date" name="data_inicio" class="form-control form-control-sm" value="${filtros.data_inicio || ''}">
+                    <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
+                    <input type="date" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
                 </div>
                 <div class="col-12 col-md-6 col-xxl-3">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
-                    <input type="date" name="data_fim" class="form-control form-control-sm" value="${filtros.data_fim || ''}">
+                    <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Até</label>
+                    <input type="date" name="data_fim" class="form-control form-control-sm shadow-sm" value="${filtros.data_fim || ''}">
                 </div>
                 <div class="col-12 col-md-6 col-xxl-3">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo</label>
-                    <select name="tipo" class="form-select form-select-sm">
+                    <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Tipo</label>
+                    <select name="tipo" class="form-select form-select-sm shadow-sm">
                         <option value="">Tudo (Entradas/Saídas)</option>
                         <option value="entrada" ${filtros.tipo === 'entrada' ? 'selected' : ''}>Apenas Entradas</option>
                         <option value="saida" ${filtros.tipo === 'saida' ? 'selected' : ''}>Apenas Saídas</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-6 col-xxl-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-success flex-grow-1 shadow-sm"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                    <button type="button" class="btn btn-sm btn-light border text-center shadow-sm" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="submit" class="btn btn-sm btn-primary text-dark flex-grow-1 shadow-sm fw-bold border-0"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-center shadow-sm text-danger" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </form>
           </div>
         </div>
 
         <div class="col-12 col-xl-7">
-          <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 d-flex flex-column" id="containerGrafico">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column" id="containerGrafico">
               <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-nowrap">
-                  <h6 class="mb-0 fw-bold text-dark text-nowrap"><i class="fa-solid fa-chart-line text-primary me-2"></i> Fluxo Financeiro</h6>
+                  <h6 class="mb-0 fw-bold text-white text-nowrap" style="font-size:0.85rem;"><i class="fa-solid fa-chart-line text-accent me-2"></i> Fluxo Financeiro</h6>
                   <div class="d-flex gap-2 align-items-center flex-nowrap">
-                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-muted fw-medium" style="width: auto; min-width: 110px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
+                      <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-white-50 fw-medium" style="width: auto; min-width: 110px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
                           <option value="">Carregando...</option>
                       </select>
-                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary shadow-sm fw-medium py-1 px-2 text-nowrap" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
-                          <i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês
+                      <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary border-custom shadow-sm fw-medium py-1 px-2 text-nowrap text-white" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
+                          <i class="fa-solid fa-calendar-days me-1 text-accent"></i> Ver por Mês
                       </button>
                   </div>
               </div>
@@ -496,16 +479,16 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
       </div>
       ${movimentacoes.length > 0 
-        ? `<div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
+        ? `<div class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4">
              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
-               <thead class="table-light">
+               <thead>
                  <tr>
-                   <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
-                   <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
-                   <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
-                   <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
-                   <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
-                   <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0">Data</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0">Tipo</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0">Descrição</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0">Assinante</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0 text-end">Valor (R$)</th>
+                   <th class="py-2 px-3 fw-bold text-white-50 border-0 text-center">Ações</th>
                  </tr>
                </thead>
                <tbody class="border-top-0">
@@ -513,7 +496,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                </tbody>
              </table>
            </div>` 
-        : `<div class="col-12 text-center text-muted mt-4 text-center-empty"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3"></i><p style="font-size:0.9rem;">Nenhuma movimentação registada para este filtro.</p></div>`
+        : `<div class="col-12 text-center text-white-50 mt-4 text-center-empty"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3 d-block"></i><p style="font-size:0.85rem;">Nenhuma movimentação registada para este filtro.</p></div>`
       }
 
       ${paginacaoHtml}
@@ -521,21 +504,21 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="modalRelatorio" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-          <div class="modal-header bg-light">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar Relatório</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
+          <div class="modal-header modal-header-dark border-custom">
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4">
+          <div class="modal-body p-4 bg-custom-dark">
             <div class="mb-3">
-              <label class="form-label text-muted fw-bold small mb-1">Ano Base</label>
-              <select id="relatorioAno" class="form-select form-select-sm"></select>
+              <label class="form-label text-white-50 fw-bold small mb-1">Ano Base</label>
+              <select id="relatorioAno" class="form-select form-select-sm shadow-sm"></select>
             </div>
             <div class="mb-4">
-              <label class="form-label text-muted fw-bold small mb-1">Mês Base</label>
-              <select id="relatorioMes" class="form-select form-select-sm"></select>
+              <label class="form-label text-white-50 fw-bold small mb-1">Mês Base</label>
+              <select id="relatorioMes" class="form-select form-select-sm shadow-sm"></select>
             </div>
-            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
+            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
           </div>
         </div>
       </div>
@@ -547,39 +530,39 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="modalInstrucoes" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
-          <div class="modal-header bg-light border-0">
-            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> Como usar este módulo</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content erp-modal border-0 shadow-lg">
+          <div class="modal-header bg-custom-darker border-0">
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Como usar este módulo</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 text-muted" style="font-size: 0.95rem;">
-            <p class="mb-4">Bem-vindo ao módulo de <strong>Entradas e Saídas</strong>. Siga as orientações abaixo para um controle financeiro eficaz:</p>
+          <div class="modal-body p-4 text-white-50 bg-custom-dark" style="font-size: 0.8rem;">
+            <p class="mb-4">Bem-vindo ao módulo de <strong class="text-white">Entradas e Saídas</strong>. Siga as orientações abaixo para um controle financeiro eficaz:</p>
             
             <ul class="list-group list-group-flush mb-4">
-              <li class="list-group-item bg-transparent px-0 border-light pb-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Registar Movimentação</strong>
-                Clique em "Entrada" ou "Retirada" para adicionar um novo registo. É obrigatório informar o valor, a descrição, o nome de quem entregou/retirou o valor e <strong>recolher a assinatura na tela</strong>.
+              <li class="list-group-item bg-transparent px-0 border-custom pb-3 text-white-50">
+                <strong class="text-white d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Registar Movimentação</strong>
+                Clique em "Entrada" ou "Retirada" para adicionar um novo registo. É obrigatório informar o valor, a descrição, o nome de quem entregou/retirou o valor e <strong class="text-white">recolher a assinatura na tela</strong>.
               </li>
-              <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-wallet text-primary me-2"></i> 2. Saldo em Caixa e Gráfico</strong>
-                O painel superior exibe o "Total em Caixa". Logo abaixo, você encontra o gráfico de <strong>Fluxo Financeiro</strong> que permite acompanhar visualmente o balanço por dias do mês ou uma visão geral do ano inteiro.
+              <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
+                <strong class="text-white d-block mb-1"><i class="fa-solid fa-wallet text-accent me-2"></i> 2. Saldo em Caixa e Gráfico</strong>
+                O painel superior exibe o "Total em Caixa". Logo abaixo, você encontra o gráfico de <strong class="text-white">Fluxo Financeiro</strong> que permite acompanhar visualmente o balanço por dias do mês ou uma visão geral do ano inteiro.
               </li>
-              <li class="list-group-item bg-transparent px-0 border-light py-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-magnifying-glass text-dark me-2"></i> 3. Detalhes e Ações</strong>
-                Clique em cima de qualquer registo na tabela para ver os detalhes completos e confirmar a <strong>assinatura salva</strong>. Caso note algum erro, pode usar os botões de editar (<i class="fa-solid fa-pen text-warning mx-1"></i>) ou excluir (<i class="fa-solid fa-trash text-danger mx-1"></i>) na respetiva linha da tabela.
+              <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
+                <strong class="text-white d-block mb-1"><i class="fa-solid fa-magnifying-glass text-info me-2"></i> 3. Detalhes e Ações</strong>
+                Clique em cima de qualquer registo na tabela para ver os detalhes completos e confirmar a <strong class="text-white">assinatura salva</strong>. Caso note algum erro, pode usar os botões de editar (<i class="fa-solid fa-pen text-warning mx-1"></i>) ou excluir (<i class="fa-solid fa-trash text-danger mx-1"></i>) na respetiva linha da tabela.
               </li>
-              <li class="list-group-item bg-transparent px-0 border-light pt-3">
-                <strong class="text-dark d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 4. Exportar Relatório</strong>
+              <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0 text-white-50">
+                <strong class="text-white d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 4. Exportar Relatório</strong>
                 Clique em "Relatório" para fazer o download imediato de uma planilha Excel com todo o histórico de caixa e as informações dos assinantes.
               </li>
             </ul>
 
-            <div class="alert alert-info border-0 shadow-sm mb-0">
-              <i class="fa-solid fa-lightbulb me-2"></i> <strong>Dica de Assinatura:</strong> Caso a assinatura não fique legível à primeira tentativa, basta clicar em "Limpar Assinatura" logo abaixo do quadro e desenhar de novo antes de guardar.
+            <div class="alert bg-custom-darker border-custom text-white-50 shadow-sm mb-0">
+              <i class="fa-solid fa-lightbulb text-warning me-2"></i> <strong class="text-white">Dica de Assinatura:</strong> Caso a assinatura não fique legível à primeira tentativa, basta clicar em "Limpar Assinatura" logo abaixo do quadro e desenhar de novo antes de guardar.
             </div>
           </div>
-          <div class="modal-footer border-0 bg-light">
-            <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          <div class="modal-footer border-0 bg-custom-darker">
+            <button type="button" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm text-dark border-0" data-bs-dismiss="modal">Entendi</button>
           </div>
         </div>
       </div>
@@ -587,49 +570,49 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="novaEntradaModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
-        <form id="formEntrada" method="POST" action="/movimentacoes/novo" class="modal-content erp-modal" onsubmit="prepararEnvio(event, this, 'Entrada Registada!')">
+        <form id="formEntrada" method="POST" action="/movimentacoes/novo" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararEnvio(event, this, 'Entrada Registada!')">
           <input type="hidden" name="tipo" value="entrada">
           <input type="hidden" name="assinatura_base64" id="assinaturaEntradaHidden">
           
-          <div class="modal-header bg-success text-white border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-arrow-down me-2"></i> Nova Entrada</h6>
+          <div class="modal-header bg-custom-darker text-white border-custom">
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-arrow-down text-accent me-2"></i> Nova Entrada</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           
-          <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-4 bg-custom-dark">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
-                <input type="date" name="data" class="form-control form-control-sm" required>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Data</label>
+                <input type="date" name="data" class="form-control form-control-sm shadow-sm" required>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Valor de Entrada (R$)</label>
-                <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" required placeholder="0,00">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Valor de Entrada (R$)</label>
+                <input type="text" name="valor" class="form-control form-control-sm mask-moeda shadow-sm text-accent fw-bold" oninput="maskMoeda(this)" required placeholder="0,00">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quem entregou o valor?</label>
-                <input type="text" name="nome_assinante" class="form-control form-control-sm" required placeholder="Ex: João Silva">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Quem entregou o valor</label>
+                <input type="text" name="nome_assinante" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João Silva">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Descrição</label>
-                <input type="text" name="descricao" class="form-control form-control-sm" required placeholder="Ex: Pagamento de serviço">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Descrição</label>
+                <input type="text" name="descricao" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pagamento de serviço">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Observações</label>
-                <textarea name="observacao" class="form-control form-control-sm" rows="2" placeholder="Opcional..."></textarea>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Observações</label>
+                <textarea name="observacao" class="form-control form-control-sm shadow-sm" rows="2" placeholder="Opcional..."></textarea>
               </div>
-              <div class="col-12">
-                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Assinatura na Tela</label>
-                <canvas id="canvasEntrada" class="signature-pad"></canvas>
-                <div class="text-end mt-1">
-                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0" onclick="limparAssinatura('canvasEntrada')">Limpar Assinatura</button>
+              <div class="col-12 mt-3 pt-3 border-top border-custom">
+                <label class="form-label text-white fw-bold mb-2" style="font-size:0.75rem;">Assinatura</label>
+                <canvas id="canvasEntrada" class="signature-pad shadow-sm"></canvas>
+                <div class="text-end mt-2">
+                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasEntrada')"><i class="fa-solid fa-eraser me-1"></i> Limpar Assinatura</button>
                 </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer bg-white border-top-0 d-flex flex-nowrap">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm border-0"><i class="fa-solid fa-save me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -637,49 +620,49 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="modal fade" id="novaSaidaModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
-        <form id="formSaida" method="POST" action="/movimentacoes/novo" class="modal-content erp-modal" onsubmit="prepararEnvio(event, this, 'Retirada Registada!')">
+        <form id="formSaida" method="POST" action="/movimentacoes/novo" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararEnvio(event, this, 'Retirada Registada!')">
           <input type="hidden" name="tipo" value="saida">
           <input type="hidden" name="assinatura_base64" id="assinaturaSaidaHidden">
           
-          <div class="modal-header bg-danger text-white border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-arrow-up me-2"></i> Nova Retirada</h6>
+          <div class="modal-header bg-custom-darker text-white border-custom">
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-arrow-up text-danger me-2"></i> Nova Retirada</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           
-          <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-4 bg-custom-dark">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
-                <input type="date" name="data" class="form-control form-control-sm" required>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Data</label>
+                <input type="date" name="data" class="form-control form-control-sm shadow-sm" required>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Valor da Retirada (R$)</label>
-                <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" required placeholder="0,00">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Valor da Retirada (R$)</label>
+                <input type="text" name="valor" class="form-control form-control-sm mask-moeda shadow-sm text-danger fw-bold" oninput="maskMoeda(this)" required placeholder="0,00">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Nome de quem retirou o valor</label>
-                <input type="text" name="nome_assinante" class="form-control form-control-sm" required placeholder="Ex: Maria Santos">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nome de quem retirou o valor</label>
+                <input type="text" name="nome_assinante" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Maria Santos">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Descrição</label>
-                <input type="text" name="descricao" class="form-control form-control-sm" required placeholder="Ex: Compra de materiais">
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Descrição</label>
+                <input type="text" name="descricao" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Compra de materiais">
               </div>
               <div class="col-12">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Observações</label>
-                <textarea name="observacao" class="form-control form-control-sm" rows="2" placeholder="Opcional..."></textarea>
+                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Observações</label>
+                <textarea name="observacao" class="form-control form-control-sm shadow-sm" rows="2" placeholder="Opcional..."></textarea>
               </div>
-              <div class="col-12">
-                <label class="form-label text-dark fw-bold mb-1" style="font-size:0.8rem;">Assinatura na Tela</label>
-                <canvas id="canvasSaida" class="signature-pad"></canvas>
-                <div class="text-end mt-1">
-                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0" onclick="limparAssinatura('canvasSaida')">Limpar Assinatura</button>
+              <div class="col-12 mt-3 pt-3 border-top border-custom">
+                <label class="form-label text-white fw-bold mb-2" style="font-size:0.75rem;">Assinatura na Tela</label>
+                <canvas id="canvasSaida" class="signature-pad shadow-sm"></canvas>
+                <div class="text-end mt-2">
+                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasSaida')"><i class="fa-solid fa-eraser me-1"></i> Limpar Assinatura</button>
                 </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer bg-white border-top-0 d-flex flex-nowrap">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-danger w-100"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold border-0 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -688,35 +671,33 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     ${modalImprimirComprovanteHtml}
 
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
-        
-        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">A processar...</p>
+                <p class="text-white-50 mb-0" style="font-size:0.8rem; opacity: 0.9;" id="sucessoSub">A processar...</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
         </div>
 
-        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+                <p class="text-white-50 mb-0" style="font-size:0.8rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
         </div>
-
     </div>
 
     ${modais}
@@ -856,9 +837,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const btn = document.getElementById('btnToggleVisaoGrafico');
           
           if (visaoGraficoAtual === 'dia') {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1"></i> Ver por Mês';
+              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1 text-accent"></i> Ver por Mês';
           } else {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1"></i> Ver por Dia';
+              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1 text-accent"></i> Ver por Dia';
           }
           
           atualizarDropdownGrafico();
@@ -934,8 +915,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                       {
                           label: 'Entradas (R$)',
                           data: dataEntradas,
-                          backgroundColor: 'rgba(25, 135, 84, 0.85)',
-                          borderColor: 'rgba(25, 135, 84, 1)',
+                          backgroundColor: 'rgba(8, 192, 104, 0.85)',
+                          borderColor: 'rgba(8, 192, 104, 1)',
                           borderWidth: 1,
                           borderRadius: 4
                       },
@@ -954,9 +935,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   maintainAspectRatio: false,
                   interaction: { mode: 'index', intersect: false },
                   plugins: {
-                      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, family: "'Segoe UI', sans-serif" } } },
+                      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, family: "'Segoe UI', sans-serif" }, color: 'rgba(255,255,255,0.7)' } },
                       tooltip: {
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          backgroundColor: '#1f1f1f',
+                          titleColor: '#fff',
+                          bodyColor: '#fff',
+                          borderColor: 'rgba(255,255,255,0.1)',
+                          borderWidth: 1,
                           titleFont: { size: 13, family: "'Segoe UI', sans-serif" },
                           bodyFont: { size: 12, family: "'Segoe UI', sans-serif" },
                           padding: 10,
@@ -975,12 +960,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   scales: {
                       y: { 
                           beginAtZero: true, 
-                          grid: { color: 'rgba(0, 0, 0, 0.05)' }, 
-                          ticks: { font: { size: 10 }, callback: function(value) { return 'R$ ' + value; } } 
+                          grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+                          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, callback: function(value) { return 'R$ ' + value; } } 
                       },
                       x: { 
                           grid: { display: false }, 
                           ticks: { 
+                              color: 'rgba(255,255,255,0.4)',
                               font: { size: 10 },
                               autoSkip: false,
                               maxRotation: 0
@@ -998,15 +984,15 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           let html = '';
           for(let i=0; i<quantidade; i++) {
               html += \`
-              <tr class="align-middle">
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 85px; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                  <td class="py-2 px-3 text-end"><div class="skeleton-view skeleton-text-view" style="width: 50%; margin: 0 0 0 auto;"></div></td>
+              <tr class="align-middle" style="height: 40px;">
+                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 85px; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                  <td class="py-2 px-3 text-end"><div class="skeleton-dark skeleton-text-view" style="width: 50%; margin: 0 0 0 auto;"></div></td>
                   <td class="text-center py-2 px-3 d-flex justify-content-center gap-1">
-                      <div class="skeleton-view skeleton-btn-view"></div>
-                      <div class="skeleton-view skeleton-btn-view"></div>
+                      <div class="skeleton-dark skeleton-btn-view" style="height: 24px; width: 30px;"></div>
+                      <div class="skeleton-dark skeleton-btn-view" style="height: 24px; width: 30px;"></div>
                   </td>
               </tr>\`;
           }
@@ -1016,7 +1002,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       function mostrarSkeletonGlobais() {
           const tableContainer = document.querySelector('.content > .table-responsive');
           const gridContainer = document.querySelector('.row.g-3.mb-3');
-          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+          const emptyState = document.querySelector('.content > .text-center.text-white-50.mt-4');
           
           if (document.getElementById('skeleton-temp-container')) return;
 
@@ -1024,22 +1010,22 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           <div id="skeleton-temp-container" class="skeleton-container">
               <div class="row g-3 mb-3">
                   <div class="col-12 col-xl-5">
-                      <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
+                      <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 skeleton-dark" style="min-height: 180px;"></div>
                   </div>
                   <div class="col-12 col-xl-7">
-                      <div class="bg-white p-3 rounded-3 shadow-sm border border-light h-100 skeleton-view" style="min-height: 180px;"></div>
+                      <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 skeleton-dark" style="min-height: 180px;"></div>
                   </div>
               </div>
-              <div class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4">
-                  <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
-                     <thead class="table-light">
+              <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4">
+                  <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                     <thead>
                        <tr>
-                         <th class="py-2 px-3 fw-bold text-muted border-0">Data</th>
-                         <th class="py-2 px-3 fw-bold text-muted border-0">Tipo</th>
-                         <th class="py-2 px-3 fw-bold text-muted border-0">Descrição</th>
-                         <th class="py-2 px-3 fw-bold text-muted border-0">Assinante</th>
-                         <th class="py-2 px-3 fw-bold text-muted border-0 text-end">Valor (R$)</th>
-                         <th class="py-2 px-3 fw-bold text-muted border-0 text-center">Ações</th>
+                         <th class="py-2 px-3 border-0">Data</th>
+                         <th class="py-2 px-3 border-0">Tipo</th>
+                         <th class="py-2 px-3 border-0">Descrição</th>
+                         <th class="py-2 px-3 border-0">Assinante</th>
+                         <th class="py-2 px-3 border-0 text-end">Valor (R$)</th>
+                         <th class="py-2 px-3 border-0 text-center">Ações</th>
                        </tr>
                      </thead>
                      <tbody class="border-top-0">
@@ -1065,11 +1051,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
           const tableContainer = document.querySelector('.content > .table-responsive');
           const gridContainer = document.querySelector('.row.g-3.mb-3');
-          const emptyState = document.querySelector('.content > .text-center.text-muted.mt-4');
+          const emptyState = document.querySelector('.content > .text-center.text-white-50.mt-4');
 
-          if (gridContainer) gridContainer.style.display = '';
-          if (tableContainer) tableContainer.style.display = '';
-          if (emptyState) emptyState.style.display = '';
+          if (gridContainer) gridContainer.style.display = 'flex';
+          if (tableContainer) tableContainer.style.display = 'block';
+          if (emptyState) emptyState.style.display = 'block';
       }
 
       mostrarSkeletonGlobais();
@@ -1199,7 +1185,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const ctx = canvas.getContext('2d');
           ctx.scale(dpr, dpr);
           
-          ctx.strokeStyle = "#000000";
+          ctx.strokeStyle = "#1f1f1f"; // Tinta preta no fundo claro
           ctx.lineWidth = 1.2;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";

@@ -16,39 +16,84 @@ module.exports = function propostasView(usuario) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { display: flex; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: 'Roboto', system-ui, -apple-system, sans-serif; }
-    
-    /* Layout Padrão Ecoflow */
-    .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column; }
-    .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s; }
-    .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-    .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; }
-    
-    .usuario-badge { 
-        background-color: white; 
-        color: #0D5749; 
-        padding: 6px 14px; 
-        border-radius: 20px; 
-        border: 1px solid rgba(13,87,73,0.2);
-        font-size: 0.85rem; 
-        font-weight: 500; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
-    }
+    /* Scrollbars Globais (Dark & Green) */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+    html, body, .content, .table-responsive, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
 
-    /* Estilos do Módulo de Propostas */
-    .btn-brand { background-color: #0D5749; color: white; }
-    .btn-brand:hover { background-color: #0a4338; color: white; }
-    .text-brand { color: #0D5749; }
+    body { display: flex; height: 100vh; margin: 0; background-color: #1f1f1f; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+    .sidebar { width: 240px; background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; }
     
-    /* Hover Tabela e Linhas Verdes */
-    .table-hover-row { transition: background-color 0.2s; }
-    .table-hover-row:hover > td { background-color: rgba(13, 87, 73, 0.06) !important; }
+    .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; background-color: #1f1f1f; }
     
-    .table-success-custom > td { background-color: #f0fdf4 !important; }
-    .table-success-custom:hover > td { background-color: #dcfce7 !important; }
+    /* Tema Escuro Customizado */
+    .bg-custom-dark { background-color: #2a2a2a !important; }
+    .bg-custom-darker { background-color: #222222 !important; }
+    .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+    .text-accent { color: #08c068 !important; }
+
+    /* Modificadores Bootstrap */
+    .text-dark { color: #ffffff !important; }
+    .text-muted { color: rgba(255,255,255,0.5) !important; }
     
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    /* Botões */
+    .btn-primary, .btn-brand { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
+    .btn-primary:hover, .btn-brand:hover, .btn-primary:active, .btn-brand:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
+    .btn-outline-primary, .btn-outline-success { color: #08c068; border-color: #08c068; }
+    .btn-outline-primary:hover, .btn-outline-success:hover { background-color: #08c068; color: #1f1f1f; border-color: #08c068; }
+    
+    .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+    .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+
+    /* Inputs e Selects */
+    .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
+    .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
+    .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
+
+    /* Tabelas e Modais */
+    .table { 
+        --bs-table-bg: transparent; 
+        --bs-table-color: #fff; 
+        --bs-table-hover-bg: rgba(255,255,255,0.06);
+        --bs-table-hover-color: #fff;
+        color: #fff; 
+        margin-bottom: 0;
+    }
+    .table thead th { 
+        background-color: #222 !important; 
+        color: rgba(255,255,255,0.6) !important; 
+        border-bottom: 1px solid rgba(255,255,255,0.1) !important; 
+        font-weight: 600; 
+    }
+    .table tbody td { 
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
+        background-color: transparent !important; 
+        color: #fff !important; 
+    }
+    .table-hover-row { transition: background-color 0.2s ease; }
+    .table-hover-row:hover > td, 
+    .table-hover > tbody > tr:hover > td, 
+    .table-hover > tbody > tr:hover > * { 
+        background-color: rgba(255,255,255,0.06) !important; 
+        color: #fff !important; 
+        box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
+    }
+    
+    /* Efeito de Tabela Específico para Propostas (<= 2 dias) */
+    .table-success-custom > td { background-color: rgba(8, 192, 104, 0.08) !important; border-color: rgba(8, 192, 104, 0.2) !important; }
+    .table-success-custom:hover > td { background-color: rgba(8, 192, 104, 0.15) !important; }
+
+    .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+    .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+
+    /* Pagination */
+    .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+    .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; }
+    .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
+    .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); }
 
     /* Modais Animados */
     @keyframes pulseIcon {
@@ -58,38 +103,28 @@ module.exports = function propostasView(usuario) {
     }
     .anim-pulse { animation: pulseIcon 1.5s infinite ease-in-out; }
 
-    /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
-    .toast {
-        transform: translateX(120%);
-        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
-    }
-    .toast.showing, .toast.show {
-        transform: translateX(0);
-    }
+    /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST E MODAIS */
+    .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
+    .toast.showing, .toast.show { transform: translateX(0); }
+    .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+    @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
+    
+    .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+    .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-    /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
-    .toast-timer {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.4);
-        width: 100%;
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        transform-origin: left;
-    }
-    @keyframes shrinkToast {
-        from { width: 100%; }
-        to { width: 0%; }
-    }
-
-    /* SKELETON LOADING */
-    .skeleton-view {
-        background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-        background-size: 200% 100%;
-        animation: skeleton-loading-view 1.5s infinite linear;
+    /* SKELETON LOADING (MODO ESCURO) */
+    .skeleton-dark {
+        background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
+        background-size: 200% 100% !important;
+        animation: skeleton-loading-view 1.5s infinite linear !important;
         border-radius: 4px;
+        color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        pointer-events: none;
     }
-    .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+    .skeleton-dark * { visibility: hidden !important; }
+    .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
     @keyframes skeleton-loading-view {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
@@ -98,6 +133,7 @@ module.exports = function propostasView(usuario) {
     @media (max-width: 767.98px) {
       body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; }
     }
+    .offcanvas { background-color: #1f1f1f !important; }
   </style>
 </head>
 <body>
@@ -107,16 +143,16 @@ module.exports = function propostasView(usuario) {
     <div class="flex-grow-1">${menuHTML}</div>
   </div>
 
-  <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-    <div class="offcanvas-header border-bottom border-secondary">
-      <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+  <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
+    <div class="offcanvas-header border-bottom border-custom">
+      <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
       <div class="text-center mb-4 mt-2"><img src="/img/logo.png" class="img-fluid" style="max-width:140px;"></div>
       ${menuHTML}
-      <hr class="bg-secondary mt-4">
-      <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+      <hr class="border-custom mt-4">
+      <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
     </div>
   </div>
 
@@ -124,48 +160,48 @@ module.exports = function propostasView(usuario) {
     
     <div class="d-flex align-items-center justify-content-between mb-4">
       <div class="d-flex align-items-center gap-3">
-          <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+          <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
           <div>
-            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-file-signature text-muted me-2"></i>Gestão de Propostas</h4>
+            <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-file-signature text-muted me-2"></i>Gestão de Propostas</h5>
             <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Acompanhamento de Design e Clichês</span>
           </div>
       </div>
     </div>
 
-    <div class="bg-white p-3 rounded-3 shadow-sm border border-light mb-4">
+    <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom mb-4">
       
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
-        <h6 class="mb-0 text-muted fw-bold" style="font-size:0.85rem;"><i class="fa-solid fa-filter me-1"></i> Filtros e Ações</h6>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom border-custom">
+        <h6 class="mb-0 text-white fw-bold" style="font-size:0.85rem;"><i class="fa-solid fa-filter text-accent me-1"></i> Filtros e Ações</h6>
         <div class="d-flex gap-2 mt-2 mt-sm-0">
-          <button class="btn btn-sm btn-outline-success shadow-sm" onclick="abrirModalRelatorio()"><i class="fa-solid fa-file-excel me-1"></i> Relatório</button>
-          <button class="btn btn-sm btn-brand shadow-sm" onclick="abrirModalProposta()"><i class="fa-solid fa-plus me-1"></i> Nova Proposta</button>
+          <button class="btn btn-sm btn-outline-success shadow-sm fw-bold" onclick="abrirModalRelatorio()"><i class="fa-solid fa-file-excel me-1"></i> Relatório</button>
+          <button class="btn btn-sm btn-brand shadow-sm fw-bold text-dark" onclick="abrirModalProposta()"><i class="fa-solid fa-plus me-1"></i> Nova Proposta</button>
         </div>
       </div>
 
       <form class="row g-2 align-items-end" onsubmit="event.preventDefault(); buscarPropostas(1, 'Filtros aplicados com sucesso!');">
         <div class="col-12 col-md-4">
           <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Buscar Cliente</label>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light"><i class="fa-solid fa-search text-muted"></i></span>
-            <input type="text" id="filtroCliente" class="form-control" placeholder="Nome do cliente...">
+          <div class="input-group input-group-sm shadow-sm">
+            <span class="input-group-text border-custom border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+            <input type="text" id="filtroCliente" class="form-control border-start-0" placeholder="Nome do cliente...">
           </div>
         </div>
         <div class="col-6 col-md-3">
           <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
-          <input type="date" id="filtroInicio" class="form-control form-control-sm">
+          <input type="date" id="filtroInicio" class="form-control form-control-sm shadow-sm">
         </div>
         <div class="col-6 col-md-3">
           <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Até</label>
-          <input type="date" id="filtroFim" class="form-control form-control-sm">
+          <input type="date" id="filtroFim" class="form-control form-control-sm shadow-sm">
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-brand flex-grow-1">Filtrar</button>
-          <button type="button" class="btn btn-sm btn-light border" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
+          <button type="submit" class="btn btn-sm btn-brand flex-grow-1 shadow-sm fw-bold text-dark">Filtrar</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </form>
     </div>
 
-    <div id="listaPropostas" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4" style="display: none;"></div>
+    <div id="listaPropostas" class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4" style="display: none;"></div>
 
     <nav aria-label="Paginação">
       <ul id="paginacaoPropostas" class="pagination pagination-sm justify-content-center"></ul>
@@ -175,21 +211,21 @@ module.exports = function propostasView(usuario) {
 
   <div class="modal fade" id="modalRelatorio" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-light">
-          <h6 class="modal-title fw-bold"><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar Relatório</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-content border-0 shadow-lg erp-modal">
+        <div class="modal-header bg-custom-darker border-custom">
+          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar Relatório</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4">
+        <div class="modal-body p-4 bg-custom-dark">
           <div class="mb-3">
             <label class="form-label text-muted fw-bold small mb-1">Ano Base</label>
-            <select id="relatorioAno" class="form-select form-select-sm"></select>
+            <select id="relatorioAno" class="form-select form-select-sm shadow-sm"></select>
           </div>
           <div class="mb-4">
             <label class="form-label text-muted fw-bold small mb-1">Mês Base</label>
-            <select id="relatorioMes" class="form-select form-select-sm"></select>
+            <select id="relatorioMes" class="form-select form-select-sm shadow-sm"></select>
           </div>
-          <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
+          <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-success w-100 fw-bold text-dark shadow-sm"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
         </div>
       </div>
     </div>
@@ -197,25 +233,25 @@ module.exports = function propostasView(usuario) {
 
   <div class="modal fade" id="modalProposta" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header bg-light border-0">
-          <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-signature text-brand me-2"></i> Formulário de Proposta</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-content border-0 shadow-lg erp-modal">
+        <div class="modal-header bg-custom-darker border-custom">
+          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-file-signature text-accent me-2"></i> Formulário de Proposta</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         
-        <div class="modal-body p-4 bg-white custom-scrollbar">
+        <div class="modal-body p-4 bg-custom-dark">
           <input type="hidden" id="propostaId">
 
-          <div class="p-3 bg-light rounded-3 border mb-4">
-            <h6 class="fw-bold text-muted small mb-3">IDENTIFICAÇÃO</h6>
+          <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
+            <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">IDENTIFICAÇÃO</h6>
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label fw-bold small mb-1">Cliente *</label>
-                <input type="text" id="cliente" class="form-control form-control-sm" required>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente *</label>
+                <input type="text" id="cliente" class="form-control form-control-sm shadow-sm" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-bold small mb-1">Designer Responsável</label>
-                <select id="designer" class="form-select form-select-sm">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Designer Responsável</label>
+                <select id="designer" class="form-select form-select-sm shadow-sm">
                   <option value="">Selecione...</option>
                   <option value="David">David</option>
                   <option value="Outro">Outro</option>
@@ -224,62 +260,62 @@ module.exports = function propostasView(usuario) {
             </div>
           </div>
 
-          <div class="p-3 bg-light rounded-3 border mb-4">
-            <h6 class="fw-bold text-muted small mb-3">CRONOGRAMA DE ARTE</h6>
+          <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
+            <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">CRONOGRAMA DE ARTE</h6>
             <div class="row g-3 align-items-end">
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Data Início</label>
-                <input type="date" id="dataInicio" class="form-control form-control-sm calc-trigger">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Início</label>
+                <input type="date" id="dataInicio" class="form-control form-control-sm shadow-sm calc-trigger">
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Data Fim</label>
-                <input type="date" id="dataFim" class="form-control form-control-sm calc-trigger">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Fim</label>
+                <input type="date" id="dataFim" class="form-control form-control-sm shadow-sm calc-trigger">
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Duração da Arte</label>
-                <div id="duracaoBadge" class="form-control form-control-sm bg-white text-center text-muted fw-bold py-1">—</div>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Duração da Arte</label>
+                <div id="duracaoBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm">—</div>
               </div>
             </div>
           </div>
 
-          <div class="p-3 bg-light rounded-3 border mb-4">
-            <h6 class="fw-bold text-muted small mb-3">LOGÍSTICA DE CLICHÊ</h6>
+          <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
+            <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">LOGÍSTICA DE CLICHÊ</h6>
             <div class="row g-3 align-items-end">
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Data Solicitação</label>
-                <input type="date" id="dataSolicitacaoCliche" class="form-control form-control-sm calc-trigger">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Solicitação</label>
+                <input type="date" id="dataSolicitacaoCliche" class="form-control form-control-sm shadow-sm calc-trigger">
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Data Chegada</label>
-                <input type="date" id="dataChegadaCliche" class="form-control form-control-sm calc-trigger">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Chegada</label>
+                <input type="date" id="dataChegadaCliche" class="form-control form-control-sm shadow-sm calc-trigger">
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Tempo de Trânsito</label>
-                <div id="prazoClicheBadge" class="form-control form-control-sm bg-white text-center text-muted fw-bold py-1">—</div>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tempo de Trânsito</label>
+                <div id="prazoClicheBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm">—</div>
               </div>
             </div>
           </div>
 
           <div class="mb-4">
-            <label class="form-label fw-bold text-muted small mb-1">OBSERVAÇÕES GERAIS</label>
-            <textarea id="observacao" rows="2" class="form-control form-control-sm"></textarea>
+            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">OBSERVAÇÕES GERAIS</label>
+            <textarea id="observacao" rows="2" class="form-control form-control-sm shadow-sm"></textarea>
           </div>
 
           <div class="mb-2">
-            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-              <h6 class="fw-bold text-dark small mb-0"><i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico de Modificações</h6>
-              <button type="button" class="btn btn-sm btn-outline-primary py-0" onclick="addNovaModificacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar</button>
+            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-custom pb-2">
+              <h6 class="fw-bold text-white mb-0" style="font-size: 0.8rem;"><i class="fa-solid fa-clock-rotate-left text-muted me-1"></i> Histórico de Modificações</h6>
+              <button type="button" class="btn btn-sm btn-outline-primary shadow-sm py-0 fw-bold text-nowrap" style="font-size: 0.75rem;" onclick="addNovaModificacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar</button>
             </div>
             <div id="listaModificacoes" class="d-flex flex-column gap-2 mt-3"></div>
           </div>
 
         </div>
 
-        <div class="modal-footer bg-light border-0 d-flex justify-content-between">
-          <button type="button" id="btnExcluirProposta" class="btn btn-sm btn-danger d-none" onclick="confirmarExclusao()"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
+        <div class="modal-footer bg-custom-darker border-custom d-flex justify-content-between">
+          <button type="button" id="btnExcluirProposta" class="btn btn-sm btn-outline-danger shadow-sm d-none" onclick="confirmarExclusao()"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
           <div class="d-flex gap-2 ms-auto">
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-sm btn-brand fw-bold px-4" onclick="salvarProposta()">Guardar</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary text-white shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-brand fw-bold px-4 shadow-sm text-dark" onclick="salvarProposta()">Guardar</button>
           </div>
         </div>
       </div>
@@ -288,47 +324,47 @@ module.exports = function propostasView(usuario) {
 
   <div class="modal fade" id="excluirModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content erp-modal border-0 shadow-lg">
+      <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
         <div class="modal-body text-center p-4">
           <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3 anim-pulse"></i>
-          <h6 class="fw-bold">Excluir proposta?</h6>
+          <h6 class="fw-bold text-white">Excluir proposta?</h6>
           <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação é irreversível e removerá todo o histórico de alterações.</p>
         </div>
-        <div class="modal-footer bg-light border-0 d-flex flex-nowrap">
-          <button type="button" class="btn btn-sm btn-secondary w-100" onclick="voltarParaProposta()">Não</button>
-          <button type="button" class="btn btn-sm btn-danger w-100" onclick="executarExclusao()">Sim, Excluir</button>
+        <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" onclick="voltarParaProposta()">Não</button>
+          <button type="button" class="btn btn-sm btn-danger w-100 fw-bold shadow-sm" onclick="executarExclusao()">Sim, Excluir</button>
         </div>
       </div>
     </div>
   </div>
 
   <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
-      <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+      <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
               <div>
-                  <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                  <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
                   <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
               </div>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
           </div>
           <div class="toast-body pt-1 pb-4 px-3 position-relative">
-              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
           </div>
-          <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+          <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
       </div>
 
-      <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+      <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
               <div>
-                  <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                  <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
                   <strong class="fs-6" id="erroTitulo">Erro!</strong>
               </div>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
           </div>
           <div class="toast-body pt-1 pb-4 px-3 position-relative">
-              <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="erroSub">Ocorreu um erro ao processar.</p>
           </div>
-          <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+          <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
       </div>
   </div>
 
@@ -376,18 +412,18 @@ module.exports = function propostasView(usuario) {
     }
 
     // =======================================================================
-    // SKELETON LOADING
+    // SKELETON LOADING (MODO ESCURO)
     // =======================================================================
     function gerarSkeletonTabela(quantidade = 5) {
         let html = '';
         for(let i=0; i<quantidade; i++) {
             html += \`
             <tr class="align-middle">
-                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                <td class="py-3 px-3 text-center"><div class="skeleton-view skeleton-text-view" style="width: 30px; margin: 0 auto;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-view skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
+                <td class="py-3 px-3 text-center"><div class="skeleton-dark skeleton-text-view" style="width: 30px; margin: 0 auto;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
+                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
             </tr>\`;
         }
         return html;
@@ -399,15 +435,15 @@ module.exports = function propostasView(usuario) {
         if (document.getElementById('skeleton-temp-container')) return;
 
         const skeletonHTML = \`
-        <div id="skeleton-temp-container" class="table-responsive bg-white rounded-3 shadow-sm border border-light mb-4 skeleton-container">
+        <div id="skeleton-temp-container" class="table-responsive bg-custom-darker border-custom rounded-3 shadow-sm mb-4 skeleton-container">
             <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                <thead class="table-light">
+                <thead>
                     <tr>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0 text-center" style="font-size:0.75rem;">Alterações</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Tempo de Arte</th>
-                        <th class="px-2 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Prazo Clichê</th>
+                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Cliente</th>
+                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Designer</th>
+                        <th class="px-3 py-2 text-muted border-0 text-center" style="font-size:0.75rem;">Alterações</th>
+                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Tempo de Arte</th>
+                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Prazo Clichê</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
@@ -450,15 +486,15 @@ module.exports = function propostasView(usuario) {
         return -1; 
     }
 
-    // Badge mantido com lógica original: >2 vermelho, senão verde
+    // Badge mantido com lógica original, adaptado pro Dark Theme
     function gerarBadgeDias(dias) {
         if (dias === null) return '<span class="text-muted" style="font-size:0.75rem;"><i class="fa-regular fa-clock me-1"></i>Pendente</span>';
         if (dias === -1) return '<span class="text-danger" style="font-size:0.75rem;">Erro</span>';
         
         if (dias > 2) {
-            return \`<span class="text-danger fw-bold" style="font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>\${dias} d</span>\`;
+            return \`<span class="badge bg-danger bg-opacity-10 border border-danger text-danger px-2 py-1 shadow-sm" style="font-size:0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>\${dias} d</span>\`;
         }
-        return \`<span class="text-success fw-bold" style="font-size:0.75rem;"><i class="fa-solid fa-check-double me-1"></i>\${dias} d</span>\`;
+        return \`<span class="badge bg-success bg-opacity-10 border border-success text-success px-2 py-1 shadow-sm" style="font-size:0.65rem;"><i class="fa-solid fa-check-double me-1"></i>\${dias} d</span>\`;
     }
 
     function calcularDiferencaDias(idInicio, idFim, idBadge) {
@@ -470,16 +506,16 @@ module.exports = function propostasView(usuario) {
         
         if (dias === null) {
             badge.innerText = "—";
-            badge.className = "form-control form-control-sm bg-white text-center text-muted fw-bold py-1";
+            badge.className = "form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm";
         } else if (dias === -1) {
             badge.innerText = "Erro";
-            badge.className = "form-control form-control-sm bg-danger-subtle text-danger fw-bold text-center py-1";
+            badge.className = "form-control form-control-sm bg-danger bg-opacity-10 border border-danger text-danger fw-bold text-center py-1 shadow-sm";
         } else {
             badge.innerText = dias + (dias === 1 ? " dia" : " dias");
             if (dias > 2) {
-                badge.className = "form-control form-control-sm bg-danger-subtle text-danger fw-bold text-center py-1";
+                badge.className = "form-control form-control-sm bg-danger bg-opacity-10 border border-danger text-danger fw-bold text-center py-1 shadow-sm";
             } else {
-                badge.className = "form-control form-control-sm bg-success-subtle text-success fw-bold text-center py-1";
+                badge.className = "form-control form-control-sm bg-success bg-opacity-10 border border-success text-success fw-bold text-center py-1 shadow-sm";
             }
         }
     }
@@ -500,10 +536,10 @@ module.exports = function propostasView(usuario) {
         const hoje = new Date().toISOString().split('T')[0];
         
         const html = \`
-            <div id="\${idUnico}" class="modificacao-item bg-white border p-1 rounded-2 d-flex gap-2 align-items-center">
-                <input type="date" class="form-control form-control-sm w-auto mod-data" value="\${data || hoje}" required>
-                <input type="text" class="form-control form-control-sm mod-desc" placeholder="Descreva a alteração feita..." value="\${desc}" required>
-                <button type="button" class="btn btn-sm btn-light text-danger border" onclick="document.getElementById('\${idUnico}').remove()"><i class="fa-solid fa-xmark"></i></button>
+            <div id="\${idUnico}" class="modificacao-item bg-custom-darker border-custom p-1 rounded-2 d-flex gap-2 align-items-center shadow-sm">
+                <input type="date" class="form-control form-control-sm w-auto mod-data shadow-none" value="\${data || hoje}" required>
+                <input type="text" class="form-control form-control-sm mod-desc shadow-none" placeholder="Descreva a alteração feita..." value="\${desc}" required>
+                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger" onclick="document.getElementById('\${idUnico}').remove()"><i class="fa-solid fa-xmark"></i></button>
             </div>
         \`;
         container.insertAdjacentHTML('beforeend', html);
@@ -564,10 +600,10 @@ module.exports = function propostasView(usuario) {
             const diasArte = calcularDiasReal(p.data_inicio, p.data_fim);
             const diasCliche = calcularDiasReal(p.data_solicitacao_cliche, p.data_chegada_cliche);
             
-            // Define a cor de fundo da linha: > 2 Permanece Branca | <= 2 Fica Verde
+            // Define a cor de fundo da linha: > 2 Permanece Transparente | <= 2 Fica Verde Translúcido
             let rowClass = 'table-hover-row';
             if (diasArte > 2 || diasCliche > 2) {
-                // Não adiciona classe = permanece branca
+                // Não adiciona classe = permanece normal
             } else if ((diasArte !== null && diasArte <= 2 && diasArte !== -1) || 
                        (diasCliche !== null && diasCliche <= 2 && diasCliche !== -1)) {
                 rowClass += ' table-success-custom';
@@ -575,26 +611,26 @@ module.exports = function propostasView(usuario) {
 
             const qtdAlt = p.total_modificacoes || 0;
             const modBadge = qtdAlt > 0 
-                ? \`<span class="badge bg-danger rounded-pill" style="font-size:0.7rem;" title="\${qtdAlt} alterações registradas">\${qtdAlt}</span>\` 
+                ? \`<span class="badge bg-danger rounded-pill shadow-sm" style="font-size:0.65rem;" title="\${qtdAlt} alterações registradas">\${qtdAlt}</span>\` 
                 : \`<span class="text-muted" style="font-size:0.75rem;">-</span>\`;
 
             return \`
             <tr style="cursor: pointer;" class="align-middle \${rowClass}" onclick="abrirModalProposta(\${p.id})">
-                <td class="py-2 px-3 border-0 border-bottom">
-                    <strong class="text-dark d-block text-truncate" style="max-width: 250px; font-size: 0.8rem;">\${p.cliente}</strong>
+                <td class="py-2 px-3">
+                    <strong class="text-white d-block text-truncate" style="max-width: 250px; font-size: 0.8rem;">\${p.cliente}</strong>
                 </td>
-                <td class="py-2 px-3 border-0 border-bottom text-muted" style="font-size: 0.8rem;">
-                    <i class="fa-solid fa-user-pen me-1"></i> \${p.designer || '-'}
+                <td class="py-2 px-3 text-muted" style="font-size: 0.8rem;">
+                    <i class="fa-solid fa-user-pen me-1 opacity-75"></i> \${p.designer || '-'}
                 </td>
-                <td class="py-2 px-3 border-0 border-bottom text-center">
+                <td class="py-2 px-3 text-center">
                     \${modBadge}
                 </td>
-                <td class="py-2 px-3 border-0 border-bottom">
-                    <span class="text-muted d-block" style="font-size: 0.65rem;">Produção da Arte:</span>
+                <td class="py-2 px-3">
+                    <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Produção da Arte:</span>
                     \${gerarBadgeDias(diasArte)}
                 </td>
-                <td class="py-2 px-3 border-0 border-bottom">
-                    <span class="text-muted d-block" style="font-size: 0.65rem;">Logística Clichê:</span>
+                <td class="py-2 px-3">
+                    <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Logística Clichê:</span>
                     \${gerarBadgeDias(diasCliche)}
                 </td>
             </tr>
@@ -603,7 +639,7 @@ module.exports = function propostasView(usuario) {
 
         container.innerHTML = \`
             <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                <thead class="table-light">
+                <thead>
                     <tr>
                         <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
                         <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
@@ -629,7 +665,7 @@ module.exports = function propostasView(usuario) {
         let html = '';
         
         html += \`<li class="page-item \${pag.page <= 1 ? 'disabled' : ''}">
-                    <button class="page-link text-dark border-0" onclick="buscarPropostas(\${pag.page - 1})">&laquo;</button>
+                    <button class="page-link text-white border-0" onclick="buscarPropostas(\${pag.page - 1})">&laquo;</button>
                  </li>\`;
         
         const delta = 2; 
@@ -645,19 +681,19 @@ module.exports = function propostasView(usuario) {
         paginas.forEach(p => {
             if (ultima) {
                 if (p - ultima === 2) {
-                    html += \`<li class="page-item"><button class="page-link text-dark border-0" onclick="buscarPropostas(\${ultima + 1})">\${ultima + 1}</button></li>\`;
+                    html += \`<li class="page-item"><button class="page-link text-white border-0" onclick="buscarPropostas(\${ultima + 1})">\${ultima + 1}</button></li>\`;
                 } else if (p - ultima > 2) {
                     html += \`<li class="page-item disabled"><span class="page-link text-muted border-0 bg-transparent">...</span></li>\`;
                 }
             }
             html += \`<li class="page-item \${pag.page === p ? 'active' : ''}">
-                        <button class="page-link \${pag.page === p ? 'bg-brand border-brand text-white fw-bold' : 'text-dark border-0'}" onclick="buscarPropostas(\${p})">\${p}</button>
+                        <button class="page-link \${pag.page === p ? 'bg-primary border-primary text-dark fw-bold' : 'text-white border-0'}" onclick="buscarPropostas(\${p})">\${p}</button>
                      </li>\`;
             ultima = p;
         });
         
         html += \`<li class="page-item \${pag.page >= pag.totalPages ? 'disabled' : ''}">
-                    <button class="page-link text-dark border-0" onclick="buscarPropostas(\${pag.page + 1})">&raquo;</button>
+                    <button class="page-link text-white border-0" onclick="buscarPropostas(\${pag.page + 1})">&raquo;</button>
                  </li>\`;
                  
         container.innerHTML = html;

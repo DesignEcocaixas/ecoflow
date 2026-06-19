@@ -1,6 +1,5 @@
 // views/cadastroView.js
 const menuLateral = require("./menuLateral");
-const renderLoaderParticulas = require("./renderLoaderParticulas");
 
 function cadastroView(usuario, usuarios = []) {
   // Fallback seguro
@@ -36,7 +35,7 @@ function cadastroView(usuario, usuarios = []) {
       ? usuarios
           .map((u) => {
             // Gera um avatar automático se o utilizador não tiver foto
-            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=0D5749&color=fff&size=120`;
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=1f1f1f&color=08c068&size=120`;
             const imgSrc = u.foto ? `/uploads/${u.foto}` : defaultAvatar;
 
             // Verificação de tipos "Sem Login"
@@ -47,12 +46,12 @@ function cadastroView(usuario, usuarios = []) {
             const emailRequired = isNoLogin ? '' : 'required';
 
             // Tratamento das cores dos Badges
-            let badgeColor = 'bg-primary text-white';
-            if (u.tipo_usuario === 'admin') badgeColor = 'bg-danger text-white';
-            else if (u.tipo_usuario === 'financeiro') badgeColor = 'bg-success text-white';
-            else if (u.tipo_usuario === 'design') badgeColor = 'bg-info text-dark';
-            else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-warning text-dark';
-            else if (isNoLogin) badgeColor = 'bg-secondary text-white';
+            let badgeColor = 'bg-custom-dark border-custom text-accent';
+            if (u.tipo_usuario === 'admin') badgeColor = 'bg-custom-dark border-custom text-danger';
+            else if (u.tipo_usuario === 'financeiro') badgeColor = 'bg-custom-dark border-custom text-success';
+            else if (u.tipo_usuario === 'design') badgeColor = 'bg-custom-dark border-custom text-info';
+            else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-custom-dark border-custom text-warning';
+            else if (isNoLogin) badgeColor = 'bg-custom-darker border-custom text-muted';
 
             // Aplica as máscaras para usar no Modal e na Tabela
             const cpfFormatado = applyMaskCPF(u.cpf);
@@ -62,34 +61,34 @@ function cadastroView(usuario, usuarios = []) {
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                  <form method="POST" action="/usuarios/editar/${u.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Perfil Atualizado!')">
-                    <div class="modal-header bg-white border-0 pb-0">
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  <form method="POST" action="/usuarios/editar/${u.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Perfil Atualizado!')">
+                    <div class="modal-header bg-custom-darker border-0 pb-0">
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body text-sm p-4 pt-0">
+                    <div class="modal-body text-sm p-4 pt-0 bg-custom-darker">
                       
-                      <div class="text-center mb-4">
-                          <div class="profile-upload-container position-relative mx-auto" onclick="document.getElementById('uploadFoto${u.id}').click()" title="Clique para alterar a foto">
+                      <div class="text-center mb-4 mt-2">
+                          <div class="profile-upload-container position-relative mx-auto border-custom" onclick="document.getElementById('uploadFoto${u.id}').click()" title="Clique para alterar a foto">
                               <img id="previewFoto${u.id}" src="${imgSrc}" data-default-src="${imgSrc}" alt="${u.nome}">
                               <div class="profile-upload-overlay d-flex align-items-center justify-content-center">
                                   <span><i class="fa-solid fa-camera mb-1 d-block"></i> Alterar</span>
                               </div>
                           </div>
                           <input type="file" name="foto" id="uploadFoto${u.id}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewFoto${u.id}')">
-                          <h5 class="mt-3 mb-0 fw-bold text-dark">${u.nome}</h5>
-                          <span class="badge ${badgeColor} mt-1">${(u.tipo_usuario || "admin").replace('_', ' ').toUpperCase()}</span>
+                          <h5 class="mt-3 mb-0 fw-bold text-white">${u.nome}</h5>
+                          <span class="badge ${badgeColor} mt-2 px-3 py-1 shadow-sm" style="font-size: 0.65rem;">${(u.tipo_usuario || "admin").replace('_', ' ').toUpperCase()}</span>
                       </div>
 
-                      <hr class="text-muted opacity-25">
+                      <hr class="text-muted border-custom opacity-50 mb-4">
 
-                      <div class="row g-3">
+                      <div class="row g-3 bg-custom-dark p-3 rounded border-custom shadow-sm">
                         <div class="col-12">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nome Completo</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nome Completo</label>
                           <input type="text" name="nome" class="form-control form-control-sm shadow-sm" value="${u.nome}" required autocomplete="off">
                         </div>
                         <div class="col-12">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Tipo de Perfil</label>
-                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" onchange="toggleRoleFields(this)" required>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Tipo de Perfil</label>
+                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this)" required>
                             <optgroup label="Acesso ao Sistema">
                                 <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
                                 <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista Padrão</option>
@@ -106,50 +105,50 @@ function cadastroView(usuario, usuarios = []) {
                         </div>
 
                         <div class="col-12 login-field" style="${loginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">E-mail</label>
                           <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired} autocomplete="new-password">
                         </div>
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nova Senha</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nova Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
                             <input type="password" name="senha" id="senhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••" autocomplete="new-password">
-                            <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaEdit${u.id}', this)">
+                            <button class="btn btn-outline-secondary border-custom bg-custom-darker border-start-0" type="button" onclick="togglePassword('senhaEdit${u.id}', this)">
                               <i class="fa-solid fa-eye text-muted"></i>
                             </button>
                           </div>
                         </div>
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Confirmar Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
                             <input type="password" name="confirma_senha" id="confirmaSenhaEdit${u.id}" class="form-control border-end-0" placeholder="••••••••" autocomplete="new-password">
-                            <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaEdit${u.id}', this)">
+                            <button class="btn btn-outline-secondary border-custom bg-custom-darker border-start-0" type="button" onclick="togglePassword('confirmaSenhaEdit${u.id}', this)">
                               <i class="fa-solid fa-eye text-muted"></i>
                             </button>
                           </div>
                         </div>
 
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">CPF</label>
                           <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" value="${cpfFormatado}" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Telefone</label>
                           <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" value="${telefoneFormatado}" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Chave PIX</label>
                           <input type="text" name="pix" class="form-control form-control-sm shadow-sm" value="${u.pix || ''}" placeholder="Chave do recebedor" autocomplete="off">
                         </div>
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
-                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Banco</label>
                           <input type="text" name="banco" class="form-control form-control-sm shadow-sm" value="${u.banco || ''}" placeholder="Ex: Nubank, Inter, Caixa..." autocomplete="off">
                         </div>
                       </div>
 
                     </div>
-                    <div class="modal-footer border-0 bg-light d-flex flex-nowrap">
-                      <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                    <div class="modal-footer border-0 bg-custom-darker d-flex flex-nowrap pt-3">
+                      <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                     </div>
                   </form>
                 </div>
@@ -157,16 +156,16 @@ function cadastroView(usuario, usuarios = []) {
 
               <div class="modal fade" id="excluirUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-sm modal-dialog-centered">
-                  <div class="modal-content erp-modal border-0 shadow-lg">
+                  <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
                     <form method="POST" action="/usuarios/excluir/${u.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Acesso Revogado!')">
                       <div class="modal-body text-center p-4">
-                        <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                        <h6 class="mb-2 fw-bold">Excluir Usuário?</h6>
-                        <p class="text-muted mb-0" style="font-size:0.85rem;">Tem certeza que deseja excluir permanentemente o cadastro de <b>${u.nome}</b>?</p>
+                        <i class="fa-solid fa-triangle-exclamation fa-2x text-danger mb-3"></i>
+                        <h6 class="mb-2 fw-bold text-white" style="font-size: 0.9rem;">Excluir Usuário?</h6>
+                        <p class="text-muted mb-0" style="font-size:0.8rem;">Tem certeza que deseja excluir permanentemente o cadastro de <b>${u.nome}</b>?</p>
                       </div>
-                      <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
-                        <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Sim, Excluir</button>
+                      <div class="modal-footer justify-content-center border-0 bg-custom-darker d-flex flex-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold shadow-sm">Sim, Excluir</button>
                       </div>
                     </form>
                   </div>
@@ -174,36 +173,35 @@ function cadastroView(usuario, usuarios = []) {
               </div>
             `);
 
-            // Retorna apenas a linha da tabela CLICÁVEL (agora com o telefone também formatado na listagem)
             return `
               <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
-                <td class="fw-medium text-dark py-2">
+                <td class="fw-medium text-white py-2 px-3">
                   <div class="d-flex align-items-center">
                     ${u.foto 
-                      ? `<img src="/uploads/${u.foto}" alt="${u.nome}" class="rounded-circle me-3 border shadow-sm" style="width: 38px; height: 38px; object-fit: cover;">` 
-                      : `<img src="${defaultAvatar}" alt="${u.nome}" class="rounded-circle me-3 border shadow-sm" style="width: 38px; height: 38px; object-fit: cover;">`
+                      ? `<img src="/uploads/${u.foto}" alt="${u.nome}" class="rounded-circle me-3 border-custom shadow-sm" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">` 
+                      : `<img src="${defaultAvatar}" alt="${u.nome}" class="rounded-circle me-3 border-custom shadow-sm" style="width: 32px; height: 32px; object-fit: cover; flex-shrink: 0;">`
                     }
-                    ${u.nome}
+                    <span class="text-truncate" style="font-size: 0.85rem;">${u.nome}</span>
                   </div>
                 </td>
-                <td class="text-muted py-2" style="font-size: 0.85rem;">
+                <td class="text-muted py-2 px-3" style="font-size: 0.75rem;">
                   ${isNoLogin ? `<i class="fa-solid fa-phone me-1 opacity-50"></i> ${telefoneFormatado || 'Sem contato'}` : `<i class="fa-solid fa-envelope me-1 opacity-50"></i> ${u.email}`}
                 </td>
-                <td class="py-2">
-                  <span class="badge ${badgeColor} bg-opacity-75" style="font-size:0.7rem; letter-spacing: 0.5px;">
+                <td class="py-2 px-3">
+                  <span class="badge ${badgeColor} border shadow-sm px-2 py-1" style="font-size:0.65rem; letter-spacing: 0.5px;">
                     ${(u.tipo_usuario || "admin").replace('_', ' ').toUpperCase()}
                   </span>
                 </td>
-                <td class="text-end text-nowrap py-2">
-                  <button type="button" class="btn btn-sm btn-light border text-danger shadow-sm" onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirUsuario${u.id}')).show();" title="Excluir">
-                    <i class="fa-solid fa-trash"></i>
+                <td class="text-end text-nowrap py-2 px-3">
+                  <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2" onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirUsuario${u.id}')).show();" title="Excluir">
+                    <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i>
                   </button>
                 </td>
               </tr>
             `;
           })
           .join("")
-      : `<tr><td colspan="4" class="text-center text-muted p-5"><i class="fa-solid fa-users-slash fa-3x mb-3 opacity-25"></i><br>Nenhum usuário cadastrado no sistema.</td></tr>`;
+      : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x mb-3 opacity-25 d-block"></i><span style="font-size: 0.8rem;">Nenhum usuário cadastrado no sistema.</span></td></tr>`;
 
   const menuHTML = menuLateral(user, "/cadastro");
 
@@ -218,54 +216,100 @@ function cadastroView(usuario, usuarios = []) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+      /* Scrollbars Globais (Dark & Green) */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+      html, body, .content, .table-responsive, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
+
       body { 
           display: flex; 
           height: 100vh; 
           margin: 0; 
-          background-color: #f4f7f6;
+          background-color: #1f1f1f;
+          color: #ffffff;
           font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       }
-      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
-      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
-      .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
-      .content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; position: relative; }
-      .text-sm { font-size: 0.875rem; }
+      .sidebar { width: 240px; background-color: #1f1f1f !important; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
+      .content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; position: relative; background-color: #1f1f1f; }
       
+      /* Tema Escuro Customizado */
+      .bg-custom-dark { background-color: #2a2a2a !important; }
+      .bg-custom-darker { background-color: #222222 !important; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
+      .text-accent { color: #08c068 !important; }
+
+      /* Modificadores Bootstrap */
+      .text-dark { color: #ffffff !important; }
+      .text-muted { color: rgba(255,255,255,0.5) !important; }
+
+      /* Botões */
+      .btn-primary, .btn-success { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
+      .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
+      .btn-outline-primary, .btn-outline-success { color: #08c068; border-color: #08c068; }
+      .btn-outline-primary:hover, .btn-outline-success:hover { background-color: #08c068; color: #1f1f1f; border-color: #08c068; }
+      .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+      .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+
+      /* Inputs e Selects */
+      .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
+      .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
+      .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
+
+      /* Tabelas e Modais */
       .erp-card {
           border-radius: 12px;
-          background: #fff;
-          border: none;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+          background: #2a2a2a;
+          border: 1px solid rgba(255,255,255,0.05);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
           overflow: hidden;
       }
-      .table > :not(caption) > * > * { padding: 12px 16px; border-bottom-color: #f0f0f0; }
-      .table thead th {
-          background-color: #fafbfc;
-          color: #6c757d;
-          font-weight: 600;
-          font-size: 0.8rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          border-bottom: 2px solid #e9ecef;
+      .table { 
+          --bs-table-bg: transparent; 
+          --bs-table-color: #fff; 
+          --bs-table-hover-bg: rgba(255,255,255,0.06);
+          --bs-table-hover-color: #fff;
+          color: #fff; 
+          margin-bottom: 0;
       }
-      .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-      .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
-      .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
-      .form-control-sm, .form-select-sm { border-radius: 6px; }
-
+      .table thead th { 
+          background-color: #222 !important; 
+          color: rgba(255,255,255,0.6) !important; 
+          border-bottom: 1px solid rgba(255,255,255,0.1) !important; 
+          font-weight: 600; 
+          font-size: 0.75rem;
+          text-transform: uppercase;
+      }
+      .table tbody td { 
+          border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
+          background-color: transparent !important; 
+          color: #fff !important; 
+      }
+      
       /* Efeito de Hover na Tabela */
-      .table-hover-row { transition: background-color 0.2s; }
-      .table-hover-row:hover > td { background-color: rgba(13, 87, 73, 0.06) !important; }
+      .table-hover-row { transition: background-color 0.2s ease; }
+      .table-hover-row:hover > td, 
+      .table-hover > tbody > tr:hover > td, 
+      .table-hover > tbody > tr:hover > * { 
+          background-color: rgba(255,255,255,0.06) !important; 
+          color: #fff !important; 
+          box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
+      }
+
+      .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+      .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+      .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
 
       /* Container da Foto de Perfil */
       .profile-upload-container {
-          width: 110px;
-          height: 110px;
+          width: 90px;
+          height: 90px;
           border-radius: 50%;
           overflow: hidden;
-          background-color: #f0f0f0;
-          border: 3px solid #fff;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          background-color: #1f1f1f;
+          border: 3px solid rgba(8,192,104,0.3);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
           cursor: pointer;
       }
       .profile-upload-container img {
@@ -281,7 +325,7 @@ function cadastroView(usuario, usuarios = []) {
           height: 35%;
           background: rgba(0,0,0,0.65);
           color: white;
-          font-size: 0.75rem;
+          font-size: 0.65rem;
           font-weight: 600;
           opacity: 0;
           transition: opacity 0.3s ease;
@@ -307,8 +351,8 @@ function cadastroView(usuario, usuarios = []) {
       }
 
       .toast-timer {
-          height: 6px;
-          background: rgba(255, 255, 255, 0.4);
+          height: 4px;
+          background: #08c068;
           width: 100%;
           position: absolute;
           bottom: 0;
@@ -320,15 +364,20 @@ function cadastroView(usuario, usuarios = []) {
           to { width: 0%; }
       }
 
-      /* SKELETON LOADING */
-      .skeleton-view {
-          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-          background-size: 200% 100%;
-          animation: skeleton-loading-view 1.5s infinite linear;
+      /* SKELETON LOADING DA TABELA E GRID (DARK) */
+      .skeleton-dark {
+          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
+          background-size: 200% 100% !important;
+          animation: skeleton-loading-view 1.5s infinite linear !important;
           border-radius: 4px;
+          color: transparent !important;
+          border-color: transparent !important;
+          box-shadow: none !important;
+          pointer-events: none;
       }
-      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
-      .skeleton-btn-view { height: 28px; width: 32px; border-radius: 4px; display: inline-block; }
+      .skeleton-dark * { visibility: hidden !important; }
+      .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
       .skeleton-avatar-view { height: 38px; width: 38px; border-radius: 50%; }
       @keyframes skeleton-loading-view {
           0% { background-position: 200% 0; }
@@ -340,8 +389,7 @@ function cadastroView(usuario, usuarios = []) {
         .sidebar { display: none; }
         .content { width: 100%; padding: 16px; }
       }
-      .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
-      .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
+      .offcanvas { background-color: #1f1f1f !important; }
     </style>
   </head>
   <body>
@@ -354,9 +402,9 @@ function cadastroView(usuario, usuarios = []) {
       </div>
     </div>
 
-    <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-      <div class="offcanvas-header border-bottom border-secondary">
-        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+    <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
+      <div class="offcanvas-header border-bottom border-custom">
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
@@ -364,40 +412,38 @@ function cadastroView(usuario, usuarios = []) {
             <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
         </div>
         ${menuHTML}
-        <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
       </div>
     </div>
 
     <div class="content">
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
-            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-users-gear text-muted me-2"></i>Colaboradores</h4>
+            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+            <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-users-gear text-muted me-2"></i>Colaboradores</h5>
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light flex-wrap gap-2">
+      <div class="d-flex justify-content-between align-items-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom flex-wrap gap-2">
         <div>
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total Registado: <strong>${usuarios.length}</strong> pessoas</h6>
+            <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total Registado: <strong class="text-white">${usuarios.length}</strong> pessoas</h6>
         </div>
-        <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
-          <i class="fa-solid fa-user-plus me-1"></i>Novo usuário
+        <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold text-dark" style="font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
+          <i class="fa-solid fa-user-plus me-1"></i> Novo usuário
         </button>
       </div>
 
-      <div class="erp-card border border-light">
+      <div class="erp-card border-custom">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-            <thead>
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem;">
+            <thead class="table-light">
               <tr>
-                <th>Nome / Colaborador</th>
-                <th>E-mail / Contato</th>
-                <th>Perfil de Acesso</th>
-                <th class="text-end" style="width: 80px;">Ações</th>
+                <th class="py-2 px-3">Nome / Colaborador</th>
+                <th class="py-2 px-3">E-mail / Contato</th>
+                <th class="py-2 px-3">Perfil de Acesso</th>
+                <th class="py-2 px-3 text-end" style="width: 80px;">Ações</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="border-top-0">
               ${linhas}
             </tbody>
           </table>
@@ -407,17 +453,17 @@ function cadastroView(usuario, usuarios = []) {
 
     <div class="modal fade" id="novoUsuarioModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Cadastro Realizado!')">
-          <div class="modal-header bg-success border-0 text-white">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Adicionar Colaborador</h6>
+        <form method="POST" action="/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" autocomplete="off" onsubmit="prepararSubmissaoSimples(event, this, 'Cadastro Realizado!')">
+          <div class="modal-header bg-custom-darker border-0 text-white">
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus text-accent me-2"></i> Adicionar Colaborador</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body text-sm p-4 bg-light">
-            <div class="row g-3">
-              <div class="col-12 text-center mb-3">
-                  <label class="form-label text-muted mb-2 fw-bold d-block" style="font-size:0.8rem;">Foto (Opcional)</label>
-                  <div class="profile-upload-container position-relative mx-auto" onclick="document.getElementById('uploadFotoNovo').click()" title="Escolher Foto">
-                      <img id="previewFotoNovo" data-default-src="https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120" src="https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120" alt="Novo">
+          <div class="modal-body text-sm p-4 bg-custom-darker">
+            <div class="row g-3 bg-custom-dark p-3 rounded border-custom shadow-sm">
+              <div class="col-12 text-center mb-2">
+                  <label class="form-label text-muted mb-2 fw-bold d-block" style="font-size:0.75rem;">Foto (Opcional)</label>
+                  <div class="profile-upload-container position-relative mx-auto border-custom" onclick="document.getElementById('uploadFotoNovo').click()" title="Escolher Foto">
+                      <img id="previewFotoNovo" data-default-src="https://ui-avatars.com/api/?name=Novo+Registro&background=1f1f1f&color=08c068&size=120" src="https://ui-avatars.com/api/?name=Novo+Registro&background=1f1f1f&color=08c068&size=120" alt="Novo">
                       <div class="profile-upload-overlay d-flex align-items-center justify-content-center">
                           <span><i class="fa-solid fa-camera mb-1 d-block"></i> Escolher</span>
                       </div>
@@ -426,13 +472,13 @@ function cadastroView(usuario, usuarios = []) {
               </div>
 
               <div class="col-12">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Nome Completo</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nome Completo</label>
                 <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João da Silva" autocomplete="off">
               </div>
               
               <div class="col-12">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Perfil / Tipo de Cadastro</label>
-                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm" onchange="toggleRoleFields(this)" required>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Perfil / Tipo de Cadastro</label>
+                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this)" required>
                   <optgroup label="Acesso ao Sistema">
                       <option value="admin">Administrador</option>
                       <option value="financeiro">Financeiro</option>
@@ -449,82 +495,82 @@ function cadastroView(usuario, usuarios = []) {
               </div>
 
               <div class="col-12 login-field">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">E-mail de Acesso</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">E-mail de Acesso</label>
                 <input type="email" name="email" class="form-control form-control-sm shadow-sm" required placeholder="email@ecoflow.com" autocomplete="new-password">
               </div>
               <div class="col-12 col-md-6 login-field">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Senha</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
                   <input type="password" name="senha" id="senhaNovo" class="form-control border-end-0" required placeholder="••••••••" autocomplete="new-password">
-                  <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('senhaNovo', this)">
+                  <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0" type="button" onclick="togglePassword('senhaNovo', this)">
                     <i class="fa-solid fa-eye text-muted"></i>
                   </button>
                 </div>
               </div>
               <div class="col-12 col-md-6 login-field">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Confirmar Senha</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Confirmar Senha</label>
                 <div class="input-group input-group-sm shadow-sm">
                   <input type="password" name="confirma_senha" id="confirmaSenhaNovo" class="form-control border-end-0" required placeholder="••••••••" autocomplete="new-password">
-                  <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" onclick="togglePassword('confirmaSenhaNovo', this)">
+                  <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0" type="button" onclick="togglePassword('confirmaSenhaNovo', this)">
                     <i class="fa-solid fa-eye text-muted"></i>
                   </button>
                 </div>
               </div>
 
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">CPF</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">CPF</label>
                 <input type="text" name="cpf" class="form-control form-control-sm shadow-sm" placeholder="000.000.000-00" autocomplete="off" oninput="this.value = maskCPF(this.value)">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Telefone</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Telefone</label>
                 <input type="text" name="telefone" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" autocomplete="off" oninput="this.value = maskPhone(this.value)">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Chave PIX</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Chave PIX</label>
                 <input type="text" name="pix" class="form-control form-control-sm shadow-sm" placeholder="Chave do recebedor" autocomplete="off">
               </div>
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
-                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.8rem;">Banco</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Banco</label>
                 <input type="text" name="banco" class="form-control form-control-sm shadow-sm" placeholder="Ex: Nubank, Inter, Caixa..." autocomplete="off">
               </div>
 
             </div>
           </div>
-          <div class="modal-footer border-0 bg-white d-flex flex-nowrap">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-check me-1"></i> Salvar Cadastro</button>
+          <div class="modal-footer border-0 bg-custom-darker d-flex flex-nowrap pt-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark shadow-sm"><i class="fa-solid fa-check me-1"></i> Salvar Cadastro</button>
           </div>
         </form>
       </div>
     </div>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
-        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+                <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
         </div>
 
-        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+                <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="erroSub">Ocorreu um erro ao processar.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
         </div>
     </div>
 
@@ -606,7 +652,7 @@ function cadastroView(usuario, usuarios = []) {
             }
         }
 
-        // Executa a verificação em todos os modais ao iniciar a página (para não deixar blocos abertos indevidamente)
+        // Executa a verificação em todos os modais ao iniciar a página
         function initRoleToggles() {
             document.querySelectorAll('select[name="tipo_usuario"]').forEach(select => {
                 toggleRoleFields(select);
@@ -615,7 +661,7 @@ function cadastroView(usuario, usuarios = []) {
         window.addEventListener('load', initRoleToggles);
 
         // =======================================================================
-        // SKELETON LOADING
+        // SKELETON LOADING (CORRIGIDO MODO ESCURO)
         // =======================================================================
         function gerarSkeletonTabela(quantidade = 4) {
             let html = '';
@@ -624,14 +670,14 @@ function cadastroView(usuario, usuarios = []) {
                 <tr class="align-middle">
                     <td class="py-2 px-3">
                         <div class="d-flex align-items-center">
-                            <div class="skeleton-view skeleton-avatar-view me-3 flex-shrink-0"></div>
-                            <div class="skeleton-view skeleton-text-view" style="width: 120px; margin: 0;"></div>
+                            <div class="skeleton-dark skeleton-avatar-view me-3 flex-shrink-0"></div>
+                            <div class="skeleton-dark skeleton-text-view" style="width: 120px; margin: 0;"></div>
                         </div>
                     </td>
-                    <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 150px; margin: 0;"></div></td>
-                    <td class="py-2 px-3"><div class="skeleton-view skeleton-text-view" style="width: 80px; margin: 0;"></div></td>
+                    <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 150px; margin: 0;"></div></td>
+                    <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80px; margin: 0;"></div></td>
                     <td class="text-end py-2 px-3 d-flex justify-content-end gap-1">
-                        <div class="skeleton-view skeleton-btn-view"></div>
+                        <div class="skeleton-dark skeleton-btn-view"></div>
                     </td>
                 </tr>\`;
             }
@@ -644,17 +690,17 @@ function cadastroView(usuario, usuarios = []) {
             if (document.getElementById('skeleton-temp-container')) return;
 
             const skeletonHTML = \`
-            <div id="skeleton-temp-container" class="table-responsive skeleton-container">
-                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                   <thead>
+            <div id="skeleton-temp-container" class="table-responsive bg-custom-darker border-custom rounded shadow-sm skeleton-container">
+                <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
+                   <thead class="table-light">
                      <tr>
-                       <th>Nome Completo</th>
-                       <th>E-mail</th>
-                       <th>Perfil de Acesso</th>
-                       <th class="text-end" style="width: 80px;">Ações</th>
+                       <th class="py-2 px-3">Nome / Colaborador</th>
+                       <th class="py-2 px-3">E-mail / Contato</th>
+                       <th class="py-2 px-3">Perfil de Acesso</th>
+                       <th class="py-2 px-3 text-end" style="width: 80px;">Ações</th>
                      </tr>
                    </thead>
-                   <tbody>
+                   <tbody class="border-top-0">
                       \${gerarSkeletonTabela(4)}
                    </tbody>
                 </table>
@@ -681,6 +727,10 @@ function cadastroView(usuario, usuarios = []) {
         } else {
             window.addEventListener('load', ocultarSkeletonGlobais);
         }
+
+        window.addEventListener('beforeunload', () => {
+            mostrarSkeletonGlobais();
+        });
 
         // =======================================================================
         // FUNÇÃO GENÉRICA DE TOASTS
@@ -805,7 +855,7 @@ function cadastroView(usuario, usuarios = []) {
                     form.reset();
                     const previewImg = form.querySelector('img[id^="previewFoto"]');
                     if (previewImg) {
-                        previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Registro&background=e9ecef&color=6c757d&size=120";
+                        previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Registro&background=1f1f1f&color=08c068&size=120";
                     }
 
                     initRoleToggles(); // Reaplica as máscaras/visibilidade aos selects renderizados no AJAX

@@ -36,15 +36,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
   const badgeStatusEntrega = (status) => {
     if (status === "ENTREGUE") {
-      return `<span class="badge bg-success" style="font-size:0.7rem;">ENTREGUE</span>`;
+      return `<span class="badge bg-success" style="font-size:0.65rem;">ENTREGUE</span>`;
     }
     if (status === "NA_ROTA") {
-      return `<span class="badge bg-warning text-dark" style="font-size:0.7rem;">NA ROTA</span>`;
+      return `<span class="badge bg-warning text-dark" style="font-size:0.65rem;">NA ROTA</span>`;
     }
     if (status === "NAO_ENTREGUE") {
-      return `<span class="badge bg-danger" style="font-size:0.7rem;">NÃO ENTREGUE</span>`;
+      return `<span class="badge bg-danger" style="font-size:0.65rem;">NÃO ENTREGUE</span>`;
     }
-    return `<span class="badge bg-secondary" style="font-size:0.7rem;">${status || "SEM STATUS"}</span>`;
+    return `<span class="badge bg-secondary" style="font-size:0.65rem;">${status || "SEM STATUS"}</span>`;
   };
 
   const veiculos = Array.isArray(dashboard.veiculos) ? dashboard.veiculos : [];
@@ -65,51 +65,51 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         <div class="card chk-item border-0 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalManutencao${i}" style="cursor:pointer;">
           <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
             <div class="text-truncate me-3" style="max-width: 85%;">
-              <span class="d-block fw-bold text-dark text-truncate" style="font-size: 0.85rem;">${v.marca || "-"} ${v.modelo || "-"}</span>
-              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.75rem;">
+              <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">${v.marca || "-"} ${v.modelo || "-"}</span>
+              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
                 <span class="text-truncate"><i class="fa-solid fa-wrench me-1"></i> ${v.servico || "Sem manutenção"}</span>
                 <span><i class="fa-regular fa-calendar me-1"></i> ${v.data_servico ? fmtData(v.data_servico) : "-"}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-primary opacity-50" style="font-size:0.8rem;"></i>
+            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
 
   const cardsChecklist = checklists.length
     ? checklists.slice(0, 3).map((c, i) => `
         <div class="card chk-item border-0 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalChecklist${i}" style="cursor:pointer; border-left-color: #0d6efd !important;">
           <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
             <div class="text-truncate me-3" style="max-width: 85%;">
-              <span class="d-block fw-bold text-dark text-truncate" style="font-size: 0.85rem;">Motorista: ${c.motorista || "-"}</span>
-              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.75rem;">
+              <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">Motorista: ${c.motorista || "-"}</span>
+              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
                 <span class="text-truncate"><i class="fa-solid fa-car-side me-1"></i> ${c.veiculo || "-"}</span>
                 <span><i class="fa-regular fa-clock me-1"></i> ${fmtData(c.criado_em)}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-primary opacity-50" style="font-size:0.8rem;"></i>
+            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
 
   const cardsPrecos = precos.length
     ? precos.slice(0, 3).map((p, i) => `
         <div class="card chk-item border-0 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalPreco${i}" style="cursor:pointer; border-left-color: #198754 !important;">
           <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
             <div class="text-truncate me-3" style="max-width: 85%;">
-              <span class="d-block fw-bold text-dark text-truncate" style="font-size: 0.85rem;">Modelo: ${p.modelo || "-"}</span>
-              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.75rem;">
+              <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">Modelo: ${p.modelo || "-"}</span>
+              <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
                 <span class="text-truncate"><i class="fa-solid fa-user-pen me-1"></i> ${p.atualizado_por || "-"}</span>
                 <span><i class="fa-solid fa-clock-rotate-left me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-primary opacity-50" style="font-size:0.8rem;"></i>
+            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
 
   const cardRota = rota
     ? `
@@ -117,15 +117,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         <div class="card-body p-2 px-3">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="text-truncate me-3">
-              <span class="d-block fw-bold text-dark text-truncate" style="font-size: 0.85rem;">${rota.titulo || "-"}</span>
-              <span class="text-muted" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(rota.data_pedido)}</span>
+              <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">${rota.titulo || "-"}</span>
+              <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(rota.data_pedido)}</span>
             </div>
-            <i class="fa-solid fa-chevron-right text-primary opacity-50" style="font-size:0.8rem;"></i>
+            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
           </div>
-          <div class="bg-light rounded p-2 border">
+          <div class="bg-custom-darker rounded p-2 border-custom">
             ${(rotaClientes.slice(0, 3)).map(c => `
-              <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-1 last-border-0">
-                <span class="text-truncate" style="font-size:0.75rem; max-width:70%;">${c.cliente_nome || "-"}</span>
+              <div class="d-flex align-items-center justify-content-between border-bottom border-custom pb-1 mb-1 last-border-0">
+                <span class="text-truncate text-white" style="font-size:0.7rem; max-width:70%;">${c.cliente_nome || "-"}</span>
                 ${badgeStatusEntrega(c.status)}
               </div>
             `).join("")}
@@ -133,7 +133,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         </div>
       </div>
     `
-    : `<div class="text-center text-muted p-3" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Sem rotas</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem rotas</div>`;
 
   // --- MONTAGEM DOS ITENS DO CAROUSEL ---
   const carouselItemsHTML = [
@@ -172,7 +172,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
   ).join('');
 
   // --- MONTAGEM DO SELECT DE MESES ---
-  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto" onchange="mudarFiltroDashboard(null, this.value)">`;
+  let selectMesesHTML = `<select id="selectMesDashboard" class="form-select form-select-sm w-auto bg-custom-darker border-custom text-white" onchange="mudarFiltroDashboard(null, this.value)">`;
   
   if (mesesDisponiveis.length === 0) {
       const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' });
@@ -193,57 +193,57 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-wrench me-2 text-primary"></i> Detalhes da Manutenção</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-wrench me-2 text-accent"></i> Detalhes da Manutenção</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
                 <div class="row g-2 mb-3">
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Veículo</span>
-                    <span class="fw-medium">${v.marca || "-"} ${v.modelo || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Veículo</span>
+                    <span class="fw-medium text-white">${v.marca || "-"} ${v.modelo || "-"}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Ano / KM Atual</span>
-                    <span class="fw-medium">${v.ano || "-"} / ${v.km || "-"} km</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Ano / KM Atual</span>
+                    <span class="fw-medium text-white">${v.ano || "-"} / ${v.km || "-"} km</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Data do Serviço</span>
-                    <span class="fw-medium">${fmtData(v.data_servico)}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Data do Serviço</span>
+                    <span class="fw-medium text-white">${fmtData(v.data_servico)}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">KM do Serviço</span>
-                    <span class="fw-medium">${v.km_servico || "-"} km</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">KM do Serviço</span>
+                    <span class="fw-medium text-white">${v.km_servico || "-"} km</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Oficina / Mecânico</span>
-                    <span class="fw-medium">${v.oficina || "-"} / ${v.mecanico || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Oficina / Mecânico</span>
+                    <span class="fw-medium text-white">${v.oficina || "-"} / ${v.mecanico || "-"}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Valor</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Valor</span>
                     <span class="fw-bold text-success">${fmtMoeda(v.valor)}</span>
                   </div>
                 </div>
-                <div class="p-2 bg-light rounded border mb-3">
-                  <span class="text-muted d-block mb-1" style="font-size:0.75rem;">Serviço Realizado</span>
-                  ${(v.servico || "-").replace(/\n/g, "<br>")}
+                <div class="p-2 bg-custom-darker rounded border-custom mb-3">
+                  <span class="text-muted d-block mb-1" style="font-size:0.7rem;">Serviço Realizado</span>
+                  <span class="text-white">${(v.servico || "-").replace(/\n/g, "<br>")}</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Atualizado por</span>
-                    <span class="fw-medium" style="font-size:0.8rem;">${v.atualizado_por || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Atualizado por</span>
+                    <span class="fw-medium text-white" style="font-size:0.75rem;">${v.atualizado_por || "-"}</span>
                   </div>
                   <div>
                   ${v.documento
                       ? `<a href="/uploads/${v.documento}" target="_blank" class="btn btn-sm btn-outline-success">
                           <i class="fa-solid fa-paperclip me-1"></i>Ver Documento
                          </a>`
-                      : `<span class="text-muted" style="font-size:0.8rem;"><i class="fa-solid fa-file-excel me-1"></i>Sem anexo</span>`
+                      : `<span class="text-muted" style="font-size:0.75rem;"><i class="fa-solid fa-file-excel me-1"></i>Sem anexo</span>`
                   }
                   </div>
                 </div>
               </div>
-              <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+              <div class="modal-footer bg-custom-darker">
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
               </div>
             </div>
           </div>
@@ -256,58 +256,58 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-clipboard-check me-2 text-primary"></i> Detalhes do Checklist</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clipboard-check me-2 text-accent"></i> Detalhes do Checklist</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
                 <div class="row g-2 mb-3">
                   <div class="col-12 col-md-4">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Motorista / Veículo</span>
-                    <span class="fw-bold">${c.motorista || "-"} / ${c.veiculo || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Motorista / Veículo</span>
+                    <span class="fw-bold text-white">${c.motorista || "-"} / ${c.veiculo || "-"}</span>
                   </div>
                   <div class="col-6 col-md-4">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Registrado em</span>
-                    <span class="fw-medium">${fmtDataHora(c.criado_em)}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Registrado em</span>
+                    <span class="fw-medium text-white">${fmtDataHora(c.criado_em)}</span>
                   </div>
                   <div class="col-6 col-md-4">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Responsável Lógistico</span>
-                    <span class="fw-medium">${c.responsavel || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Responsável Lógistico</span>
+                    <span class="fw-medium text-white">${c.responsavel || "-"}</span>
                   </div>
                 </div>
                 
-                <h6 class="fw-bold mt-3 mb-2" style="font-size:0.85rem; color:#0D5749;">Itens Inspecionados</h6>
-                <div class="row g-2 bg-light p-2 rounded border mb-3">
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Óleo</span><span class="fw-medium" style="font-size:0.8rem;">${c.oleo || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Água Radiador</span><span class="fw-medium" style="font-size:0.8rem;">${c.agua || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Fluído Freio</span><span class="fw-medium" style="font-size:0.8rem;">${c.freio || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Direção Hidráulica</span><span class="fw-medium" style="font-size:0.8rem;">${c.direcao || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Combustível</span><span class="fw-medium" style="font-size:0.8rem;">${c.combustivel || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Pneu (Calibragem)</span><span class="fw-medium" style="font-size:0.8rem;">${c.pneu_calibragem || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Pneu (Estado)</span><span class="fw-medium" style="font-size:0.8rem;">${c.pneu_estado || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Luzes</span><span class="fw-medium" style="font-size:0.8rem;">${c.luzes || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Ruídos</span><span class="fw-medium" style="font-size:0.8rem;">${c.ruidos || "-"}</span></div>
-                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.7rem;">Lixo Interno</span><span class="fw-medium" style="font-size:0.8rem;">${c.lixo || "-"}</span></div>
+                <h6 class="fw-bold mt-3 mb-2" style="font-size:0.8rem; color:#08c068;">Itens Inspecionados</h6>
+                <div class="row g-2 bg-custom-darker p-2 rounded border-custom mb-3">
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Óleo</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.oleo || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Água Radiador</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.agua || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Fluído Freio</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.freio || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Direção Hidráulica</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.direcao || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Combustível</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.combustivel || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Pneu (Calibragem)</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.pneu_calibragem || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Pneu (Estado)</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.pneu_estado || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Luzes</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.luzes || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Ruídos</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.ruidos || "-"}</span></div>
+                  <div class="col-6 col-md-3"><span class="text-muted d-block" style="font-size:0.65rem;">Lixo Interno</span><span class="fw-medium text-white" style="font-size:0.75rem;">${c.lixo || "-"}</span></div>
                 </div>
 
                 <div class="row g-2">
                   <div class="col-12 col-md-8">
-                    <span class="text-muted d-block mb-1" style="font-size:0.75rem;">Observação</span>
-                    <div class="p-2 bg-light rounded border" style="font-size:0.8rem; min-height:40px;">
+                    <span class="text-muted d-block mb-1" style="font-size:0.7rem;">Observação</span>
+                    <div class="p-2 bg-custom-darker rounded border-custom text-white" style="font-size:0.75rem; min-height:40px;">
                       ${c.observacao ? c.observacao.replace(/\n/g, "<br>") : "<em class='text-muted'>Sem observação</em>"}
                     </div>
                   </div>
                   <div class="col-12 col-md-4 d-flex align-items-end justify-content-md-end mt-2 mt-md-0">
                     ${c.foto
                         ? `<a href="/uploads/${c.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100">
-                            <i class="fa-solid fa-image me-1"></i>Ver Foto Anexa
+                            <i class="fa-solid fa-image me-1"></i>Ver Foto
                            </a>`
-                        : `<span class="text-muted w-100 text-center p-2 border rounded" style="font-size:0.8rem;"><i class="fa-solid fa-image-slash me-1"></i>Sem foto</span>`
+                        : `<span class="text-muted w-100 text-center p-2 border-custom rounded" style="font-size:0.75rem;"><i class="fa-solid fa-image-slash me-1"></i>Sem foto</span>`
                     }
                   </div>
                 </div>
               </div>
-              <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+              <div class="modal-footer bg-custom-darker">
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
               </div>
             </div>
           </div>
@@ -320,44 +320,44 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-tags me-2 text-success"></i> Detalhes do Preço</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-tags me-2 text-success"></i> Detalhes do Preço</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
                 <div class="row g-2">
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Código</span>
-                    <span class="fw-medium">${p.codigo || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Código</span>
+                    <span class="fw-medium text-white">${p.codigo || "-"}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Modelo</span>
-                    <span class="fw-bold">${p.modelo || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Modelo</span>
+                    <span class="fw-bold text-white">${p.modelo || "-"}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Preço Parda</span>
-                    <span class="fw-bold text-dark">${fmtMoeda(p.preco_parda)}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Preço Parda</span>
+                    <span class="fw-bold text-success">${fmtMoeda(p.preco_parda)}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Preço Branca</span>
-                    <span class="fw-bold text-dark">${fmtMoeda(p.preco_branca)}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Preço Branca</span>
+                    <span class="fw-bold text-success">${fmtMoeda(p.preco_branca)}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">Fornecedor</span>
-                    <span class="fw-medium">${p.fornecedor_nome || "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">Fornecedor</span>
+                    <span class="fw-medium text-white">${p.fornecedor_nome || "-"}</span>
                   </div>
                   <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:0.75rem;">% Fornecedor</span>
-                    <span class="fw-medium">${p.fornecedor_pct != null ? `${p.fornecedor_pct}%` : "-"}</span>
+                    <span class="text-muted d-block" style="font-size:0.7rem;">% Fornecedor</span>
+                    <span class="fw-medium text-white">${p.fornecedor_pct != null ? `${p.fornecedor_pct}%` : "-"}</span>
                   </div>
                 </div>
-                <hr class="my-3 text-secondary">
-                <div class="d-flex justify-content-between text-muted" style="font-size:0.8rem;">
+                <hr class="my-3 border-custom">
+                <div class="d-flex justify-content-between text-muted" style="font-size:0.75rem;">
                   <span><i class="fa-solid fa-user-pen me-1"></i> Atualizado por: ${p.atualizado_por || "-"}</span>
                   <span><i class="fa-regular fa-clock me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
                 </div>
               </div>
-              <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+              <div class="modal-footer bg-custom-darker">
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
               </div>
             </div>
           </div>
@@ -370,41 +370,41 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content erp-modal">
             <div class="modal-header">
-              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-route me-2 text-warning"></i> Detalhes da Rota</h6>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-route me-2 text-warning"></i> Detalhes da Rota</h6>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-sm">
-              <div class="row g-2 mb-3 bg-light p-2 rounded border">
+              <div class="row g-2 mb-3 bg-custom-darker p-2 rounded border-custom">
                 <div class="col-12 col-md-4">
-                  <span class="text-muted d-block" style="font-size:0.75rem;">Título da Rota</span>
-                  <span class="fw-bold">${rota.titulo || "-"}</span>
+                  <span class="text-muted d-block" style="font-size:0.7rem;">Título da Rota</span>
+                  <span class="fw-bold text-white">${rota.titulo || "-"}</span>
                 </div>
                 <div class="col-6 col-md-4">
-                  <span class="text-muted d-block" style="font-size:0.75rem;">Data do Pedido</span>
-                  <span class="fw-medium">${fmtData(rota.data_pedido)}</span>
+                  <span class="text-muted d-block" style="font-size:0.7rem;">Data do Pedido</span>
+                  <span class="fw-medium text-white">${fmtData(rota.data_pedido)}</span>
                 </div>
                 <div class="col-6 col-md-4">
-                  <span class="text-muted d-block" style="font-size:0.75rem;">Criado por</span>
-                  <span class="fw-medium">${rota.criado_por || "-"}</span>
+                  <span class="text-muted d-block" style="font-size:0.7rem;">Criado por</span>
+                  <span class="fw-medium text-white">${rota.criado_por || "-"}</span>
                 </div>
               </div>
 
-              <h6 class="fw-bold mb-3" style="font-size:0.85rem; color:#0D5749;">Clientes na Rota</h6>
+              <h6 class="fw-bold mb-3" style="font-size:0.8rem; color:#08c068;">Clientes na Rota</h6>
               ${
                 rotaClientes.length
                   ? `
                     <div class="row g-2">
                       ${rotaClientes.map(c => `
                         <div class="col-12 col-md-6">
-                          <div class="border rounded p-2 h-100 bg-white">
+                          <div class="border-custom rounded p-2 h-100 bg-custom-dark">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                              <strong class="text-truncate" style="font-size:0.85rem;" title="${c.cliente_nome || "-"}">${c.cliente_nome || "-"}</strong>
+                              <strong class="text-truncate text-white" style="font-size:0.8rem;" title="${c.cliente_nome || "-"}">${c.cliente_nome || "-"}</strong>
                               ${badgeStatusEntrega(c.status)}
                             </div>
-                            <div class="text-muted mb-2" style="font-size:0.7rem;">
+                            <div class="text-muted mb-2" style="font-size:0.65rem;">
                               Atualizado por ${c.atualizado_por || "-"} em ${fmtDataHora(c.atualizado_em)}
                             </div>
-                            <div class="bg-light p-1 rounded" style="font-size:0.75rem; min-height:30px;">
+                            <div class="bg-custom-darker p-1 rounded text-white" style="font-size:0.7rem; min-height:30px;">
                               ${c.observacao && c.observacao.trim() ? c.observacao.replace(/\n/g, "<br>") : "<em class='text-muted'>Sem observação</em>"}
                             </div>
                           </div>
@@ -412,11 +412,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                       `).join("")}
                     </div>
                   `
-                  : `<p class="text-muted mb-0" style="font-size:0.85rem;">Nenhum cliente associado a esta rota.</p>`
+                  : `<p class="text-muted mb-0" style="font-size:0.8rem;">Nenhum cliente associado a esta rota.</p>`
               }
             </div>
-            <div class="modal-footer bg-light">
-              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+            <div class="modal-footer bg-custom-darker">
+              <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
             </div>
           </div>
         </div>
@@ -430,13 +430,13 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal">
           <div class="modal-header">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking <span id="spanDiaModal"></span></h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking <span id="spanDiaModal"></span></h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 text-sm" id="corpoModalRanking">
             </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <div class="modal-footer bg-custom-darker">
+            <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
       </div>
@@ -463,68 +463,69 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
       <style>
+        /* Scrollbars (Dark & Green) */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+        html, body, .content { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
+
         body { 
           display: flex; 
           height: 100vh; 
           margin: 0; 
-          background-color: #f4f7f6;
+          background-color: #1f1f1f;
+          color: #ffffff;
           font-family: 'Roboto', system-ui, -apple-system, sans-serif;
         }
         
-        /* Sidebar */
-        .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
-        .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
-        .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+        /* Sidebar (Override para ter certeza) */
+        .sidebar { width: 240px; background-color: #1f1f1f !important; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
         
-        .content { flex: 1; padding: 24px; overflow-y: auto; }
+        .content { flex: 1; padding: 24px; overflow-y: auto; background-color: #1f1f1f; }
         
-        /* Utilities */
-        .text-sm { font-size: 0.875rem; }
-        .disabled-link { pointer-events: none; }
-        .last-border-0:last-child { border-bottom: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; }
-        
+        /* Tema Escuro Customizado */
+        .bg-custom-dark { background-color: #2a2a2a !important; }
+        .bg-custom-darker { background-color: #222222 !important; }
+        .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+        .text-accent { color: #08c068 !important; }
+
+        /* Substituindo as cores base do Bootstrap */
+        .text-dark { color: #ffffff !important; }
+        .text-muted { color: rgba(255,255,255,0.5) !important; }
+
+        /* Botões */
+        .btn-primary { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
+        .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+        .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+
         /* Topbar / Badges */
         .usuario-badge {
-            background-color: white;
-            color: #0D5749;
-            padding: 6px 14px;
+            background-color: #2a2a2a;
+            color: #08c068;
+            padding: 4px 12px;
             border-radius: 20px;
-            border: 1px solid rgba(13,87,73,0.2);
-            font-size: 0.85rem;
+            border: 1px solid rgba(8,192,104,0.3);
+            font-size: 0.8rem;
             font-weight: 500;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
-        .notificacao-btn {
-            border: 1px solid rgba(13,87,73,0.2);
-            background: white;
-            color: #0D5749;
-            border-radius: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-        .notificacao-btn:hover { background: #f8f9fa; color: #0D5749; }
+        /* Inputs e Selects */
+        .form-select, .form-control { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
+        .form-select:focus, .form-control:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
         
         /* ERP Cards */
-        .erp-card {
-            border-radius: 12px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            overflow: hidden;
-        }
-        .erp-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
-        }
-
-        /* Dashboard Section Card */
         .dashboard-section-card {
             border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            background-color: #2a2a2a;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .dashboard-title {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 700;
-            color: #0D5749;
+            color: #08c068;
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -532,27 +533,34 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         }
         
         /* List items */
-        .chk-item { border-left: 3px solid #0D5749 !important; transition: background 0.2s; }
-        .chk-item:hover { background-color: #f8f9fa; }
+        .chk-item { background-color: #2a2a2a; border-left: 2px solid #08c068 !important; border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; }
+        .chk-item:hover { background-color: #333333; }
         
         /* Animação suave para os cards do Carousel */
-        .carousel-item {
-            transition: transform 0.6s ease-in-out, opacity 0.6s ease-out;
-        }
+        .carousel-indicators [data-bs-target] { background-color: #08c068; }
+        .carousel-item { transition: transform 0.6s ease-in-out, opacity 0.6s ease-out; }
 
         /* Modals */
-        .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .erp-modal .modal-header { border-bottom: 1px solid #f0f0f0; }
-        .erp-modal .modal-footer { border-top: 1px solid #f0f0f0; }
+        .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+        .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+        .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #fff;}
 
-        /* SKELETON LOADING */
-        .skeleton-view {
-            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading-view 1.5s infinite linear;
+        /* SKELETON LOADING (CORRIGIDO PARA MODO ESCURO TRANSPARENTE) */
+        .skeleton-dark {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
+            background-size: 200% 100% !important;
+            animation: skeleton-loading-view 1.5s infinite linear !important;
             border-radius: 4px;
+            color: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            pointer-events: none;
         }
-        .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
+        .skeleton-dark * {
+            visibility: hidden !important;
+        }
+        .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
         @keyframes skeleton-loading-view {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
@@ -564,6 +572,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           .sidebar { display: none; }
           .content { width: 100%; padding: 16px; }
         }
+        .offcanvas { background-color: #1f1f1f !important; }
         .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
         .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
       </style>
@@ -581,7 +590,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     </div>
 
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-      <div class="offcanvas-header border-bottom border-secondary">
+      <div class="offcanvas-header border-bottom border-custom">
         <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
@@ -590,8 +599,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
         </div>
         ${menuHTML}
-        <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
+        <hr class="border-custom mt-4">
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
       </div>
     </div>
 
@@ -599,21 +608,21 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       
       <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-light border d-md-none shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-                <i class="fa-solid fa-bars"></i>
+            <button class="btn btn-sm btn-outline-secondary border d-md-none shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+                <i class="fa-solid fa-bars text-white"></i>
             </button>
             <div>
-              <h4 class="mb-0 fw-bold text-dark">Painel de Controle</h4>
-              <span class="text-muted d-none d-sm-block" style="font-size:0.85rem;">Sistema de gestão Ecocaixas</span>
+              <h4 class="mb-0 fw-bold text-white fs-5">Painel de Controle</h4>
+              <span class="text-muted d-none d-sm-block" style="font-size:0.75rem;">Sistema de gestão Ecocaixas</span>
             </div>
         </div>
       </div>
 
       <div class="row g-3">
         <div class="${isMotorista ? 'col-12' : 'col-12 col-lg-5'}">
-          <div class="card dashboard-section-card h-100 bg-white">
+          <div class="card dashboard-section-card h-100 bg-custom-dark">
             <div class="card-body p-3 d-flex flex-column pb-4">
-              <div id="dashboardCarousel" class="carousel carousel-dark slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
+              <div id="dashboardCarousel" class="carousel slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
                 <div class="carousel-indicators mb-0" style="bottom: -20px;">
                   ${carouselIndicators}
                 </div>
@@ -627,16 +636,16 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
         ${!isMotorista ? `
         <div class="col-12 col-lg-7">
-          <div class="card dashboard-section-card h-100 bg-white">
+          <div class="card dashboard-section-card h-100 bg-custom-dark">
             <div class="card-body p-3 d-flex flex-column">
               
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i> Volume de Pedidos</h6>
+                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-accent me-2"></i> Volume de Pedidos</h6>
                 
                 <div class="d-flex align-items-center gap-2">
                     <div class="btn-group shadow-sm" role="group">
-                        <button id="btn-diario" type="button" class="btn btn-sm ${modoVisao === 'diario' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('diario', null)">Diário</button>
-                        <button id="btn-mensal" type="button" class="btn btn-sm ${modoVisao === 'mensal' ? 'btn-primary fw-bold' : 'btn-light border text-muted'}" onclick="mudarFiltroDashboard('mensal', null)">Mensal</button>
+                        <button id="btn-diario" type="button" class="btn btn-sm ${modoVisao === 'diario' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}" onclick="mudarFiltroDashboard('diario', null)">Diário</button>
+                        <button id="btn-mensal" type="button" class="btn btn-sm ${modoVisao === 'mensal' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}" onclick="mudarFiltroDashboard('mensal', null)">Mensal</button>
                     </div>
                     ${selectMesesHTML}
                 </div>
@@ -645,8 +654,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
                 <canvas id="graficoMensalCanvas"></canvas>
               </div>
-              <small id="dica-grafico" class="text-muted text-center mt-2" style="font-size: 0.75rem;">
-                Clique na barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
+              <small id="dica-grafico" class="text-muted text-center mt-2" style="font-size: 0.7rem;">
+                <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
               </small>
             </div>
           </div>
@@ -660,31 +669,31 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content erp-modal">
           <div class="modal-header">
-            <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-bell me-2 text-warning"></i> Central de Notificações</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-bell me-2 text-warning"></i> Central de Notificações</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-0">
+          <div class="modal-body p-0 bg-custom-darker">
             ${qtdNotificacoes > 0
               ? `
                 <div class="list-group list-group-flush text-sm">
                   ${notificacoes.map(n => `
-                    <div class="list-group-item d-flex justify-content-between align-items-start p-3 border-bottom">
+                    <div class="list-group-item d-flex justify-content-between align-items-start p-3 border-custom border-bottom">
                       <div>
-                        <div class="fw-bold text-dark mb-1">
-                           ${n.tipo === "checklist" ? '<i class="fa-solid fa-clipboard-check text-primary me-1"></i> Checklist' : 
+                        <div class="fw-bold text-white mb-1" style="font-size:0.8rem;">
+                           ${n.tipo === "checklist" ? '<i class="fa-solid fa-clipboard-check text-accent me-1"></i> Checklist' : 
                              n.tipo === "caixa" ? '<i class="fa-solid fa-box text-success me-1"></i> Cadastro/Tabela' : 
                              n.tipo === "veiculo" ? '<i class="fa-solid fa-car text-info me-1"></i> Veículo' :
                              n.tipo === "entrega" ? '<i class="fa-solid fa-route text-warning me-1"></i> Entrega' :
                              '<i class="fa-solid fa-circle-info text-secondary me-1"></i> Notificação'}
                         </div>
-                        <div class="text-muted mb-1" style="font-size:0.85rem;">${n.mensagem}</div>
-                        <small class="text-muted" style="font-size:0.75rem;">
+                        <div class="text-muted mb-1" style="font-size:0.75rem;">${n.mensagem}</div>
+                        <small class="text-muted" style="font-size:0.7rem;">
                           <i class="fa-regular fa-clock me-1"></i> ${new Date(n.criado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                         </small>
                       </div>
                       <form method="POST" action="/notificacoes/${n.id}/excluir" class="ms-3 mt-1">
-                        <button type="submit" class="btn btn-sm btn-light border text-danger rounded-circle" title="Remover" style="width:30px; height:30px; padding:0;">
-                          <i class="fas fa-times"></i>
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" title="Remover" style="width:26px; height:26px; padding:0;">
+                          <i class="fas fa-times" style="font-size:0.75rem;"></i>
                         </button>
                       </form>
                     </div>
@@ -692,23 +701,23 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 </div>
               `
               : `<div class="text-center text-muted p-5">
-                   <i class="fa-regular fa-bell-slash fa-3x mb-3 opacity-25"></i>
-                   <p class="mb-0" style="font-size:0.85rem;">Nenhuma notificação no momento.</p>
+                   <i class="fa-regular fa-bell-slash fa-2x mb-3 opacity-25"></i>
+                   <p class="mb-0" style="font-size:0.8rem;">Nenhuma notificação no momento.</p>
                  </div>`
             }
           </div>
-          <div class="modal-footer bg-light">
+          <div class="modal-footer bg-custom-darker">
             ${qtdNotificacoes > 0
               ? `
                 <form method="POST" action="/notificacoes/limpar" class="me-auto">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;">
                     <i class="fas fa-trash-alt me-1"></i> Limpar todas
                   </button>
                 </form>
               `
               : ""
             }
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary text-white" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
       </div>
@@ -722,19 +731,19 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
     ${notificacaoAtiva ? `
     <div class="modal fade" id="modalAvisoGlobal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content erp-modal shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
-          <div class="modal-header bg-primary text-white border-0 p-3">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-bullhorn me-2"></i> Notificação</h6>
+          <div class="modal-header text-white border-0 p-3" style="background-color: #0D5749;">
+            <h6 class="modal-title fw-bold" style="font-size:0.85rem;"><i class="fa-solid fa-bullhorn me-2"></i> Mensagem da Administração</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 bg-light text-center">
-            ${notificacaoAtiva.imagem ? `<img src="/uploads/${notificacaoAtiva.imagem}" class="img-fluid rounded shadow-sm mb-3" style="max-height: 350px; width: 100%; object-fit: cover;">` : '<i class="fa-solid fa-circle-exclamation fa-3x text-primary mb-3 opacity-50"></i>'}
-            <h5 class="fw-bold text-dark mb-3">${notificacaoAtiva.titulo}</h5>
-            <p class="text-muted mb-0" style="font-size: 1rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">${notificacaoAtiva.mensagem}</p>
+          <div class="modal-body p-4 bg-custom-darker text-center">
+            ${notificacaoAtiva.imagem ? `<img src="/uploads/${notificacaoAtiva.imagem}" class="img-fluid rounded border-custom mb-3" style="max-height: 250px; width: 100%; object-fit: cover;">` : '<i class="fa-solid fa-circle-exclamation fa-2x text-accent mb-3 opacity-50"></i>'}
+            <h6 class="fw-bold text-white mb-3" style="font-size:0.9rem;">${notificacaoAtiva.titulo}</h6>
+            <p class="text-muted mb-0" style="font-size: 0.8rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">${notificacaoAtiva.mensagem}</p>
           </div>
-          <div class="modal-footer bg-white border-0 justify-content-center p-3">
-            <button type="button" class="btn btn-primary px-5 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>
+          <div class="modal-footer bg-custom-dark border-0 justify-content-center p-3">
+            <button type="button" class="btn btn-sm btn-primary px-5 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>
           </div>
         </div>
       </div>
@@ -744,6 +753,10 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+      // Configurações globais do Chart.js para Dark Mode
+      Chart.defaults.color = 'rgba(255,255,255,0.6)';
+      Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+
       // Variáveis globais para armazenar o estado atual
       let mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
       let chartData = ${JSON.stringify(graficoMensal)};
@@ -768,17 +781,17 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (btnDiario && btnMensal) {
               if (modo === 'diario') {
                   btnDiario.className = 'btn btn-sm btn-primary fw-bold';
-                  btnMensal.className = 'btn btn-sm btn-light border text-muted';
+                  btnMensal.className = 'btn btn-sm btn-outline-secondary';
               } else {
                   btnMensal.className = 'btn btn-sm btn-primary fw-bold';
-                  btnDiario.className = 'btn btn-sm btn-light border text-muted';
+                  btnDiario.className = 'btn btn-sm btn-outline-secondary';
               }
           }
           
           // Atualiza a dica no rodapé do gráfico
           const dicaObj = document.getElementById('dica-grafico');
           if (dicaObj) {
-              dicaObj.innerHTML = \`Clique em uma barra para ver o ranking do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+              dicaObj.innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
           }
 
           try {
@@ -820,10 +833,10 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             datasets: [{
               label: 'Quantidade Total de Pedidos',
               data: chartData.data,
-              backgroundColor: '#0D5749',
+              backgroundColor: '#08c068',
               borderRadius: 4,
               barPercentage: 0.6,
-              hoverBackgroundColor: '#093c32'
+              hoverBackgroundColor: '#06a055'
             }]
           },
           plugins: [ChartDataLabels],
@@ -853,23 +866,23 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 
                 let htmlRanking = '';
                 if (rankingData && rankingData.length > 0) {
-                    htmlRanking = '<ul class="list-group list-group-flush">';
+                    htmlRanking = '<ul class="list-group list-group-flush bg-custom-darker">';
                     rankingData.forEach((item, i) => {
                         let medalha = '';
                         if(i === 0) medalha = '<i class="fa-solid fa-medal text-warning me-2 fa-lg"></i>';
                         else if(i === 1) medalha = '<i class="fa-solid fa-medal text-secondary me-2 fa-lg"></i>';
                         else if(i === 2) medalha = '<i class="fa-solid fa-medal me-2 fa-lg" style="color: #cd7f32;"></i>';
-                        else medalha = \`<span class="me-2 text-muted fw-bold ms-1" style="width:20px; display:inline-block;">\${i+1}º</span>\`;
+                        else medalha = \`<span class="me-2 text-muted fw-bold ms-1" style="width:20px; display:inline-block; font-size:0.75rem;">\${i+1}º</span>\`;
 
                         htmlRanking += \`
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-3">
-                            <div>\${medalha} <strong class="text-dark">\${item.cliente_nome}</strong></div>
-                            <span class="badge bg-primary rounded-pill px-2 py-1">\${item.quantidade} un.</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2 border-custom border-bottom">
+                            <div style="font-size:0.8rem;">\${medalha} <strong class="text-white">\${item.cliente_nome}</strong></div>
+                            <span class="badge bg-success rounded-pill px-2 py-1" style="font-size:0.65rem;">\${item.quantidade} un.</span>
                         </li>\`;
                     });
                     htmlRanking += '</ul>';
                 } else {
-                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-2x opacity-25"></i><br>Nenhum pedido ou ranking encontrado.</div>';
+                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-lg opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum pedido ou ranking encontrado.</span></div>';
                 }
                 
                 document.getElementById('corpoModalRanking').innerHTML = htmlRanking;
@@ -889,8 +902,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               datalabels: {
                 anchor: 'end',
                 align: 'top',
-                color: '#0D5749',
-                font: { weight: 'bold', size: 11 },
+                color: '#ffffff',
+                font: { weight: 'bold', size: 10 },
                 formatter: function(value) { return value > 0 ? value : ''; }
               }
             },
@@ -902,7 +915,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   autoSkip: false,
                   maxRotation: window.innerWidth < 768 ? 90 : 0,
                   minRotation: 0,
-                  font: { size: window.innerWidth < 768 ? 9 : 11 }
+                  font: { size: window.innerWidth < 768 ? 9 : 10 }
                 }
               }
             }
@@ -919,13 +932,13 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           let html = '';
           for(let i=0; i<3; i++) {
               html += \`
-              <div class="card border-0 shadow-sm mb-2 p-2">
+              <div class="card border-0 bg-custom-darker shadow-sm mb-2 p-2">
                   <div class="d-flex justify-content-between align-items-center">
                       <div style="width: 80%;">
-                          <div class="skeleton-view skeleton-text-view" style="width: 100%;"></div>
-                          <div class="skeleton-view skeleton-text-view" style="width: 60%; margin-bottom: 0;"></div>
+                          <div class="skeleton-dark skeleton-text-view" style="width: 100%;"></div>
+                          <div class="skeleton-dark skeleton-text-view" style="width: 60%; margin-bottom: 0;"></div>
                       </div>
-                      <div class="skeleton-view skeleton-text-view" style="width: 20px; margin-bottom: 0;"></div>
+                      <div class="skeleton-dark skeleton-text-view" style="width: 20px; margin-bottom: 0;"></div>
                   </div>
               </div>\`;
           }
@@ -941,22 +954,22 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const skeletonHTML = \`
           <div id="skeleton-temp-container" class="row g-3 skeleton-container">
               <div class="\${isMotoristaStr ? 'col-12' : 'col-12 col-lg-5'}">
-                  <div class="card dashboard-section-card h-100 bg-white">
+                  <div class="card dashboard-section-card h-100 bg-custom-dark">
                       <div class="card-body p-3">
-                          <div class="skeleton-view skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
+                          <div class="skeleton-dark skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
                           \${gerarSkeletonCard()}
                       </div>
                   </div>
               </div>
               \${!isMotoristaStr ? \`
               <div class="col-12 col-lg-7">
-                  <div class="card dashboard-section-card h-100 bg-white">
+                  <div class="card dashboard-section-card h-100 bg-custom-dark">
                       <div class="card-body p-3 d-flex flex-column">
                           <div class="d-flex justify-content-between mb-3">
-                              <div class="skeleton-view skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
-                              <div class="skeleton-view skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
+                              <div class="skeleton-dark skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
+                              <div class="skeleton-dark skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
                           </div>
-                          <div class="skeleton-view w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
+                          <div class="skeleton-dark w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
                       </div>
                   </div>
               </div>

@@ -38,7 +38,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                     : (c.servico || "");
 
                 // Lógica de visualização inteligente do anexo (Imagem vs PDF)
-                let anexoHtml = `<span class="text-muted text-center d-block w-100 p-2 border rounded" style="font-size:0.8rem;"><i class="fa-solid fa-file-excel me-1"></i> Sem documento anexo</span>`;
+                let anexoHtml = `<span class="text-muted text-center d-block w-100 p-2 border border-custom rounded bg-custom-dark" style="font-size:0.75rem;"><i class="fa-solid fa-file-excel me-1"></i> Sem documento anexo</span>`;
                 if (c.documento) {
                     const ext = c.documento.split('.').pop().toLowerCase();
                     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
@@ -46,15 +46,15 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                     if (isImage) {
                         anexoHtml = `
                         <div class="text-center mb-2">
-                            <img src="/uploads/${c.documento}" alt="Anexo" class="img-fluid rounded border shadow-sm" style="max-height: 150px; object-fit: cover;">
+                            <img src="/uploads/${c.documento}" alt="Anexo" class="img-fluid rounded border border-custom shadow-sm" style="max-height: 150px; object-fit: cover;">
                         </div>
-                        <a class="btn btn-sm btn-outline-success w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-expand me-1"></i> Ver Imagem Completa</a>
+                        <a class="btn btn-sm btn-outline-success text-dark fw-bold w-100 shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-expand me-1"></i> Ver Imagem Completa</a>
                         `;
                     } else if (ext === 'pdf') {
                         anexoHtml = `
-                        <div class="text-center p-3 border rounded mb-2 bg-light">
+                        <div class="text-center p-3 border border-custom rounded mb-2 bg-custom-darker">
                             <i class="fa-solid fa-file-pdf fa-2x text-danger mb-2"></i>
-                            <p class="mb-0 small fw-bold text-dark">Documento PDF anexado</p>
+                            <p class="mb-0 small fw-bold text-white">Documento PDF anexado</p>
                         </div>
                         <a class="btn btn-sm btn-outline-danger w-100 fw-bold shadow-sm" href="/uploads/${c.documento}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Abrir PDF</a>
                         `;
@@ -67,37 +67,37 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="detalheChecklist${c.id}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered">
-                          <div class="modal-content erp-modal shadow-lg">
-                            <div class="modal-header bg-light border-0">
-                              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-list-check me-2 text-primary"></i> Detalhes do Checklist</h6>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                            <div class="modal-header bg-custom-darker border-custom">
+                              <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-list-check me-2 text-accent"></i> Detalhes do Checklist</h6>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body text-sm p-4">
+                            <div class="modal-body text-sm p-4 bg-custom-dark">
                               <div class="row g-3 mb-3">
                                 <div class="col-6">
                                   <span class="text-muted d-block" style="font-size:0.75rem;">Oficina</span>
-                                  <span class="fw-medium">${c.oficina}</span>
+                                  <span class="fw-medium text-white">${c.oficina}</span>
                                 </div>
                                 <div class="col-6">
                                   <span class="text-muted d-block" style="font-size:0.75rem;">Mecânico</span>
-                                  <span class="fw-medium">${c.mecanico}</span>
+                                  <span class="fw-medium text-white">${c.mecanico}</span>
                                 </div>
                                 <div class="col-6">
                                   <span class="text-muted d-block" style="font-size:0.75rem;">Data</span>
-                                  <span class="fw-medium">${fmtData(c.data_servico)}</span>
+                                  <span class="fw-medium text-white">${fmtData(c.data_servico)}</span>
                                 </div>
                                 <div class="col-6">
                                   <span class="text-muted d-block" style="font-size:0.75rem;">KM</span>
-                                  <span class="fw-medium">${fmtKM(c.km_servico)} km</span>
+                                  <span class="fw-medium text-white">${fmtKM(c.km_servico)} km</span>
                                 </div>
-                                <div class="col-12 border-top pt-2 mt-2">
+                                <div class="col-12 border-top border-custom pt-2 mt-2">
                                   <span class="text-muted d-block" style="font-size:0.75rem;">Valor Total</span>
-                                  <span class="fw-bold text-success" style="font-size:1.2rem;">R$ ${fmtMoeda(c.valor)}</span>
+                                  <span class="fw-bold text-accent" style="font-size:1.1rem;">R$ ${fmtMoeda(c.valor)}</span>
                                 </div>
                               </div>
-                              <div class="p-3 bg-light rounded border border-light shadow-sm">
+                              <div class="p-3 bg-custom-darker rounded border border-custom shadow-sm">
                                 <span class="text-muted fw-bold d-block mb-2" style="font-size:0.75rem;">Serviço Realizado</span>
-                                <div style="font-size: 0.85rem; line-height: 1.5;">
+                                <div class="text-white" style="font-size: 0.8rem; line-height: 1.5;">
                                     ${(c.servico || "").replace(/\n/g, "<br>")}
                                 </div>
                               </div>
@@ -105,12 +105,12 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                                   ${anexoHtml}
                               </div>
                             </div>
-                            <div class="modal-footer bg-light border-0 d-flex gap-2">
-                              <button class="btn btn-sm btn-outline-secondary flex-grow-1" data-bs-dismiss="modal">Fechar</button>
-                              <button class="btn btn-sm btn-warning fw-bold text-dark px-3" data-bs-toggle="modal" data-bs-target="#editarChecklist${c.id}" data-bs-dismiss="modal">
+                            <div class="modal-footer bg-custom-darker border-custom d-flex gap-2">
+                              <button class="btn btn-sm btn-outline-secondary flex-grow-1 text-white" data-bs-dismiss="modal">Fechar</button>
+                              <button class="btn btn-sm btn-warning fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#editarChecklist${c.id}" data-bs-dismiss="modal">
                                 <i class="fa-solid fa-pen me-1"></i> Editar
                               </button>
-                              <button class="btn btn-sm btn-danger px-3" data-bs-toggle="modal" data-bs-target="#excluirChecklist${c.id}" data-bs-dismiss="modal" title="Excluir">
+                              <button class="btn btn-sm btn-danger px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#excluirChecklist${c.id}" data-bs-dismiss="modal" title="Excluir">
                                 <i class="fa-solid fa-trash"></i>
                               </button>
                             </div>
@@ -123,54 +123,54 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="editarChecklist${c.id}" tabindex="-1" data-bs-backdrop="static">
                         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                          <form method="POST" action="/veiculos/checklists/editar/${c.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Atualizado!')">
-                            <div class="modal-header bg-light border-0">
-                              <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Checklist</h6>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          <form method="POST" action="/veiculos/checklists/editar/${c.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Atualizado!')">
+                            <div class="modal-header bg-custom-darker border-custom">
+                              <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Checklist</h6>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body text-sm p-4 bg-light">
+                            <div class="modal-body text-sm p-4 bg-custom-dark">
                               <div class="row g-3">
                                 <div class="col-12">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Serviço (descrição)</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Serviço (descrição)</label>
                                   <textarea name="servico" class="form-control form-control-sm shadow-sm" rows="3" required>${c.servico || ""}</textarea>
                                 </div>
                                 <div class="col-6">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Oficina</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Oficina</label>
                                   <input type="text" name="oficina" class="form-control form-control-sm shadow-sm" value="${c.oficina}" required>
                                 </div>
                                 <div class="col-6">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Mecânico</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Mecânico</label>
                                   <input type="text" name="mecanico" class="form-control form-control-sm shadow-sm" value="${c.mecanico}" required>
                                 </div>
                                 
                                 <div class="col-12 col-md-4">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data</label>
                                   <input type="date" name="data_servico" class="form-control form-control-sm shadow-sm" value="${String(c.data_servico).slice(0, 10)}" required>
                                 </div>
                                 <div class="col-6 col-md-4">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">KM Serviço</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">KM Serviço</label>
                                   <div class="input-group input-group-sm shadow-sm">
                                       <input type="text" name="km_servico" class="form-control form-control-sm mask-km" oninput="maskKM(this)" value="${fmtKM(c.km_servico)}" required>
-                                      <span class="input-group-text bg-white text-muted border-start-0">km</span>
+                                      <span class="input-group-text bg-custom-darker border-custom text-muted border-start-0">km</span>
                                   </div>
                                 </div>
                                 <div class="col-6 col-md-4">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Valor (Total)</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Valor (Total)</label>
                                   <div class="input-group input-group-sm shadow-sm">
-                                      <span class="input-group-text bg-white text-muted border-end-0">R$</span>
+                                      <span class="input-group-text bg-custom-darker border-custom text-muted border-end-0">R$</span>
                                       <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" value="${fmtMoeda(c.valor)}" required>
                                   </div>
                                 </div>
                                 
                                 <div class="col-12 mt-3">
-                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Substituir doc. (opcional)</label>
+                                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Substituir doc. (opcional)</label>
                                   <input type="file" name="documento" class="form-control form-control-sm shadow-sm" accept=".pdf,image/*">
                                 </div>
                               </div>
                             </div>
-                            <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
-                              <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                              <button type="submit" class="btn btn-sm btn-primary fw-bold w-100"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                            <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+                              <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="submit" class="btn btn-sm btn-primary fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                             </div>
                           </form>
                         </div>
@@ -181,16 +181,16 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                 modaisDetalheEditarExcluir.push(`
                       <div class="modal fade" id="excluirChecklist${c.id}" tabindex="-1" data-bs-backdrop="static">
                         <div class="modal-dialog modal-sm modal-dialog-centered">
-                          <div class="modal-content erp-modal border-0 shadow-lg">
+                          <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
                             <form method="POST" action="/veiculos/checklists/excluir/${c.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Excluído!')">
                               <div class="modal-body text-center p-4">
                                 <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                                <h6 class="mb-2 fw-bold text-dark">Excluir Checklist?</h6>
-                                <p class="text-muted mb-0" style="font-size:0.85rem;">Esta ação não pode ser desfeita.</p>
+                                <h6 class="mb-2 fw-bold text-white" style="font-size: 0.9rem;">Excluir Checklist?</h6>
+                                <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação não pode ser desfeita.</p>
                               </div>
-                              <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
-                                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-sm btn-danger fw-bold w-100">Excluir</button>
+                              <div class="modal-footer justify-content-center bg-custom-darker border-0 d-flex flex-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm">Excluir</button>
                               </div>
                             </form>
                           </div>
@@ -201,7 +201,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                 // Card da lista de checklists
                 return `
                       <div
-                        class="card chk-item border-0 shadow-sm mb-2 transition-hover"
+                        class="card chk-item border-custom border-top-0 border-bottom-0 border-end-0 shadow-sm mb-2 transition-hover bg-custom-darker"
                         style="cursor: pointer;"
                         data-bs-toggle="modal"
                         data-bs-target="#detalheChecklist${c.id}"
@@ -215,109 +215,109 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       >
                         <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
                           <div class="text-truncate me-3" style="max-width: 85%;">
-                            <span class="d-block fw-bold text-truncate text-dark" style="font-size: 0.85rem;">${servicoTitulo || "Serviço"}</span>
-                            <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.75rem;">
+                            <span class="d-block fw-bold text-truncate text-white" style="font-size: 0.8rem;">${servicoTitulo || "Serviço"}</span>
+                            <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
                               <span><i class="fa-regular fa-calendar me-1"></i> ${fmtData(c.data_servico)}</span>
                               <span><i class="fa-solid fa-wrench me-1"></i> ${c.oficina}</span>
                             </div>
                           </div>
                           <div>
-                             <i class="fa-solid fa-chevron-right text-primary opacity-50"></i>
+                             <i class="fa-solid fa-chevron-right text-accent opacity-50"></i>
                           </div>
                         </div>
                       </div>
                     `;
               })
               .join("")
-            : `<div class="text-center text-muted p-4" style="font-size:0.85rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Nenhum checklist para este veículo.</div>`;
+            : `<div class="text-center text-muted p-4" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-2x opacity-25"></i><br>Nenhum checklist para este veículo.</div>`;
 
         // Modal: Novo Checklist
         modaisNovoChecklist.push(`
             <div class="modal fade" id="novoChecklistVeiculo${v.id}" tabindex="-1" data-bs-backdrop="static">
               <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                <form method="POST" action="/veiculos/${v.id}/checklists/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Registrado!')">
-                  <div class="modal-header bg-success text-white border-0">
-                    <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i> Lançar Checklist</h6>
+                <form method="POST" action="/veiculos/${v.id}/checklists/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Checklist Registrado!')">
+                  <div class="modal-header bg-custom-darker border-custom text-white">
+                    <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-plus text-accent me-2"></i> Lançar Checklist</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body text-sm p-4 bg-light">
-                    <div class="mb-4 text-muted bg-white p-2 rounded border border-success border-opacity-25 shadow-sm text-center" style="font-size:0.8rem;">
-                      <i class="fa-solid fa-car-side me-1 text-success"></i> Veículo selecionado: <strong class="text-dark">${v.marca} ${v.modelo} (${v.ano})</strong>
+                  <div class="modal-body text-sm p-4 bg-custom-dark">
+                    <div class="mb-4 text-muted bg-custom-darker p-2 rounded border border-success border-opacity-25 shadow-sm text-center" style="font-size:0.75rem;">
+                      <i class="fa-solid fa-car-side me-1 text-success"></i> Veículo selecionado: <strong class="text-white">${v.marca} ${v.modelo} (${v.ano})</strong>
                     </div>
                     <div class="row g-3">
                       <div class="col-12">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Serviço (descrição)</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Serviço (descrição)</label>
                         <textarea name="servico" class="form-control form-control-sm shadow-sm" rows="2" required placeholder="Descreva os serviços realizados"></textarea>
                       </div>
                       <div class="col-6">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Oficina</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Oficina</label>
                         <input type="text" name="oficina" class="form-control form-control-sm shadow-sm" required>
                       </div>
                       <div class="col-6">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Mecânico</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Mecânico</label>
                         <input type="text" name="mecanico" class="form-control form-control-sm shadow-sm" required>
                       </div>
                       
                       <div class="col-12 col-md-4">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data</label>
                         <input type="date" name="data_servico" class="form-control form-control-sm shadow-sm" required>
                       </div>
                       <div class="col-6 col-md-4">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">KM Serviço</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">KM Serviço</label>
                         <div class="input-group input-group-sm shadow-sm">
                             <input type="text" name="km_servico" class="form-control form-control-sm mask-km" oninput="maskKM(this)" placeholder="0" required>
-                            <span class="input-group-text bg-white text-muted border-start-0">km</span>
+                            <span class="input-group-text bg-custom-darker border-custom text-muted border-start-0">km</span>
                         </div>
                       </div>
                       <div class="col-6 col-md-4">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Valor (Total)</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Valor (Total)</label>
                         <div class="input-group input-group-sm shadow-sm">
-                            <span class="input-group-text bg-white text-muted border-end-0">R$</span>
+                            <span class="input-group-text bg-custom-darker border-custom text-muted border-end-0">R$</span>
                             <input type="text" name="valor" class="form-control form-control-sm mask-moeda" oninput="maskMoeda(this)" placeholder="0,00" required>
                         </div>
                       </div>
                       
                       <div class="col-12 mt-3">
-                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Anexar Nota/Doc. (opcional)</label>
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Anexar Nota/Doc. (opcional)</label>
                         <input type="file" name="documento" class="form-control form-control-sm shadow-sm" accept=".pdf,image/*">
                       </div>
                     </div>
                   </div>
-                  <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
-                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold"><i class="fa-solid fa-check me-1"></i> Salvar Checklist</button>
+                  <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-check me-1"></i> Salvar Checklist</button>
                   </div>
                 </form>
               </div>
             </div>
           `);
 
-        // Card do veículo
+        // Card do veículo com Realce no KM e Ano branco
         return `
             <div class="col-12 col-md-6 col-lg-3 mb-3">
-              <div class="card erp-card shadow-sm h-100 border-0 transition-hover" 
+              <div class="card erp-card bg-custom-dark border-custom shadow-sm h-100 transition-hover" 
                    style="cursor: pointer;" 
                    data-bs-toggle="modal" 
                    data-bs-target="#checklistsVeiculo${v.id}">
-                <div class="img-container">
+                <div class="img-container border-custom border-top-0 border-start-0 border-end-0 position-relative">
                     <img src="${v.foto ? `/uploads/${v.foto}` : `/img/vehicle_placeholder.png`}" 
-                        alt="${v.marca} ${v.modelo}" class="card-img-top vehicle-img">
-                    <span class="badge bg-dark position-absolute top-0 end-0 m-2 shadow-sm">${v.ano}</span>
-                    <span class="badge bg-primary position-absolute top-0 start-0 m-2 shadow-sm"><i class="fa-solid fa-gauge-high"></i> ${fmtKM(v.km)} km</span>
+                        alt="${v.marca} ${v.modelo}" class="card-img-top vehicle-img" style="filter: brightness(0.85);">
+                    <span class="badge bg-custom-darker border-custom text-white position-absolute top-0 end-0 m-2 shadow-sm">${v.ano}</span>
+                    <span class="badge position-absolute top-0 start-0 m-2 shadow-sm" style="background-color: #08c068; color: #1f1f1f; font-weight: bold; border: none; font-size: 0.75rem;"><i class="fa-solid fa-gauge-high me-1"></i> ${fmtKM(v.km)} km</span>
                 </div>
                 <div class="card-body p-3 d-flex flex-column">
-                  <h6 class="card-title fw-bold text-dark mb-3 text-truncate" title="${v.marca} ${v.modelo}">
+                  <h6 class="card-title fw-bold text-white mb-3 text-truncate" style="font-size: 0.9rem;" title="${v.marca} ${v.modelo}">
                     ${v.marca} ${v.modelo}
                   </h6>
                   
-                  <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
-                    <span class="text-success fw-medium" style="font-size:0.85rem;"><i class="fa-solid fa-list-check me-1"></i> Checklists</span>
+                  <div class="mt-auto pt-2 border-top border-custom d-flex justify-content-between align-items-center">
+                    <span class="text-accent fw-medium" style="font-size:0.75rem;"><i class="fa-solid fa-list-check me-1"></i> Histórico</span>
                     <div class="btn-group">
-                      <button class="btn btn-sm btn-light border text-warning shadow-sm" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarVeiculo${v.id}" title="Editar">
-                        <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+                      <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#editarVeiculo${v.id}" title="Editar">
+                        <i class="fa-solid fa-pen" style="font-size:0.7rem;"></i>
                       </button>
-                      <button class="btn btn-sm btn-light border text-danger shadow-sm" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirVeiculo${v.id}" title="Excluir">
-                        <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                      <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#excluirVeiculo${v.id}" title="Excluir">
+                        <i class="fa-solid fa-trash" style="font-size:0.7rem;"></i>
                       </button>
                     </div>
                   </div>
@@ -327,26 +327,26 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
             <div class="modal fade" id="checklistsVeiculo${v.id}" tabindex="-1">
               <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <div class="modal-content erp-modal shadow-lg">
-                  <div class="modal-header bg-light border-0">
+                <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                  <div class="modal-header bg-custom-darker border-custom">
                     <div>
-                        <h6 class="modal-title fw-bold text-dark mb-0"><i class="fa-solid fa-layer-group text-primary me-2"></i> Histórico de Manutenção</h6>
-                        <span class="text-muted" style="font-size:0.8rem;">${v.marca} ${v.modelo} (${v.ano})</span>
+                        <h6 class="modal-title fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-layer-group text-accent me-2"></i> Histórico de Manutenção</h6>
+                        <span class="text-muted" style="font-size:0.75rem;">${v.marca} ${v.modelo} (${v.ano})</span>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body bg-light p-4">
-                    <div class="card border-0 shadow-sm p-3 mb-4">
+                  <div class="modal-body bg-custom-dark p-4">
+                    <div class="card bg-custom-darker border-custom shadow-sm p-3 mb-4">
                         <div class="row g-2 align-items-center">
                         <div class="col">
                             <div class="input-group input-group-sm shadow-sm">
-                                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                                <input type="text" id="searchInputV${v.id}" class="form-control border-start-0 ps-0 shadow-none" placeholder="Buscar serviço, mecânico, data...">
+                                <span class="input-group-text bg-custom-darker border-custom border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" id="searchInputV${v.id}" class="form-control border-custom border-start-0 ps-0 shadow-none text-white bg-custom-darker" placeholder="Buscar serviço, mecânico, data...">
                             </div>
                         </div>
                         <div class="col-auto d-flex gap-2">
-                            <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm" id="searchBtnV${v.id}" data-search-vid="${v.id}">Buscar</button>
-                            <button class="btn btn-sm btn-outline-secondary px-3 shadow-sm" id="clearBtnV${v.id}" data-clear-vid="${v.id}"><i class="fa-solid fa-eraser"></i></button>
+                            <button class="btn btn-sm btn-primary text-dark fw-bold px-3 shadow-sm" id="searchBtnV${v.id}" data-search-vid="${v.id}">Buscar</button>
+                            <button class="btn btn-sm btn-outline-secondary border-custom text-danger px-3 shadow-sm" id="clearBtnV${v.id}" data-clear-vid="${v.id}"><i class="fa-solid fa-eraser"></i></button>
                         </div>
                         </div>
                     </div>
@@ -356,14 +356,14 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                     </div>
 
                     <div id="noResultV${v.id}" class="d-none">
-                      <div class="text-center text-muted p-4 bg-white rounded border border-light shadow-sm" style="font-size:0.85rem;">
+                      <div class="text-center text-muted p-4 bg-custom-darker rounded border border-custom shadow-sm" style="font-size:0.8rem;">
                         <i class="fa-solid fa-magnifying-glass-minus fa-2x mb-3 opacity-25"></i><br>
                         Nenhum resultado encontrado na busca.
                       </div>
                     </div>
                   </div>
-                  <div class="modal-footer border-top-0 bg-white">
-                    <button class="btn btn-sm btn-success w-100 fw-bold shadow-sm py-2" data-bs-toggle="modal" data-bs-target="#novoChecklistVeiculo${v.id}" data-bs-dismiss="modal">
+                  <div class="modal-footer border-custom bg-custom-darker">
+                    <button class="btn btn-sm btn-success text-dark w-100 fw-bold shadow-sm py-2" data-bs-toggle="modal" data-bs-target="#novoChecklistVeiculo${v.id}" data-bs-dismiss="modal">
                         <i class="fa-solid fa-plus me-1"></i> Lançar Novo Checklist
                     </button>
                   </div>
@@ -373,42 +373,42 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
             <div class="modal fade" id="editarVeiculo${v.id}" tabindex="-1" data-bs-backdrop="static">
               <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                <form method="POST" action="/veiculos/editar/${v.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Veículo Atualizado!')">
-                  <div class="modal-header bg-warning text-dark border-0">
-                    <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Veículo</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <form method="POST" action="/veiculos/editar/${v.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Veículo Atualizado!')">
+                  <div class="modal-header bg-custom-darker border-custom">
+                    <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Veículo</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body text-sm p-4 bg-light">
+                  <div class="modal-body text-sm p-4 bg-custom-dark">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Marca</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Marca</label>
                           <input type="text" name="marca" class="form-control form-control-sm shadow-sm" value="${v.marca}" required>
                         </div>
                         <div class="col-12 col-md-6">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Modelo</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Modelo</label>
                           <input type="text" name="modelo" class="form-control form-control-sm shadow-sm" value="${v.modelo}" required>
                         </div>
                         <div class="col-6">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Ano de Fab.</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Ano de Fab.</label>
                           <input type="number" name="ano" class="form-control form-control-sm shadow-sm" value="${v.ano}" required>
                         </div>
                         <div class="col-6">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">KM Atual</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">KM Atual</label>
                           <div class="input-group input-group-sm shadow-sm">
                               <input type="text" name="km" class="form-control form-control-sm mask-km" oninput="maskKM(this)" value="${fmtKM(v.km)}" required>
-                              <span class="input-group-text bg-white text-muted border-start-0">km</span>
+                              <span class="input-group-text bg-custom-darker border-custom text-muted border-start-0">km</span>
                           </div>
                         </div>
                         <div class="col-12 mt-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Atualizar Foto (opcional)</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Atualizar Foto (opcional)</label>
                           <input type="file" name="foto" class="form-control form-control-sm shadow-sm" accept="image/*">
-                          ${v.foto ? `<div class="text-muted mt-2" style="font-size:0.75rem;"><i class="fa-solid fa-image text-primary"></i> Foto atual no sistema: ${v.foto}</div>` : ""}
+                          ${v.foto ? `<div class="text-muted mt-2" style="font-size:0.7rem;"><i class="fa-solid fa-image text-accent"></i> Foto atual no sistema: ${v.foto}</div>` : ""}
                         </div>
                     </div>
                   </div>
-                  <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
-                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-primary fw-bold w-100"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                  <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
                   </div>
                 </form>
               </div>
@@ -416,16 +416,16 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
             <div class="modal fade" id="excluirVeiculo${v.id}" tabindex="-1" data-bs-backdrop="static">
               <div class="modal-dialog modal-sm modal-dialog-centered">
-                <div class="modal-content erp-modal border-0 shadow-lg">
+                <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
                   <form method="POST" action="/veiculos/excluir/${v.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Veículo Excluído!')">
                     <div class="modal-body text-center p-4">
                       <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-                      <h6 class="mb-2 fw-bold text-dark">Excluir Veículo?</h6>
-                      <p class="text-muted mb-0" style="font-size:0.85rem;">Deseja excluir <b>${v.marca} ${v.modelo} (${v.ano})</b>? Todo o histórico de checklists será perdido.</p>
+                      <h6 class="mb-2 fw-bold text-white" style="font-size: 0.9rem;">Excluir Veículo?</h6>
+                      <p class="text-muted mb-0" style="font-size:0.8rem;">Deseja excluir <b>${v.marca} ${v.modelo} (${v.ano})</b>? Todo o histórico de checklists será perdido.</p>
                     </div>
-                    <div class="modal-footer justify-content-center bg-light border-0 d-flex flex-nowrap">
-                      <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-danger fw-bold w-100">Sim, Excluir</button>
+                    <div class="modal-footer justify-content-center bg-custom-darker border-0 d-flex flex-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm">Sim, Excluir</button>
                     </div>
                   </form>
                 </div>
@@ -434,7 +434,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
           `;
       })
       .join("")
-    : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-car-side fa-3x opacity-25 mb-3"></i><p>Nenhum veículo cadastrado na frota.</p></div>`;
+    : `<div class="col-12 text-center text-muted mt-5"><i class="fa-solid fa-car-side fa-3x opacity-25 mb-3 d-block"></i><span style="font-size: 0.8rem;">Nenhum veículo cadastrado na frota.</span></div>`;
 
   const menuHTML = menuLateral(usuario, "/veiculos");
 
@@ -449,108 +449,99 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+      /* Scrollbars Globais (Dark & Green) */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+      html, body, .content, .table-responsive, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
+
       body { 
           display: flex; 
           height: 100vh; 
           margin: 0; 
-          background-color: #f4f7f6;
-          font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+          background-color: #1f1f1f;
+          color: #ffffff;
+          font-family: 'Segoe UI', sans-serif;
       }
       
-      .sidebar { width: 240px; background-color: #0D5749; color: white; padding: 20px; display: flex; flex-direction: column;}
-      .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
-      .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+      .sidebar { width: 240px; background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
+      .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; background-color: #1f1f1f;}
       
-      .content { flex: 1; padding: 24px; overflow-y: auto; position: relative;}
+      /* Tema Escuro Customizado */
+      .bg-custom-dark { background-color: #2a2a2a !important; }
+      .bg-custom-darker { background-color: #222222 !important; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+      .text-accent { color: #08c068 !important; }
+
+      /* Modificadores Bootstrap */
+      .text-dark { color: #ffffff !important; }
+      .text-muted { color: rgba(255,255,255,0.5) !important; }
       
-      .text-sm { font-size: 0.875rem; }
+      .btn-primary, .btn-success { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
+      .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
+      .btn-outline-primary, .btn-outline-success { color: #08c068; border-color: #08c068; }
+      .btn-outline-primary:hover, .btn-outline-success:hover { background-color: #08c068; color: #1f1f1f; border-color: #08c068; }
       
-      .usuario-badge {
-          background-color: white;
-          color: #0D5749;
-          padding: 6px 14px;
-          border-radius: 20px;
-          border: 1px solid rgba(13,87,73,0.2);
-          font-size: 0.85rem;
-          font-weight: 500;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      }
-      
+      .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+      .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+
+      /* Inputs e Selects */
+      .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
+      .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
+      .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
+
       /* ERP Cards */
-      .erp-card {
-          border-radius: 12px;
-          transition: transform 0.2s, box-shadow 0.2s;
-          overflow: hidden;
-      }
-      .transition-hover:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
-      }
+      .erp-card { border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden; }
+      .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.3) !important; }
       
-      .img-container { position: relative; height: 140px; background: #e9ecef; border-bottom: 1px solid #eee; }
+      .img-container { position: relative; height: 140px; background: #222; }
       .vehicle-img { width: 100%; height: 100%; object-fit: cover; }
       
       /* List items (Checklists) */
-      .chk-item { border-left: 3px solid #0D5749 !important; transition: background 0.2s; }
-      .chk-item:hover { background-color: #e2efda; }
+      .chk-item { border-left: 3px solid #08c068 !important; transition: background 0.2s; }
+      .chk-item:hover { background-color: #333333; }
       
       /* Modals */
-      .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-      .form-control-sm, .form-select-sm { border-radius: 6px; }
-
+      .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+      .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+      .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+      
       /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
-      .toast {
-          transform: translateX(120%);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
-      }
-      .toast.showing, .toast.show {
-          transform: translateX(0);
-      }
-      .modal.fade .modal-dialog {
-          transform: scale(0.85) translateY(30px);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-      }
-      .modal.show .modal-dialog {
-          transform: scale(1) translateY(0);
-      }
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
+      .toast.showing, .toast.show { transform: translateX(0); }
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+      .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      .toast-timer {
-          height: 6px;
-          background: rgba(255, 255, 255, 0.4);
-          width: 100%;
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          transform-origin: left;
-      }
-      @keyframes shrinkToast {
-          from { width: 100%; }
-          to { width: 0%; }
-      }
+      .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+      @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      /* SKELETON LOADING */
-      .skeleton-view {
-          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-          background-size: 200% 100%;
-          animation: skeleton-loading-view 1.5s infinite linear;
+      /* SKELETON LOADING (DARK) */
+      .skeleton-dark {
+          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
+          background-size: 200% 100% !important;
+          animation: skeleton-loading-view 1.5s infinite linear !important;
           border-radius: 4px;
+          color: transparent !important;
+          border-color: transparent !important;
+          box-shadow: none !important;
+          pointer-events: none;
       }
-      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
-      .skeleton-btn-view { height: 28px; width: 32px; border-radius: 4px; display: inline-block; }
-      .skeleton-img-view { height: 140px; width: 100%; border-bottom: 1px solid #eee; }
+      .skeleton-dark * { visibility: hidden !important; }
+      .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
+      .skeleton-btn-view { height: 26px; width: 50px; border-radius: 4px; display: inline-block; }
+      .skeleton-img-view { height: 140px; width: 100%; }
       @keyframes skeleton-loading-view {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
       }
 
-      /* Offcanvas Mobile */
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
         .sidebar { display: none; }
         .content { width: 100%; padding: 16px; }
       }
-      .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
-      .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
+      .offcanvas { background-color: #1f1f1f !important; }
     </style>
   </head>
   <body>
@@ -564,9 +555,9 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       </div>
     </div>
 
-    <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
-      <div class="offcanvas-header border-bottom border-secondary">
-        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+    <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
+      <div class="offcanvas-header border-bottom border-custom">
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
@@ -574,8 +565,8 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
             <img src="/img/logo.png" alt="Logo da Empresa" class="img-fluid" style="max-width:140px;">
         </div>
         ${menuHTML}
-        <hr class="bg-secondary mt-4">
-        <a href="/logout" class="text-danger mt-2"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+        <hr class="border-custom mt-4">
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
@@ -583,19 +574,19 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-light border d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i></button>
+            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
-              <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-car-side text-muted me-2"></i>Gestão de Frota</h4>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Histórico e manutenção de veículos</span>
+              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-car-side text-muted me-2"></i>Gestão de Frota</h5>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.7rem;">Histórico e manutenção de veículos</span>
             </div>
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border border-light">
+      <div class="d-flex justify-content-between align-items-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom">
         <div>
-            <h6 class="mb-0 text-muted" style="font-size:0.85rem;">Total de Veículos: <strong>${veiculos.length}</strong></h6>
+            <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total de Veículos: <strong class="text-white">${veiculos.length}</strong></h6>
         </div>
-        <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#novoVeiculoModal">
+        <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold text-dark" style="font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#novoVeiculoModal">
             <i class="fa-solid fa-plus me-1"></i> Novo Veículo
         </button>
       </div>
@@ -607,73 +598,73 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
     <div class="modal fade" id="novoVeiculoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/veiculos/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Veículo Cadastrado!')">
-          <div class="modal-header bg-success text-white border-0">
-            <h6 class="modal-title fw-bold"><i class="fa-solid fa-car me-2"></i> Cadastrar Novo Veículo</h6>
+        <form method="POST" action="/veiculos/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Veículo Cadastrado!')">
+          <div class="modal-header bg-custom-darker border-custom text-white">
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-car text-accent me-2"></i> Cadastrar Novo Veículo</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body text-sm p-4 bg-light">
+          <div class="modal-body text-sm p-4 bg-custom-dark">
             <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Marca</label>
-                  <input type="text" name="marca" class="form-control form-control-sm py-2 shadow-sm" required placeholder="Ex: Renault">
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Marca</label>
+                  <input type="text" name="marca" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Renault">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Modelo</label>
-                  <input type="text" name="modelo" class="form-control form-control-sm py-2 shadow-sm" required placeholder="Ex: Master">
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Modelo</label>
+                  <input type="text" name="modelo" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Master">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Ano de Fabricação</label>
-                  <input type="number" name="ano" class="form-control form-control-sm py-2 shadow-sm" required placeholder="Ex: 2022">
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Ano de Fabricação</label>
+                  <input type="number" name="ano" class="form-control form-control-sm shadow-sm" required placeholder="Ex: 2022">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Quilometragem (KM)</label>
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Quilometragem (KM)</label>
                   <div class="input-group input-group-sm shadow-sm">
-                      <input type="text" name="km" class="form-control form-control-sm py-2 mask-km" oninput="maskKM(this)" required placeholder="Ex: 15.000">
-                      <span class="input-group-text bg-white text-muted border-start-0">km</span>
+                      <input type="text" name="km" class="form-control form-control-sm mask-km" oninput="maskKM(this)" required placeholder="Ex: 15.000">
+                      <span class="input-group-text bg-custom-darker border-custom text-muted border-start-0">km</span>
                   </div>
                 </div>
                 <div class="col-12 mt-3">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Foto do Veículo (opcional)</label>
-                  <input type="file" name="foto" class="form-control form-control-sm py-2 shadow-sm" accept="image/*">
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Foto do Veículo (opcional)</label>
+                  <input type="file" name="foto" class="form-control form-control-sm shadow-sm" accept="image/*">
                 </div>
             </div>
           </div>
-          <div class="modal-footer bg-white border-0 d-flex flex-nowrap">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success fw-bold w-100"><i class="fa-solid fa-check me-1"></i> Salvar Veículo</button>
+          <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-check me-1"></i> Salvar Veículo</button>
           </div>
         </form>
       </div>
     </div>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
-        <div id="sucessoToast" class="toast shadow-lg border-0 bg-success text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2" id="sucessoIcon"></i>
+                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="sucessoSub">Operação realizada com sucesso.</p>
+                <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
         </div>
 
-        <div id="erroToast" class="toast shadow-lg border-0 bg-danger text-white overflow-hidden position-relative" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2"></i>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
-                <p class="text-white mb-0" style="font-size:0.9rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+                <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="erroSub">Ocorreu um erro ao processar.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="erroTimer" style="display: none; height: 6px;"></div>
+            <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
         </div>
     </div>
 
@@ -745,22 +736,22 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
       });
 
       // =======================================================================
-      // SKELETON LOADING
+      // SKELETON LOADING (DARK)
       // =======================================================================
       function gerarSkeletonCards(quantidade = 4) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
               html += \`
               <div class="col-12 col-md-6 col-lg-3 mb-3">
-                <div class="card erp-card shadow-sm h-100 border-0 p-0">
-                  <div class="skeleton-view skeleton-img-view"></div>
+                <div class="card erp-card shadow-sm h-100 border-custom bg-custom-dark p-0">
+                  <div class="skeleton-dark skeleton-img-view"></div>
                   <div class="card-body p-3 d-flex flex-column">
-                    <div class="skeleton-view skeleton-text-view" style="width: 70%; margin-bottom: 16px;"></div>
-                    <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
-                      <div class="skeleton-view skeleton-text-view" style="width: 40%; margin: 0;"></div>
+                    <div class="skeleton-dark skeleton-text-view" style="width: 70%; margin-bottom: 16px;"></div>
+                    <div class="mt-auto pt-2 border-top border-custom d-flex justify-content-between align-items-center">
+                      <div class="skeleton-dark skeleton-text-view" style="width: 40%; margin: 0;"></div>
                       <div class="d-flex gap-1">
-                        <div class="skeleton-view skeleton-btn-view"></div>
-                        <div class="skeleton-view skeleton-btn-view"></div>
+                        <div class="skeleton-dark skeleton-btn-view"></div>
+                        <div class="skeleton-dark skeleton-btn-view"></div>
                       </div>
                     </div>
                   </div>

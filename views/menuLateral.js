@@ -195,24 +195,22 @@ function menuLateral(usuario, rotaAtiva = "") {
     </div>
   `;
 
-  // --- PAINEL DE NOTIFICAÇÕES ---
+  // --- PAINEL DE NOTIFICAÇÕES (TEMA ESCURO) ---
   const notificacoesPanelHtml = `
     <div class="offcanvas offcanvas-end painel-notificacoes-animado" tabindex="-1" id="painelNotificacoes" aria-labelledby="painelNotificacoesLabel">
       <div class="offcanvas-header border-bottom painel-notificacoes-header">
-        <h5 class="offcanvas-title fw-bold text-dark" id="painelNotificacoesLabel">
-          <i class="fa-solid fa-bell me-2" style="color: #08c068;"></i> Notificações
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+        <h6 class="offcanvas-title fw-bold mb-0 text-white" id="painelNotificacoesLabel" style="font-size: 0.95rem; letter-spacing: 0.5px;">
+          <i class="fa-regular fa-bell me-2" style="color: #08c068;"></i> Notificações
+        </h6>
+        <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
       </div>
 
       <div class="offcanvas-body p-0 painel-notificacoes-body">
-        <div id="listaNotificacoes" class="p-3">
-          </div>
+        <div id="listaNotificacoes" class="p-3"></div>
 
         <div class="border-top p-3 painel-notificacoes-footer">
-          <button type="button" id="btnLimparNotificacoes" class="btn btn-outline-danger w-100 btn-sm">
-            <i class="fa-solid fa-trash-can me-1"></i> Limpar todas
+          <button type="button" id="btnLimparNotificacoes" class="btn btn-outline-danger w-100 btn-sm fw-medium" style="border-radius: 6px;">
+            <i class="fa-regular fa-trash-can me-1"></i> Limpar todas
           </button>
         </div>
       </div>
@@ -309,8 +307,8 @@ function menuLateral(usuario, rotaAtiva = "") {
 
         const htmlSemNotificacoes = () => {
           return \`
-            <div class="text-center text-muted py-5">
-              <i class="fa-regular fa-bell-slash fs-2 d-block mb-2 opacity-50"></i>
+            <div class="text-center text-white-50 py-5" style="opacity: 0.5;">
+              <i class="fa-regular fa-bell-slash fs-2 d-block mb-2"></i>
               Nenhuma notificação encontrada.
             </div>
           \`;
@@ -320,13 +318,13 @@ function menuLateral(usuario, rotaAtiva = "") {
           let skeletons = '';
           for(let i=0; i<4; i++) {
              skeletons += \`
-              <div class="border rounded-3 p-3 mb-2 bg-white shadow-sm">
+              <div class="rounded-3 p-3 mb-2 item-notificacao" style="background-color: #1f1f1f; border: 1px solid rgba(255,255,255,0.05);">
                 <div class="d-flex justify-content-between gap-2">
                   <div class="w-100">
-                    <div class="skeleton-view skeleton-text w-75 mb-2"></div>
-                    <div class="skeleton-view skeleton-text w-50"></div>
+                    <div class="skeleton-dark skeleton-text w-75 mb-2"></div>
+                    <div class="skeleton-dark skeleton-text w-50"></div>
                   </div>
-                  <div class="skeleton-view" style="width: 28px; height: 28px; border-radius: 4px; flex-shrink: 0;"></div>
+                  <div class="skeleton-dark" style="width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;"></div>
                 </div>
               </div>
              \`;
@@ -401,13 +399,13 @@ function menuLateral(usuario, rotaAtiva = "") {
             lista.innerHTML = notificacoes.map(n => {
               const data = n.criado_em ? new Date(n.criado_em).toLocaleString("pt-BR") : "";
               return \`
-                <div class="border rounded-3 p-3 mb-2 bg-white shadow-sm item-notificacao" data-id="\${n.id}">
-                  <div class="d-flex justify-content-between gap-2">
+                <div class="rounded-3 p-3 mb-2 item-notificacao" data-id="\${n.id}" style="background-color: #1f1f1f; border: 1px solid rgba(255,255,255,0.05);">
+                  <div class="d-flex justify-content-between gap-2 align-items-start">
                     <div>
-                      <div class="fw-semibold text-dark" style="font-size:0.9rem;">\${escapeHtml(n.mensagem || "Notificação")}</div>
-                      <small class="text-muted" style="font-size:0.75rem;">\${escapeHtml(data)}</small>
+                      <div class="fw-medium text-white mb-1" style="font-size: 0.85rem; line-height: 1.4;">\${escapeHtml(n.mensagem || "Notificação")}</div>
+                      <small class="text-white-50" style="font-size: 0.7rem;">\${escapeHtml(data)}</small>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-notificacao" data-id="\${n.id}" title="Excluir">
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 text-white-50 btn-excluir-notificacao" data-id="\${n.id}" title="Excluir" style="padding: 2px 6px; transition: all 0.2s;" onmouseover="this.style.color='#dc3545'; this.style.backgroundColor='rgba(220, 53, 69, 0.1)';" onmouseout="this.style.color=''; this.style.backgroundColor='transparent';">
                       <i class="fa-solid fa-xmark"></i>
                     </button>
                   </div>
@@ -419,7 +417,7 @@ function menuLateral(usuario, rotaAtiva = "") {
           } catch (err) {
             atualizarContadorNotificacoes(0);
             if (mostrarLoading) {
-              lista.innerHTML = \`<div class="alert alert-danger m-0 text-sm">Erro ao carregar notificações.</div>\`;
+              lista.innerHTML = \`<div class="alert alert-dark border-0 m-0" style="background:#2a2a2a; color:#ccc; font-size:0.85rem;">Erro ao carregar notificações.</div>\`;
             }
           }
         };
@@ -602,11 +600,11 @@ function menuLateral(usuario, rotaAtiva = "") {
         background: rgba(255,255,255,0.15);
       }
 
-      /* Estilização do Painel de Notificações */
+      /* Estilização do Painel de Notificações (DARK THEME) */
       .painel-notificacoes-animado {
         width: min(400px, 92vw);
         border-left: 0;
-        box-shadow: -18px 0 45px rgba(0, 0, 0, 0.18);
+        box-shadow: -18px 0 45px rgba(0, 0, 0, 0.5);
       }
 
       .offcanvas-end.painel-notificacoes-animado {
@@ -626,15 +624,28 @@ function menuLateral(usuario, rotaAtiva = "") {
       }
 
       .painel-notificacoes-header {
-        background: #ffffff;
+        background-color: #1f1f1f;
+        color: #fff;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
       }
 
       .painel-notificacoes-body {
-        background: #f4f7f6;
+        background-color: #151515;
       }
 
       .painel-notificacoes-footer {
-        background: #fff;
+        background-color: #1f1f1f;
+        border-top: 1px solid rgba(255,255,255,0.05) !important;
+      }
+      
+      .item-notificacao {
+        background-color: #1f1f1f !important;
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      }
+      .item-notificacao:hover {
+        border-color: rgba(8, 192, 104, 0.3) !important;
+        transform: translateY(-2px);
       }
 
       .offcanvas-backdrop.show {

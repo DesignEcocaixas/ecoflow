@@ -701,7 +701,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                      
                      <div class="p-4 bg-success bg-opacity-10 border-top border-success d-flex align-items-center justify-content-between" id="rodapePastaMorta" style="display:none !important;">
                          <div>
-                             <span class="text-success fw-bold d-block"><i class="fa-solid fa-check-circle me-1"></i> Liquidada e Fechada</span>
+                             <span class="text-success fw-bold d-block"><i class="fa-solid fa-check-circle me-1"></i> Pagamento realizado</span>
                              <h4 class="fw-bold text-success mb-0" id="visorSomaFechada">R$ 0,00</h4>
                          </div>
                          <div class="d-flex gap-2">

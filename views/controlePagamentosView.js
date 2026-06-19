@@ -336,6 +336,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       const extratoViagem = p.tipo_viagem && p.tipo_viagem !== 'Padrão' ? `\n*Destino Longo:* ${p.tipo_viagem}` : '';
       const extratoAlmoco = p.almoco > 0 ? `\n*Almoço:* R$ ${fmtMoeda(p.almoco)}` : '';
+      const extratoAdicional = p.adicional > 0 ? `\n*Adicional:* R$ ${fmtMoeda(p.adicional)}` : '';
 
       let infoPagamentoHtml = '';
       if(p.pasta_id){
@@ -351,7 +352,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           }
       }
 
-      const msgWppHist = `Relatório de Pagamento - Ecoflow\n\n[ Data do Serviço: ${fmtData(p.data_servico)} ]\n* Colaborador: ${p.nome_colaborador} (${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()})\n* Qtd. Entregas: ${p.qtd_entregas}${extratoViagem}${extratoAlmoco}\n\n* TOTAL A PAGAR: R$ ${fmtMoeda(p.valor_total)}\n\n* PIX: ${colab.pix || 'Não cadastrado'} (${colab.banco || 'Não cadastrado'})`;
+      const msgWppHist = `Relatório de Pagamento - Ecoflow\n\n[ Data do Serviço: ${fmtData(p.data_servico)} ]\n* Colaborador: ${p.nome_colaborador} (${(p.tipo_colaborador || '').replace('_', ' ').toUpperCase()})\n* Qtd. Entregas: ${p.qtd_entregas}${extratoViagem}${extratoAlmoco}${extratoAdicional}\n\n* TOTAL A PAGAR: R$ ${fmtMoeda(p.valor_total)}\n\n* PIX: ${colab.pix || 'Não cadastrado'} (${colab.banco || 'Não cadastrado'})`;
       
       modaisDinamicosExcluir.push(`
         <div class="modal fade" id="excluirPagamentoModal${p.id}" tabindex="-1">
@@ -654,7 +655,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                     <i class="fa-solid fa-file-invoice-dollar fa-3x text-success mb-3"></i>
                     <h6 class="fw-bold text-dark">Gerar Relatório Geral</h6>
                     <p class="text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                        O sistema irá varrer <strong>todas as rotas</strong> listadas no período filtrado e organizar os colaboradores avulsos por data, calculando os valores totais e gerando a mensagem para pagamento.
+                        O sistema irá varrer <strong>todas as rotas</strong> listadas no período filtrado e organizar os colaboradores avulsos separadamente, calculando os valores totais e gerando a mensagem para pagamento.
                     </p>
                 </div>
                 <div class="modal-footer bg-white border-0 p-3">
@@ -748,9 +749,9 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
             <h6 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-2"></i> Lançar Diária / Entregas</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-3 bg-light">
             
-            <div class="mb-3">
+            <div class="mb-2">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Selecione o Colaborador</label>
                 <select name="colaborador_id" id="selectColaborador" class="form-select shadow-sm" required onchange="atualizarPreviewColab()">
                     <option value="" selected disabled>Escolha na lista...</option>
@@ -758,36 +759,46 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                 </select>
             </div>
 
-            <div id="previewCard" class="colab-preview-card bg-white p-3 rounded border border-light shadow-sm mb-4 d-none">
+            <div id="previewCard" class="colab-preview-card bg-white p-2 rounded border border-light shadow-sm mb-2 d-none">
                 <div class="d-flex align-items-center">
-                    <img id="prevFoto" src="" alt="Foto" class="rounded-circle me-3" style="width: 55px; height: 55px; object-fit: cover;">
+                    <img id="prevFoto" src="" alt="Foto" class="rounded-circle me-3" style="width: 45px; height: 45px; object-fit: cover;">
                     <div>
                         <h6 id="prevNome" class="fw-bold text-dark mb-0 fs-6">Nome</h6>
                         <span id="prevTipo" class="badge bg-secondary mb-1 mt-1" style="font-size:0.65rem;">TIPO</span>
                     </div>
                 </div>
-                <div class="mt-3 pt-2 border-top row g-2 text-muted" style="font-size:0.75rem;">
+                <div class="mt-2 pt-2 border-top row g-2 text-muted" style="font-size:0.75rem;">
                     <div class="col-6"><strong><i class="fa-solid fa-id-card"></i> CPF:</strong> <span id="prevCpf"></span></div>
                     <div class="col-6"><strong><i class="fa-solid fa-building-columns"></i> Banco:</strong> <span id="prevBanco"></span></div>
                     <div class="col-12 text-success fw-bold"><strong><i class="fa-brands fa-pix"></i> PIX:</strong> <span id="prevPix"></span></div>
                 </div>
             </div>
 
-            <div class="row g-3 bg-white p-3 rounded border border-light shadow-sm">
-                <div class="col-12">
+            <div class="row g-2 bg-white p-2 rounded border border-light shadow-sm">
+                <div class="col-12 col-md-6">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Data</label>
                     <input type="date" name="data_servico" class="form-control form-control-sm" required value="${new Date().toISOString().split('T')[0]}">
                 </div>
                 
-                <div class="col-12 border-top pt-2">
+                <div class="col-12 col-md-6">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Adicional (R$)</label>
+                    <input type="number" step="0.01" name="adicional" id="valorAdicional" class="form-control form-control-sm text-center fw-bold" placeholder="0.00" oninput="calcularValor()">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Observação</label>
+                    <input type="text" name="observacao" id="observacaoInput" class="form-control form-control-sm" placeholder="Descrição opcional (ex: Ajuda de custo)">
+                </div>
+                
+                <div class="col-12 border-top pt-2 mt-1">
                     <h6 class="fw-bold text-primary mb-2" style="font-size: 0.8rem;">Cálculo do Serviço</h6>
                     
                     <div id="containerViagemLonga" style="display: none;">
-                        <div class="form-check form-switch mb-2">
+                        <div class="form-check form-switch mb-1">
                             <input class="form-check-input" type="checkbox" name="is_viagem_longa" id="switchViagemLonga" value="sim" onchange="toggleViagemLonga(this)">
                             <label class="form-check-label fw-bold text-danger" for="switchViagemLonga" style="font-size:0.8rem;">Marcar como Viagem Longa</label>
                         </div>
-                        <div class="mb-3 d-none" id="divDestinoLonga">
+                        <div class="mb-2 d-none" id="divDestinoLonga">
                             <select name="destino_longa" id="selectDestinoLonga" class="form-select form-select-sm shadow-sm" onchange="calcularValor()">
                                 <option value="sulbahia">Sul da Bahia (R$ ${fmtMoeda(taxas.vl_sulbahia)})</option>
                                 <option value="aracaju1">Aracaju (R$ ${fmtMoeda(taxas.vl_aracaju1)})</option>
@@ -797,36 +808,36 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                         </div>
                     </div>
 
-                    <div class="mb-3" id="divQtdEntregas">
+                    <div class="mb-2" id="divQtdEntregas">
                         <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;">Qtd. Entregas</label>
                         <input type="number" name="qtd_entregas" id="qtdEntregas" class="form-control form-control-sm text-center fw-bold" value="0" min="0" oninput="calcularValor()">
-                        <div class="form-text" style="font-size: 0.7rem;">A quantidade será enviada ao histórico de rota, mesmo se marcada Viagem Longa.</div>
+                        <div class="form-text mt-0" style="font-size: 0.65rem;">A quantidade será enviada ao histórico de rota, mesmo se marcada Viagem Longa.</div>
                     </div>
 
-                    <div class="form-check form-switch mt-2">
+                    <div class="form-check form-switch mt-1">
                         <input class="form-check-input" type="checkbox" name="is_almoco" id="switchAlmoco" value="sim" onchange="toggleAlmoco()">
                         <label class="form-check-label fw-bold text-dark" for="switchAlmoco" style="font-size:0.8rem;">Adicionar Almoço (R$ ${fmtMoeda(taxas.val_almoco)})</label>
                         <input type="hidden" name="valor_almoco_bd" id="valorAlmocoOculto" value="${taxas.val_almoco}">
                     </div>
                 </div>
                 
-                <div class="col-12 mt-3 pt-3 border-top text-center">
+                <div class="col-12 mt-2 pt-2 border-top text-center">
                     <span class="text-muted d-block mb-1" style="font-size:0.8rem;">Valor Total a Pagar</span>
                     <h3 class="fw-bold text-success mb-0" id="valorTotalVisor">R$ 0,00</h3>
                     <input type="hidden" name="valor_total" id="valorTotalInput" value="0.00">
                 </div>
                 
-                <div class="col-12 mt-2 text-center pt-2">
+                <div class="col-12 mt-1 text-center pt-1">
                     <div class="form-check form-switch d-inline-block">
                         <input class="form-check-input" type="checkbox" name="ja_pago" id="jaPagoSwitch" value="sim" onchange="togglePagoState(this)">
                         <label class="form-check-label fw-bold text-dark" for="jaPagoSwitch" style="font-size:0.85rem;">Já efetuei o pagamento (PIX)</label>
                     </div>
                 </div>
 
-                <div class="col-12 mt-3 p-3 bg-light rounded border" id="comprovanteContainer" style="opacity: 0.4; pointer-events: none; transition: all 0.3s ease; transform: translateY(-5px);">
+                <div class="col-12 mt-2 p-2 bg-light rounded border" id="comprovanteContainer" style="opacity: 0.4; pointer-events: none; transition: all 0.3s ease; transform: translateY(-5px);">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.8rem;"><i class="fa-solid fa-paperclip me-1"></i> Anexar Comprovante</label>
                     <input type="file" name="comprovante" id="fileComprovante" class="form-control form-control-sm shadow-sm" accept="image/*,.pdf">
-                    <div class="form-text" style="font-size: 0.7rem;">Obrigatório ativar a chave acima para anexar ficheiro.</div>
+                    <div class="form-text mt-0" style="font-size: 0.65rem;">Obrigatório ativar a chave acima para anexar ficheiro.</div>
                 </div>
             </div>
 
@@ -999,6 +1010,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           const tipoColabInput = document.getElementById('tipoColabOculto').value;
           const isLonga = document.getElementById('switchViagemLonga') && document.getElementById('switchViagemLonga').checked;
           const hasAlmoco = document.getElementById('switchAlmoco') && document.getElementById('switchAlmoco').checked;
+          const adicional = parseFloat(document.getElementById('valorAdicional').value) || 0;
           
           let base = 0;
 
@@ -1020,6 +1032,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           if (hasAlmoco) {
               total += (TAXAS.val_almoco || 25.00);
           }
+          
+          total += adicional;
 
           document.getElementById('valorTotalVisor').innerText = "R$ " + total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           document.getElementById('valorTotalInput').value = total.toFixed(2);
@@ -1030,6 +1044,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           const inputQtd = document.getElementById('qtdEntregas');
           const inputCaderno = document.getElementById('cadernoIdInput');
           const inputTipo = document.getElementById('tipoColabOculto');
+          const inputAdicional = document.getElementById('valorAdicional');
+          const inputObs = document.getElementById('observacaoInput');
           
           const chkPago = document.getElementById('jaPagoSwitch');
           const chkLonga = document.getElementById('switchViagemLonga');
@@ -1043,6 +1059,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           if(fileInput) fileInput.value = '';
           if(chkLonga) chkLonga.checked = false;
           if(chkAlmoco) chkAlmoco.checked = false;
+          if(inputAdicional) inputAdicional.value = '';
+          if(inputObs) inputObs.value = '';
           
           divDestino.classList.add('d-none');
 
@@ -1065,7 +1083,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       }
 
       // =======================================================================
-      // MENSAGEM DO PERÍODO COM CIDADES E FILTRO DE TIPO DE UTILIZADOR E DATA
+      // MENSAGEM DO PERÍODO COM AGRUPAMENTO POR COLABORADOR
       // =======================================================================
       function getColabDataJs(nomeBusca) {
           if (!nomeBusca) return null;
@@ -1108,60 +1126,67 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               return;
           }
 
-          const agrupadoPorData = {};
+          const agrupadoPorColab = {};
+
           listaCadernosDB.forEach(c => {
-              if(!agrupadoPorData[c.data_formatada]) agrupadoPorData[c.data_formatada] = [];
-              agrupadoPorData[c.data_formatada].push(c);
-          });
-
-          let msg = \`Relatório de Pagamentos - Ecoflow\\n\\n\`;
-          let totalGeral = 0;
-
-          Object.keys(agrupadoPorData).forEach(data => {
-              let msgDia = \`[ Data: \${data} ]\\n\`;
-              let adicionouAlguemNoDia = false;
-              
-              agrupadoPorData[data].forEach(c => {
-                  let msgRota = "";
-                  let adicionouAlguemNaRota = false;
-                  
-                  const strCidades = c.cidades ? \` (\${c.cidades})\` : '';
-                  msgRota += \`* Rota #\${c.id}\${strCidades} - \${c.qtd_entregas} locais\\n\`;
-                  
-                  if (c.motorista) {
-                      const mot = getColabDataJs(c.motorista);
-                      const isMotAvulsoJs = mot.tipo_usuario === 'motorista_avulso';
-                      
-                      if (isMotAvulsoJs) {
-                          const valMot = getTierValue(c.qtd_entregas, 'mot');
-                          totalGeral += valMot;
-                          msgRota += \`   > MOT: \${mot.nome} - R$ \${valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                          msgRota += \`   > PIX: \${mot.pix} (\${mot.banco}) / CPF: \${mot.cpf}\\n\`;
-                          adicionouAlguemNaRota = true;
+              // Agrupa Motoristas Avulsos
+              if (c.motorista) {
+                  const mot = getColabDataJs(c.motorista);
+                  if (mot && mot.tipo_usuario === 'motorista_avulso') {
+                      const key = mot.id || mot.nome; // Usa nome como chave secundária se não tiver id
+                      if (!agrupadoPorColab[key]) {
+                          agrupadoPorColab[key] = { colab: mot, rotas: [], total: 0, papel: 'Motorista' };
                       }
+                      const valMot = getTierValue(c.qtd_entregas, 'mot');
+                      agrupadoPorColab[key].rotas.push({ caderno: c, valor: valMot });
+                      agrupadoPorColab[key].total += valMot;
                   }
+              }
 
-                  if (c.ajudante && c.ajudante.trim() !== "") {
-                      const aju = getColabDataJs(c.ajudante);
+              // Agrupa Ajudantes
+              if (c.ajudante && c.ajudante.trim() !== "") {
+                  const aju = getColabDataJs(c.ajudante);
+                  if (aju) {
+                      const key = aju.id || aju.nome;
+                      if (!agrupadoPorColab[key]) {
+                          agrupadoPorColab[key] = { colab: aju, rotas: [], total: 0, papel: 'Ajudante' };
+                      }
                       const valAju = getTierValue(c.qtd_entregas, 'aju');
-                      totalGeral += valAju;
-                      msgRota += \`   > AJU: \${aju.nome} - R$ \${valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
-                      msgRota += \`   > PIX: \${aju.pix} (\${aju.banco}) / CPF: \${aju.cpf}\\n\`;
-                      adicionouAlguemNaRota = true;
+                      agrupadoPorColab[key].rotas.push({ caderno: c, valor: valAju });
+                      agrupadoPorColab[key].total += valAju;
                   }
-                  
-                  if (adicionouAlguemNaRota) {
-                      msgDia += msgRota + \`\\n\`;
-                      adicionouAlguemNoDia = true;
-                  }
-              });
-              
-              if (adicionouAlguemNoDia) {
-                  msg += msgDia;
               }
           });
 
-          msg += \`------------------------\\n*TOTAL DO PERÍODO: R$ \${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}*\\n\`;
+          if (Object.keys(agrupadoPorColab).length === 0) {
+              mostrarToast('erro', 'Atenção', 'Nenhum motorista avulso ou ajudante encontrado neste período.');
+              return;
+          }
+
+          let msg = \`Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow\\n\\n\`;
+
+          Object.values(agrupadoPorColab).forEach(dados => {
+              const colab = dados.colab;
+              
+              msg += \`[ \${dados.papel}: \${colab.nome} ]\\n\`;
+              
+              // Bloco 1: Lista das Rotas
+              dados.rotas.forEach(r => {
+                  msg += \`Rota #\${r.caderno.id}  |  \${r.caderno.data_formatada}\\n\`;
+              });
+              
+              msg += \`\\nResumo de Registros:\\n\`;
+              // Bloco 2: Resumo Financeiro
+              dados.rotas.forEach(r => {
+                  msg += \`> \${r.caderno.data_formatada} - R$ \${r.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
+              });
+              msg += \`Dados Bancários:\\n\`;
+              msg += \`> PIX: \${colab.pix}\\n\`;
+              msg += \`> Banco: \${colab.banco}\\n\`;
+              msg += \`> CPF: \${colab.cpf}\\n\`;
+              msg += \`> TOTAL A PAGAR: R$ \${dados.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\\n\`;
+              msg += \`--------------------------------------------------------\\n\\n\`;
+          });
 
           const url = \`https://wa.me/\${NUMERO_WPP}?text=\${encodeURIComponent(msg)}\`;
           window.open(url, '_blank');

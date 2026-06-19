@@ -5498,7 +5498,12 @@ app.post("/configuracoes/taxas", async (req, res) => {
 app.post("/pagamentos/novo", upload.single("comprovante"), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
-    const { colaborador_id, data_servico, valor_total, ja_pago, caderno_id, is_viagem_longa, destino_longa, is_almoco, valor_almoco_bd } = req.body;
+    const { 
+        colaborador_id, data_servico, valor_total, ja_pago, caderno_id, 
+        is_viagem_longa, destino_longa, is_almoco, valor_almoco_bd,
+        adicional, observacao // <-- NOVOS CAMPOS AQUI
+    } = req.body;
+    
     let { qtd_entregas } = req.body;
 
     // BLINDAGEM: Se a quantidade vier como 0 ou vazia, o sistema lê direto do banco de dados para nunca falhar o histórico.
@@ -5516,11 +5521,14 @@ app.post("/pagamentos/novo", upload.single("comprovante"), async (req, res) => {
 
     const tipo_viagem = is_viagem_longa === "sim" ? destino_longa : 'Padrão';
     const almoco = is_almoco === "sim" ? (valor_almoco_bd || 25.00) : 0.00;
+    
+    // Tratamento para garantir que o adicional não cause erro se vier vazio
+    const valorAdicional = parseFloat(adicional) || 0.00;
 
     try {
         await db.promise().query(
-            "INSERT INTO pagamentos_colaboradores (colaborador_id, data_servico, qtd_entregas, valor_total, status, comprovante, caderno_id, almoco, tipo_viagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [colaborador_id, data_servico, qtd_entregas || 0, valor_total || 0, status, comprovante, caderno_id || null, almoco, tipo_viagem]
+            "INSERT INTO pagamentos_colaboradores (colaborador_id, data_servico, qtd_entregas, valor_total, status, comprovante, caderno_id, almoco, tipo_viagem, adicional, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [colaborador_id, data_servico, qtd_entregas || 0, valor_total || 0, status, comprovante, caderno_id || null, almoco, tipo_viagem, valorAdicional, observacao]
         );
         res.redirect("/pagamentos");
     } catch (error) {

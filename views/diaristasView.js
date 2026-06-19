@@ -911,6 +911,17 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       // =======================================================================
       // LÓGICA DOS MODAIS E WHATSAPP
       // =======================================================================
+      function fmtDataJs(dStr) {
+          if(!dStr) return '-';
+          try {
+              const onlyDate = dStr.split('T')[0];
+              const [ano, mes, dia] = onlyDate.split('-');
+              return \`\${dia}/\${mes}/\${ano}\`;
+          } catch(e) {
+              return dStr;
+          }
+      }
+
       function enviarWppPasta(pastaId) {
           const p = pastasDB.find(x => x.id == pastaId);
           if(!p) return;

@@ -1177,6 +1177,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       function dispararMensagemPeriodo() {
           let listaCadernosDB = ${cadernosSensiveis};
           
+          // FORÇA A APLICAÇÃO DO FILTRO DE DATAS LOCALMENTE
           const dtInicioStr = document.querySelector('input[name="caderno_inicio"]').value;
           const dtFimStr = document.querySelector('input[name="caderno_fim"]').value;
 
@@ -1207,91 +1208,72 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               return;
           }
 
-          // Formatador de moeda à prova de falhas (evita problemas de locale do VPS Linux)
-          const fmtM = (v) => {
-              let str = Number(v).toFixed(2).replace('.', ',');
-              return str.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
-          };
-
-          const colaboradoresPagamentos = {};
+          const agrupadoPorColab = {};
 
           listaCadernosDB.forEach(c => {
+              // Agrupa Motoristas Avulsos
               if (c.motorista) {
                   const mot = getColabDataJs(c.motorista);
-                  const isMotAvulsoJs = mot.tipo_usuario === 'motorista_avulso';
-                  
-                  if (isMotAvulsoJs) {
-                      const valMot = getTierValue(c.qtd_entregas, 'mot');
-                      if (!colaboradoresPagamentos[mot.nome]) {
-                          colaboradoresPagamentos[mot.nome] = {
-                              tipo: 'Motorista',
-                              rotas: [],
-                              registros: [],
-                              total: 0,
-                              pix: mot.pix, banco: mot.banco, cpf: mot.cpf
-                          };
+                  if (mot && mot.tipo_usuario === 'motorista_avulso') {
+                      const key = mot.id || mot.nome; // Usa nome como chave secundária se não tiver id
+                      if (!agrupadoPorColab[key]) {
+                          agrupadoPorColab[key] = { colab: mot, rotas: [], total: 0, papel: 'Motorista' };
                       }
-                      colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                      colaboradoresPagamentos[mot.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valMot));
-                      colaboradoresPagamentos[mot.nome].total += valMot;
+                      const valMot = getTierValue(c.qtd_entregas, 'mot');
+                      agrupadoPorColab[key].rotas.push({ caderno: c, valor: valMot });
+                      agrupadoPorColab[key].total += valMot;
                   }
               }
 
+              // Agrupa Ajudantes
               if (c.ajudante && c.ajudante.trim() !== "") {
                   const aju = getColabDataJs(c.ajudante);
-                  const valAju = getTierValue(c.qtd_entregas, 'aju');
-                  if (!colaboradoresPagamentos[aju.nome]) {
-                      colaboradoresPagamentos[aju.nome] = {
-                          tipo: 'Ajudante',
-                          rotas: [],
-                          registros: [],
-                          total: 0,
-                          pix: aju.pix, banco: aju.banco, cpf: aju.cpf
-                      };
+                  if (aju) {
+                      const key = aju.id || aju.nome;
+                      if (!agrupadoPorColab[key]) {
+                          agrupadoPorColab[key] = { colab: aju, rotas: [], total: 0, papel: 'Ajudante' };
+                      }
+                      const valAju = getTierValue(c.qtd_entregas, 'aju');
+                      agrupadoPorColab[key].rotas.push({ caderno: c, valor: valAju });
+                      agrupadoPorColab[key].total += valAju;
                   }
-                  colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                  colaboradoresPagamentos[aju.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valAju));
-                  colaboradoresPagamentos[aju.nome].total += valAju;
               }
           });
 
-          // Usar array em vez de concatenação pesada com "\\n" evita corrupção de caracteres
-          const linhasMsg = [];
-          linhasMsg.push("Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow");
-          linhasMsg.push("");
+          if (Object.keys(agrupadoPorColab).length === 0) {
+              mostrarToast('erro', 'Atenção', 'Nenhum motorista avulso ou ajudante encontrado neste período.');
+              return;
+          }
 
-          Object.keys(colaboradoresPagamentos).forEach(nome => {
-              const d = colaboradoresPagamentos[nome];
+          let msg = \`Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow\\n\\n\`;
+
+          Object.values(agrupadoPorColab).forEach(dados => {
+              const colab = dados.colab;
               
-              linhasMsg.push("[ " + d.tipo + ": " + nome + " ]");
-              d.rotas.forEach(r => linhasMsg.push(r));
-              linhasMsg.push("");
+              msg += \`[ \${dados.papel}: \${colab.nome} ]\\n\`;
               
-              linhasMsg.push("Resumo de Registros:");
-              d.registros.forEach(r => linhasMsg.push(r));
+              // Bloco 1: Lista das Rotas
+              dados.rotas.forEach(r => {
+                  msg += \`ROTA #\${r.caderno.id}  |  \${r.caderno.data_formatada}\\n\`;
+              });
               
-              linhasMsg.push("Dados Bancários:");
-              linhasMsg.push("> PIX: " + (d.pix || "Não cadastrado"));
-              linhasMsg.push("> Banco: " + (d.banco || "Não cadastrado"));
-              linhasMsg.push("> CPF: " + (d.cpf || "Não cadastrado"));
-              linhasMsg.push("> TOTAL A PAGAR: R$ " + fmtM(d.total));
-              
-              linhasMsg.push("");
-              linhasMsg.push("--------------------------------------------------------");
-              linhasMsg.push("");
+              msg += \`\\nResumo de Registros:\\n\`;
+              // Bloco 2: Resumo Financeiro
+              dados.rotas.forEach(r => {
+                  msg += \`> \${r.caderno.data_formatada} - R$ \${r.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\`;
+              });
+              msg += \`Dados Bancários:\\n\`;
+              msg += \`> PIX: \${colab.pix}\\n\`;
+              msg += \`> Banco: \${colab.banco}\\n\`;
+              msg += \`> CPF: \${colab.cpf}\\n\`;
+              msg += \`> TOTAL A PAGAR: R$ \${dados.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\\n\\n\`;
+              msg += \`--------------------------------------------------------\\n\\n\`;
           });
 
-          // Join nativo é seguro em qualquer navegador ou ambiente
-          const msgFinal = encodeURIComponent(linhasMsg.join("\\n"));
-          const url = "https://wa.me/" + NUMERO_WPP + "?text=" + msgFinal;
-          
+          const url = \`https://wa.me/\${NUMERO_WPP}?text=\${encodeURIComponent(msg)}\`;
           window.open(url, '_blank');
           
-          const modalEl = document.getElementById('modalMensagemPeriodo');
-          if (modalEl) {
-              const modal = bootstrap.Modal.getInstance(modalEl);
-              if(modal) modal.hide();
-          }
+          bootstrap.Modal.getInstance(document.getElementById('modalMensagemPeriodo')).hide();
       }
 
       function togglePagoState(checkbox) {

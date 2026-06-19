@@ -1207,6 +1207,12 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               return;
           }
 
+          // Formatador de moeda à prova de falhas (evita problemas de locale do VPS Linux)
+          const fmtM = (v) => {
+              let str = Number(v).toFixed(2).replace('.', ',');
+              return str.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
+          };
+
           const colaboradoresPagamentos = {};
 
           listaCadernosDB.forEach(c => {
@@ -1225,8 +1231,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                               pix: mot.pix, banco: mot.banco, cpf: mot.cpf
                           };
                       }
-                      colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + " | " + c.data_formatada);
-                      colaboradoresPagamentos[mot.nome].registros.push("> " + c.data_formatada + " - R$ " + valMot.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+                      colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
+                      colaboradoresPagamentos[mot.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valMot));
                       colaboradoresPagamentos[mot.nome].total += valMot;
                   }
               }
@@ -1243,33 +1249,42 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                           pix: aju.pix, banco: aju.banco, cpf: aju.cpf
                       };
                   }
-                  colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + " | " + c.data_formatada);
-                  colaboradoresPagamentos[aju.nome].registros.push("> " + c.data_formatada + " - R$ " + valAju.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+                  colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
+                  colaboradoresPagamentos[aju.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valAju));
                   colaboradoresPagamentos[aju.nome].total += valAju;
               }
           });
 
-          let msg = "Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow\\n\\n";
+          // Usar array em vez de concatenação pesada com "\\n" evita corrupção de caracteres
+          const linhasMsg = [];
+          linhasMsg.push("Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow");
+          linhasMsg.push("");
 
           Object.keys(colaboradoresPagamentos).forEach(nome => {
               const d = colaboradoresPagamentos[nome];
               
-              msg += "[ " + d.tipo + ": " + nome + " ]\\n";
-              msg += d.rotas.join("\\n") + "\\n\\n";
+              linhasMsg.push("[ " + d.tipo + ": " + nome + " ]");
+              d.rotas.forEach(r => linhasMsg.push(r));
+              linhasMsg.push("");
               
-              msg += "Resumo de Registros:\\n";
-              msg += d.registros.join("\\n") + "\\n";
+              linhasMsg.push("Resumo de Registros:");
+              d.registros.forEach(r => linhasMsg.push(r));
               
-              msg += "Dados Bancários:\\n";
-              msg += "> PIX: " + (d.pix || 'Não cadastrado') + "\\n";
-              msg += "> Banco: " + (d.banco || 'Não cadastrado') + "\\n";
-              msg += "> CPF: " + (d.cpf || 'Não cadastrado') + "\\n";
-              msg += "> TOTAL A PAGAR: R$ " + d.total.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + "\\n\\n";
+              linhasMsg.push("Dados Bancários:");
+              linhasMsg.push("> PIX: " + (d.pix || "Não cadastrado"));
+              linhasMsg.push("> Banco: " + (d.banco || "Não cadastrado"));
+              linhasMsg.push("> CPF: " + (d.cpf || "Não cadastrado"));
+              linhasMsg.push("> TOTAL A PAGAR: R$ " + fmtM(d.total));
               
-              msg += "--------------------------------------------------------\\n\\n";
+              linhasMsg.push("");
+              linhasMsg.push("--------------------------------------------------------");
+              linhasMsg.push("");
           });
 
-          const url = "https://wa.me/" + NUMERO_WPP + "?text=" + encodeURIComponent(msg);
+          // Join nativo é seguro em qualquer navegador ou ambiente
+          const msgFinal = encodeURIComponent(linhasMsg.join("\\n"));
+          const url = "https://wa.me/" + NUMERO_WPP + "?text=" + msgFinal;
+          
           window.open(url, '_blank');
           
           const modalEl = document.getElementById('modalMensagemPeriodo');

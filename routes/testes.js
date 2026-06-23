@@ -12,7 +12,7 @@ const renderTestesView = require('../views/testesView');
 router.get('/dev/testes', (req, res) => {
     // Segurança: Apenas Administradores
     if (!req.session || !req.session.user || req.session.user.tipo_usuario !== 'admin') {
-        return res.status(401).send("Acesso restrito a desenvolvedores e administradores.");
+        return res.redirect("/login");
     }
 
     const routesDir = __dirname;

@@ -209,13 +209,13 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
             .accordion-button:not(.collapsed) { background-color: #222 !important; box-shadow: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
             .accordion-button::after { filter: brightness(0) invert(1); opacity: 0.5; transition: transform 0.2s ease; }
             .accordion-button:not(.collapsed)::after { opacity: 1; filter: invert(50%) sepia(80%) saturate(400%) hue-rotate(90deg); transform: rotate(-180deg); }
-            .accordion-collapse { will-change: height; } /* Ajuda a GPU a renderizar a altura suavemente */
+            .accordion-collapse { will-change: height; } 
 
             /* Modais */
             .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
             .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #1f1f1f !important; padding: 12px 16px; }
             .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #1f1f1f !important; padding: 10px 16px; }
-            .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); }
+            .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #e0e0e0 !important; }
             
             /* Area de Resposta */
             pre { background-color: #0d0d0d; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); overflow-y: auto; color: #08c068; white-space: pre-wrap; word-wrap: break-word; }
@@ -304,7 +304,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                         <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Como usar o Dev Lab</h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body p-4 bg-custom-dark text-white" style="font-size: 0.8rem;">
+                    <div class="modal-body p-4 bg-custom-dark text-light" style="font-size: 0.8rem;">
                         <p class="mb-4 text-white">Este painel lê dinamicamente o código do sistema e permite testar as rotas da API em tempo real.</p>
                         
                         <ul class="list-group list-group-flush mb-4">
@@ -313,8 +313,8 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                                 Abra a aba de qualquer rota. O sistema já pré-preenche o <strong>Prefixo</strong> e cria campos para os <strong>Parâmetros</strong> da URL (ex: <code>:id</code>). Se for um método POST/PUT, um <strong>JSON de exemplo</strong> também será gerado. Edite os valores e clique em "Executar Rota".
                             </li>
                             <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
-                                <strong class="text-white d-block mb-1"><i class="fa-solid fa-forward-fast text-primary me-2"></i> 2. Bateria em Lote</strong>
-                                O botão no topo permite testar <strong>todas as rotas do sistema sequencialmente</strong> num único clique. Isto é útil para medir o tempo de resposta do servidor (Latência/Ping) ou identificar rotas que estejam "quebradas" (Crash 500).
+                                <strong class="text-white d-block mb-1"><i class="fa-solid fa-forward-fast text-primary me-2"></i> 2. Bateria em Lote (Modo Seguro)</strong>
+                                O botão no topo permite testar <strong>todas as rotas do sistema sequencialmente</strong> num único clique. Para proteger o seu banco de dados em produção, o modo seguro está ativado por padrão. Isso significa que métodos de exclusão receberão um <strong>ID Fantasma</strong> (ex: 999999) para não deletar clientes ou ordens reais.
                             </li>
                             <li class="list-group-item bg-transparent px-0 border-custom py-3 border-bottom-0 text-white-50">
                                 <strong class="text-white d-block mb-1"><i class="fa-solid fa-code text-info me-2"></i> 3. Resultados Esperados</strong>
@@ -345,25 +345,36 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     <div class="modal-body p-0 bg-custom-dark d-flex flex-column">
                         
                         <div class="p-3 border-bottom border-custom bg-custom-darker flex-shrink-0 z-1 shadow-sm">
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                <div class="form-check form-switch ps-0 d-flex align-items-center gap-2 m-0">
+                                    <input class="form-check-input m-0" type="checkbox" role="switch" id="safeModeToggle" checked style="cursor:pointer;">
+                                    <label class="form-check-label fw-bold text-white-50" for="safeModeToggle" style="font-size:0.7rem; cursor:pointer;" title="Protege o banco de dados contra exclusões reais usando IDs fantasmas.">
+                                        <i class="fa-solid fa-shield-halved text-success me-1"></i> Modo Seguro Ativado
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="progress mb-3 rounded-pill bg-custom-dark border border-custom" style="height: 12px;">
                                 <div id="testProgress" class="progress-bar rounded-pill bg-primary progress-bar-striped progress-bar-animated" style="width: 0%; transition: width 0.3s ease;"></div>
                             </div>
                             
-                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 px-1">
-                                <div>
-                                    <span id="testStatusText" class="text-white-50 small fw-bold" style="font-size: 0.75rem;">Aguardando disparo...</span>
-                                    <span class="badge bg-custom-dark border border-custom text-white font-monospace ms-2" id="testCounterBadge">0 / ${rotasEncontradas.length}</span>
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 px-1">
+                                
+                                <div class="d-flex align-items-center flex-grow-1 overflow-hidden pe-2 w-100 w-md-auto">
+                                    <span id="testStatusText" class="text-white-50 small fw-bold text-truncate" style="font-size: 0.75rem;">Aguardando disparo...</span>
+                                    <span class="badge bg-custom-dark border border-custom text-white font-monospace ms-2 flex-shrink-0" id="testCounterBadge">0 / ${rotasEncontradas.length}</span>
                                 </div>
                                 
-                                <div class="btn-group btn-group-sm shadow-sm w-100 w-md-auto" role="group">
+                                <div class="btn-group btn-group-sm shadow-sm flex-shrink-0" role="group">
                                     <input type="radio" class="btn-check filter-btn" name="filterResult" id="filterAll" value="all" autocomplete="off" checked onchange="filtrarResultadosLote()">
-                                    <label class="btn btn-outline-secondary text-white border-custom fw-bold" style="font-size: 0.7rem;" for="filterAll">Todos</label>
+                                    <label class="btn btn-outline-secondary text-white border-custom fw-bold px-2 py-1" style="font-size: 0.65rem;" for="filterAll">Todos</label>
 
                                     <input type="radio" class="btn-check filter-btn" name="filterResult" id="filterSuccess" value="success" autocomplete="off" onchange="filtrarResultadosLote()">
-                                    <label class="btn btn-outline-success fw-bold" style="font-size: 0.7rem;" for="filterSuccess">Sucesso</label>
+                                    <label class="btn btn-outline-success fw-bold px-2 py-1" style="font-size: 0.65rem;" for="filterSuccess">Sucesso</label>
 
                                     <input type="radio" class="btn-check filter-btn" name="filterResult" id="filterError" value="error" autocomplete="off" onchange="filtrarResultadosLote()">
-                                    <label class="btn btn-outline-danger fw-bold" style="font-size: 0.7rem;" for="filterError">Erro</label>
+                                    <label class="btn btn-outline-danger fw-bold px-2 py-1" style="font-size: 0.65rem;" for="filterError">Erro</label>
                                 </div>
                             </div>
                         </div>
@@ -448,9 +459,6 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 }
             }
 
-            // ==========================================
-            // LÓGICA DE TESTE INDIVIDUAL (INLINE)
-            // ==========================================
             function limparTeste(btn) {
                 const container = btn.closest('.test-container');
                 const statusEl = container.querySelector('.status-resposta');
@@ -471,6 +479,9 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 let rota = container.dataset.rota;
                 let prefixo = container.querySelector('.prefix-input').value.trim();
                 
+                const safeModeToggle = document.getElementById('safeModeToggle');
+                const safeMode = safeModeToggle ? safeModeToggle.checked : false;
+                
                 if (prefixo) {
                     if (!prefixo.startsWith('/')) prefixo = '/' + prefixo;
                     if (prefixo.endsWith('/')) prefixo = prefixo.slice(0, -1);
@@ -478,7 +489,11 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 }
 
                 container.querySelectorAll('.param-input').forEach(input => {
-                    rota = rota.replace(input.dataset.param, input.value || '1');
+                    let valorParam = input.value || '1';
+                    if (safeMode && ['PUT', 'PATCH', 'DELETE'].includes(metodo)) {
+                        valorParam = '999999999';
+                    }
+                    rota = rota.replace(input.dataset.param, valorParam);
                 });
 
                 let bodyData = null;
@@ -503,6 +518,11 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 try {
                     const startTime = Date.now();
                     const options = { method: metodo, headers: { 'Accept': 'application/json, text/plain, */*' } };
+                    
+                    if (safeMode) {
+                        options.headers['X-DevLab-SafeMode'] = 'true';
+                    }
+
                     if (bodyData) {
                         options.headers['Content-Type'] = 'application/json';
                         options.body = bodyData;
@@ -527,7 +547,12 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                         codeEl.style.color = '#08c068';
                         statusEl.innerHTML = \`<i class="fa-solid fa-circle-check"></i> \${response.status} • \${ms}ms\`;
                         statusEl.className = "status-resposta response-status text-success fw-bold";
-                        mostrarToast('sucesso', 'Concluído!', 'Rota testada com sucesso.');
+                        
+                        if (safeMode && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(metodo)) {
+                            mostrarToast('sucesso', 'Safe Mode', 'Simulação bem-sucedida. Nada foi alterado.');
+                        } else {
+                            mostrarToast('sucesso', 'Concluído!', 'Rota testada com sucesso.');
+                        }
                     } else {
                         codeEl.style.color = '#ea868f';
                         statusEl.innerHTML = \`<i class="fa-solid fa-circle-xmark"></i> \${response.status} • \${ms}ms\`;
@@ -544,9 +569,6 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 }
             }
 
-            // ==========================================
-            // LÓGICA DE TESTE EM LOTE COM FILTRO E AUTO-SCROLL
-            // ==========================================
             function filtrarResultadosLote() {
                 const filtro = document.querySelector('input[name="filterResult"]:checked').value;
                 const items = document.querySelectorAll('#testResultsList .result-item-lote');
@@ -594,12 +616,12 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 const statusText = document.getElementById('testStatusText');
                 const counterBadge = document.getElementById('testCounterBadge');
                 const resultsList = document.getElementById('testResultsList');
+                const safeMode = document.getElementById('safeModeToggle').checked;
 
                 btnStart.disabled = true;
                 const msgPlaceholder = document.getElementById('placeholderLoteMsg');
                 if (msgPlaceholder) msgPlaceholder.remove();
                 
-                // Força o filtro para "Todos" durante a execução
                 document.getElementById('filterAll').checked = true;
                 filtrarResultadosLote();
 
@@ -614,15 +636,52 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     if (rotaInfo.prefixoAuto) {
                         rotaFinal = rotaFinal.startsWith('/') ? rotaInfo.prefixoAuto + rotaFinal : rotaInfo.prefixoAuto + '/' + rotaFinal;
                     }
+
+                    // --- PROTEÇÃO ANTI-LOGOUT ---
+                    // Evita que a bateria atinja rotas que encerram a sessão do admin
+                    if (rotaFinal.toLowerCase().includes('/logout') || rotaFinal.toLowerCase().includes('/sair') || rotaFinal.toLowerCase().includes('/login')) {
+                        concluidos++;
+                        progress.style.width = \`\${((concluidos/total)*100).toFixed(0)}%\`;
+                        counterBadge.innerText = \`\${concluidos} / \${total}\`;
+                        
+                        const divResult = document.createElement('div');
+                        divResult.className = \`result-item-lote p-2 rounded border border-opacity-25 bg-warning bg-opacity-10 border-warning bg-custom-darker mb-1 shadow-sm\`;
+                        divResult.dataset.status = 'success'; 
+                        
+                        divResult.innerHTML = \`
+                            <div class="d-flex align-items-center gap-2 flex-wrap w-100">
+                                <span class="badge bg-warning text-dark rounded px-2 py-1 font-monospace" style="font-size: 0.6rem;">IGNORADO</span>
+                                <span class="badge bg-custom-dark text-white border border-custom rounded font-monospace small" style="font-size: 0.6rem;">\${rotaInfo.metodo}</span>
+                                <span class="text-white font-monospace text-truncate fw-bold" style="font-size: 0.75rem;">\${rotaFinal}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2 text-white-50" style="font-size: 0.65rem;">
+                                <span><i class="fa-solid fa-shield-halved me-1"></i> Proteção de Sessão Ativa</span>
+                            </div>
+                        \`;
+                        resultsList.appendChild(divResult);
+                        resultsList.scrollTop = resultsList.scrollHeight;
+                        continue;
+                    }
+
                     if (rotaInfo.params) {
-                        rotaInfo.params.forEach(p => { rotaFinal = rotaFinal.replace(p, '1'); });
+                        rotaInfo.params.forEach(p => { 
+                            const dummyValue = safeMode ? '999999999' : '1';
+                            rotaFinal = rotaFinal.replace(p, dummyValue); 
+                        });
                     }
 
                     statusText.innerHTML = \`Varrendo: <strong class="text-accent font-monospace">\${rotaInfo.metodo} \${rotaFinal}</strong>\`;
                     
                     let sucesso = false, msgErro = '', statusCode = '', timeMs = 0;
-                    const options = { method: rotaInfo.metodo, headers: { 'Accept': 'application/json, text/plain, */*' } };
+                    const options = { 
+                        method: rotaInfo.metodo, 
+                        headers: { 'Accept': 'application/json, text/plain, */*' } 
+                    };
                     
+                    if (safeMode) {
+                        options.headers['X-DevLab-SafeMode'] = 'true';
+                    }
+
                     if (['POST', 'PUT', 'PATCH'].includes(rotaInfo.metodo) && rotaInfo.payloadDefault) {
                         options.headers['Content-Type'] = 'application/json';
                         options.body = rotaInfo.payloadDefault;
@@ -652,7 +711,6 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     const divResult = document.createElement('div');
                     const corFundo = sucesso ? 'bg-success bg-opacity-10 border-success' : 'bg-danger bg-opacity-10 border-danger';
                     
-                    // Adiciona classe e dataset para o filtro funcionar
                     divResult.className = \`result-item-lote p-2 rounded border border-opacity-25 \${corFundo} bg-custom-darker mb-1 shadow-sm\`;
                     divResult.dataset.status = sucesso ? 'success' : 'error';
 
@@ -673,8 +731,6 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     \`;
                     
                     resultsList.appendChild(divResult);
-                    
-                    // Scroll suave apenas dentro do container dos resultados (mantendo o cabeçalho fixo)
                     resultsList.scrollTop = resultsList.scrollHeight;
                 }
                 

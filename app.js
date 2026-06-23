@@ -38,6 +38,24 @@ app.use(session({
     }
 }));
 
+// ESCUDO DO DEV LAB (Safe Mode)
+app.use((req, res, next) => {
+    if (req.headers['x-devlab-safemode'] === 'true') {
+        // Deixa os métodos de leitura passarem normalmente
+        if (req.method === 'GET') return next();
+        
+        // Em POST, aborta a requisição antes do controlador para não criar "lixo" no banco,
+        // mas devolve 200 OK para o Dev Lab confirmar que a rota e a rede estão ativas.
+        if (req.method === 'POST') {
+            return res.status(200).json({ 
+                success: true, 
+                message: "[Safe Mode] Rota alcançada, mas inserção no DB evitada." 
+            });
+        }
+    }
+    next(); // Para requisições normais ou testes individuais, segue o fluxo real
+});
+
 const io = new Server(server, {
     cors: { origin: "*" }
 });

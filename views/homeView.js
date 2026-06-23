@@ -731,19 +731,19 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
     ${notificacaoAtiva ? `
     <div class="modal fade" id="modalAvisoGlobal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content erp-modal shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
           <div class="modal-header text-white border-0 p-3" style="background-color: #0D5749;">
-            <h6 class="modal-title fw-bold" style="font-size:0.85rem;"><i class="fa-solid fa-bullhorn me-2"></i> Mensagem da Administração</h6>
+            <h6 class="modal-title fw-bold" style="font-size:0.95rem;"><i class="fa-solid fa-bullhorn me-2"></i> Mensagem do sistema</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-darker text-center">
-            ${notificacaoAtiva.imagem ? `<img src="/uploads/mensagensSistema/${notificacaoAtiva.imagem}" class="img-fluid rounded border-custom mb-3" style="max-height: 250px; width: 100%; object-fit: cover;">` : '<i class="fa-solid fa-circle-exclamation fa-2x text-accent mb-3 opacity-50"></i>'}
-            <h6 class="fw-bold text-white mb-3" style="font-size:0.9rem;">${notificacaoAtiva.titulo}</h6>
-            <p class="text-muted mb-0" style="font-size: 0.8rem; white-space: pre-wrap; text-align: left; line-height: 1.5;">${notificacaoAtiva.mensagem}</p>
+            ${notificacaoAtiva.imagem ? `<img src="/uploads/mensagensSistema/${notificacaoAtiva.imagem}" class="img-fluid rounded border-custom mb-4 shadow-sm" style="max-height: 500px; width: 100%; object-fit: contain; background-color: rgba(0,0,0,0.15);">` : '<i class="fa-solid fa-circle-exclamation fa-3x text-accent mb-4 opacity-50"></i>'}
+            <h5 class="fw-bold text-white mb-3">${notificacaoAtiva.titulo}</h5>
+            <p class="text-muted mb-0" style="font-size: 0.95rem; white-space: pre-wrap; text-align: left; line-height: 1.6;">${notificacaoAtiva.mensagem}</p>
           </div>
           <div class="modal-footer bg-custom-dark border-0 justify-content-center p-3">
-            <button type="button" class="btn btn-sm btn-primary px-5 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>
+            <button type="button" class="btn btn-primary px-5 py-2 fw-bold shadow-sm" data-bs-dismiss="modal">Entendido</button>
           </div>
         </div>
       </div>

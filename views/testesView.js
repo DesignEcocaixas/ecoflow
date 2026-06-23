@@ -246,7 +246,15 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 z-index: 1050;
                 transition: all 0.3s ease;
             }
+            
             .btn-flutuante:hover { transform: scale(1.1); background-color: #06a055; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.5); }
+            
+            .custom-tooltip {
+                --bs-tooltip-bg: #dc3545;
+                --bs-tooltip-color: #fff;
+                font-size: 0.75rem;
+                font-weight: bold;
+            }
 
             @media (max-width: 767.98px) {
                 body { flex-direction: column; } 
@@ -284,7 +292,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     </div>
                 </div>
                 <button class="btn btn-sm btn-primary fw-bold px-3 py-1 shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalTestAll">
-                    <i class="fa-solid fa-forward-fast"></i> Executar Bateria
+                    <i class="fa-solid fa-forward-fast"></i> Executar testes
                 </button>
             </div>
 
@@ -313,7 +321,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                                 Abra a aba de qualquer rota. O sistema já pré-preenche o <strong>Prefixo</strong> e cria campos para os <strong>Parâmetros</strong> da URL (ex: <code>:id</code>). Se for um método POST/PUT, um <strong>JSON de exemplo</strong> também será gerado. Edite os valores e clique em "Executar Rota".
                             </li>
                             <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
-                                <strong class="text-white d-block mb-1"><i class="fa-solid fa-forward-fast text-primary me-2"></i> 2. Bateria em Lote (Modo Seguro)</strong>
+                                <strong class="text-white d-block mb-1"><i class="fa-solid fa-forward-fast text-primary me-2"></i> 2. Testes em Lote (Modo Seguro)</strong>
                                 O botão no topo permite testar <strong>todas as rotas do sistema sequencialmente</strong> num único clique. Para proteger o seu banco de dados em produção, o modo seguro está ativado por padrão. Isso significa que métodos de exclusão receberão um <strong>ID Fantasma</strong> (ex: 999999) para não deletar clientes ou ordens reais.
                             </li>
                             <li class="list-group-item bg-transparent px-0 border-custom py-3 border-bottom-0 text-white-50">
@@ -349,9 +357,18 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                             <div class="d-flex justify-content-between align-items-center mb-2 px-1">
                                 <div class="form-check form-switch ps-0 d-flex align-items-center gap-2 m-0">
                                     <input class="form-check-input m-0" type="checkbox" role="switch" id="safeModeToggle" checked style="cursor:pointer;">
-                                    <label class="form-check-label fw-bold text-white-50" for="safeModeToggle" style="font-size:0.7rem; cursor:pointer;" title="Protege o banco de dados contra exclusões reais usando IDs fantasmas.">
-                                        <i class="fa-solid fa-shield-halved text-success me-1"></i> Modo Seguro Ativado
+                                    <label class="form-check-label fw-bold text-white-50 d-flex align-items-center gap-1" for="safeModeToggle" style="font-size:0.7rem; cursor:pointer;">
+                                        <i class="fa-solid fa-shield-halved text-success"></i> Modo Seguro Ativado
                                     </label>
+                                    <i class="fa-solid fa-circle-info text-white-50 ms-1" 
+                                    style="font-size: 0.75rem; cursor: help; transition: color 0.2s;" 
+                                    onmouseover="this.classList.replace('text-white-50', 'text-white')" 
+                                    onmouseout="this.classList.replace('text-white', 'text-white-50')"
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="bottom" 
+                                    data-bs-custom-class="custom-tooltip"
+                                    title="ATIVO: Usa IDs fantasmas e bloqueia gravação no db. &#10;DESATIVADO (Alerta): Os testes fará exclusões e inserções reais no banco de dados!">
+                                    </i>
                                 </div>
                             </div>
 
@@ -382,7 +399,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                         <div id="testResultsList" class="p-3 d-flex flex-column gap-2 flex-grow-1 overflow-auto" style="min-height: 300px; scroll-behavior: smooth;">
                             <div id="placeholderLoteMsg" class="text-center py-5 text-white-50 small border border-custom rounded bg-custom-darker">
                                 <i class="fa-solid fa-network-wired text-white-50 opacity-50 d-block mb-3 fa-2x"></i>
-                                Clique em Iniciar Bateria para testar todas as rotas.<br>Use os filtros acima para organizar os resultados.
+                                Clique em Iniciar testes para todas as rotas.<br>Use os filtros acima para organizar os resultados.
                             </div>
                         </div>
                     </div>
@@ -395,7 +412,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                             </button>
                         </div>
                         <button type="button" id="btnStartBatch" class="btn btn-sm btn-primary fw-bold px-4" onclick="iniciarTestesEmLote()">
-                            <i class="fa-solid fa-play"></i> Iniciar Bateria
+                            <i class="fa-solid fa-play"></i> Iniciar testes
                         </button>
                     </div>
                 </div>
@@ -600,12 +617,12 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                 document.getElementById('testResultsList').innerHTML = \`
                     <div id="placeholderLoteMsg" class="text-center py-5 text-white-50 small border border-custom rounded bg-custom-darker">
                         <i class="fa-solid fa-network-wired text-white-50 opacity-50 d-block mb-3 fa-2x"></i>
-                        Clique em Iniciar Bateria para testar todas as rotas.<br>Use os filtros acima para organizar os resultados.
+                        Clique em Iniciar testes para testar todas as rotas.<br>Use os filtros acima para organizar os resultados.
                     </div>
                 \`;
                 const btn = document.getElementById('btnStartBatch');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Bateria';
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar testes';
                 
                 mostrarToast('sucesso', 'Limpo!', 'O histórico de resultados em lote foi apagado.');
             }
@@ -734,22 +751,29 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
                     resultsList.scrollTop = resultsList.scrollHeight;
                 }
                 
-                statusText.innerHTML = \`<strong class="text-white">Bateria Encerrada!</strong> <span class="text-white-50">\${concluidos} rotas testadas.</span>\`;
+                statusText.innerHTML = \`<strong class="text-white">Testes Encerrada!</strong> <span class="text-white-50">\${concluidos} rotas testadas.</span>\`;
                 
                 if (falhas > 0) {
                     statusText.innerHTML += \` <span class="text-danger fw-bold ms-1">(\${falhas} falhas)</span>\`;
                     progress.classList.replace('bg-primary', 'bg-warning'); 
-                    mostrarToast('erro', 'Atenção', 'A bateria encerrou com falhas. Verifique a lista.');
+                    mostrarToast('erro', 'Atenção', 'Os testes encerraram com falhas. Verifique a lista.');
                 } else {
                     statusText.innerHTML += \` <span class="text-success fw-bold ms-1\">(100% OK)</span>\`;
                     progress.classList.replace('bg-primary', 'bg-success');
-                    mostrarToast('sucesso', 'Concluído!', 'Bateria de testes 100% aprovada.');
+                    mostrarToast('sucesso', 'Concluído!', 'Teste 100% aprovado.');
                 }
 
                 progress.classList.remove('progress-bar-animated');
                 btnStart.disabled = false;
                 btnStart.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Reprocessar';
             }
+
+             document.addEventListener('DOMContentLoaded', function () {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                })
+            });
         </script>
     </body>
     </html>

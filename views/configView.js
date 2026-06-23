@@ -31,7 +31,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
   // Histórico de Notificações Globais Lançadas
   const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
-      const imgSrc = n.imagem ? `/uploads/${n.imagem}` : '';
+      const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
       const imgHtml = n.imagem 
         ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">` 
         : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
@@ -70,8 +70,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                         <div class="mb-3">
                             <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Status da Notificação</label>
                             <select name="status_notificacao" class="form-select form-select-sm shadow-sm text-white">
-                                <option value="ATIVA" ${n.status === 'ATIVA' ? 'selected' : ''}>ATIVA (Visível no período)</option>
-                                <option value="INATIVA" ${n.status === 'INATIVA' ? 'selected' : ''}>INATIVA (Oculta forçadamente)</option>
+                                <option value="ATIVA" ${n.status === 'ATIVA' ? 'selected' : ''}>Ativa</option>
+                                <option value="INATIVA" ${n.status === 'INATIVA' ? 'selected' : ''}>Inativa</option>
                             </select>
                         </div>
 

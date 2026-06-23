@@ -3,6 +3,10 @@ import mysql.connector
 import re
 import sys
 import os
+from dotenv import load_dotenv
+
+# Carrega as variáveis do arquivo .env que está na raiz do projeto
+load_dotenv()
 
 def converter_data_excel(valor):
     if valor is None or pd.isna(valor):
@@ -32,27 +36,17 @@ if not os.path.exists(arquivo_excel):
     print("Erro: arquivo não encontrado:", arquivo_excel)
     sys.exit(1)
 
-# ===============================
-# CONEXÃO COM BANCO (ECOFLOW)
-# ===============================
-#conn = mysql.connector.connect(
-#    host="localhost",
-#    user="root",
-#    password="1234",
-#    database="sistema_gestao"
-#)
-#cursor = conn.cursor()
 
-# ===============================
 # CONEXÃO COM BANCO (ECOFLOW)
-# ===============================
 conn = mysql.connector.connect(
-    host="localhost",
-    user="appuser",
-    password="23!Bestdavidx",
-    database="sistema_gestao"
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAME")
 )
 cursor = conn.cursor()
+
+print(f"Conectado ao banco de dados no host: {os.getenv('DB_HOST')}")
 
 def log(tipo, msg, linha=None):
     cursor.execute(

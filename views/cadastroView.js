@@ -779,7 +779,13 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         function validarSenhaConfirmacao(form) {
-            const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(form.querySelector('select[name="tipo_usuario"]').value);
+            // Busca o select do tipo de usuário
+            const tipoUsuarioSelect = form.querySelector('select[name="tipo_usuario"]');
+            
+            // Se o formulário não tiver esse campo (ex: formulário de excluir), pula a validação e deixa seguir
+            if (!tipoUsuarioSelect) return true;
+
+            const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipoUsuarioSelect.value);
             if (isNoLogin) return true; // Se for sem login, não precisa validar as senhas pois estão inativas
 
             const senha = form.querySelector('input[name="senha"]');

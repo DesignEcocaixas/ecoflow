@@ -11,7 +11,8 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
     { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" },
-    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" }
+    { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
   ];
 
   const motLinks = [
@@ -26,12 +27,14 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
     { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
-    { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" }
+    { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
   ];
 
   const desLinks = [
     { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
-    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" }
+    { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" },
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
   ];
 
   // --- FUNÇÕES DE RENDERIZAÇÃO ---

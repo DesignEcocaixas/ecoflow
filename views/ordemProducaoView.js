@@ -102,6 +102,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     
     .btn-outline-danger { color: #dc3545; border-color: #dc3545; }
     .btn-outline-danger:hover { background-color: #dc3545; color: #fff; }
+    
+    .btn-info { background-color: #17a2b8; border-color: #17a2b8; color: #fff; }
+    .btn-info:hover { background-color: #138496; border-color: #117a8b; color: #fff; }
 
     /* Inputs e Selects */
     .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
@@ -391,15 +394,19 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               Abra os painéis (Rotativa ou Flexográfica). Pode clicar diretamente em qualquer cartão para alterar o estado do pedido entre <span class="badge bg-custom-darker border border-custom text-muted">Pendente</span> e <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50">Concluído</span>.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 3. Exportar Planilhas</strong>
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-share-nodes text-info me-2"></i> 3. Integração Workspaces</strong>
+              Dentro dos painéis, clique em "Enviar p/ Workspaces" para exportar as ordens selecionadas diretamente para a coluna do Workspace Produção (Corte ou Pintura).
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-custom py-3">
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 4. Exportar Planilhas</strong>
               Dentro dos modais de produção, o botão "Baixar Todas" faz o download do que está visível naquele exato momento.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> 4. Histórico de Importações</strong>
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> 5. Histórico de Importações</strong>
               No final da página, todas as gerações passadas (Lotes) ficam salvas. Clicar em qualquer linha baixa o relatório com os dados exatos daquele momento.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 5. Limpar Tudo</strong>
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 6. Limpar Tudo</strong>
               Remove as ordens atuais do ecrã e transfere-as para o painel de Histórico, deixando o sistema em branco para o próximo turno/semana.
             </li>
           </ul>
@@ -430,12 +437,18 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <input type="text" class="form-control border-custom border-start-0 border-end-0 bg-custom-darker text-white" placeholder="Buscar por cliente, vendedor, modelo..." oninput="filtrarCards(this, 'rotativa')" id="buscaRotativa">
               <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('rotativa')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            
+            <button class="btn btn-sm btn-info fw-bold text-nowrap shadow-sm text-white d-flex align-items-center" onclick="prepararEnvioKanban('modalRotativa')" title="Enviar para a coluna Corte no Kanban">
+              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Kanban
+            </button>
+            
             <a href="/exportar/rotativa" target="_blank" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
           </div>
 
           <div style="padding-right: 5px;">
             ${rotativa.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : rotativa.map(r => `
               <div class="card erp-card shadow-sm mb-2 ${r.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
+                   data-id="${r.id}"
                    onclick="alterarStatus('rotativa', ${r.id}, this)"
                    data-search="${r.cliente} ${r.vendedor} ${r.modelo} ${r.tamanho} ${r.status_producao === 'concluido' ? 'concluído' : 'pendente'}">
                 <div class="card-body p-3">
@@ -446,7 +459,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                         Mod: <span class="text-light">${r.modelo}</span> | Tam: <span class="text-light">${r.tamanho}</span> | <b>Qtd: <span class="text-white">${r.quantidade}</span></b>
                       </div>
                     </div>
-                    ${badgeStatus(r.status_producao)}
+                    <div class="d-flex flex-column align-items-end">
+                      ${badgeStatus(r.status_producao)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -472,12 +487,18 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <input type="text" class="form-control border-custom border-start-0 border-end-0 bg-custom-darker text-white" placeholder="Buscar por cliente, modelo, cor..." oninput="filtrarCards(this, 'flexo')" id="buscaFlexo">
               <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('flexo')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            
+            <button class="btn btn-sm btn-info fw-bold text-nowrap shadow-sm text-white d-flex align-items-center" onclick="prepararEnvioKanban('modalFlexo')" title="Enviar para a coluna Pintura no Kanban">
+              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Kanban
+            </button>
+            
             <a href="/exportar/flexografica" target="_blank" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
           </div>
 
           <div style="padding-right: 5px;">
             ${flexo.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : flexo.map(f => `
               <div class="card erp-card shadow-sm mb-2 ${f.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
+                   data-id="${f.id}"
                    onclick="alterarStatus('flexografica', ${f.id}, this)"
                    data-search="${f.cliente} ${f.vendedor} ${f.modelo} ${f.tamanho} ${f.material} ${f.cor_personalizacao} ${f.status_producao === 'concluido' ? 'concluído' : 'pendente'}">
                 <div class="card-body p-3">
@@ -488,7 +509,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                         Mat: <span class="text-light">${f.material}</span> | Cor: <span class="text-light">${formatarCor(f.cor_personalizacao)}</span> | <b>Qtd: <span class="text-white">${f.quantidade}</span></b>
                       </div>
                     </div>
-                    ${badgeStatus(f.status_producao)}
+                    <div class="d-flex flex-column align-items-end">
+                      ${badgeStatus(f.status_producao)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -530,30 +553,77 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
+  <!-- MODAL DE SUGESTÃO DE DOWNLOAD / KANBAN APÓS GERAÇÃO -->
   <div class="modal fade" id="modalSugestaoDownload" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-header bg-custom-darker border-0 pb-0 pt-4 px-4">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
+        <div class="modal-header bg-custom-darker border-custom shadow-sm">
+          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-circle-check text-success me-2"></i> Importação Concluída</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body text-center p-5 pt-2 bg-custom-darker">
-          <div class="mb-4">
-             <div class="d-inline-flex align-items-center justify-content-center bg-custom-dark rounded-circle shadow-sm border border-custom" style="width: 70px; height: 70px;">
-                 <i class="fa-solid fa-file-excel fa-xl text-accent"></i>
+        <div class="modal-body p-4 bg-custom-dark">
+          <div class="d-flex align-items-center mb-4">
+             <div class="d-flex align-items-center justify-content-center bg-custom-darker rounded-circle shadow-sm border border-custom me-3" style="width: 60px; height: 60px;">
+                 <i class="fa-solid fa-file-excel fa-2x text-accent"></i>
+             </div>
+             <div>
+                 <h6 class="fw-bold text-white mb-1" style="font-size: 0.95rem;">Ordens Geradas com Sucesso</h6>
+                 <p class="text-muted mb-0" style="font-size:0.8rem;">A planilha foi processada e as ordens separadas. O que deseja fazer a seguir?</p>
              </div>
           </div>
-          <h6 class="fw-bold text-white mb-3" style="font-size: 0.9rem;">Ordens Geradas com Sucesso</h6>
-          <p class="text-muted mb-4" style="font-size:0.8rem; line-height: 1.5;">A planilha foi processada e as ordens separadas. Deseja baixar os relatórios de produção agora?</p>
-          <div class="d-flex flex-column gap-2 mt-2">
-             <a href="/exportar/rotativa" target="_blank" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
-                 <i class="fa-solid fa-gear me-1"></i> Baixar Rotativa / Plana
-             </a>
-             <a href="/exportar/flexografica" target="_blank" class="btn btn-sm btn-success fw-bold shadow-sm text-dark" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
-                 <i class="fa-solid fa-layer-group me-1"></i> Baixar Flexográfica
-             </a>
-             <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white fw-bold mt-1" data-bs-dismiss="modal">
-                 Agora Não
-             </button>
+
+          <div class="row g-4">
+             <!-- Coluna de Exportação -->
+             <div class="col-md-6">
+                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
+                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-download me-1"></i> EXPORTAR PLANILHAS</h6>
+                     <div class="d-flex flex-column gap-2">
+                         <a href="/exportar/rotativa" target="_blank" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                             <i class="fa-solid fa-gear me-2"></i> Baixar Rotativa / Plana
+                         </a>
+                         <a href="/exportar/flexografica" target="_blank" class="btn btn-sm btn-success fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                             <i class="fa-solid fa-layer-group me-2"></i> Baixar Flexográfica
+                         </a>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- Coluna de Kanban -->
+             <div class="col-md-6">
+                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
+                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-share-nodes me-1"></i> INTEGRAÇÃO WORKSPACE</h6>
+                     <div class="d-flex flex-column gap-2">
+                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalRotativa');">
+                             <i class="fa-solid fa-table-columns me-2"></i> Gerar Cards Rotativa (Corte)
+                         </button>
+                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalFlexo');">
+                             <i class="fa-solid fa-table-columns me-2"></i> Gerar Cards Flexo (Pintura)
+                         </button>
+                     </div>
+                 </div>
+             </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-custom-darker">
+          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white fw-bold px-4" data-bs-dismiss="modal">
+               Fechar
+           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOVO MODAL DE CONFIRMAÇÃO KANBAN -->
+  <div class="modal fade" id="modalConfirmarKanban" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-body text-center p-4 bg-custom-darker">
+          <i class="fa-solid fa-share-nodes fa-3x text-info mb-3"></i>
+          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Integrar com Kanban?</h6>
+          <p id="textoConfirmacaoKanban" class="text-muted mb-4" style="font-size: 0.75rem;">Deseja processar e enviar as ordens?</p>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-50 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-info w-50 fw-bold text-white" onclick="executarEnvioKanban()">Sim, Enviar</button>
           </div>
         </div>
       </div>
@@ -563,7 +633,81 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // =======================================================================
-    // SKELETON LOADING
+    // INTEGRAÇÃO KANBAN (ENVIO EM MASSA INTELIGENTE C/ MODAL)
+    // =======================================================================
+    let kanbanEnvioState = { ids: [], tipo: '', modalOrigem: '' };
+
+    function prepararEnvioKanban(modalId) {
+        const modal = document.getElementById(modalId);
+        if(!modal) return;
+        
+        const cards = modal.querySelectorAll('.card');
+        const idsVisiveis = [];
+
+        // Identifica de onde estamos enviando (Flexo -> Pintura | Rotativa -> Corte)
+        const tipoSetor = modalId === 'modalRotativa' ? 'rotativa' : 'flexo';
+        const nomeColuna = tipoSetor === 'rotativa' ? 'Corte' : 'Pintura';
+
+        // Pega apenas os IDs dos cartões que NÃO estão escondidos pela busca
+        cards.forEach(card => {
+            if (card.style.display !== 'none' && card.dataset.id) {
+                idsVisiveis.push(parseInt(card.dataset.id));
+            }
+        });
+
+        if (idsVisiveis.length === 0) {
+            return mostrarToast('erro', 'Aviso', 'Nenhuma ordem visível para enviar.');
+        }
+
+        // Salva o estado para executar no modal de confirmação
+        kanbanEnvioState = { ids: idsVisiveis, tipo: tipoSetor, modalOrigem: modalId };
+        
+        // Define a mensagem do modal dinamicamente
+        document.getElementById('textoConfirmacaoKanban').innerHTML = 
+            \`Deseja integrar as <b>\${idsVisiveis.length}</b> ordem(ns) atual(is) para o Kanban na coluna <b>\${nomeColuna}</b>?\`;
+
+        // Mostra o modal customizado em vez do confirm() do Windows
+        const confirmModal = new bootstrap.Modal(document.getElementById('modalConfirmarKanban'));
+        confirmModal.show();
+    }
+
+    async function executarEnvioKanban() {
+        // Esconde o modal de confirmação
+        const confirmModalEl = document.getElementById('modalConfirmarKanban');
+        const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+        if(confirmModal) confirmModal.hide();
+
+        const { ids, tipo } = kanbanEnvioState;
+        if (!ids || ids.length === 0) return;
+
+        mostrarToast('sucesso', 'Aguarde', 'Agrupando e enviando para o Kanban...');
+
+        try {
+            const response = await fetch("/producao/integrar-kanban", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    ordens_ids: ids,
+                    tipo: tipo
+                }) 
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                mostrarToast('sucesso', 'Sucesso!', data.message);
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                mostrarToast('erro', 'Erro', data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            mostrarToast('erro', 'Falha', 'Verifique sua conexão e tente novamente.');
+        }
+    }
+
+    // =======================================================================
+    // SKELETON LOADING E FUNÇÕES AUXILIARES DA VIEW
     // =======================================================================
     function gerarSkeletonTabela(quantidade = 3) {
         let html = '';
@@ -580,7 +724,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
     function mostrarSkeletonGlobais() {
         const tableContainer = document.querySelector('.content > .bg-custom-darker .table-responsive');
-        
         if (document.getElementById('skeleton-temp-container')) return;
 
         const skeletonHTML = \`
@@ -608,26 +751,19 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     function ocultarSkeletonGlobais() {
         const tempSkeleton = document.getElementById('skeleton-temp-container');
         if (tempSkeleton) tempSkeleton.remove();
-
         const tableContainer = document.querySelector('.content > .bg-custom-darker .table-responsive:not(.skeleton-container)');
         if (tableContainer) tableContainer.style.display = '';
     }
 
     mostrarSkeletonGlobais();
-
     if (document.readyState === 'complete') {
         setTimeout(ocultarSkeletonGlobais, 100);
     } else {
         window.addEventListener('load', ocultarSkeletonGlobais);
     }
 
-    window.addEventListener('beforeunload', () => {
-        mostrarSkeletonGlobais();
-    });
+    window.addEventListener('beforeunload', () => mostrarSkeletonGlobais());
 
-    // =======================================================================
-    // FUNÇÕES DA VIEW
-    // =======================================================================
     function mostrarToast(tipo, titulo, mensagem) {
         const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
         if (toastEl) {
@@ -652,11 +788,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
     window.addEventListener('load', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        
         if (urlParams.has('sucesso')) {
             mostrarToast('sucesso', 'Importação Concluída', 'As ordens foram geradas com sucesso.');
-            const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSugestaoDownload'));
-            modalImp.show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSugestaoDownload')).show();
         } else if (urlParams.has('limpo')) {
             mostrarToast('sucesso', 'Painel Limpo', 'Todos os dados foram removidos.');
         } else if (urlParams.has('erro')) {
@@ -675,12 +809,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     const formImportar = document.getElementById('formImportacao');
     if (formImportar) {
         formImportar.addEventListener('submit', () => {
-            const modalProc = new bootstrap.Modal(document.getElementById('modalProcessamento'));
-            modalProc.show();
-
+            new bootstrap.Modal(document.getElementById('modalProcessamento')).show();
             const barra = document.getElementById('barraProgresso');
             const texto = document.getElementById('textoEtapa');
-            
             barra.style.width = '0%';
             barra.innerText = '0%';
 
@@ -693,10 +824,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
             let i = 0;
             const interval = setInterval(() => {
-                if (i >= etapas.length) {
-                    clearInterval(interval);
-                    return;
-                }
+                if (i >= etapas.length) { clearInterval(interval); return; }
                 barra.style.width = etapas[i].v + "%";
                 barra.innerText = etapas[i].v + "%";
                 texto.innerText = etapas[i].t;
@@ -733,7 +861,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     function marcarVisualizado(tipo, botao) {
       const badge = botao.querySelector('.bg-danger');
       if (!badge) return; 
-      
       fetch(\`/notificacao/\${tipo}\`, { method: 'POST' })
         .then(res => res.json())
         .then(data => {
@@ -741,8 +868,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               badge.classList.remove('bg-danger');
               badge.classList.add(tipo === 'rotativa' ? 'bg-primary' : 'bg-success');
           }
-        })
-        .catch(err => console.error(err));
+        });
     }
 
     function normalizarTexto(texto) {

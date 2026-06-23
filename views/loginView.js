@@ -282,7 +282,7 @@ function loginView(msg = "") {
             <form id="formLogin" method="POST" action="/login" onsubmit="prepararLogin(event, this)">
               
               <div class="mb-3">
-                  <label class="form-label text-white-50 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">E-mail Corporativo</label>
+                  <label class="form-label text-white-50 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">E-mail</label>
                   <div class="input-group input-group-lg shadow-sm">
                     <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
                     <input type="email" name="email" class="form-control fs-6" placeholder="email@ecoflow.com" required>

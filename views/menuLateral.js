@@ -1,4 +1,17 @@
 // views/menuLateral.js
+let versaoSistemaCache = "1.0.0";
+try {
+  const fs = require('fs');
+  const path = require('path');
+  // Lê automaticamente a versão do seu package.json na raiz do projeto
+  const pPath = path.join(__dirname, '..', 'package.json');
+  if (fs.existsSync(pPath)) {
+    versaoSistemaCache = require(pPath).version;
+  }
+} catch (e) {
+  console.log("Aviso: Não foi possível ler a versão do package.json para o menu.");
+}
+
 function menuLateral(usuario, rotaAtiva = "") {
   const tipo = usuario && usuario.tipo_usuario ? usuario.tipo_usuario : "admin";
 
@@ -108,14 +121,6 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Usuários");
   }
 
-  // Adiciona o Botão Sair
-  menuLinks += `
-    <a href="/logout" class="d-flex align-items-center text-decoration-none py-2 px-3 mt-2 border-top border-light border-opacity-10 logout-btn-sidebar" title="Sair do Sistema">
-      <i class="fas fa-sign-out-alt text-danger menu-icone" style="width: 22px; text-align: center;"></i> 
-      <span class="sidebar-text ms-2 text-danger fw-medium">Sair</span>
-    </a>
-  `;
-
   // --- CONTAINER DO PERFIL DO USUÁRIO ---
   const fotoUrl = usuario && usuario.foto ? `/uploads/${usuario.foto}` : null;
   
@@ -138,6 +143,12 @@ function menuLateral(usuario, rotaAtiva = "") {
     </button>
   `;
 
+  const btnSair = `
+    <a href="/logout" class="ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center profile-logout-btn" title="Sair do Sistema" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(220, 53, 69, 0.75);">
+      <i class="fas fa-sign-out-alt" style="font-size: 0.85rem;"></i>
+    </a>
+  `;
+
   const userProfileHtml = `
     <div class="user-profile-container px-3 pb-4 pt-0 mb-3 border-bottom border-light border-opacity-10 position-relative text-center">
       <div class="d-flex flex-column align-items-center justify-content-center">
@@ -155,6 +166,7 @@ function menuLateral(usuario, rotaAtiva = "") {
             </span>
             ${btnNotificacoes}
             ${btnConfigAdmin}
+            ${btnSair}
           </div>
         </div>
       </div>
@@ -177,9 +189,12 @@ function menuLateral(usuario, rotaAtiva = "") {
     </div>
   ` : '';
 
-  // --- RODAPÉ 71DEV ---
+  // --- RODAPÉ 71DEV COM VERSÃO ---
   const footerHTML = `
     <div class="mt-auto pt-3 pb-2 text-center w-100 footer-sidebar" style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">
+      <div class="mb-2 text-uppercase" style="font-size: 0.6rem; font-weight: 500; letter-spacing: 1px; color: rgba(255,255,255,0.3);">
+        Ecoflow v${versaoSistemaCache}
+      </div>
       <hr class="border-light border-opacity-10 mb-2 mt-0 mx-3">
 
       <div class="d-flex flex-column align-items-center justify-content-center gap-2 mb-1">
@@ -239,6 +254,9 @@ function menuLateral(usuario, rotaAtiva = "") {
           const btnConfig = document.querySelector('.profile-config-btn');
           if (btnConfig) btnConfig.classList.add('skeleton-dark');
 
+          const btnSair = document.querySelector('.profile-logout-btn');
+          if (btnSair) btnSair.classList.add('skeleton-dark');
+
           const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
           linksSpans.forEach(el => el.classList.add('skeleton-dark'));
           
@@ -264,6 +282,9 @@ function menuLateral(usuario, rotaAtiva = "") {
 
           const btnConfig = document.querySelector('.profile-config-btn');
           if (btnConfig) btnConfig.classList.remove('skeleton-dark');
+
+          const btnSair = document.querySelector('.profile-logout-btn');
+          if (btnSair) btnSair.classList.remove('skeleton-dark');
 
           const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
           linksSpans.forEach(el => el.classList.remove('skeleton-dark'));
@@ -559,16 +580,10 @@ function menuLateral(usuario, rotaAtiva = "") {
         color: #08c068 !important;
       }
 
-      .logout-btn-sidebar {
-        font-size: 0.85rem;
+      /* Hover especial para o Botão de Sair */
+      .profile-logout-btn:hover {
+        background: rgba(220, 53, 69, 0.15) !important;
         color: #dc3545 !important;
-        transition: background-color 0.2s;
-        border-radius: 6px;
-        margin: 0 8px;
-      }
-
-      .logout-btn-sidebar:hover {
-        background: rgba(220, 53, 69, 0.1);
       }
       
       .chevron-icon {

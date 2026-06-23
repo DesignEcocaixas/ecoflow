@@ -758,7 +758,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               return dia + '/' + mes + '/' + ano;
           }
 
-          function calcularBadgeDiasRestantes(prazoStr) {
+          function calcularBadgeDiasRestantes(prazoStr, isConcluido) {
+              if (isConcluido) {
+                  return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2" style="font-size:0.7rem;"><i class="fa-solid fa-check me-1"></i>Concluído</span>';
+              }
               if (!prazoStr) return '';
               const hoje = new Date();
               hoje.setHours(0,0,0,0);
@@ -923,7 +926,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   \${anexosHTML}
                   <div class="d-flex justify-content-between align-items-center mt-2 w-100">
                       <div class="d-flex gap-2 align-items-center text-white-50" style="font-size: 0.75rem;">
-                          \${prazoStr ? calcularBadgeDiasRestantes(prazoStr) : ''}
+                          \${(prazoStr || card.concluido) ? calcularBadgeDiasRestantes(prazoStr, card.concluido) : ''}
                           \${hasDesc ? '<span><i class="fa-solid fa-align-left"></i></span>' : ''}
                           \${anexosCount ? '<span><i class="fa-solid fa-paperclip"></i> ' + anexosCount + '</span>' : ''}
                       </div>
@@ -959,7 +962,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prazoFinal = cardData.prazo ? String(cardData.prazo).slice(0, 10) : '';
               
               document.getElementById('modalCardPrazo').value = prazoFinal;
-              document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoFinal);
+              document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoFinal, cardData.concluido);
               document.getElementById('modalCardStatus').checked = !!cardData.concluido;
               document.getElementById('modalCardColunaNome').innerText = colunaNome;
               
@@ -1061,8 +1064,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prioridadeElement = document.getElementById('modalCardPrioridade');
               const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
 
-              if (prazoInput) {
-                  document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazo);
+              if (document.getElementById('modalCardPrazoBadge')) {
+                  document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazo, concluido);
               }
 
               if (!titulo) {
@@ -1362,9 +1365,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   document.getElementById('modalCardStatus').checked = !!dados.concluido;
                   
                   const prazoInput = document.getElementById('modalCardPrazo');
-                  if(prazoInput && dados.prazo) {
-                      prazoInput.value = String(dados.prazo).slice(0, 10);
-                      document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoInput.value);
+                  if(prazoInput) {
+                      if (dados.prazo) {
+                          prazoInput.value = String(dados.prazo).slice(0, 10);
+                      } else {
+                          prazoInput.value = '';
+                      }
+                      document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoInput.value, dados.concluido);
                   }
 
                   const prioridadeSelect = document.getElementById('modalCardPrioridade');

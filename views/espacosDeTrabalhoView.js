@@ -48,7 +48,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
   }).join("") : `
     <div class="col-12 text-center text-muted py-5 text-center-empty">
         <i class="fa-solid fa-cubes fa-3x opacity-25 mb-3 d-block"></i>
-        <span style="font-size: 0.85rem;">Nenhum espaço de trabalho criado.<br>Crie um novo espaço para gerenciar os seus quadros Kanban do zero.</span>
+        <span style="font-size: 0.85rem;">Nenhum espaço de trabalho criado.<br>Crie um novo espaço para gerenciar os seus quadros Kanban</span>
     </div>
   `;
 
@@ -234,7 +234,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
             </div>
         </div>
         <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-3" data-bs-toggle="modal" data-bs-target="#novoEspacoModal">
-            <i class="fa-solid fa-plus me-1"></i> Novo Espaço
+            <i class="fa-solid fa-plus me-1"></i> Criar
         </button>
       </div>
 

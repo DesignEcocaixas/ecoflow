@@ -48,7 +48,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
   }).join("") : `
     <div class="col-12 text-center text-muted py-5 text-center-empty">
         <i class="fa-solid fa-cubes fa-3x opacity-25 mb-3 d-block"></i>
-        <span style="font-size: 0.85rem;">Nenhum espaço de trabalho criado.<br>Crie um novo espaço para gerenciar os seus quadros Kanban</span>
+        <span style="font-size: 0.85rem;">Nenhum Workspace criado.<br>Crie um novo Workspace para gerenciar os seus quadros Kanban.</span>
     </div>
   `;
 
@@ -229,7 +229,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-cubes text-muted me-2"></i>Espaços de Trabalho</h5>
+              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-cubes text-muted me-2"></i>Workspaces</h5>
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Organize os quadros Kanban por projetos ou setores</span>
             </div>
         </div>
@@ -247,7 +247,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
       <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="/espacos-trabalho/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Espaço Criado com Sucesso!')">
           <div class="modal-header bg-custom-darker border-custom text-white">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-plus text-accent me-2"></i> Criar Espaço de Trabalho</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-plus text-accent me-2"></i> Criar Workspace</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-sm p-4 bg-custom-dark">
@@ -262,7 +262,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
                 </div>
 
                 <div class="col-12">
-                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome do Espaço *</label>
+                  <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome do Workspace *</label>
                   <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Produção de Inverno">
                 </div>
                 
@@ -274,7 +274,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
           </div>
           <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-check me-1"></i> Criar Espaço</button>
+            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-check me-1"></i> Criar Workspace</button>
           </div>
         </form>
       </div>
@@ -285,11 +285,11 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
     <div class="modal fade" id="modalExcluirEspaco" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
-          <form id="formExcluirEspaco" method="POST" action="" onsubmit="prepararSubmissaoSimples(event, this, 'Espaço Excluído!')">
+          <form id="formExcluirEspaco" method="POST" action="" onsubmit="prepararSubmissaoSimples(event, this, 'Workspace Excluído!')">
             <div class="modal-body text-center p-4">
               <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
-              <h6 class="mb-2 fw-bold text-white">Excluir Espaço?</h6>
-              <p class="text-muted mb-0" style="font-size:0.8rem;">Deseja excluir o espaço <b id="nomeEspacoExcluir" class="text-white"></b>? <b>TODOS</b> os quadros Kanban, cartões e anexos vinculados a ele serão perdidos permanentemente.</p>
+              <h6 class="mb-2 fw-bold text-white">Excluir Workspace?</h6>
+              <p class="text-muted mb-0" style="font-size:0.8rem;">Deseja excluir o Workspace <b id="nomeEspacoExcluir" class="text-white"></b>? <b>TODOS</b> os quadros Kanban, cartões e anexos vinculados a ele serão perdidos permanentemente.</p>
             </div>
             <div class="modal-footer justify-content-center bg-custom-darker border-0 d-flex flex-nowrap">
               <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>

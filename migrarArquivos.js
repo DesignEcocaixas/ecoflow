@@ -1,6 +1,7 @@
+require('dotenv').config(); // <-- ESTA É A LINHA MÁGICA QUE FALTAVA!
 const fs = require('fs');
 const path = require('path');
-const db = require('./db'); // Ajuste aqui se o seu arquivo de conexão com o banco tiver outro nome
+const db = require('./db'); 
 
 const modulos = [
     { tabela: "kanban_anexos", coluna: "nome_arquivo", pasta: "kanban" },
@@ -12,7 +13,6 @@ const modulos = [
     { tabela: "veiculos", coluna: "foto", pasta: "veiculos/fotos" }, 
     { tabela: "gabaritos", coluna: "url", pasta: "gabaritos", isUrl: true },
     { tabela: "espacos_trabalho", coluna: "thumb", pasta: "workspaces" },
-    // A nossa nova linha para as mensagens:
     { tabela: "notificacoes_globais", coluna: "imagem", pasta: "mensagensSistema", manterNomeBanco: true }
 ];
 

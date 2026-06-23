@@ -184,6 +184,10 @@ app.use("/", workspacesRoutes);
 const kanbanRoutes = require("./routes/kanban");
 app.use("/", kanbanRoutes);
 
+// Importando o testador
+const testeRoutes = require('./routes/testes');
+app.use('/', testeRoutes);
+
 //WEB SOCKETS DO CRUD DO KANBAN
 io.on("connection", (socket) => {
     console.log("Novo utilizador conectado ao Kanban");

@@ -119,6 +119,9 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
     menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Usuários");
+    
+    // MUDANÇA AQUI: Botão Dev Lab apenas para Admin, logo abaixo de Usuários
+    menuLinks += renderLink("/dev/testes", "fa-solid fa-vial-virus", "Dev Lab");
   }
 
   // --- CONTAINER DO PERFIL DO USUÁRIO ---

@@ -19,10 +19,7 @@ def converter_data_excel(valor):
     except:
         return None
 
-# ===============================
 # VALIDAÇÃO DO ARQUIVO RECEBIDO
-# ===============================
-
 if len(sys.argv) < 2:
     print("Erro: caminho da planilha não informado")
     sys.exit(1)
@@ -55,9 +52,7 @@ def log(tipo, msg, linha=None):
     )
     conn.commit()
 
-# ===============================
 # REGEX DEFINITIVOS EM CASE SENSITIVE
-# ===============================
 TAMANHO_REGEX = (
     r"\b("
     r"[Nn](?:20|25|26|30|35|36|40|45)|"        # N20 etc (N ou n)
@@ -89,10 +84,7 @@ def extrair_modelo_fallback(descricao):
     texto = re.sub(r"\s+", " ", texto)
     return texto.strip()
 
-# ===============================
 # LEITURA DA PLANILHA
-# ===============================
-
 df_raw = pd.read_excel(arquivo_excel, header=None)
 
 header_row = None
@@ -111,10 +103,7 @@ df.columns = df.columns.str.strip()
 # MAGIA AQUI: Substitui todos os 'NaN', 'NaT' por None para o MySQL não quebrar
 df = df.where(pd.notnull(df), None)
 
-# ===============================
 # PROCESSAMENTO DAS LINHAS
-# ===============================
-
 for _, row in df.iterrows():
     try:
         descricao = str(row.get("Descrição do Produto", "")).upper()
@@ -123,9 +112,7 @@ for _, row in df.iterrows():
         if not descricao or pd.isna(qtd):
             continue
 
-        # ===============================
         # PREVISÃO DE FATURAMENTO
-        # ===============================
         previsao_raw = None
         for col in df.columns:
             if "previsão" in col.lower() and "faturamento" in col.lower():
@@ -134,9 +121,7 @@ for _, row in df.iterrows():
 
         previsao = converter_data_excel(previsao_raw)
 
-        # ===============================
         # FLAGS
-        # ===============================
         is_lisa = "LISA" in descricao
 
         obs = row.get("Observações do Item do Pedido")
@@ -146,9 +131,7 @@ for _, row in df.iterrows():
             or (obs and str(obs).strip().upper() not in ["N/D", "NAN", "NONE"])
         )
 
-        # ===============================
         # TAMANHO / MODELO
-        # ===============================
         tamanho_match = re.search(TAMANHO_REGEX, descricao)
         tamanho = tamanho_match.group(1) if tamanho_match else None
 
@@ -160,9 +143,7 @@ for _, row in df.iterrows():
 
         vendedor = row.get("Vendedor")
 
-        # ===============================
         # ROTATIVA
-        # ===============================
         if is_lisa or is_personalizada:
             cursor.execute(
                 """
@@ -181,9 +162,7 @@ for _, row in df.iterrows():
                 )
             )
 
-        # ===============================
         # FLEXOGRÁFICA
-        # ===============================
         if is_personalizada:
             material = (
                 "branco" if "BRANCA" in descricao

@@ -312,6 +312,21 @@ function menuLateral(usuario, rotaAtiva = "") {
       });
 
       // =======================================================================
+      // CORREÇÃO DO BOTÃO VOLTAR (BFCACHE) - GLOBAL
+      // =======================================================================
+      window.addEventListener('pageshow', (event) => {
+          if (event.persisted) {
+              // 1. Oculta o skeleton do próprio menu lateral
+              ocultarSkeletonMenuLateral();
+              
+              // 2. Procura automaticamente se a view atual tem a função global e executa-a!
+              if (typeof window.ocultarSkeletonGlobais === 'function') {
+                  window.ocultarSkeletonGlobais();
+              }
+          }
+      });
+
+      // =======================================================================
       // LÓGICA DO PAINEL DE NOTIFICAÇÕES
       // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {

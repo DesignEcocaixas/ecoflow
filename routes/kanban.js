@@ -12,7 +12,7 @@ const { isLogged } = require("../middlewares/authMiddleware");
 const kanbanView = require("../views/kanbanView");
 
 //------------------------------------------------------------------------------ROTAS PARA KANBAN------------------------------------------------------------------------------
-//LISTAR COLUNAS/CARDS
+//LISTAR COLUNAS/CARDS E ETIQUETAS
 router.get("/kanban", isLogged, (req, res) => {
     const espaco_id = req.query.espaco_id;
 
@@ -24,35 +24,53 @@ router.get("/kanban", isLogged, (req, res) => {
         if (err || espacosResult.length === 0) return res.redirect("/espacos-trabalho");
         const espacoAtual = espacosResult[0];
 
-        db.query("SELECT * FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [espaco_id], (err, colunas) => {
-            if (err) return res.status(500).send("Erro ao carregar colunas.");
+        // 1. Busca as etiquetas deste espaço
+        db.query("SELECT * FROM kanban_etiquetas WHERE espaco_id = ?", [espaco_id], (err, etiquetas) => {
+            espacoAtual.etiquetas = etiquetas || [];
 
-            if (colunas.length === 0) {
-                return res.send(kanbanView(req.session.user, [], espacoAtual));
-            }
+            // 2. Busca as colunas
+            db.query("SELECT * FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [espaco_id], (err, colunas) => {
+                if (err) return res.status(500).send("Erro ao carregar colunas.");
 
-            const idsColunas = colunas.map(c => c.id);
-
-            db.query("SELECT * FROM kanban_cards WHERE coluna_id IN (?) ORDER BY ordem ASC", [idsColunas], (errCards, cards) => {
-                if (errCards) return res.status(500).send("Erro ao carregar cards.");
-
-                const idsCards = cards.map(c => c.id);
-                if (idsCards.length === 0) {
-                    colunas.forEach(col => col.cards = []);
-                    return res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                if (colunas.length === 0) {
+                    return res.send(kanbanView(req.session.user, [], espacoAtual));
                 }
 
-                db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
-                    if (errAnexos) return res.status(500).send("Erro ao carregar anexos.");
+                const idsColunas = colunas.map(c => c.id);
 
-                    cards.forEach(card => {
-                        card.anexos = anexos.filter(a => a.card_id === card.id);
-                    });
-                    colunas.forEach(col => {
-                        col.cards = cards.filter(c => c.coluna_id === col.id);
-                    });
+                // 3. Busca os cards
+                db.query("SELECT * FROM kanban_cards WHERE coluna_id IN (?) ORDER BY ordem ASC", [idsColunas], (errCards, cards) => {
+                    if (errCards) return res.status(500).send("Erro ao carregar cards.");
 
-                    res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                    const idsCards = cards.map(c => c.id);
+                    if (idsCards.length === 0) {
+                        colunas.forEach(col => col.cards = []);
+                        return res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                    }
+
+                    // 4. Busca os anexos e as relações de etiquetas simultaneamente
+                    db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
+                        db.query("SELECT * FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsCards], (errEtiquetasCards, relacoes) => {
+                            
+                            const anexosGerais = anexos || [];
+                            const relacoesGerais = relacoes || [];
+
+                            cards.forEach(card => {
+                                // Mapeia anexos
+                                card.anexos = anexosGerais.filter(a => a.card_id === card.id);
+                                
+                                // Mapeia as etiquetas cruzando os IDs da tabela de relação com os dados reais
+                                const idsEtiquetasDesteCard = relacoesGerais.filter(r => r.card_id === card.id).map(r => r.etiqueta_id);
+                                card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
+                            });
+
+                            colunas.forEach(col => {
+                                col.cards = cards.filter(c => c.coluna_id === col.id);
+                            });
+
+                            res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                        });
+                    });
                 });
             });
         });
@@ -63,7 +81,6 @@ router.get("/kanban", isLogged, (req, res) => {
 router.get("/kanban/historico/:id", isLogged, (req, res) => {
     const cardId = req.params.id;
 
-    // O COLLATE resolve o erro "Illegal mix of collations" forçando o mesmo padrão
     const query = `
         SELECT h.*, u.foto 
         FROM kanban_historico h 
@@ -85,35 +102,28 @@ router.get("/kanban/historico/:id", isLogged, (req, res) => {
 router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, res) => {
     if (!req.session.user) return res.status(401).send("Não autorizado");
 
-    // 1. Puxa o 'id' diretamente dos parâmetros da rota
     const cardId = req.params.id;
-
-    // 2. Puxa o array de arquivos (req.files)
     const files = req.files;
 
     if (!files || files.length === 0) {
         return res.status(400).send("Nenhum arquivo enviado.");
     }
 
-    // 3. Prepara um array aninhado para inserir múltiplos arquivos.
     const values = files.map(file => [
         cardId,
         file.originalname,
-        "kanban/" + file.filename, // <-- A MÁGICA AQUI: Salva no banco com o nome da pasta na frente
+        "kanban/" + file.filename, 
         file.mimetype,
         file.path
     ]);
 
     const query = "INSERT INTO kanban_anexos (card_id, nome_original, nome_arquivo, tipo, caminho) VALUES ?";
 
-    // O MySQL exige que o array de valores (values) esteja dentro de outro array [values] para inserções múltiplas
     db.query(query, [values], (err, result) => {
         if (err) {
             console.error("Erro ao salvar anexos:", err);
             return res.status(500).send("Erro ao guardar anexo.");
         }
-
-        // Retorna sucesso para o frontend
         res.json({ success: true, message: "Anexos salvos com sucesso!" });
     });
 });
@@ -122,22 +132,16 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
 router.delete("/kanban/anexos/:id", isLogged, (req, res) => {
     const anexoId = req.params.id;
 
-    // Primeiro buscamos as informações do arquivo para apagá-lo do servidor
     db.query("SELECT * FROM kanban_anexos WHERE id = ?", [anexoId], (err, results) => {
         if (err || results.length === 0) return res.status(404).send("Anexo não encontrado");
 
         const anexo = results[0];
-
-        // Como o banco agora pode retornar "kanban/arquivo.jpg" ou só "arquivo.jpg" (arquivos antigos),
-        // o path.join lida com as barras automaticamente e encontra o caminho certo.
         const filePath = path.join(__dirname, "uploads", anexo.nome_arquivo);
 
-        // Exclui o arquivo fisicamente, se ele existir
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
 
-        // Apaga o registro do banco de dados
         db.query("DELETE FROM kanban_anexos WHERE id = ?", [anexoId], (deleteErr) => {
             if (deleteErr) return res.status(500).send("Erro ao excluir registro do banco");
             res.json({ success: true });

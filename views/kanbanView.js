@@ -1,7 +1,7 @@
 // views/kanbanView.js
 const menuLateral = require("./menuLateral");
 
-function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban" }) {
+function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban", etiquetas: [] }) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
 
@@ -18,6 +18,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .replace(/>/g, '&gt;');
   };
   const colunasJsonStr = escapeHtmlAttr(JSON.stringify(colunas));
+  const etiquetasJsonStr = escapeHtmlAttr(JSON.stringify(espacoAtual.etiquetas || []));
 
   return `
   <!DOCTYPE html>
@@ -263,6 +264,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </head>
   <body>
       <input type="hidden" id="kanban-data-input" value="${colunasJsonStr}">
+      <input type="hidden" id="etiquetas-data-input" value="${etiquetasJsonStr}">
       <input type="file" id="globalFileInput" multiple style="display: none;" onchange="handleUploadDireto(this)">
 
       <div class="sidebar d-none d-md-flex">
@@ -298,15 +300,16 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative" style="z-index: 1010;">
                 <div class="input-group input-group-sm shadow-sm w-100">
                     <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    
                     <input type="text" id="searchInputKanban" class="form-control border-custom bg-custom-darker border-end-0" style="color: #ffffff !important;" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
-                    
                     <button class="btn btn-outline-secondary border-custom border-start-0 bg-custom-darker text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div id="searchResultsKanban" class="position-absolute w-100 bg-custom-darker border border-custom rounded shadow-lg mt-1 d-none" style="max-height: 300px; overflow-y: auto; left: 0;"></div>
             </div>
 
-              <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0">
+              <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2">
+                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Gerenciar Etiquetas">
+                      <i class="fa-solid fa-tags me-1"></i> Etiquetas
+                  </button>
                   <button class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
                       <i class="fa-solid fa-plus me-1"></i> Nova Coluna
                   </button>
@@ -315,6 +318,30 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           <div class="kanban-wrapper">
               <div class="kanban-board" id="kanbanBoard"></div>
+          </div>
+      </div>
+
+      <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered modal-sm">
+              <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                  <div class="modal-header modal-header-dark border-custom py-2 px-3">
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas</h6>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body p-3 bg-custom-dark">
+                      <div class="mb-3 p-2 border border-custom rounded bg-custom-darker">
+                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nova Etiqueta (Nome)</label>
+                          <input type="text" class="form-control form-control-sm shadow-sm mb-2" id="inputNomeEtiqueta" placeholder="Ex: João Sousa">
+                          <input type="hidden" id="inputCorEtiqueta" value="#0d6efd">
+                          <div class="d-flex flex-wrap gap-1 mb-2" id="paletaCoresEtiqueta">
+                              ${paletaCores.map(c => `<div class="color-square ${c === '#0d6efd' ? 'active' : ''}" style="width: 20px; height: 20px; background-color: ${c};" onclick="selecionarCorEtiqueta(this, '${c}')"></div>`).join('')}
+                          </div>
+                          <button class="btn btn-sm btn-outline-success w-100 fw-bold py-1" onclick="salvarNovaEtiqueta()">Adicionar</button>
+                      </div>
+                      <div id="listaEtiquetasExistentes" class="d-flex flex-column gap-2 overflow-auto pe-1" style="max-height: 200px;">
+                          </div>
+                  </div>
+              </div>
           </div>
       </div>
 
@@ -335,11 +362,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           <div id="modal-left-col" class="col-12 col-md-7 col-lg-8 p-4 border-end border-custom h-100 overflow-y-auto d-flex flex-column responsive-modal-col">
                               
                               <div class="d-flex align-items-start gap-2 mb-3">
-                                  <input type="checkbox" id="modalCardStatus" class="form-check-input bg-transparent border-custom mt-2" style="width: 20px; height: 20px;" onchange="atualizarStatusModal(this.checked)">
+                                  <input type="checkbox" id="modalCardStatus" class="form-check-input bg-transparent border-custom mt-2" style="width: 20px; height: 20px;" onchange="atualizarStatusModal()">
                                   <div id="modalCardTitulo" class="card-title-modal text-white" contenteditable="true" onblur="salvarTextosModal()" onpaste="colarTextoPuro(event)"></div>
                               </div>
 
-                              <div class="row g-3 mb-4">
+                              <div class="row g-3 mb-3">
                                   <div class="col-md-4">
                                       <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Prioridade</label>
                                       <select id="modalCardPrioridade" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
@@ -359,6 +386,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Coluna Atual</label>
                                       <div id="modalCardColunaNome" class="p-2 border border-custom rounded text-white-50 text-truncate" style="background: rgba(255,255,255,0.02); font-size: 0.85rem;"></div>
                                   </div>
+                              </div>
+
+                              <div class="mb-4">
+                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Etiquetas</label>
+                                  <div class="dropdown">
+                                      <button class="btn btn-sm border-custom bg-custom-darker text-white text-start w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                          <span id="modalCardEtiquetasSelecionadas" class="text-truncate">Selecione as etiquetas...</span>
+                                          <i class="fa-solid fa-chevron-down text-white-50 ms-2" style="font-size:0.7rem;"></i>
+                                      </button>
+                                      <ul class="dropdown-menu dropdown-menu-dark w-100 p-2 shadow-lg" id="dropdownEtiquetasLista" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); max-height: 200px; overflow-y: auto;">
+                                          </ul>
+                                  </div>
+                                  <div id="modalCardEtiquetasVisual" class="d-flex flex-wrap gap-2 mt-2"></div>
                               </div>
 
                               <div class="mb-4">
@@ -388,8 +428,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
                           <div id="modal-right-col" class="col-12 col-md-5 col-lg-4 p-4 bg-custom-darker h-100 overflow-y-auto responsive-modal-col">
                               <h6 class="text-white fw-bold mb-4" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Atividade</h6>
-                              <div id="modalCardHistory" class="history-timeline">
-                                  </div>
+                              <div id="modalCardHistory" class="history-timeline"></div>
                           </div>
 
                       </div>
@@ -414,7 +453,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           <label class="form-label text-white-50 fw-bold mb-2" style="font-size:0.8rem;">Cor da Coluna</label>
                           <input type="hidden" id="inputCorColuna" value="#08c068">
                           <div class="d-flex flex-wrap gap-2" id="paletaCoresNovaColuna">
-                              ${paletaCores.map(c => '<div class="color-square ' + (c === '#08c068' ? 'active' : '') + '" style="background-color: ' + c + ';" onclick="selecionarCorNovaColuna(this, ' + "'" + c + "'" + ')"></div>').join('')}
+                              ${paletaCores.map(c => `<div class="color-square ${c === '#08c068' ? 'active' : ''}" style="background-color: ${c};" onclick="selecionarCorNovaColuna(this, '${c}')"></div>`).join('')}
                           </div>
                       </div>
                   </div>
@@ -432,7 +471,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <div class="modal-body p-4 text-center bg-custom-dark rounded">
                       <i class="fa-solid fa-trash-can text-danger fs-1 mb-3"></i>
                       <h6 class="text-white fw-bold mb-2">Excluir Card?</h6>
-                      <p class="text-white-50 small mb-4">Esta ação apagará permanentemente a tarefa e seus anexos.</p>
+                      <p class="text-white-50 small mb-4">Esta ação apagará permanentemente a tarefa e os seus anexos.</p>
                       <input type="hidden" id="deleteCardId">
                       <div class="d-flex gap-2">
                           <button type="button" class="btn btn-sm btn-outline-secondary w-50" data-bs-dismiss="modal">Cancelar</button>
@@ -466,7 +505,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <div class="modal-body p-4 text-center bg-custom-dark rounded">
                       <i class="fa-solid fa-trash-can text-danger fs-1 mb-3"></i>
                       <h6 class="text-white fw-bold mb-2">Excluir Anexo?</h6>
-                      <p class="text-white-50 small mb-4">Esta ação apagará permanentemente o arquivo.</p>
+                      <p class="text-white-50 small mb-4">Esta ação apagará permanentemente o ficheiro.</p>
                       <input type="hidden" id="deleteAnexoId">
                       <input type="hidden" id="deleteAnexoCardId">
                       <div class="d-flex gap-2">
@@ -529,11 +568,23 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           const NOME_USUARIO = "${user.nome}";
           const socket = io();
           
-          // Lendo os dados de forma segura sem quebrar o HTML/EJS
           let colunasDados = JSON.parse(document.getElementById('kanban-data-input').value);
+          let etiquetasDados = JSON.parse(document.getElementById('etiquetas-data-input').value || '[]');
+          
           const paletaBase = ${JSON.stringify(paletaCores)};
-          let modalNovaColunaObj, modalVerImagemObj, modalDeletarCardObj, modalDeletarColunaObj, modalCardDetalhesObj, modalDeletarAnexoObj;
+          let modalNovaColunaObj, modalVerImagemObj, modalDeletarCardObj, modalDeletarColunaObj, modalCardDetalhesObj, modalDeletarAnexoObj, modalGerenciarEtiquetasObj;
           let cardAbertoId = null;
+
+          function escapeHtml(text) {
+              const div = document.createElement('div');
+              div.innerText = text;
+              return div.innerHTML;
+          }
+
+          function hexToRgba(hex, alpha) {
+              const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+              return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
+          }
 
           document.addEventListener('DOMContentLoaded', () => {
               modalNovaColunaObj = new bootstrap.Modal(document.getElementById('modalNovaColuna'));
@@ -542,6 +593,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               modalDeletarColunaObj = new bootstrap.Modal(document.getElementById('modalDeletarColuna'));
               modalCardDetalhesObj = new bootstrap.Modal(document.getElementById('modalCardDetalhes'));
               modalDeletarAnexoObj = new bootstrap.Modal(document.getElementById('modalDeletarAnexo'));
+              modalGerenciarEtiquetasObj = new bootstrap.Modal(document.getElementById('modalGerenciarEtiquetas'));
               
               mostrarSkeletonGlobais();
               setTimeout(() => {
@@ -550,6 +602,111 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   iniciarArrastoMouse();
               }, 150);
           });
+
+          // ==========================================
+          // GESTÃO DE ETIQUETAS (TAGS/RESPONSÁVEIS)
+          // ==========================================
+          function abrirModalEtiquetas() {
+              renderizarListaEtiquetas();
+              modalGerenciarEtiquetasObj.show();
+          }
+
+          function selecionarCorEtiqueta(element, cor) {
+              document.getElementById('inputCorEtiqueta').value = cor;
+              document.querySelectorAll('#paletaCoresEtiqueta .color-square').forEach(el => el.classList.remove('active'));
+              element.classList.add('active');
+          }
+
+          function renderizarListaEtiquetas() {
+              const container = document.getElementById('listaEtiquetasExistentes');
+              if (etiquetasDados.length === 0) {
+                  container.innerHTML = '<div class="text-white-50 text-center small p-2">Nenhuma etiqueta criada.</div>';
+                  return;
+              }
+              container.innerHTML = etiquetasDados.map(e => \`
+                  <div class="d-flex justify-content-between align-items-center p-2 bg-custom-dark border border-custom rounded">
+                      <div class="d-flex align-items-center gap-2">
+                          <div class="rounded-circle shadow-sm" style="width: 14px; height: 14px; background-color: \${e.cor}; border: 1px solid rgba(255,255,255,0.2);"></div>
+                          <span class="text-white fw-medium" style="font-size: 0.8rem;">\${escapeHtml(e.nome)}</span>
+                      </div>
+                      <button class="btn btn-sm text-danger p-0 m-0" onclick="deletarEtiqueta(\${e.id})"><i class="fa-solid fa-xmark"></i></button>
+                  </div>
+              \`).join('');
+          }
+
+          function salvarNovaEtiqueta() {
+              const nome = document.getElementById('inputNomeEtiqueta').value.trim();
+              const cor = document.getElementById('inputCorEtiqueta').value;
+              const urlParams = new URLSearchParams(window.location.search);
+              const espaco_id = urlParams.get('espaco_id') || 1;
+
+              if (nome) {
+                  socket.emit('nova_etiqueta', { nome, cor, espaco_id });
+                  document.getElementById('inputNomeEtiqueta').value = '';
+                  
+                  // A duplicação acontecia aqui! Removemos a adição local manual (tempId),
+                  // pois o WebSockets (socket.on('nova_etiqueta_criada')) já é acionado 
+                  // pelo servidor e adiciona a etiqueta oficial com o ID correto do banco.
+                  mostrarToast('sucesso', 'Etiqueta Criada', 'Etiqueta adicionada à equipa.');
+              }
+          }
+
+          function deletarEtiqueta(id) {
+              socket.emit('deletar_etiqueta', id);
+              etiquetasDados = etiquetasDados.filter(e => e.id != id);
+              renderizarListaEtiquetas();
+              renderizarDropdownEtiquetasModal();
+              renderizarKanban(); 
+              mostrarToast('sucesso', 'Removido', 'Etiqueta eliminada.');
+          }
+
+          // Renderizar lista de Checkboxes no modal do Card
+          function renderizarDropdownEtiquetasModal() {
+              const list = document.getElementById('dropdownEtiquetasLista');
+              if (!list) return;
+              if (etiquetasDados.length === 0) {
+                  list.innerHTML = '<li class="px-2 text-white-50 small">Nenhuma etiqueta cadastrada.</li>';
+                  return;
+              }
+              list.innerHTML = etiquetasDados.map(e => \`
+                  <li>
+                      <label class="dropdown-item d-flex align-items-center gap-2 cursor-pointer bg-transparent hover-bg-custom py-1">
+                          <input class="form-check-input m-0 tag-checkbox bg-custom-darker border-custom" type="checkbox" value="\${e.id}" onchange="triggerEtiquetasChange()">
+                          <div class="rounded-circle shadow-sm" style="width: 12px; height: 12px; background-color: \${e.cor};"></div>
+                          <span class="text-white" style="font-size: 0.8rem;">\${escapeHtml(e.nome)}</span>
+                      </label>
+                  </li>
+              \`).join('');
+          }
+
+          function atualizarEtiquetasVisualCardModal() {
+              const selecionados = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
+              const visual = document.getElementById('modalCardEtiquetasVisual');
+              const placeholder = document.getElementById('modalCardEtiquetasSelecionadas');
+
+              if (selecionados.length === 0) {
+                  visual.innerHTML = '';
+                  placeholder.innerText = 'Selecione as etiquetas...';
+                  return;
+              }
+
+              placeholder.innerText = selecionados.length + ' selecionada(s)';
+              visual.innerHTML = selecionados.map(id => {
+                  const tag = etiquetasDados.find(e => e.id == id);
+                  if(!tag) return '';
+                  return \`
+                      <span class="badge d-flex align-items-center gap-2 border shadow-sm" style="background-color: \${hexToRgba(tag.cor, 0.15)}; border-color: \${hexToRgba(tag.cor, 0.4)} !important; color: \${tag.cor}; padding: 5px 10px;">
+                          <div class="rounded-circle" style="width: 8px; height: 8px; background-color: \${tag.cor};"></div>
+                          \${escapeHtml(tag.nome)}
+                      </span>
+                  \`;
+              }).join('');
+          }
+
+          function triggerEtiquetasChange() {
+              atualizarEtiquetasVisualCardModal();
+              salvarTextosModal();
+          }
 
           // ==========================================
           // BARRA DE PESQUISA (LIVE SEARCH)
@@ -657,7 +814,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
 
           // ==========================================
-          // LIGAÇÕES AUTOMÁTICAS (AUTO-LINK)
+          // LIGAÇÕES AUTOMÁTICAS E TOASTS
           // ==========================================
           function autoLinkify(element) {
               const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
@@ -699,9 +856,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               });
           }
 
-          // ==========================================
-          // SKELETON E TOASTS
-          // ==========================================
           function gerarSkeletonKanban() {
               let html = '';
               for(let i=0; i<4; i++) {
@@ -724,11 +878,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (board) board.classList.remove('skeleton-active');
           }
 
-          function hexToRgba(hex, alpha) {
-              const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-              return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
-          }
-
           function mostrarToast(tipo, titulo, mensagem) {
               const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
               if (toastEl) {
@@ -738,7 +887,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (timerEl) { 
                       timerEl.style.display = 'block'; 
                       timerEl.style.animation = 'none'; 
-                      void timerEl.offsetWidth; // Reflow para reiniciar a animação
+                      void timerEl.offsetWidth; 
                       timerEl.style.animation = 'shrinkToast 5s linear forwards'; 
                   }
                   const oldInstance = bootstrap.Toast.getInstance(toastEl);
@@ -807,13 +956,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   let cardsHTML = '';
                   if (col.cards && col.cards.length > 0) {
-                      // Copia o array para não alterar o original da coluna
                       let cardsOrdenados = [...col.cards].sort((a, b) => {
                           if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
                           if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
-                          return 0; // Mantém a ordem original para os restantes
+                          return 0; 
                       });
-                      
                       cardsOrdenados.forEach(card => { cardsHTML += gerarHTMLCard(card, corColuna); });
                   }
 
@@ -824,7 +971,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-2" style="min-width: 140px; background-color: #2a2a2a; border-color: rgba(255,255,255,0.1);">
                               <div class="d-flex flex-wrap gap-2 justify-content-center">
-                                  \${paletaBase.map(c => '<div class="color-square" style="background-color: ' + c + ';" onclick="atualizarCorColuna(' + col.id + ', \\'' + c + '\\')"></div>').join('')}
+                                  \${paletaBase.map(c => \`<div class="color-square" style="background-color: \${c};" onclick="atualizarCorColuna(\${col.id}, '\${c}')"></div>\`).join('')}
                               </div>
                           </div>
                       </div>\`;
@@ -853,16 +1000,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       delay: 100, 
                       delayOnTouchOnly: true,
                       fallbackTolerance: 5,
-                      // Substitua o bloco 'onEnd' dentro das configurações do Sortable:
-                        onEnd: function (evt) {
+                      onEnd: function (evt) {
                             const itemEl = evt.item;
                             const toList = evt.to;
                             
                             if(evt.from !== toList || evt.oldIndex !== evt.newIndex) {
                                 const novaColuna = toList.closest('.kanban-column');
                                 const novaColunaId = novaColuna.dataset.id;
-                                
-                                // A MÁGICA AQUI: Lê todos os cards na ordem em que o utilizador os deixou na tela
                                 const cardsNodes = novaColuna.querySelectorAll('.kanban-card');
                                 const novaOrdemArray = Array.from(cardsNodes).map(el => parseInt(el.dataset.id));
 
@@ -870,7 +1014,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                     cardId: itemEl.dataset.id, 
                                     novaColunaId: novaColunaId, 
                                     novaOrdem: evt.newIndex, 
-                                    novaOrdemArray: novaOrdemArray, // Envia o array perfeito para o servidor
+                                    novaOrdemArray: novaOrdemArray, 
                                     usuario: NOME_USUARIO 
                                 });
                                 
@@ -908,6 +1052,22 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   descPreview = '<div class="text-white-50 mt-1 mb-2 preview-html">' + card.descricao + '</div>';
               }
 
+              // Preparar ETIQUETAS visuais
+              let tagsHTML = '';
+              const tagsDoCard = card.etiquetas || [];
+              const tagIds = tagsDoCard.map(t => typeof t === 'object' ? t.id : t);
+              
+              if (tagIds.length > 0) {
+                  tagsHTML = '<div class="d-flex flex-wrap gap-1 mt-2 mb-1">';
+                  tagIds.forEach(id => {
+                      const tag = etiquetasDados.find(e => e.id == id);
+                      if (tag) {
+                          tagsHTML += \`<div class="rounded-circle shadow-sm" style="width: 14px; height: 14px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2);" title="\${escapeHtml(tag.nome)}"></div>\`;
+                      }
+                  });
+                  tagsHTML += '</div>';
+              }
+
               let anexosHTML = '<div class="card-anexos w-100" id="anexos-card-board-' + card.id + '">';
               if (card.anexos && card.anexos.length > 0) {
                   card.anexos.forEach(anexo => { anexosHTML += gerarHTMLAnexo(anexo); });
@@ -923,6 +1083,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       \${card.concluido ? '<i class="fa-solid fa-circle-check text-success ms-2"></i>' : ''}
                   </div>
                   \${descPreview}
+                  \${tagsHTML}
                   \${anexosHTML}
                   <div class="d-flex justify-content-between align-items-center mt-2 w-100">
                       <div class="d-flex gap-2 align-items-center text-white-50" style="font-size: 0.75rem;">
@@ -957,7 +1118,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               const descEl = document.getElementById('modalCardDescricao');
               descEl.innerHTML = cardData.descricao || '';
-              autoLinkify(descEl); // Transforma links em <a> na hora que abre
+              autoLinkify(descEl); 
               
               const prazoFinal = cardData.prazo ? String(cardData.prazo).slice(0, 10) : '';
               
@@ -966,13 +1127,20 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               document.getElementById('modalCardStatus').checked = !!cardData.concluido;
               document.getElementById('modalCardColunaNome').innerText = colunaNome;
               
-              // Ajusta o Select da Prioridade
               const selectPrioridade = document.getElementById('modalCardPrioridade');
               if (selectPrioridade) {
                   selectPrioridade.value = cardData.prioridade || 'normal';
               }
 
-              // Renderizar Anexos em largura total no modal com botão de excluir
+              // Carregar Etiquetas do Card no Modal
+              renderizarDropdownEtiquetasModal();
+              const tagsDoCard = cardData.etiquetas || [];
+              const tagIds = tagsDoCard.map(t => typeof t === 'object' ? t.id : t);
+              document.querySelectorAll('.tag-checkbox').forEach(cb => {
+                  cb.checked = tagIds.includes(parseInt(cb.value));
+              });
+              atualizarEtiquetasVisualCardModal();
+
               const cAnexos = document.getElementById('modalCardAnexos');
               if (cardData.anexos && cardData.anexos.length > 0) {
                   cAnexos.innerHTML = cardData.anexos.map(anexo => {
@@ -991,7 +1159,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   cAnexos.innerHTML = '<div class="text-white-50 small">Nenhum anexo.</div>';
               }
 
-              // Renderizar Histórico (VIA BANCO DE DADOS)
               const cHist = document.getElementById('modalCardHistory');
               cHist.innerHTML = '<div class="text-center text-white-50"><i class="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>';
               
@@ -1054,7 +1221,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const titulo = document.getElementById('modalCardTitulo').innerText.trim();
               
               const descEl = document.getElementById('modalCardDescricao');
-              autoLinkify(descEl); // Links automáticos na hora de salvar
+              autoLinkify(descEl); 
               let descricao = descEl.innerHTML.trim();
               
               const concluido = document.getElementById('modalCardStatus').checked ? 1 : 0;
@@ -1064,6 +1231,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prioridadeElement = document.getElementById('modalCardPrioridade');
               const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
 
+              // Extrair IDs das etiquetas selecionadas
+              const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
+
               if (document.getElementById('modalCardPrazoBadge')) {
                   document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazo, concluido);
               }
@@ -1072,9 +1242,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   return mostrarToast('erro', 'Aviso', 'O título não pode ficar vazio.');
               }
 
-              // =======================================================
-              // VERIFICAÇÃO DE ALTERAÇÕES REAIS (Evita spans/falsos envios)
-              // =======================================================
               let cardOriginal = null;
               for (const col of colunasDados) {
                   cardOriginal = col.cards.find(c => c.id == cardAbertoId);
@@ -1084,26 +1251,25 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (cardOriginal) {
                   const oldTitulo = (cardOriginal.titulo || '').trim();
                   const oldDesc = (cardOriginal.descricao || '').trim();
-                  
-                  // O contenteditable às vezes deixa um <br> solto quando esvaziamos o campo
                   const novaDescNormalizada = (descricao === '<br>' || descricao === '<div><br></div>') ? '' : descricao;
-
                   const oldConcluido = cardOriginal.concluido ? 1 : 0;
                   const oldPrazo = cardOriginal.prazo ? String(cardOriginal.prazo).slice(0, 10) : '';
                   const oldPrioridade = cardOriginal.prioridade || 'normal';
+                  
+                  const oldTags = cardOriginal.etiquetas || [];
+                  const oldTagIds = oldTags.map(t => typeof t === 'object' ? t.id : t).sort().join(',');
+                  const newTagIds = tagIds.sort().join(',');
 
-                  // Se NENHUM campo sofreu alteração, aborta a gravação silenciosamente
                   if (titulo === oldTitulo &&
                       novaDescNormalizada === oldDesc &&
                       concluido === oldConcluido &&
                       prazo === oldPrazo &&
-                      prioridade === oldPrioridade) {
+                      prioridade === oldPrioridade &&
+                      newTagIds === oldTagIds) {
                       return; 
                   }
               }
-              // =======================================================
 
-              // Se chegou aqui, é porque algo realmente mudou. Vamos gravar!
               socket.emit('atualizar_card', { 
                   id: cardAbertoId, 
                   cardId: cardAbertoId, 
@@ -1112,13 +1278,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   concluido: concluido, 
                   prazo: prazo, 
                   prioridade: prioridade,
+                  etiquetas: tagIds,
                   usuario: NOME_USUARIO 
               });
               
-              mostrarToast('sucesso', 'Salvo!', 'Card atualizado com sucesso.');
+              mostrarToast('sucesso', 'Guardado!', 'Card atualizado com sucesso.');
           }
 
-          function atualizarStatusModal(isChecked) {
+          function atualizarStatusModal() {
               salvarTextosModal();
           }
 
@@ -1154,7 +1321,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if(response.ok) {
                       mostrarToast('sucesso', 'Excluído!', 'O anexo foi removido.');
                       
-                      // Remove localmente do array de dados
                       for (const col of colunasDados) {
                           const c = col.cards.find(x => x.id == cardId);
                           if (c && c.anexos) {
@@ -1197,7 +1363,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (novoTitulo) {
                   const colIndex = colunasDados.findIndex(c => c.id == colunaId);
                   
-                  // Se clicou, não alterou nada e saiu, cancela silenciosamente
                   if (colIndex > -1 && colunasDados[colIndex].titulo === novoTitulo) {
                       return; 
                   }
@@ -1274,7 +1439,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               try {
                   const response = await fetch('/kanban/anexos/' + uploadCardAtualId, { method: 'POST', body: formData });
                   if(response.ok) {
-                      mostrarToast('sucesso', 'Upload Concluído', 'Arquivos anexados ao card.');
+                      mostrarToast('sucesso', 'Upload Concluído', 'Ficheiros anexados ao card.');
                       
                       try {
                           const resHtml = await fetch(window.location.href);
@@ -1282,27 +1447,39 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           const parser = new DOMParser();
                           const doc = parser.parseFromString(textHtml, 'text/html');
                           
-                          // Busca o input hidden com os dados novos
                           const newDataInput = doc.getElementById('kanban-data-input');
                           if (newDataInput && newDataInput.value) {
                               colunasDados = JSON.parse(newDataInput.value);
                               renderizarKanban();
-                              if (cardAbertoId) abrirModalCard(cardAbertoId); // Re-renderiza o modal
+                              if (cardAbertoId) abrirModalCard(cardAbertoId); 
                           }
                       } catch(e) {
                           console.log("Erro ao atualizar dados da página", e);
                       }
                   } else {
-                      mostrarToast('erro', 'Erro', 'Falha ao processar o envio dos arquivos.');
+                      mostrarToast('erro', 'Erro', 'Falha ao processar o envio dos ficheiros.');
                   }
               } catch (error) {
-                  mostrarToast('erro', 'Falha na Rede', 'Verifique a sua conexão à internet.');
+                  mostrarToast('erro', 'Falha na Rede', 'Verifique a sua ligação à internet.');
               }
           }
 
           // ==========================================
           // WEBSOCKETS (TEMPO REAL)
           // ==========================================
+          socket.on('nova_etiqueta_criada', (etiqueta) => {
+              etiquetasDados.push(etiqueta);
+              renderizarListaEtiquetas();
+              renderizarDropdownEtiquetasModal();
+          });
+
+          socket.on('etiqueta_deletada_global', (id) => {
+              etiquetasDados = etiquetasDados.filter(e => e.id != id);
+              renderizarListaEtiquetas();
+              renderizarDropdownEtiquetasModal();
+              renderizarKanban();
+          });
+
           socket.on('coluna_criada', (coluna) => {
               coluna.cards = [];
               colunasDados.push(coluna);
@@ -1355,6 +1532,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       c.concluido = dados.concluido;
                       c.prazo = dados.prazo;
                       c.prioridade = dados.prioridade;
+                      if (dados.etiquetas !== undefined) c.etiquetas = dados.etiquetas;
                       break;
                   }
               }
@@ -1377,6 +1555,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const prioridadeSelect = document.getElementById('modalCardPrioridade');
                   if (prioridadeSelect && dados.prioridade) {
                       prioridadeSelect.value = dados.prioridade;
+                  }
+                  
+                  // Atualiza visualmente as etiquetas dentro do modal aberto via WebSocket
+                  if (dados.etiquetas !== undefined) {
+                      const tagIds = dados.etiquetas.map(t => typeof t === 'object' ? t.id : t);
+                      document.querySelectorAll('.tag-checkbox').forEach(cb => {
+                          cb.checked = tagIds.includes(parseInt(cb.value));
+                      });
+                      atualizarEtiquetasVisualCardModal();
                   }
               }
               renderizarKanban();

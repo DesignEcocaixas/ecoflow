@@ -209,6 +209,35 @@ app.use('/', testeRoutes);
 //WEB SOCKETS DO CRUD DO KANBAN
 io.on("connection", (socket) => {
     console.log("Novo utilizador conectado ao Kanban");
+
+    // CRIAR NOVA ETIQUETA
+    socket.on("nova_etiqueta", (dados) => {
+        db.query("INSERT INTO kanban_etiquetas (espaco_id, nome, cor) VALUES (?, ?, ?)", 
+        [dados.espaco_id, dados.nome, dados.cor], (err, result) => {
+            if (!err) {
+                io.emit("nova_etiqueta_criada", { 
+                    id: result.insertId, 
+                    espaco_id: dados.espaco_id, 
+                    nome: dados.nome, 
+                    cor: dados.cor 
+                });
+            } else {
+                console.error("Erro ao criar etiqueta:", err);
+            }
+        });
+    });
+
+    // APAGAR ETIQUETA
+    socket.on("deletar_etiqueta", (id) => {
+        db.query("DELETE FROM kanban_etiquetas WHERE id = ?", [id], (err) => {
+            if (!err) {
+                io.emit("etiqueta_deletada_global", id);
+            } else {
+                console.error("Erro ao deletar etiqueta:", err);
+            }
+        });
+    });
+
     //CRIAR NOVA COLUNA
     socket.on("nova_coluna", (dados) => {
         db.query("SELECT MAX(ordem) as max_ordem FROM kanban_colunas WHERE espaco_id = ?", [dados.espaco_id], (err, result) => {
@@ -299,9 +328,9 @@ io.on("connection", (socket) => {
         }
     });
 
-    // EDITAR CARD KANBAN (ÚNICO)
+    // EDITAR CARD KANBAN (ÚNICO E MULTI-DADOS)
     socket.on("atualizar_card", (dados) => {
-        // Atualiza todos os campos, incluindo o prazo e a nova prioridade
+        // Atualiza todos os campos base, incluindo prazo e prioridade
         const query = "UPDATE kanban_cards SET titulo = ?, descricao = ?, concluido = ?, prazo = ?, prioridade = ? WHERE id = ?";
         const valores = [
             dados.titulo,
@@ -315,13 +344,30 @@ io.on("connection", (socket) => {
         db.query(query, valores, (err) => {
             if (err) return console.error("Erro ao atualizar card:", err);
 
+            // Se as etiquetas foram enviadas no evento, atualiza as relações no banco de dados
+            if (dados.etiquetas !== undefined) {
+                // Limpa as etiquetas antigas vinculadas a este card
+                db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id = ?", [dados.id], () => {
+                    // Insere as novas etiquetas
+                    if (dados.etiquetas.length > 0) {
+                        const values = dados.etiquetas.map(tagId => [dados.id, tagId]);
+                        db.query("INSERT INTO kanban_cards_etiquetas (card_id, etiqueta_id) VALUES ?", [values], () => {
+                            io.emit("card_atualizado", dados);
+                        });
+                    } else {
+                        // Nenhuma etiqueta nova para inserir
+                        io.emit("card_atualizado", dados);
+                    }
+                });
+            } else {
+                // Atualiza sem mexer nas etiquetas
+                io.emit("card_atualizado", dados);
+            }
+
             // Gera o histórico de quem alterou o card
             const acao = dados.concluido ? "Marcado como Concluído" : "Informações atualizadas";
             db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, ?)",
                 [dados.id, acao, dados.usuario || 'Sistema']);
-
-            // Dispara a atualização visual em tempo real para todos
-            io.emit("card_atualizado", dados);
         });
     });
 
@@ -334,7 +380,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        console.log("Utilizador desconectado");
+        console.log("Utilizador desconectado do Kanban");
     });
 });
 
@@ -346,4 +392,4 @@ app.get("/ping-sessao", (req, res) => {
     return res.status(401).json({ status: "expirado" });
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta " + PORT)); 
+server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta " + PORT));

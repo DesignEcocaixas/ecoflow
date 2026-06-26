@@ -169,35 +169,42 @@ const EMPRESAS_OMIE = {
     }
 };
 
-// FUNÇÃO AUXILIAR: BUSCAR PEDIDO COMPLETO NO OMIE (COM LOGS DETALHADOS)
-async function buscarPedidoCompletoOmie(appKey, appSecret, codigoPedido) {
+// FUNÇÃO AUXILIAR: BUSCAR PEDIDO E CLIENTE NO OMIE
+async function buscarDetalhesOmie(appKey, appSecret, idPedido, idCliente) {
     try {
-        console.log(`[Omie API] Enviando requisição -> AppKey: ${appKey} | CodigoPedido: ${codigoPedido}`);
-        
-        const response = await fetch("https://app.omie.com.br/api/v1/produtos/pedido/", {
+        // 1. Busca os Itens e Detalhes do Pedido
+        const reqPedido = await fetch("https://app.omie.com.br/api/v1/produtos/pedido/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 call: "ConsultarPedido",
                 app_key: appKey,
                 app_secret: appSecret,
-                param: [{ codigo_pedido: codigoPedido }]
+                param: [{ codigo_pedido: idPedido }]
             })
         });
-        
-        // Vamos ler a resposta como texto puro primeiro para podermos ver o erro
-        const textResponse = await response.text();
-        
-        if (!response.ok) {
-            console.error(`[Omie API] O Omie recusou a chamada! Status HTTP: ${response.status}`);
-            console.error(`[Omie API] Motivo do erro:`, textResponse);
-            return null;
-        }
-        
-        // Se deu tudo certo, transforma em JSON
-        return JSON.parse(textResponse);
+        const jsonPedido = await reqPedido.json();
+
+        // 2. Busca o Nome do Cliente
+        const reqCliente = await fetch("https://app.omie.com.br/api/v1/geral/clientes/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                call: "ConsultarCliente",
+                app_key: appKey,
+                app_secret: appSecret,
+                param: [{ codigo_cliente_omie: idCliente }]
+            })
+        });
+        const jsonCliente = await reqCliente.json();
+
+        return {
+            // Aqui resolvemos a pegadinha do Omie!
+            pedido: jsonPedido.pedido_venda_produto || null, 
+            cliente: jsonCliente || {}
+        };
     } catch (error) {
-        console.error("❌ Erro de conexão com a API do Omie:", error);
+        console.error("❌ Erro na API do Omie:", error);
         return null;
     }
 }
@@ -233,9 +240,10 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
         if (topic === "VendaProduto.EtapaAlterada" && credenciais && event.etapa === ETAPA_GATILHO) {
             const idPedido = event.idPedido;
             const numeroPedido = event.numeroPedido;
+            const idCliente = event.idCliente; // <-- Pegamos o ID do Cliente do Webhook
             const autor = payload.author && payload.author.name ? payload.author.name : "OMIE";
 
-            // Impede duplicação (Se a etapa for "20" mais de uma vez, cria o card só 1 vez)
+            // Impede duplicação
             const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
             if (jaExiste.length > 0) {
                 console.log(`[Omie] Pedido #${numeroPedido} avançou para a etapa ${ETAPA_GATILHO}, mas já possui card no Kanban. Ignorado.`);
@@ -243,15 +251,19 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             }
 
             console.log(`[Omie] Consultando dados completos do Pedido #${numeroPedido}...`);
-            const dadosCompletos = await buscarPedidoCompletoOmie(appKey, credenciais.secret, idPedido);
+            
+            // Passamos o idCliente agora para a função
+            const dadosCompletos = await buscarDetalhesOmie(appKey, credenciais.secret, idPedido, idCliente);
 
+            // Agora a verificação vai funcionar perfeitamente
             if (!dadosCompletos || !dadosCompletos.pedido) {
                 console.error(`[Omie] Falha ao consultar o pedido #${numeroPedido} na API.`);
                 return res.status(200).send("OK");
             }
 
             // --- EXTRAÇÃO DE DADOS FORMATADOS ---
-            const clienteNome = dadosCompletos.cliente.nome_fantasia || dadosCompletos.cliente.razao_social || "Cliente Desconhecido";
+            const cli = dadosCompletos.cliente;
+            const clienteNome = cli.nome_fantasia || cli.razao_social || "Cliente Desconhecido";
             const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao;
             const itens = dadosCompletos.pedido.det || [];
             

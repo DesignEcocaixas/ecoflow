@@ -157,6 +157,176 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
     });
 });
 
+// CONFIGURAÇÃO DAS UNIDADES E CHAVES OMIE
+const EMPRESAS_OMIE = {
+    "6855005144988": { 
+        nome: "ECO CMC", 
+        secret: "51686239198d05bcc4312a45cc6b9263" 
+    },
+    "4367695632300": { 
+        nome: "ECO BA", 
+        secret: "7b5cc60e8d6a2b115e91fb997dd3f6df"
+    }
+};
+
+// FUNÇÃO AUXILIAR: BUSCAR PEDIDO COMPLETO NO OMIE
+async function buscarPedidoCompletoOmie(appKey, appSecret, codigoPedido) {
+    try {
+        // Usa o fetch nativo do Node.js (Node 18+)
+        const response = await fetch("https://app.omie.com.br/api/v1/produtos/pedido/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                call: "ConsultarPedido",
+                app_key: appKey,
+                app_secret: appSecret,
+                param: [{ codigo_pedido: codigoPedido }]
+            })
+        });
+        
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (error) {
+        console.error("Erro na API do Omie:", error);
+        return null;
+    }
+}
+
+// WEBHOOK OMIE - RECEPÇÃO E INTEGRAÇÃO KANBAN
+router.post("/webhook/omie/pedidos", async (req, res) => {
+    const payload = req.body;
+    const io = req.app.get("io");
+
+    // 1. Emite para o Console de Testes na tela de Configurações
+    if (io) io.emit("webhook_omie_recebido", { payload: payload });
+
+    // 2. Ping de validação do Omie
+    if (payload && payload.ping) return res.status(200).json({ message: "pong" });
+
+    // 3. Verifica se tem o evento esperado
+    if (!payload || !payload.topic || !payload.event) return res.status(200).send("OK");
+
+    const topic = payload.topic;
+    const event = payload.event;
+    const appKey = payload.appKey;
+    const credenciais = EMPRESAS_OMIE[appKey];
+
+    const dbPromise = db.promise();
+
+    try {
+        // =======================================================
+        // AÇÃO: ETAPA ALTERADA -> CONSULTAR API -> CRIAR CARD
+        // =======================================================
+        if (topic === "VendaProduto.EtapaAlterada" && credenciais) {
+            const idPedido = event.idPedido;
+            const numeroPedido = event.numeroPedido;
+            const autor = payload.author && payload.author.name ? payload.author.name : "OMIE";
+
+            // Impede duplicação logo de cara (Se a etapa mudar 5 vezes, cria o card só 1 vez)
+            const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
+            if (jaExiste.length > 0) {
+                console.log(`[Omie] Pedido #${numeroPedido} avançou de etapa, mas já possui card no Kanban. Ignorado.`);
+                return res.status(200).send("OK");
+            }
+
+            console.log(`[Omie] Consultando dados completos do Pedido #${numeroPedido}...`);
+            const dadosCompletos = await buscarPedidoCompletoOmie(appKey, credenciais.secret, idPedido);
+
+            if (!dadosCompletos || !dadosCompletos.pedido) {
+                console.error(`[Omie] Falha ao consultar o pedido #${numeroPedido} na API.`);
+                return res.status(200).send("OK");
+            }
+
+            // --- EXTRAÇÃO DE DADOS FORMATADOS ---
+            const clienteNome = dadosCompletos.cliente.nome_fantasia || dadosCompletos.cliente.razao_social || "Cliente Desconhecido";
+            const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao; // Ex: "22/06/2026"
+            const itens = dadosCompletos.pedido.det || [];
+            
+            // Tratamento do Prazo para o padrão do Banco (YYYY-MM-DD)
+            let prazoFormatado = null;
+            if (dataPrevisao) {
+                const partes = dataPrevisao.split('/');
+                if (partes.length === 3) prazoFormatado = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            }
+
+            // --- 1. TÍTULO DO CARD ---
+            // Ex: "1732 - SABOR A LENHA - (THAIS) - ECO CMC"
+            const tituloCard = `${numeroPedido} - ${clienteNome} - (${autor.toUpperCase()}) - ${credenciais.nome}`;
+
+            // --- 2. DESCRIÇÃO DO CARD (MIMETIZANDO O CHECKLIST DO TRELLO EM HTML) ---
+            let descricaoCard = `
+                <div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 20px;">VERIFICAR</div>
+                <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; margin-bottom: 15px; color: #fff;">
+                        <i class="fa-regular fa-square-check" style="color: #08c068;"></i> ITENS
+                    </div>
+            `;
+
+            itens.forEach(item => {
+                const descProd = item.produto.descricao || "Produto";
+                const qtd = item.produto.quantidade || 0;
+                const obs = item.observacao && item.observacao.obs_item ? ` - <span style="color: #ffc107;">${item.observacao.obs_item}</span>` : "";
+                
+                descricaoCard += `
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; font-size: 0.85rem; color: rgba(255,255,255,0.8);">
+                        <input type="checkbox" disabled style="margin-top: 4px; opacity: 0.5;">
+                        <div>
+                            ${descProd} <strong>x ${qtd}</strong>${obs}
+                        </div>
+                    </div>
+                `;
+            });
+
+            descricaoCard += `</div>`; // Fecha a caixa do checklist
+
+            // --- 3. DESCOBRIR A COLUNA DE DESTINO CORRETA ---
+            let colunaDestinoId = null;
+            
+            // Busca o Workspace "Produção" e a coluna "Pedidos" simultaneamente
+            const queryBuscaColuna = `
+                SELECT c.id 
+                FROM kanban_colunas c
+                INNER JOIN espacos_trabalho e ON c.espaco_id = e.id
+                WHERE e.nome LIKE '%Produção%' AND c.titulo LIKE '%Pedidos%'
+                LIMIT 1
+            `;
+            const [colsFound] = await dbPromise.query(queryBuscaColuna);
+            
+            if (colsFound.length > 0) {
+                colunaDestinoId = colsFound[0].id;
+            } else {
+                // Fallback: Se não achar, joga na primeira coluna que existir no sistema
+                const [primeiraCol] = await dbPromise.query("SELECT id FROM kanban_colunas ORDER BY espaco_id ASC, ordem ASC LIMIT 1");
+                if (primeiraCol.length > 0) colunaDestinoId = primeiraCol[0].id;
+            }
+
+            // --- 4. INSERIR NO BANCO DE DADOS ---
+            if (colunaDestinoId) {
+                const [insert] = await dbPromise.query(
+                    "INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem, prazo, concluido, prioridade) VALUES (?, ?, ?, 999, ?, 0, 'normal')",
+                    [colunaDestinoId, tituloCard, descricaoCard, prazoFormatado]
+                );
+
+                await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card gerado e detalhado via Omie', 'Omie Bot')", [insert.insertId]);
+
+                // Atualiza a tela em tempo real
+                if (io) {
+                    const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
+                    io.emit("card_criado", rows[0]);
+                }
+                console.log(`✅ Sucesso! Card do pedido #${numeroPedido} criado na Produção.`);
+            }
+        }
+    } catch (error) {
+        console.error("Erro interno no Webhook Omie:", error);
+    }
+
+    // O Omie exige receber 200 OK rápido para não bloquear a fila de webhooks
+    return res.status(200).send("OK");
+});
+
+module.exports = router;
+
 // WEBHOOK OMIE - CONSOLE DE INTEGRAÇÃO (TESTE)
 router.post("/webhook/omie/pedidos", (req, res) => {
     const payload = req.body;

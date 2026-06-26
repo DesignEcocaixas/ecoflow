@@ -173,7 +173,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
-      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
       /* Modificadores Bootstrap */

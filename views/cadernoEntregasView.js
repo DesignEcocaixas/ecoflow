@@ -1687,9 +1687,9 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
           if (isSubmitting) return;
 
-          // Esconde qualquer modal aberto para não bloquear a tela
+          // Esconde qualquer modal aberto para não bloquear a tela, exceto o de clientes
           const modalEl = form.closest('.modal');
-          if (modalEl) {
+          if (modalEl && modalEl.id !== 'novoClienteModal') {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
               modal.hide();
           }

@@ -60,6 +60,8 @@ const io = new Server(server, {
     cors: { origin: "*" }
 });
 
+app.set("io", io);
+
 const motoristasOnline = new Map();
 // key: nomeFinal (chave fixa)
 // value: { id, nome, socketId, lat, lng, accuracy, origem, updatedAt, online }

@@ -372,6 +372,30 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
               </div>
           </div>
 
+          <div class="col-12">
+              <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom">
+                  <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
+                      <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-satellite-dish text-info me-2"></i> Console Webhook (Omie)</h6>
+                      <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">Limpar Console</button>
+                  </div>
+                  <div class="card-body p-4 bg-custom-dark">
+                      <div class="mb-3">
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Endpoint do Ecoflow (URL para cadastrar no Omie)</label>
+                          <div class="input-group input-group-sm shadow-sm">
+                              <span class="input-group-text bg-custom-darker border-custom text-accent"><i class="fa-solid fa-link"></i></span>
+                              <input type="text" id="webhookUrlInput" class="form-control border-custom bg-custom-darker text-white-50" value="Carregando..." readonly>
+                              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()"><i class="fa-regular fa-copy"></i> Copiar</button>
+                          </div>
+                      </div>
+                      <div class="terminal-container p-3 rounded border border-custom shadow-sm" style="background-color: #0d0d0d; height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;">
+                          <div id="consoleWebhook" class="d-flex flex-column gap-2">
+                              <div class="text-white-50"># Escutando eventos do Omie na porta do servidor...</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
       </div>
 
     </div>
@@ -409,6 +433,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="./script/checkLogin.js"></script>
 
     <script>
@@ -520,6 +545,13 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       <div class="skeleton-dark skeleton-text-view mb-2" style="height: 40px;"></div>
                   </div>
               </div>
+              <div class="col-12 mt-4">
+                  <div class="card erp-card bg-custom-darker border-custom p-4">
+                      <div class="skeleton-dark skeleton-text-view mb-4" style="width: 30%; height: 20px;"></div>
+                      <div class="skeleton-dark skeleton-text-view mb-2" style="height: 35px;"></div>
+                      <div class="skeleton-dark skeleton-text-view mb-2" style="height: 150px;"></div>
+                  </div>
+              </div>
           </div>\`;
 
           if (mainRow && !mainRow.classList.contains('skeleton-container')) {
@@ -614,6 +646,70 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
               isSubmitting = false;
               ocultarSkeletonGlobais();
           }
+      }
+
+      // =======================================================================
+      // LÓGICA DO CONSOLE WEBHOOK (OMIE)
+      // =======================================================================
+      document.addEventListener('DOMContentLoaded', () => {
+          // Preenche a URL do endpoint dinamicamente com base no domínio atual
+          const urlInput = document.getElementById('webhookUrlInput');
+          if(urlInput) {
+              urlInput.value = window.location.origin + '/webhook/omie/pedidos';
+          }
+          
+          // Inicia a escuta de WebSockets se o objeto io existir
+          if (typeof io !== 'undefined') {
+              const socket = io();
+              
+              socket.on('webhook_omie_recebido', (data) => {
+                  const consoleEl = document.getElementById('consoleWebhook');
+                  
+                  // Remove o texto inicial se for o primeiro evento a chegar
+                  if(consoleEl.innerHTML.includes('# Escutando eventos do Omie')) {
+                      consoleEl.innerHTML = '';
+                  }
+                  
+                  const time = new Date().toLocaleTimeString('pt-BR');
+                  const isPing = data.payload && data.payload.ping;
+                  
+                  // Formatação baseada no tipo de evento (Ping = Azul, Evento = Verde)
+                  const colorTitle = isPing ? 'text-info' : 'text-success';
+                  const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + (data.payload.topic || 'Desconhecido');
+                  
+                  const stringified = JSON.stringify(data.payload, null, 2);
+                  
+                  const logEntry = document.createElement('div');
+                  logEntry.className = "border-bottom border-custom pb-2 mb-2";
+                  logEntry.innerHTML = \`
+                      <span class="text-white-50">[\${time}]</span> <strong class="\${colorTitle}">\${titleMsg}</strong>
+                      <pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">\${escapeHtmlWebhook(stringified)}</pre>
+                  \`;
+                  
+                  consoleEl.appendChild(logEntry);
+                  
+                  // Rola automaticamente para o fim do terminal
+                  consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
+              });
+          }
+      });
+
+      function copiarUrlWebhook() {
+          const copyText = document.getElementById("webhookUrlInput");
+          copyText.select();
+          copyText.setSelectionRange(0, 99999);
+          navigator.clipboard.writeText(copyText.value);
+          mostrarToast('sucesso', 'Copiado!', 'Link do endpoint copiado para a área de transferência.');
+      }
+
+      function limparConsoleWebhook() {
+          document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos do Omie na porta do servidor...</div>';
+      }
+      
+      function escapeHtmlWebhook(text) {
+          const div = document.createElement('div');
+          div.innerText = text;
+          return div.innerHTML;
       }
     </script>
   </body>

@@ -6,9 +6,7 @@ const path = require("path");
 
 const { uploadMensagens } = require("../config/uploadConfig");
 
-// ==============================================================================
 // ROTINA AUTOMÁTICA: DESATIVAR MENSAGENS EXPIRADAS
-// ==============================================================================
 function desativarMensagensExpiradas() {
     const query = `
         UPDATE notificacoes_globais 
@@ -30,9 +28,7 @@ function desativarMensagensExpiradas() {
 desativarMensagensExpiradas();
 setInterval(desativarMensagensExpiradas, 1000 * 60 * 60);
 
-//------------------------------------------------------------------------------
 // ROTAS PARA MENSAGENS DO SISTEMA
-//------------------------------------------------------------------------------
 
 // CADASTRAR NOVA MENSAGEM
 router.post("/notificacoes/global/nova", uploadMensagens.single('imagem_notificacao'), (req, res) => {
@@ -159,6 +155,28 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
             res.redirect("/configuracoes?excluido=1");
         });
     });
+});
+
+// WEBHOOK OMIE - CONSOLE DE INTEGRAÇÃO (TESTE)
+router.post("/webhook/omie/pedidos", (req, res) => {
+    const payload = req.body;
+
+    // Tenta enviar o evento para o WebSocket (para aparecer no Console do navegador)
+    const io = req.app.get("io");
+    if (io) {
+        io.emit("webhook_omie_recebido", { payload: payload });
+    } else {
+        // Se o WebSocket não estiver a escutar, imprime no terminal de logs do servidor
+        console.log("[Omie Webhook Recebido]", payload);
+    }
+
+    // O Omie envia um evento inicial de Ping ao adicionar a URL no painel deles
+    if (payload && payload.ping) {
+        return res.status(200).json({ message: "pong" });
+    }
+
+    // Retorna SEMPRE 200 OK para dizer ao Omie que a mensagem chegou com sucesso (evita bloqueios)
+    return res.status(200).send("OK");
 });
 
 module.exports = router;

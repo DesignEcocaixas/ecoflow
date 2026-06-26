@@ -157,10 +157,6 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
     });
 });
 
-const express = require("express");
-const router = express.Router();
-const db = require("../db");
-
 // CONFIGURAÇÃO DAS UNIDADES E CHAVES OMIE
 const EMPRESAS_OMIE = {
     "6855005144988": { 

@@ -118,7 +118,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       const fotoUrl = p.foto_colab ? `/uploads/${p.foto_colab}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome_colaborador || 'C')}&background=1f1f1f&color=08c068`;
       
       let badgeStatus = p.status === 'PAGO' 
-        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.65rem;"><i class="fa-solid fa-check-double"></i> Paga (Fechada)</span>' 
+        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.65rem;"><i class="fa-solid fa-check-double"></i> Paga</span>' 
         : '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning" style="font-size: 0.65rem;"><i class="fa-solid fa-folder-open"></i> Aberta</span>';
 
       modaisDinamicosExcluir.push(`

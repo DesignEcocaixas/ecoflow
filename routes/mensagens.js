@@ -157,6 +157,10 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
     });
 });
 
+const express = require("express");
+const router = express.Router();
+const db = require("../db");
+
 // CONFIGURAÇÃO DAS UNIDADES E CHAVES OMIE
 const EMPRESAS_OMIE = {
     "6855005144988": { 
@@ -211,21 +215,24 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
     const appKey = payload.appKey;
     const credenciais = EMPRESAS_OMIE[appKey];
 
+    // DEFINIÇÃO DA ETAPA GATILHO (Ex: "20" = Pedido de Venda)
+    const ETAPA_GATILHO = "20";
+
     const dbPromise = db.promise();
 
     try {
         // =======================================================
-        // AÇÃO: ETAPA ALTERADA -> CONSULTAR API -> CRIAR CARD
+        // AÇÃO: ETAPA ALTERADA PARA "20" -> CONSULTAR API -> CRIAR CARD
         // =======================================================
-        if (topic === "VendaProduto.EtapaAlterada" && credenciais) {
+        if (topic === "VendaProduto.EtapaAlterada" && credenciais && event.etapa === ETAPA_GATILHO) {
             const idPedido = event.idPedido;
             const numeroPedido = event.numeroPedido;
             const autor = payload.author && payload.author.name ? payload.author.name : "OMIE";
 
-            // Impede duplicação logo de cara (Se a etapa mudar 5 vezes, cria o card só 1 vez)
+            // Impede duplicação (Se a etapa for "20" mais de uma vez, cria o card só 1 vez)
             const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
             if (jaExiste.length > 0) {
-                console.log(`[Omie] Pedido #${numeroPedido} avançou de etapa, mas já possui card no Kanban. Ignorado.`);
+                console.log(`[Omie] Pedido #${numeroPedido} avançou para a etapa ${ETAPA_GATILHO}, mas já possui card no Kanban. Ignorado.`);
                 return res.status(200).send("OK");
             }
 
@@ -239,7 +246,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
             // --- EXTRAÇÃO DE DADOS FORMATADOS ---
             const clienteNome = dadosCompletos.cliente.nome_fantasia || dadosCompletos.cliente.razao_social || "Cliente Desconhecido";
-            const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao; // Ex: "22/06/2026"
+            const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao;
             const itens = dadosCompletos.pedido.det || [];
             
             // Tratamento do Prazo para o padrão do Banco (YYYY-MM-DD)
@@ -250,10 +257,9 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             }
 
             // --- 1. TÍTULO DO CARD ---
-            // Ex: "1732 - SABOR A LENHA - (THAIS) - ECO CMC"
             const tituloCard = `${numeroPedido} - ${clienteNome} - (${autor.toUpperCase()}) - ${credenciais.nome}`;
 
-            // --- 2. DESCRIÇÃO DO CARD (MIMETIZANDO O CHECKLIST DO TRELLO EM HTML) ---
+            // --- 2. DESCRIÇÃO DO CARD (CHECKLIST) ---
             let descricaoCard = `
                 <div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 20px;">VERIFICAR</div>
                 <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 15px;">
@@ -277,12 +283,11 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                 `;
             });
 
-            descricaoCard += `</div>`; // Fecha a caixa do checklist
+            descricaoCard += `</div>`; 
 
             // --- 3. DESCOBRIR A COLUNA DE DESTINO CORRETA ---
             let colunaDestinoId = null;
             
-            // Busca o Workspace "Produção" e a coluna "Pedidos" simultaneamente
             const queryBuscaColuna = `
                 SELECT c.id 
                 FROM kanban_colunas c
@@ -295,7 +300,6 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             if (colsFound.length > 0) {
                 colunaDestinoId = colsFound[0].id;
             } else {
-                // Fallback: Se não achar, joga na primeira coluna que existir no sistema
                 const [primeiraCol] = await dbPromise.query("SELECT id FROM kanban_colunas ORDER BY espaco_id ASC, ordem ASC LIMIT 1");
                 if (primeiraCol.length > 0) colunaDestinoId = primeiraCol[0].id;
             }
@@ -321,11 +325,8 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
         console.error("Erro interno no Webhook Omie:", error);
     }
 
-    // O Omie exige receber 200 OK rápido para não bloquear a fila de webhooks
     return res.status(200).send("OK");
 });
-
-module.exports = router;
 
 // WEBHOOK OMIE - CONSOLE DE INTEGRAÇÃO (TESTE)
 router.post("/webhook/omie/pedidos", (req, res) => {

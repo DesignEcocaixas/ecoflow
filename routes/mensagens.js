@@ -169,10 +169,11 @@ const EMPRESAS_OMIE = {
     }
 };
 
-// FUNÇÃO AUXILIAR: BUSCAR PEDIDO COMPLETO NO OMIE
+// FUNÇÃO AUXILIAR: BUSCAR PEDIDO COMPLETO NO OMIE (COM LOGS DETALHADOS)
 async function buscarPedidoCompletoOmie(appKey, appSecret, codigoPedido) {
     try {
-        // Usa o fetch nativo do Node.js (Node 18+)
+        console.log(`[Omie API] Enviando requisição -> AppKey: ${appKey} | CodigoPedido: ${codigoPedido}`);
+        
         const response = await fetch("https://app.omie.com.br/api/v1/produtos/pedido/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -184,10 +185,19 @@ async function buscarPedidoCompletoOmie(appKey, appSecret, codigoPedido) {
             })
         });
         
-        if (!response.ok) return null;
-        return await response.json();
+        // Vamos ler a resposta como texto puro primeiro para podermos ver o erro
+        const textResponse = await response.text();
+        
+        if (!response.ok) {
+            console.error(`[Omie API] O Omie recusou a chamada! Status HTTP: ${response.status}`);
+            console.error(`[Omie API] Motivo do erro:`, textResponse);
+            return null;
+        }
+        
+        // Se deu tudo certo, transforma em JSON
+        return JSON.parse(textResponse);
     } catch (error) {
-        console.error("Erro na API do Omie:", error);
+        console.error("❌ Erro de conexão com a API do Omie:", error);
         return null;
     }
 }

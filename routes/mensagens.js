@@ -209,163 +209,99 @@ async function buscarDetalhesOmie(appKey, appSecret, idPedido, idCliente) {
     }
 }
 
-// WEBHOOK OMIE - RECEPÇÃO E INTEGRAÇÃO KANBAN
+// ==============================================================================
+// WEBHOOK OMIE - ROTA ÚNICA E UNIFICADA
+// ==============================================================================
 router.post("/webhook/omie/pedidos", async (req, res) => {
     const payload = req.body;
     const io = req.app.get("io");
 
-    // 1. Emite para o Console de Testes na tela de Configurações
-    if (io) io.emit("webhook_omie_recebido", { payload: payload });
-
-    // 2. Ping de validação do Omie
-    if (payload && payload.ping) return res.status(200).json({ message: "pong" });
-
-    // 3. Verifica se tem o evento esperado
-    if (!payload || !payload.topic || !payload.event) return res.status(200).send("OK");
-
-    const topic = payload.topic;
-    const event = payload.event;
-    const appKey = payload.appKey;
-    const credenciais = EMPRESAS_OMIE[appKey];
-
-    // DEFINIÇÃO DA ETAPA GATILHO (Ex: "20" = Pedido de Venda)
-    const ETAPA_GATILHO = "20";
-
-    const dbPromise = db.promise();
-
-    try {
-        // =======================================================
-        // AÇÃO: ETAPA ALTERADA PARA "20" -> CONSULTAR API -> CRIAR CARD
-        // =======================================================
-        if (topic === "VendaProduto.EtapaAlterada" && credenciais && event.etapa === ETAPA_GATILHO) {
-            const idPedido = event.idPedido;
-            const numeroPedido = event.numeroPedido;
-            const idCliente = event.idCliente; // <-- Pegamos o ID do Cliente do Webhook
-            const autor = payload.author && payload.author.name ? payload.author.name : "OMIE";
-
-            // Impede duplicação
-            const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
-            if (jaExiste.length > 0) {
-                console.log(`[Omie] Pedido #${numeroPedido} avançou para a etapa ${ETAPA_GATILHO}, mas já possui card no Kanban. Ignorado.`);
-                return res.status(200).send("OK");
-            }
-
-            console.log(`[Omie] Consultando dados completos do Pedido #${numeroPedido}...`);
-            
-            // Passamos o idCliente agora para a função
-            const dadosCompletos = await buscarDetalhesOmie(appKey, credenciais.secret, idPedido, idCliente);
-
-            // Agora a verificação vai funcionar perfeitamente
-            if (!dadosCompletos || !dadosCompletos.pedido) {
-                console.error(`[Omie] Falha ao consultar o pedido #${numeroPedido} na API.`);
-                return res.status(200).send("OK");
-            }
-
-            // --- EXTRAÇÃO DE DADOS FORMATADOS ---
-            const cli = dadosCompletos.cliente;
-            const clienteNome = cli.nome_fantasia || cli.razao_social || "Cliente Desconhecido";
-            const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao;
-            const itens = dadosCompletos.pedido.det || [];
-            
-            // Tratamento do Prazo para o padrão do Banco (YYYY-MM-DD)
-            let prazoFormatado = null;
-            if (dataPrevisao) {
-                const partes = dataPrevisao.split('/');
-                if (partes.length === 3) prazoFormatado = `${partes[2]}-${partes[1]}-${partes[0]}`;
-            }
-
-            // --- 1. TÍTULO DO CARD ---
-            const tituloCard = `${numeroPedido} - ${clienteNome} - (${autor.toUpperCase()}) - ${credenciais.nome}`;
-
-            // --- 2. DESCRIÇÃO DO CARD (CHECKLIST) ---
-            let descricaoCard = `
-                <div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 20px;">VERIFICAR</div>
-                <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 15px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; margin-bottom: 15px; color: #fff;">
-                        <i class="fa-regular fa-square-check" style="color: #08c068;"></i> ITENS
-                    </div>
-            `;
-
-            itens.forEach(item => {
-                const descProd = item.produto.descricao || "Produto";
-                const qtd = item.produto.quantidade || 0;
-                const obs = item.observacao && item.observacao.obs_item ? ` - <span style="color: #ffc107;">${item.observacao.obs_item}</span>` : "";
-                
-                descricaoCard += `
-                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; font-size: 0.85rem; color: rgba(255,255,255,0.8);">
-                        <input type="checkbox" disabled style="margin-top: 4px; opacity: 0.5;">
-                        <div>
-                            ${descProd} <strong>x ${qtd}</strong>${obs}
-                        </div>
-                    </div>
-                `;
-            });
-
-            descricaoCard += `</div>`; 
-
-            // --- 3. DESCOBRIR A COLUNA DE DESTINO CORRETA ---
-            let colunaDestinoId = null;
-            
-            const queryBuscaColuna = `
-                SELECT c.id 
-                FROM kanban_colunas c
-                INNER JOIN espacos_trabalho e ON c.espaco_id = e.id
-                WHERE e.nome LIKE '%Produção%' AND c.titulo LIKE '%Pedidos%'
-                LIMIT 1
-            `;
-            const [colsFound] = await dbPromise.query(queryBuscaColuna);
-            
-            if (colsFound.length > 0) {
-                colunaDestinoId = colsFound[0].id;
-            } else {
-                const [primeiraCol] = await dbPromise.query("SELECT id FROM kanban_colunas ORDER BY espaco_id ASC, ordem ASC LIMIT 1");
-                if (primeiraCol.length > 0) colunaDestinoId = primeiraCol[0].id;
-            }
-
-            // --- 4. INSERIR NO BANCO DE DADOS ---
-            if (colunaDestinoId) {
-                const [insert] = await dbPromise.query(
-                    "INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem, prazo, concluido, prioridade) VALUES (?, ?, ?, 999, ?, 0, 'normal')",
-                    [colunaDestinoId, tituloCard, descricaoCard, prazoFormatado]
-                );
-
-                await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card gerado e detalhado via Omie', 'Omie Bot')", [insert.insertId]);
-
-                // Atualiza a tela em tempo real
-                if (io) {
-                    const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
-                    io.emit("card_criado", rows[0]);
-                }
-                console.log(`✅ Sucesso! Card do pedido #${numeroPedido} criado na Produção.`);
-            }
-        }
-    } catch (error) {
-        console.error("Erro interno no Webhook Omie:", error);
-    }
-
-    return res.status(200).send("OK");
-});
-
-// WEBHOOK OMIE - CONSOLE DE INTEGRAÇÃO (TESTE)
-router.post("/webhook/omie/pedidos", (req, res) => {
-    const payload = req.body;
-
-    // Tenta enviar o evento para o WebSocket (para aparecer no Console do navegador)
-    const io = req.app.get("io");
+    // 1. EMITE PARA O CONSOLE VISUAL (Na tela de Configurações)
     if (io) {
         io.emit("webhook_omie_recebido", { payload: payload });
     } else {
-        // Se o WebSocket não estiver a escutar, imprime no terminal de logs do servidor
         console.log("[Omie Webhook Recebido]", payload);
     }
 
-    // O Omie envia um evento inicial de Ping ao adicionar a URL no painel deles
-    if (payload && payload.ping) {
-        return res.status(200).json({ message: "pong" });
+    // 2. RESPONDE AO PING DO OMIE
+    if (payload && payload.ping) return res.status(200).json({ message: "pong" });
+    
+    // Valida se o payload tem dados
+    if (!payload || !payload.topic || !payload.event) return res.status(200).send("OK");
+
+    const event = payload.event;
+    const appKey = payload.appKey;
+    
+    // Busca dinamicamente a empresa e o secret correto!
+    const empresaConfig = EMPRESAS_OMIE[appKey];
+    if (!empresaConfig) {
+        console.log("AppKey não configurada no sistema:", appKey);
+        return res.status(200).send("OK");
     }
 
-    // Retorna SEMPRE 200 OK para dizer ao Omie que a mensagem chegou com sucesso (evita bloqueios)
+    const dbPromise = db.promise();
+    const ETAPA_GATILHO = "20"; // Etapa para capturar o evento
+
+    try {
+        if (payload.topic === "VendaProduto.EtapaAlterada" && event.etapa === ETAPA_GATILHO) {
+            
+            // Verificação de duplicidade na tabela kanban_cards
+            const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${event.numeroPedido} - %`]);
+            if (jaExiste.length > 0) return res.status(200).send("OK");
+
+            // Busca os detalhes na API (usando a secret dinâmica)
+            const dados = await buscarDetalhesOmie(appKey, empresaConfig.secret, event.idPedido, event.idCliente);
+            if (!dados || !dados.pedido) return res.status(200).send("OK");
+
+            // Preparação dos dados para a estrutura do Ecoflow
+            const cli = dados.cliente;
+            const clienteNome = cli.nome_fantasia || cli.razao_social || "Cliente Desconhecido";
+            const autor = payload.author && payload.author.name ? payload.author.name.toUpperCase() : "SISTEMA";
+            
+            // 1. Coluna 'titulo'
+            const tituloCard = `${event.numeroPedido} - ${clienteNome} - (${autor}) - ${empresaConfig.nome}`;
+            
+            // 2. Coluna 'prazo'
+            let prazo = null;
+            if (dados.pedido.cabecalho.data_previsao) {
+                prazo = dados.pedido.cabecalho.data_previsao.split('/').reverse().join('-'); 
+            }
+            
+            // 3. Coluna 'descricao' (Usando apenas marcação básica suportada pelo seu editor)
+            const itens = dados.pedido.det || [];
+            let descricaoCard = `<div style="font-weight:bold; margin-bottom:10px;">ITENS DO PEDIDO</div>`;
+            itens.forEach(item => {
+                descricaoCard += `<div><input type="checkbox" disabled> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b></div>`;
+            });
+
+            // Busca a coluna "Pedidos" ou usa a ID 1 como fallback
+            const [col] = await dbPromise.query("SELECT id FROM kanban_colunas WHERE titulo LIKE '%Pedidos%' LIMIT 1");
+            const colunaId = col.length > 0 ? col[0].id : 1;
+
+            // Insere o Card respeitando estritamente a estrutura da tabela
+            const [insert] = await dbPromise.query(
+                "INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem, prazo, concluido, prioridade) VALUES (?, ?, ?, 999, ?, 0, 'normal')",
+                [colunaId, tituloCard, descricaoCard, prazo]
+            );
+
+            // Grava no Histórico nativo do Ecoflow
+            await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card gerado via Omie Webhook', 'Omie Bot')", [insert.insertId]);
+
+            console.log(`✅ Card criado: ${tituloCard}`);
+
+            // Atualiza o WebSocket
+            if (io) {
+                const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
+                io.emit("card_criado", rows[0]);
+            }
+        }
+    } catch (error) {
+        console.error("Erro no processamento do Webhook Omie:", error);
+    }
+    
     return res.status(200).send("OK");
 });
+
+module.exports = router;
 
 module.exports = router;

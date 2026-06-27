@@ -307,7 +307,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
             </div>
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2">
-                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Gerenciar Etiquetas e Responsáveis">
+                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Etiquetas">
                       <i class="fa-solid fa-tags me-1"></i> Etiquetas
                   </button>
                   <button class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
@@ -325,7 +325,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas (Equipa)</h6>
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-3 bg-custom-dark">
@@ -399,7 +399,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             </div>
 
                               <div class="mb-4">
-                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Responsáveis / Etiquetas</label>
+                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Etiquetas</label>
                                   <div class="dropdown">
                                       <button class="btn btn-sm border-custom bg-custom-darker text-white text-start w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                           <span id="modalCardEtiquetasSelecionadas" class="text-truncate">Selecione as etiquetas...</span>

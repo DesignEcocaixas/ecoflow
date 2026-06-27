@@ -293,7 +293,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   </a>
                   <div>
                       <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-table-columns text-accent me-2"></i>${espacoAtual.nome}</h4>
-                      <span class="text-white-50 mt-1 d-none d-sm-block" style="font-size:0.75rem;">Quadro Kanban Interativo</span>
+                      <span class="text-white-50 mt-1 d-none d-sm-block" style="font-size:0.75rem;">Organize as etapas dos processos internos</span>
                   </div>
               </div>
               
@@ -350,7 +350,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" style="height: 85vh;">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
                       <div class="d-flex w-100 justify-content-between align-items-center">
-                          <span class="badge bg-custom-dark border-custom text-muted" id="modalCardIdBadge">#CARD</span>
+                          <span class="badge bg-custom-dark border-custom" id="modalCardIdBadge">#CARD</span>
                           <div>
                               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="fecharModalCard()"></button>
                           </div>
@@ -367,26 +367,36 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </div>
 
                               <div class="row g-3 mb-3">
-                                  <div class="col-md-4">
-                                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Prioridade</label>
-                                      <select id="modalCardPrioridade" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
-                                          <option value="baixa">Baixa</option>
-                                          <option value="normal" selected>Normal</option>
-                                          <option value="alta">Alta</option>
-                                      </select>
-                                  </div>
-                                  <div class="col-md-4">
-                                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Prazo de Conclusão</label>
-                                      <div class="d-flex flex-column gap-1">
-                                          <input type="date" id="modalCardPrazo" class="inline-date-picker w-100 p-1" onchange="salvarTextosModal()">
-                                          <div id="modalCardPrazoBadge" class="mt-1"></div>
-                                      </div>
-                                  </div>
-                                  <div class="col-md-4">
-                                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Coluna Atual</label>
-                                      <div id="modalCardColunaNome" class="p-2 border border-custom rounded text-white-50 text-truncate" style="background: rgba(255,255,255,0.02); font-size: 0.85rem;"></div>
-                                  </div>
-                              </div>
+                                <div class="col-md-4">
+                                    <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Prioridade</label>
+                                    <select id="modalCardPrioridade"
+                                            class="form-select form-select-sm bg-custom-darker border-custom text-white"
+                                            onchange="salvarTextosModal()">
+                                        <option value="baixa">Baixa</option>
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="alta">Alta</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Prazo de Conclusão</label>
+                                    <div class="d-flex flex-column gap-1">
+                                        <input type="date"
+                                            id="modalCardPrazo"
+                                            class="inline-date-picker w-100 p-1"
+                                            onchange="salvarTextosModal()">
+                                        <div id="modalCardPrazoBadge" class="mt-1"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;">Coluna Atual</label>
+                                    <div id="modalCardColunaNome"
+                                        class="form-control form-control-sm bg-custom-darker border-custom text-white-50 text-truncate d-flex align-items-center"
+                                        style="background: rgba(255,255,255,0.02);">
+                                    </div>
+                                </div>
+                            </div>
 
                               <div class="mb-4">
                                   <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Responsáveis / Etiquetas</label>
@@ -1346,7 +1356,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   usuario: NOME_USUARIO 
               });
               
-              mostrarToast('sucesso', 'Guardado!', 'Card atualizado com sucesso.');
+              mostrarToast('sucesso', 'Atualizado!', 'Card atualizado com sucesso.');
           }
 
           function acionarUploadModal() {

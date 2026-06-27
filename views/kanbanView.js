@@ -330,8 +330,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   </div>
                   <div class="modal-body p-3 bg-custom-dark">
                       <div class="mb-3 p-2 border border-custom rounded bg-custom-darker">
-                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nova Etiqueta (Nome)</label>
-                          <input type="text" class="form-control form-control-sm shadow-sm mb-2" id="inputNomeEtiqueta" placeholder="Ex: João Sousa">
+                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nova Etiqueta</label>
+                          <input type="text" class="form-control form-control-sm shadow-sm mb-2" id="inputNomeEtiqueta" placeholder="Ex: Ana Silva">
                           <input type="hidden" id="inputCorEtiqueta" value="#0d6efd">
                           <div class="d-flex flex-wrap gap-1 mb-2" id="paletaCoresEtiqueta">
                               ${paletaCores.map(c => `<div class="color-square ${c === '#0d6efd' ? 'active' : ''}" style="width: 20px; height: 20px; background-color: ${c};" onclick="selecionarCorEtiqueta(this, '${c}')"></div>`).join('')}

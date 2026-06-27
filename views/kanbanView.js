@@ -439,7 +439,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </div>
 
                           <div id="modal-right-col" class="col-12 col-md-5 col-lg-4 p-4 bg-custom-darker h-100 overflow-y-auto responsive-modal-col">
-                              <h6 class="text-white fw-bold mb-4" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Atividade</h6>
+                              <h6 class="text-white fw-bold mb-4" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Histórico</h6>
                               <div id="modalCardHistory" class="history-timeline"></div>
                           </div>
 

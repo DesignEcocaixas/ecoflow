@@ -49,7 +49,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           body { display: flex; height: 100vh; margin: 0; background-color: var(--bg-color); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
           
           .sidebar { width: 240px; background-color: var(--surface-color); border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; }
-          .content { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; background-color: var(--bg-color); }
+          .content { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; background-color: var(--bg-color); }
           
           .bg-custom-dark { background-color: #2a2a2a !important; }
           .bg-custom-darker { background-color: #222222 !important; }
@@ -284,7 +284,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
 
       <div class="content">
-          <div class="row align-items-center mb-3 w-100 g-3 m-0">
+          <div class="row align-items-center w-100 g-3 m-0">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
                   <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>

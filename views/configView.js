@@ -173,7 +173,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
-      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
       /* Modificadores Bootstrap */
@@ -375,21 +375,21 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           <div class="col-12">
               <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom">
                   <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
-                      <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-satellite-dish text-info me-2"></i> Console Webhook (Omie)</h6>
-                      <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">Limpar Console</button>
+                      <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-satellite-dish text-info me-2"></i> Console</h6>
                   </div>
                   <div class="card-body p-4 bg-custom-dark">
                       <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Endpoint do Ecoflow (URL para cadastrar no Omie)</label>
+                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Endpoint</label>
                           <div class="input-group input-group-sm shadow-sm">
                               <span class="input-group-text bg-custom-darker border-custom text-accent"><i class="fa-solid fa-link"></i></span>
                               <input type="text" id="webhookUrlInput" class="form-control border-custom bg-custom-darker text-white-50" value="Carregando..." readonly>
                               <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()"><i class="fa-regular fa-copy"></i> Copiar</button>
+                              <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">Limpar</button>
                           </div>
                       </div>
                       <div class="terminal-container p-3 rounded border border-custom shadow-sm" style="background-color: #0d0d0d; height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;">
                           <div id="consoleWebhook" class="d-flex flex-column gap-2">
-                              <div class="text-white-50"># Escutando eventos do Omie na porta do servidor...</div>
+                              <div class="text-white-50"># Escutando eventos</div>
                           </div>
                       </div>
                   </div>
@@ -648,15 +648,58 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           }
       }
 
+      function escapeHtmlWebhook(text) {
+          const div = document.createElement('div');
+          div.innerText = text;
+          return div.innerHTML;
+      }
+
       // =======================================================================
       // LÓGICA DO CONSOLE WEBHOOK (OMIE)
       // =======================================================================
+      
+      // Função para ler o Histórico de Logs do banco ao carregar a página
+      async function carregarHistoricoWebhook() {
+          try {
+              const resp = await fetch('/webhook/omie/logs');
+              const data = await resp.json();
+              if(data.success && data.logs.length > 0) {
+                  const consoleEl = document.getElementById('consoleWebhook');
+                  consoleEl.innerHTML = ''; // Limpa a mensagem padrão de escuta
+                  
+                  data.logs.forEach(log => {
+                      const time = new Date(log.criado_em).toLocaleTimeString('pt-BR');
+                      const isPing = log.topico === 'PING';
+                      const colorTitle = isPing ? 'text-info' : 'text-success';
+                      const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + log.topico;
+                      
+                      const stringified = typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload, null, 2);
+                      
+                      const logEntry = document.createElement('div');
+                      logEntry.className = "border-bottom border-custom pb-2 mb-2";
+                      
+                      // Usando concatenação de string tradicional para evitar quebra no Node.js
+                      logEntry.innerHTML = '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
+                          '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' + escapeHtmlWebhook(stringified) + '</pre>';
+                      
+                      consoleEl.appendChild(logEntry);
+                  });
+                  // Desce o scroll para a mensagem mais recente
+                  consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
+              }
+          } catch(e) {
+              console.error("Erro ao buscar histórico de webhooks", e);
+          }
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
           // Preenche a URL do endpoint dinamicamente com base no domínio atual
           const urlInput = document.getElementById('webhookUrlInput');
           if(urlInput) {
               urlInput.value = window.location.origin + '/webhook/omie/pedidos';
           }
+          
+          carregarHistoricoWebhook();
           
           // Inicia a escuta de WebSockets se o objeto io existir
           if (typeof io !== 'undefined') {
@@ -666,7 +709,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   const consoleEl = document.getElementById('consoleWebhook');
                   
                   // Remove o texto inicial se for o primeiro evento a chegar
-                  if(consoleEl.innerHTML.includes('# Escutando eventos do Omie')) {
+                  if(consoleEl.innerHTML.includes('# Escutando eventos')) {
                       consoleEl.innerHTML = '';
                   }
                   
@@ -681,10 +724,10 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                   
                   const logEntry = document.createElement('div');
                   logEntry.className = "border-bottom border-custom pb-2 mb-2";
-                  logEntry.innerHTML = \`
-                      <span class="text-white-50">[\${time}]</span> <strong class="\${colorTitle}">\${titleMsg}</strong>
-                      <pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">\${escapeHtmlWebhook(stringified)}</pre>
-                  \`;
+                  
+                  // Usando concatenação de string tradicional para evitar quebra no Node.js
+                  logEntry.innerHTML = '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
+                      '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' + escapeHtmlWebhook(stringified) + '</pre>';
                   
                   consoleEl.appendChild(logEntry);
                   
@@ -704,12 +747,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
       function limparConsoleWebhook() {
           document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos do Omie na porta do servidor...</div>';
-      }
-      
-      function escapeHtmlWebhook(text) {
-          const div = document.createElement('div');
-          div.innerText = text;
-          return div.innerHTML;
       }
     </script>
   </body>

@@ -213,6 +213,21 @@ async function buscarDetalhesOmie(appKey, appSecret, idPedido, idCliente) {
 router.post("/webhook/omie/pedidos", async (req, res) => {
     const payload = req.body;
     const io = req.app.get("io");
+    const dbPromise = db.promise();
+
+    // NOVO: SALVAR O LOG NO BANCO DE DADOS ANTES DE QUALQUER COISA
+    try {
+        const topicoStr = payload.topic || (payload.ping ? 'PING' : 'DESCONHECIDO');
+        const appKeyStr = payload.appKey || 'N/A';
+        const payloadJsonStr = JSON.stringify(payload);
+
+        await dbPromise.query(
+            "INSERT INTO webhook_logs (topico, app_key, payload) VALUES (?, ?, ?)",
+            [topicoStr, appKeyStr, payloadJsonStr]
+        );
+    } catch (logErr) {
+        console.error("Erro ao salvar log do webhook no banco de dados:", logErr);
+    }
 
     // 1. EMITE PARA O CONSOLE VISUAL (Na tela de Configurações)
     if (io) {
@@ -237,7 +252,6 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
         return res.status(200).send("OK");
     }
 
-    const dbPromise = db.promise();
     const ETAPA_GATILHO = "20"; // Etapa para capturar o evento
 
     try {
@@ -300,6 +314,16 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
     return res.status(200).send("OK");
 });
 
-module.exports = router;
+// NOVO: ROTA PARA BUSCAR O HISTÓRICO DE LOGS (EXIBIR NA TELA DE CONFIGURAÇÕES)
+router.get("/webhook/omie/logs", async (req, res) => {
+    try {
+        // Traz os últimos 50 eventos registados, do mais recente para o mais antigo
+        const [logs] = await db.promise().query("SELECT * FROM webhook_logs ORDER BY criado_em ASC LIMIT 50");
+        res.json({ success: true, logs });
+    } catch (error) {
+        console.error("Erro ao buscar logs do webhook:", error);
+        res.status(500).json({ success: false, error: "Erro ao buscar logs" });
+    }
+});
 
 module.exports = router;

@@ -209,9 +209,7 @@ async function buscarDetalhesOmie(appKey, appSecret, idPedido, idCliente) {
     }
 }
 
-// ==============================================================================
 // WEBHOOK OMIE - ROTA ÚNICA E UNIFICADA
-// ==============================================================================
 router.post("/webhook/omie/pedidos", async (req, res) => {
     const payload = req.body;
     const io = req.app.get("io");

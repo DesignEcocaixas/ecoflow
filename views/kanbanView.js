@@ -307,7 +307,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
             </div>
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2">
-                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Gerenciar Etiquetas">
+                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Gerenciar Etiquetas e Responsáveis">
                       <i class="fa-solid fa-tags me-1"></i> Etiquetas
                   </button>
                   <button class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
@@ -325,7 +325,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas</h6>
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas (Equipa)</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-3 bg-custom-dark">
@@ -389,7 +389,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </div>
 
                               <div class="mb-4">
-                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Etiquetas</label>
+                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Responsáveis / Etiquetas</label>
                                   <div class="dropdown">
                                       <button class="btn btn-sm border-custom bg-custom-darker text-white text-start w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                           <span id="modalCardEtiquetasSelecionadas" class="text-truncate">Selecione as etiquetas...</span>
@@ -409,6 +409,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                           <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);"><i class="fas fa-italic"></i></button>
                                           <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline', false, null);"><i class="fas fa-underline"></i></button>
                                           <button type="button" onmousedown="event.preventDefault(); document.execCommand('insertUnorderedList', false, null);"><i class="fas fa-list-ul"></i></button>
+                                          <!-- NOVO BOTÃO DE CHECKBOX -->
+                                          <button type="button" onmousedown="event.preventDefault(); window.inserirCheckboxTarefa();" title="Adicionar Check-list"><i class="fa-regular fa-square-check"></i></button>
                                       </div>
                                       <div id="modalCardDescricao" class="card-desc-modal" contenteditable="true" onblur="salvarTextosModal()"></div>
                                   </div>
@@ -601,7 +603,35 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   renderizarKanban();
                   iniciarArrastoMouse();
               }, 150);
+
+              // Lógica Global de Checkboxes na Descrição (Risca o texto quando marcado)
+              const descEl = document.getElementById('modalCardDescricao');
+              if (descEl) {
+                  descEl.addEventListener('change', function(e) {
+                      if (e.target && e.target.type === 'checkbox') {
+                          const checkbox = e.target;
+                          const parent = checkbox.parentElement;
+                          
+                          if (checkbox.checked) {
+                              checkbox.setAttribute('checked', 'checked'); // Garante que é guardado no HTML
+                              parent.style.textDecoration = 'line-through';
+                              parent.style.opacity = '0.5';
+                          } else {
+                              checkbox.removeAttribute('checked');
+                              parent.style.textDecoration = 'none';
+                              parent.style.opacity = '1';
+                          }
+                          salvarTextosModal(); // Salva a mudança logo que clica
+                      }
+                  });
+              }
           });
+
+          // Função ativada pelo novo botão da Toolbar para inserir uma tarefa
+          window.inserirCheckboxTarefa = function() {
+              const html = \`<div><input type="checkbox" style="margin-right: 6px; cursor: pointer;"> Tarefa...</div>\`;
+              document.execCommand('insertHTML', false, html);
+          };
 
           // ==========================================
           // GESTÃO DE ETIQUETAS (TAGS/RESPONSÁVEIS)
@@ -644,9 +674,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
                   
-                  // A duplicação acontecia aqui! Removemos a adição local manual (tempId),
-                  // pois o WebSockets (socket.on('nova_etiqueta_criada')) já é acionado 
-                  // pelo servidor e adiciona a etiqueta oficial com o ID correto do banco.
+                  // Atualização local para fluidez
+                  const tempId = Date.now();
+                  etiquetasDados.push({ id: tempId, nome, cor });
+                  renderizarListaEtiquetas();
+                  renderizarDropdownEtiquetasModal(); 
                   mostrarToast('sucesso', 'Etiqueta Criada', 'Etiqueta adicionada à equipa.');
               }
           }
@@ -991,6 +1023,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   board.appendChild(colDiv);
                   
+                  // Sortable modificado para extrair o Nome da Coluna Destino e enviar ao backend
                   new Sortable(document.getElementById('coluna-' + col.id), {
                       group: 'kanban',
                       animation: 150,
@@ -1007,6 +1040,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             if(evt.from !== toList || evt.oldIndex !== evt.newIndex) {
                                 const novaColuna = toList.closest('.kanban-column');
                                 const novaColunaId = novaColuna.dataset.id;
+                                
+                                // Extrai o nome exato da nova coluna do título
+                                const novaColunaNome = novaColuna.querySelector('.column-title-inline').innerText.trim();
                                 const cardsNodes = novaColuna.querySelectorAll('.kanban-card');
                                 const novaOrdemArray = Array.from(cardsNodes).map(el => parseInt(el.dataset.id));
 
@@ -1015,7 +1051,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                     novaColunaId: novaColunaId, 
                                     novaOrdem: evt.newIndex, 
                                     novaOrdemArray: novaOrdemArray, 
-                                    usuario: NOME_USUARIO 
+                                    usuario: NOME_USUARIO,
+                                    nomeColuna: novaColunaNome // <--- Envia o nome para o backend registar
                                 });
                                 
                                 mostrarToast('sucesso', 'Movido!', 'O card foi movido para a nova posição.');
@@ -1118,6 +1155,21 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               const descEl = document.getElementById('modalCardDescricao');
               descEl.innerHTML = cardData.descricao || '';
+              
+              // Melhoria: Torna os itens do Omie clicáveis (tira o disabled) e garante que o texto deles está riscado caso já tenham vindo salvos como checked.
+              descEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                  cb.removeAttribute('disabled');
+                  cb.style.cursor = 'pointer';
+                  const parent = cb.parentElement;
+                  if (cb.checked) {
+                      parent.style.textDecoration = 'line-through';
+                      parent.style.opacity = '0.5';
+                  } else {
+                      parent.style.textDecoration = 'none';
+                      parent.style.opacity = '1';
+                  }
+              });
+
               autoLinkify(descEl); 
               
               const prazoFinal = cardData.prazo ? String(cardData.prazo).slice(0, 10) : '';
@@ -1215,6 +1267,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               document.execCommand('insertText', false, text);
           }
 
+          // INTEGRAÇÃO: Muda a prioridade para Normal se for marcado como concluído.
+          function atualizarStatusModal() {
+              const checkbox = document.getElementById('modalCardStatus');
+              const prioridadeSelect = document.getElementById('modalCardPrioridade');
+              
+              if (checkbox && checkbox.checked && prioridadeSelect && prioridadeSelect.value === 'alta') {
+                  prioridadeSelect.value = 'normal';
+              }
+              
+              salvarTextosModal();
+          }
+
           function salvarTextosModal() {
               if (!cardAbertoId) return;
               
@@ -1283,10 +1347,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               });
               
               mostrarToast('sucesso', 'Guardado!', 'Card atualizado com sucesso.');
-          }
-
-          function atualizarStatusModal() {
-              salvarTextosModal();
           }
 
           function acionarUploadModal() {

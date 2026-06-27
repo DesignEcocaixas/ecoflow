@@ -305,21 +305,22 @@ io.on("connection", (socket) => {
     // WEBSOCKET: MOVER E REORDENAR CARDS
     socket.on('mover_card', async (dados) => {
         try {
-            // 1. Atualiza a coluna do card movido (útil caso ele tenha mudado de coluna)
+            // 1. Atualiza a coluna do card movido
             await db.promise().query("UPDATE kanban_cards SET coluna_id = ? WHERE id = ?", [dados.novaColunaId, dados.cardId]);
 
-            // 2. Atualiza a ordem exata de TODOS os cards daquela coluna
+            // 2. Atualiza a ordem de TODOS os cards daquela coluna
             if (dados.novaOrdemArray && dados.novaOrdemArray.length > 0) {
-                // O índice (i) do loop (0, 1, 2, 3...) reflete exatamente a ordem visual
                 for (let i = 0; i < dados.novaOrdemArray.length; i++) {
                     await db.promise().query("UPDATE kanban_cards SET ordem = ? WHERE id = ?", [i, dados.novaOrdemArray[i]]);
                 }
             }
 
-            // 3. Regista no histórico
+            // 3. Regista no histórico com o NOME EXATO da coluna
+            const acaoTexto = dados.nomeColuna ? `Movido para ${dados.nomeColuna}` : 'Moveu ou reordenou o card';
+
             await db.promise().query(
                 "INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, ?)",
-                [dados.cardId, 'Moveu ou reordenou o card', dados.usuario || 'Sistema']
+                [dados.cardId, acaoTexto, dados.usuario || 'Sistema']
             );
 
             // Dispara a reordenação em tempo real para todos os outros ecrãs

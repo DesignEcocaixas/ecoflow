@@ -81,8 +81,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: #222;
               border: 1px solid rgba(255,255,255,0.05);
               border-radius: 10px;
-              width: 320px;
-              min-width: 320px;
+              width: 305px;
+              min-width: 305px;
               max-height: calc(100vh - 140px);
               display: flex;
               flex-direction: column;
@@ -399,17 +399,35 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             </div>
 
                               <div class="mb-4">
-                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-users me-1"></i> Etiquetas</label>
-                                  <div class="dropdown">
-                                      <button class="btn btn-sm border-custom bg-custom-darker text-white text-start w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                          <span id="modalCardEtiquetasSelecionadas" class="text-truncate">Selecione as etiquetas...</span>
-                                          <i class="fa-solid fa-chevron-down text-white-50 ms-2" style="font-size:0.7rem;"></i>
-                                      </button>
-                                      <ul class="dropdown-menu dropdown-menu-dark w-100 p-2 shadow-lg" id="dropdownEtiquetasLista" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); max-height: 200px; overflow-y: auto;">
-                                          </ul>
-                                  </div>
-                                  <div id="modalCardEtiquetasVisual" class="d-flex flex-wrap gap-2 mt-2"></div>
-                              </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="text-white-50 fw-bold mb-0" style="font-size: 0.75rem;">
+                                                <i class="fa-solid fa-users me-1"></i> Etiquetas
+                                            </label>
+
+                                            <div id="modalCardEtiquetasVisual" class="d-flex flex-wrap gap-2"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-sm border-custom bg-custom-darker text-white text-start d-flex justify-content-between align-items-center"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            style="max-width: 280px;">
+                                            <span id="modalCardEtiquetasSelecionadas" class="text-truncate">
+                                                Selecione as etiquetas...
+                                            </span>
+                                            <i class="fa-solid fa-chevron-down text-white-50 ms-2" style="font-size:0.7rem;"></i>
+                                        </button>
+
+                                        <ul class="dropdown-menu dropdown-menu-dark p-2 shadow-lg"
+                                            id="dropdownEtiquetasLista"
+                                            style="max-width: 280px; background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); max-height: 200px; overflow-y: auto;">
+                                        </ul>
+                                    </div>
+                                </div>
 
                               <div class="mb-4">
                                   <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-align-left me-1"></i> Descrição</label>
@@ -666,7 +684,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               container.innerHTML = etiquetasDados.map(e => \`
                   <div class="d-flex justify-content-between align-items-center p-2 bg-custom-dark border border-custom rounded">
                       <div class="d-flex align-items-center gap-2">
-                          <div class="rounded-circle shadow-sm" style="width: 14px; height: 14px; background-color: \${e.cor}; border: 1px solid rgba(255,255,255,0.2);"></div>
+                          <div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: \${e.cor}; border: 1px solid rgba(255,255,255,0.2);"></div>
                           <span class="text-white fw-medium" style="font-size: 0.8rem;">\${escapeHtml(e.nome)}</span>
                       </div>
                       <button class="btn btn-sm text-danger p-0 m-0" onclick="deletarEtiqueta(\${e.id})"><i class="fa-solid fa-xmark"></i></button>
@@ -714,7 +732,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <li>
                       <label class="dropdown-item d-flex align-items-center gap-2 cursor-pointer bg-transparent hover-bg-custom py-1">
                           <input class="form-check-input m-0 tag-checkbox bg-custom-darker border-custom" type="checkbox" value="\${e.id}" onchange="triggerEtiquetasChange()">
-                          <div class="rounded-circle shadow-sm" style="width: 12px; height: 12px; background-color: \${e.cor};"></div>
+                          <div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: \${e.cor}; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>
                           <span class="text-white" style="font-size: 0.8rem;">\${escapeHtml(e.nome)}</span>
                       </label>
                   </li>
@@ -737,10 +755,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const tag = etiquetasDados.find(e => e.id == id);
                   if(!tag) return '';
                   return \`
-                      <span class="badge d-flex align-items-center gap-2 border shadow-sm" style="background-color: \${hexToRgba(tag.cor, 0.15)}; border-color: \${hexToRgba(tag.cor, 0.4)} !important; color: \${tag.cor}; padding: 5px 10px;">
-                          <div class="rounded-circle" style="width: 8px; height: 8px; background-color: \${tag.cor};"></div>
-                          \${escapeHtml(tag.nome)}
-                      </span>
+                      <span class="badge d-flex align-items-center gap-2 border shadow-sm"
+                        style="border-color: \${hexToRgba(tag.cor, 0.4)} !important; color: \${tag.cor};">
+                        <div class="rounded-pill"
+                            style="width: 22px; height: 8px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>
+                        \${escapeHtml(tag.nome)}
+                    </span>
                   \`;
               }).join('');
           }
@@ -1109,7 +1129,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   tagIds.forEach(id => {
                       const tag = etiquetasDados.find(e => e.id == id);
                       if (tag) {
-                          tagsHTML += \`<div class="rounded-circle shadow-sm" style="width: 14px; height: 14px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2);" title="\${escapeHtml(tag.nome)}"></div>\`;
+                          tagsHTML += \`<div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2);" title="\${escapeHtml(tag.nome)}"></div>\`;
                       }
                   });
                   tagsHTML += '</div>';
@@ -1133,13 +1153,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   \${tagsHTML}
                   \${anexosHTML}
                   <div class="d-flex justify-content-between align-items-center mt-2 w-100">
-                      <div class="d-flex gap-2 align-items-center text-white-50" style="font-size: 0.75rem;">
+                      <div class="d-flex gap-2 align-items-center text-white-50" style="font-size: 0.65rem;">
                           \${(prazoStr || card.concluido) ? calcularBadgeDiasRestantes(prazoStr, card.concluido) : ''}
                           \${hasDesc ? '<span><i class="fa-solid fa-align-left"></i></span>' : ''}
                           \${anexosCount ? '<span><i class="fa-solid fa-paperclip"></i> ' + anexosCount + '</span>' : ''}
                       </div>
                       <div class="text-white-50" style="font-size: 0.65rem;">
-                          Criado em: \${criadoEmFormatado}
+                          Criação: \${criadoEmFormatado}
                       </div>
                   </div>
               </div>\`;

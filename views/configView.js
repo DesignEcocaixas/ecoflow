@@ -742,8 +742,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                     logEntry.className = "border-custom pb-2 mb-2";
 
                     logEntry.innerHTML =
-                        '<span class="text-white-50" style="font-size: 0.85rem;">[' + time + ']</span> <strong class="' + colorTitle + '" style="font-size: 0.9rem;">' + titleMsg + '</strong>' +
-                        '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.65rem; white-space: pre-wrap; word-break: break-all;">' +
+                        '<span class="text-white-50" style="font-size: 0.75rem;">[' + time + ']</span> <strong class="' + colorTitle + '" style="font-size: 0.75rem;">' + titleMsg + '</strong>' +
+                        '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.70rem; white-space: pre-wrap; word-break: break-all;">' +
                         escapeHtmlWebhook(stringified) +
                         '</pre>';
 

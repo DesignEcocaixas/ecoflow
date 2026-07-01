@@ -2,42 +2,42 @@
 const menuLateral = require("./menuLateral");
 
 function configView(usuario, taxas = {}, historicoNotificacoes = []) {
-  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+    const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
-  const fmtDataHora = (d) => {
-      try {
-          if(!d) return "-";
-          const dt = new Date(d);
-          return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
-      } catch {
-          return d || "-";
-      }
-  };
+    const fmtDataHora = (d) => {
+        try {
+            if (!d) return "-";
+            const dt = new Date(d);
+            return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return d || "-";
+        }
+    };
 
-  // Formatador especial para os inputs do tipo datetime-local
-  const fmtInputDateTime = (d) => {
-      try {
-          if (!d) return "";
-          const dt = new Date(d);
-          // Ajusta o fuso horário local para exibir corretamente no input
-          dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
-          return dt.toISOString().slice(0, 16);
-      } catch {
-          return "";
-      }
-  };
+    // Formatador especial para os inputs do tipo datetime-local
+    const fmtInputDateTime = (d) => {
+        try {
+            if (!d) return "";
+            const dt = new Date(d);
+            // Ajusta o fuso horário local para exibir corretamente no input
+            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+            return dt.toISOString().slice(0, 16);
+        } catch {
+            return "";
+        }
+    };
 
-  const modaisDinamicos = [];
+    const modaisDinamicos = [];
 
-  // Histórico de Notificações Globais Lançadas
-  const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
-      const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
-      const imgHtml = n.imagem 
-        ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">` 
-        : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
+    // Histórico de Notificações Globais Lançadas
+    const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
+        const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
+        const imgHtml = n.imagem
+            ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">`
+            : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
 
-      // Modal de Edição
-      modaisDinamicos.push(`
+        // Modal de Edição
+        modaisDinamicos.push(`
         <div class="modal fade" id="editarNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <form method="POST" action="/notificacoes/global/editar/${n.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação Atualizada!')">
@@ -92,8 +92,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
         </div>
       `);
 
-      // Modal de Exclusão
-      modaisDinamicos.push(`
+        // Modal de Exclusão
+        modaisDinamicos.push(`
         <div class="modal fade" id="excluirNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-sm modal-dialog-centered">
                 <form method="POST" action="/notificacoes/global/deletar/${n.id}" class="modal-content border-0 shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação Excluída!')">
@@ -111,7 +111,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
         </div>
       `);
 
-      return `
+        return `
       <tr class="align-middle table-hover-row">
           <td class="py-2 px-3">
               <div class="d-flex align-items-center">
@@ -143,11 +143,11 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           </td>
       </tr>
       `;
-  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.8rem;">Nenhum disparo de notificação encontrado no histórico.</span></td></tr>`;
+    }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.8rem;">Nenhum disparo de notificação encontrado no histórico.</span></td></tr>`;
 
-  const menuHTML = menuLateral(user, "/configuracoes");
+    const menuHTML = menuLateral(user, "/configuracoes");
 
-  return `
+    return `
   <!DOCTYPE html>
   <html lang="pt-br">
   <head>
@@ -193,6 +193,13 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
+      /* Placeholder dos inputs e textareas */
+    .form-control::placeholder,
+    textarea.form-control::placeholder {
+        color: rgba(255, 255, 255, 0.38) !important;
+        opacity: 1;
+    }
+
       /* Tabelas e Modais */
       .table { 
           --bs-table-bg: transparent; 
@@ -222,7 +229,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
       }
 
-      .erp-card { transition: all 0.3s ease; border-radius: 12px; border-width: 1px !important; background-color: #2a2a2a !important; border-style: solid; border-color: rgba(255,255,255,0.05) !important; }
+      .erp-card { transition: all 0.3s ease; border-width: 1px !important; background-color: #2a2a2a !important; border-style: solid; border-color: rgba(255,255,255,0.05) !important; }
       .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
@@ -435,7 +442,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                             <div class="terminal-container flex-grow-1 p-3 rounded border border-custom shadow-sm"
                                 style="
                                     background-color:#0d0d0d;
-                                    height:280px;
+                                    min-height:500px;
+                                    height:65vh;
                                     overflow-y:auto;
                                     font-family:monospace;
                                     font-size:0.8rem;

@@ -2,42 +2,42 @@
 const menuLateral = require("./menuLateral");
 
 function configView(usuario, taxas = {}, historicoNotificacoes = []) {
-    const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
-    const fmtDataHora = (d) => {
-        try {
-            if (!d) return "-";
-            const dt = new Date(d);
-            return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
-        } catch {
-            return d || "-";
-        }
-    };
+  const fmtDataHora = (d) => {
+      try {
+          if (!d) return "-";
+          const dt = new Date(d);
+          return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+      } catch {
+          return d || "-";
+      }
+  };
 
-    // Formatador especial para os inputs do tipo datetime-local
-    const fmtInputDateTime = (d) => {
-        try {
-            if (!d) return "";
-            const dt = new Date(d);
-            // Ajusta o fuso horário local para exibir corretamente no input
-            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
-            return dt.toISOString().slice(0, 16);
-        } catch {
-            return "";
-        }
-    };
+  // Formatador especial para os inputs do tipo datetime-local
+  const fmtInputDateTime = (d) => {
+      try {
+          if (!d) return "";
+          const dt = new Date(d);
+          // Ajusta o fuso horário local para exibir corretamente no input
+          dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+          return dt.toISOString().slice(0, 16);
+      } catch {
+          return "";
+      }
+  };
 
-    const modaisDinamicos = [];
+  const modaisDinamicos = [];
 
-    // Histórico de Notificações Globais Lançadas
-    const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
-        const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
-        const imgHtml = n.imagem
-            ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">`
-            : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
+  // Histórico de Notificações Globais Lançadas
+  const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
+      const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
+      const imgHtml = n.imagem
+          ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;">`
+          : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; flex-shrink: 0;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
 
-        // Modal de Edição
-        modaisDinamicos.push(`
+      // Modal de Edição
+      modaisDinamicos.push(`
         <div class="modal fade" id="editarNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <form method="POST" action="/notificacoes/global/editar/${n.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação Atualizada!')">
@@ -92,8 +92,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
         </div>
       `);
 
-        // Modal de Exclusão
-        modaisDinamicos.push(`
+      // Modal de Exclusão
+      modaisDinamicos.push(`
         <div class="modal fade" id="excluirNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-sm modal-dialog-centered">
                 <form method="POST" action="/notificacoes/global/deletar/${n.id}" class="modal-content border-0 shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Notificação Excluída!')">
@@ -111,14 +111,14 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
         </div>
       `);
 
-        return `
-      <tr class="align-middle table-hover-row">
+      return `
+      <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="if(!event.target.closest('button')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('editarNotificacao${n.id}')).show(); }">
           <td class="py-2 px-3">
               <div class="d-flex align-items-center">
                   ${imgHtml}
-                  <div>
-                      <strong class="text-white d-block text-truncate" style="max-width: 200px; font-size: 0.85rem;" title="${n.titulo}">${n.titulo}</strong>
-                      <span class="text-muted d-block mt-1" style="font-size: 0.7rem;" title="Período de Exibição">
+                  <div style="min-width: 0; flex: 1;">
+                      <strong class="text-white d-block text-truncate" style="font-size: 0.85rem;" title="${n.titulo}">${n.titulo}</strong>
+                      <span class="text-muted d-block mt-1 text-truncate" style="font-size: 0.7rem;" title="Período de Exibição">
                           <i class="fa-regular fa-calendar-check text-accent me-1"></i>${n.data_inicio ? fmtDataHora(n.data_inicio) : '-'} <br>
                           <i class="fa-regular fa-calendar-xmark text-danger me-1"></i>${n.data_fim ? fmtDataHora(n.data_fim) : '-'}
                       </span>
@@ -126,28 +126,25 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
               </div>
           </td>
           <td class="text-muted py-2 px-3" style="font-size: 0.8rem;">
-              <span class="d-inline-block text-truncate text-white" style="max-width: 180px;" title="${n.mensagem}">${n.mensagem}</span>
+              <span class="d-block text-truncate text-white" title="${n.mensagem}">${n.mensagem}</span>
           </td>
           <td class="text-center py-2 px-3">
               <span class="badge ${n.status === 'ATIVA' ? 'bg-success bg-opacity-10 text-success border-success border-opacity-50' : 'bg-custom-dark border-custom text-muted'} border shadow-sm" style="font-size: 0.65rem;">
                   ${n.status}
               </span>
           </td>
-          <td class="text-end py-2 px-3 text-nowrap">
-             <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2 me-1" style="font-size: 0.75rem;" title="Editar" data-bs-toggle="modal" data-bs-target="#editarNotificacao${n.id}">
-                 <i class="fa-solid fa-pen"></i>
-             </button>
+          <td class="text-end py-2 px-3">
              <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2" style="font-size: 0.75rem;" title="Excluir" data-bs-toggle="modal" data-bs-target="#excluirNotificacao${n.id}">
                  <i class="fa-solid fa-trash"></i>
              </button>
           </td>
       </tr>
       `;
-    }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.8rem;">Nenhum disparo de notificação encontrado no histórico.</span></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-bullhorn fa-2x opacity-25 mb-3 d-block"></i><span style="font-size: 0.8rem;">Nenhum disparo de notificação encontrado no histórico.</span></td></tr>`;
 
-    const menuHTML = menuLateral(user, "/configuracoes");
+  const menuHTML = menuLateral(user, "/configuracoes");
 
-    return `
+  return `
   <!DOCTYPE html>
   <html lang="pt-br">
   <head>
@@ -173,7 +170,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
-      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
       /* Modificadores Bootstrap */
@@ -194,11 +191,11 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
       /* Placeholder dos inputs e textareas */
-    .form-control::placeholder,
-    textarea.form-control::placeholder {
-        color: rgba(255, 255, 255, 0.38) !important;
-        opacity: 1;
-    }
+      .form-control::placeholder,
+      textarea.form-control::placeholder {
+          color: rgba(255, 255, 255, 0.38) !important;
+          opacity: 1;
+      }
 
       /* Tabelas e Modais */
       .table { 
@@ -360,14 +357,14 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Avisos ativos e histórico</h6>
                   </div>
                   <div class="card-body p-0">
-                      <div class="table-responsive border-0 m-0" style="max-height: 70vh; overflow-y: auto;">
-                          <table class="table table-hover align-middle mb-0 border-0" style="font-size: 0.8rem;">
+                      <div class="table-responsive border-0 m-0" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
+                          <table class="table table-hover align-middle mb-0 border-0" style="font-size: 0.8rem; table-layout: fixed; width: 100%;">
                               <thead style="position: sticky; top: 0; z-index: 1;">
                                   <tr>
-                                      <th class="py-2 px-3 text-muted">Aviso / Exibição</th>
-                                      <th class="py-2 px-3 text-muted">Conteúdo</th>
-                                      <th class="py-2 px-3 text-center text-muted">Estado</th>
-                                      <th class="py-2 px-3 text-end text-muted">Ações</th>
+                                      <th class="py-2 px-3 text-muted" style="width: 40%;">Aviso / Exibição</th>
+                                      <th class="py-2 px-3 text-muted" style="width: 33%;">Conteúdo</th>
+                                      <th class="py-2 px-3 text-center text-muted" style="width: 15%;">Estado</th>
+                                      <th class="py-2 px-3 text-end text-muted text-nowrap" style="width: 12%;">Ações</th>
                                   </tr>
                               </thead>
                               <tbody class="border-top-0">

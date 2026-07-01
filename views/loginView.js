@@ -137,9 +137,7 @@ function loginView(msg = "") {
         .btn-erp:hover, .btn-erp:focus {
           background-color: #06a055;
           border-color: #06a055;
-          color: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(8, 192, 104, 0.3);
+          color: #323232;
         }
         .btn-erp:disabled {
           background-color: #08c068;
@@ -270,7 +268,7 @@ function loginView(msg = "") {
             </div>
 
             <h5 class="fw-bold text-white mb-1">Acesso ao Sistema</h5>
-            <p class="text-white-50 mb-4" style="font-size: 0.85rem;">Por favor, insira as suas credenciais para continuar.</p>
+            <p class="text-white-50 mb-4" style="font-size: 0.85rem;">Insira as suas credenciais para continuar.</p>
 
             ${msg ? `
               <div class="alert bg-danger bg-opacity-10 border border-danger border-opacity-50 text-white d-flex align-items-center p-3 mb-4 shadow-sm" style="font-size:0.85rem; border-radius:8px;">
@@ -301,13 +299,13 @@ function loginView(msg = "") {
                   <div class="form-check d-flex align-items-center">
                       <input class="form-check-input me-2 shadow-none mt-0" type="checkbox" id="lembrar" name="lembrar" style="cursor: pointer;">
                       <label class="form-check-label text-white-50" for="lembrar" style="font-size: 0.8rem; cursor: pointer; user-select: none;">
-                          Lembrar de mim
+                          Manter conectado
                       </label>
                   </div>
               </div>
 
               <button type="submit" class="btn btn-erp w-100 shadow">
-                Acessar<i class="fa-solid fa-arrow-right-to-bracket ms-1"></i>
+                Entrar<i class="fa-solid fa-arrow-right-to-bracket ms-1"></i>
               </button>
 
             </form>
@@ -426,7 +424,7 @@ function loginView(msg = "") {
 
                 if (responseUrl.pathname.includes('/home')) {
                     // Login com sucesso!
-                    mostrarToastLogin('sucesso', 'Acesso Permitido', 'A redirecionar...');
+                    mostrarToastLogin('sucesso', 'Acesso Permitido', 'Redirecionando...');
                     
                     // Atraso para mostrar a animação de sucesso bonita antes de recarregar
                     setTimeout(() => {

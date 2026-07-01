@@ -159,12 +159,12 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
 
 // CONFIGURAÇÃO DAS UNIDADES E CHAVES OMIE
 const EMPRESAS_OMIE = {
-    "6855005144988": { 
-        nome: "ECO CMC", 
-        secret: "51686239198d05bcc4312a45cc6b9263" 
+    "6855005144988": {
+        nome: "ECO CMC",
+        secret: "51686239198d05bcc4312a45cc6b9263"
     },
-    "4367695632300": { 
-        nome: "ECO BA", 
+    "4367695632300": {
+        nome: "ECO BA",
         secret: "7b5cc60e8d6a2b115e91fb997dd3f6df"
     }
 };
@@ -200,7 +200,7 @@ async function buscarDetalhesOmie(appKey, appSecret, idPedido, idCliente) {
 
         return {
             // Aqui resolvemos a pegadinha do Omie!
-            pedido: jsonPedido.pedido_venda_produto || null, 
+            pedido: jsonPedido.pedido_venda_produto || null,
             cliente: jsonCliente || {}
         };
     } catch (error) {
@@ -238,13 +238,13 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
     // 2. RESPONDE AO PING DO OMIE
     if (payload && payload.ping) return res.status(200).json({ message: "pong" });
-    
+
     // Valida se o payload tem dados
     if (!payload || !payload.topic || !payload.event) return res.status(200).send("OK");
 
     const event = payload.event;
     const appKey = payload.appKey;
-    
+
     // Busca dinamicamente a empresa e o secret correto!
     const empresaConfig = EMPRESAS_OMIE[appKey];
     if (!empresaConfig) {
@@ -255,8 +255,9 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
     const ETAPA_GATILHO = "20"; // Etapa para capturar o evento
 
     try {
+        // AÇÃO 1: ETAPA ALTERADA -> CRIAR NOVO CARD
         if (payload.topic === "VendaProduto.EtapaAlterada" && event.etapa === ETAPA_GATILHO) {
-            
+
             // Verificação de duplicidade na tabela kanban_cards
             const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${event.numeroPedido} - %`]);
             if (jaExiste.length > 0) return res.status(200).send("OK");
@@ -269,17 +270,14 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             const cli = dados.cliente;
             const clienteNome = cli.nome_fantasia || cli.razao_social || "Cliente Desconhecido";
             const autor = payload.author && payload.author.name ? payload.author.name.toUpperCase() : "SISTEMA";
-            
-            // 1. Coluna 'titulo'
+
             const tituloCard = `${event.numeroPedido} - ${clienteNome} - (${autor}) - ${empresaConfig.nome}`;
-            
-            // 2. Coluna 'prazo'
+
             let prazo = null;
             if (dados.pedido.cabecalho.data_previsao) {
-                prazo = dados.pedido.cabecalho.data_previsao.split('/').reverse().join('-'); 
+                prazo = dados.pedido.cabecalho.data_previsao.split('/').reverse().join('-');
             }
-            
-            // 3. Coluna 'descricao' (Usando apenas marcação básica suportada pelo seu editor)
+
             const itens = dados.pedido.det || [];
             let descricaoCard = `<div style="font-weight:bold; margin-bottom:10px;">ITENS DO PEDIDO</div>`;
             itens.forEach(item => {
@@ -290,27 +288,77 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             const [col] = await dbPromise.query("SELECT id FROM kanban_colunas WHERE titulo LIKE '%Pedidos%' LIMIT 1");
             const colunaId = col.length > 0 ? col[0].id : 1;
 
-            // Insere o Card respeitando estritamente a estrutura da tabela
+            // Insere o Card
             const [insert] = await dbPromise.query(
                 "INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem, prazo, concluido, prioridade) VALUES (?, ?, ?, 999, ?, 0, 'normal')",
                 [colunaId, tituloCard, descricaoCard, prazo]
             );
 
-            // Grava no Histórico nativo do Ecoflow
             await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card gerado via Omie Webhook', 'Omie Bot')", [insert.insertId]);
-
             console.log(`✅ Card criado: ${tituloCard}`);
 
-            // Atualiza o WebSocket
             if (io) {
                 const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
                 io.emit("card_criado", rows[0]);
             }
         }
+
+        // AÇÃO 2: PEDIDO ALTERADO -> ATUALIZAR PRAZO NO KANBAN
+        if (payload.topic === "VendaProduto.Alterada") {
+            const idPedido = event.idPedido;
+            const numeroPedido = event.numeroPedido;
+
+            // 1. Verifica se já existe um card no Kanban para este pedido
+            const [cardsExistentes] = await dbPromise.query("SELECT * FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
+
+            if (cardsExistentes.length > 0) {
+                const cardAlvo = cardsExistentes[0];
+                console.log(`[Omie] Pedido #${numeroPedido} alterado no Omie. Verificando nova data...`);
+
+                // 2. Busca os dados atualizados na API do Omie
+                const dadosCompletos = await buscarDetalhesOmie(appKey, empresaConfig.secret, idPedido, event.idCliente);
+
+                if (dadosCompletos && dadosCompletos.pedido) {
+                    const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao;
+
+                    let prazoFormatado = null;
+                    if (dataPrevisao) {
+                        const partes = dataPrevisao.split('/');
+                        if (partes.length === 3) prazoFormatado = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                    }
+
+                    // 3. Compara a data do banco com a nova data
+                    const prazoBancoStr = cardAlvo.prazo ? new Date(cardAlvo.prazo).toISOString().split('T')[0] : null;
+
+                    if (prazoFormatado && prazoFormatado !== prazoBancoStr) {
+                        // Atualiza a data no banco de dados
+                        await dbPromise.query("UPDATE kanban_cards SET prazo = ? WHERE id = ?", [prazoFormatado, cardAlvo.id]);
+
+                        await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Data de entrega atualizada via Omie', 'Omie Bot')", [cardAlvo.id]);
+
+                        // 4. Emite o evento do Socket.io para mover o card visualmente
+                        if (io) {
+                            const [cardAtualizado] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [cardAlvo.id]);
+                            io.emit("card_atualizado", cardAtualizado[0]);
+                            io.emit("webhook_omie_recebido", {
+                                resumo: `Data do Pedido #${numeroPedido} atualizada para ${dataPrevisao}!`,
+                                status: "Sucesso",
+                                payload: payload
+                            });
+                        }
+                        console.log(`✅ Prazo do pedido #${numeroPedido} atualizado automaticamente para ${prazoFormatado}.`);
+                    } else {
+                        console.log(`[Omie] O pedido #${numeroPedido} foi alterado, mas a data de previsão continua a mesma.`);
+                    }
+                }
+            }
+        }
+
     } catch (error) {
         console.error("Erro no processamento do Webhook Omie:", error);
     }
-    
+
+    // O retorno de OK deve acontecer no final da função para liberar o Omie rapidamente
     return res.status(200).send("OK");
 });
 

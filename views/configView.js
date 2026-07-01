@@ -388,7 +388,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                 <div class="card-body p-4 bg-custom-dark">
                     <div class="row g-4 h-100">
 
-                        <div class="col-lg-4">
+                        <div class="col-lg-5">
                             <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
                                 Endpoint do Ecoflow
                             </label>
@@ -412,11 +412,11 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                             </div>
                         </div>
 
-                        <div class="col-lg-8 d-flex flex-column border-start border-custom ps-4">
+                        <div class="col-lg-7 d-flex flex-column border-start border-custom ps-4">
 
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label text-muted fw-bold mb-0" style="font-size:0.75rem;">
-                                    Console de Eventos (JSON)
+                                    Console
                                 </label>
                             </div>
 

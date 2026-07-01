@@ -714,100 +714,111 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           return div.innerHTML;
       }
 
-      // =======================================================================
-      // LÓGICA DO CONSOLE WEBHOOK (OMIE)
-      // =======================================================================
-      
-      // Função para ler o Histórico de Logs do banco ao carregar a página
-      async function carregarHistoricoWebhook() {
-          try {
-              const resp = await fetch('/webhook/omie/logs');
-              const data = await resp.json();
-              if(data.success && data.logs.length > 0) {
-                  const consoleEl = document.getElementById('consoleWebhook');
-                  consoleEl.innerHTML = ''; // Limpa a mensagem padrão de escuta
-                  
-                  data.logs.forEach(log => {
-                      const time = new Date(log.criado_em).toLocaleTimeString('pt-BR');
-                      const isPing = log.topico === 'PING';
-                      const colorTitle = isPing ? 'text-info' : 'text-success';
-                      const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + log.topico;
-                      
-                      const stringified = typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload, null, 2);
-                      
-                      const logEntry = document.createElement('div');
-                      logEntry.className = "border-bottom border-custom pb-2 mb-2";
-                      
-                      // Usando concatenação de string tradicional para evitar quebra no Node.js
-                      logEntry.innerHTML = '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
-                          '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' + escapeHtmlWebhook(stringified) + '</pre>';
-                      
-                      consoleEl.appendChild(logEntry);
-                  });
-                  // Desce o scroll para a mensagem mais recente
-                  consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
-              }
-          } catch(e) {
-              console.error("Erro ao buscar histórico de webhooks", e);
-          }
-      }
+    // LÓGICA DO CONSOLE WEBHOOK (OMIE)
+    function formatarPayloadWebhook(payload) {
+        try {
+            if (typeof payload === 'string') {
+                const parsed = JSON.parse(payload);
+                return JSON.stringify(parsed, null, 2);
+            }
 
-      document.addEventListener('DOMContentLoaded', () => {
-          // Preenche a URL do endpoint dinamicamente com base no domínio atual
-          const urlInput = document.getElementById('webhookUrlInput');
-          if(urlInput) {
-              urlInput.value = window.location.origin + '/webhook/omie/pedidos';
-          }
-          
-          carregarHistoricoWebhook();
-          
-          // Inicia a escuta de WebSockets se o objeto io existir
-          if (typeof io !== 'undefined') {
-              const socket = io();
-              
-              socket.on('webhook_omie_recebido', (data) => {
-                  const consoleEl = document.getElementById('consoleWebhook');
-                  
-                  // Remove o texto inicial se for o primeiro evento a chegar
-                  if(consoleEl.innerHTML.includes('# Escutando eventos')) {
-                      consoleEl.innerHTML = '';
-                  }
-                  
-                  const time = new Date().toLocaleTimeString('pt-BR');
-                  const isPing = data.payload && data.payload.ping;
-                  
-                  // Formatação baseada no tipo de evento (Ping = Azul, Evento = Verde)
-                  const colorTitle = isPing ? 'text-info' : 'text-success';
-                  const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + (data.payload.topic || 'Desconhecido');
-                  
-                  const stringified = JSON.stringify(data.payload, null, 2);
-                  
-                  const logEntry = document.createElement('div');
-                  logEntry.className = "border-bottom border-custom pb-2 mb-2";
-                  
-                  // Usando concatenação de string tradicional para evitar quebra no Node.js
-                  logEntry.innerHTML = '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
-                      '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' + escapeHtmlWebhook(stringified) + '</pre>';
-                  
-                  consoleEl.appendChild(logEntry);
-                  
-                  // Rola automaticamente para o fim do terminal
-                  consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
-              });
-          }
-      });
+            return JSON.stringify(payload, null, 2);
+        } catch (e) {
+            return payload;
+        }
+    }
 
-      function copiarUrlWebhook() {
-          const copyText = document.getElementById("webhookUrlInput");
-          copyText.select();
-          copyText.setSelectionRange(0, 99999);
-          navigator.clipboard.writeText(copyText.value);
-          mostrarToast('sucesso', 'Copiado!', 'Link do endpoint copiado para a área de transferência.');
-      }
+    // Função para ler o Histórico de Logs do banco ao carregar a página
+    async function carregarHistoricoWebhook() {
+        try {
+            const resp = await fetch('/webhook/omie/logs');
+            const data = await resp.json();
 
-      function limparConsoleWebhook() {
-          document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos</div>';
-      }
+            if (data.success && data.logs.length > 0) {
+                const consoleEl = document.getElementById('consoleWebhook');
+                consoleEl.innerHTML = '';
+
+                data.logs.forEach(log => {
+                    const time = new Date(log.criado_em).toLocaleTimeString('pt-BR');
+                    const isPing = log.topico === 'PING';
+                    const colorTitle = isPing ? 'text-info' : 'text-success';
+                    const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + log.topico;
+
+                    const stringified = formatarPayloadWebhook(log.payload);
+
+                    const logEntry = document.createElement('div');
+                    logEntry.className = "border-bottom border-custom pb-2 mb-2";
+
+                    logEntry.innerHTML =
+                        '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
+                        '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
+                        escapeHtmlWebhook(stringified) +
+                        '</pre>';
+
+                    consoleEl.appendChild(logEntry);
+                });
+
+                consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
+            }
+        } catch (e) {
+            console.error("Erro ao buscar histórico de webhooks", e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlInput = document.getElementById('webhookUrlInput');
+
+        if (urlInput) {
+            urlInput.value = window.location.origin + '/webhook/omie/pedidos';
+        }
+
+        carregarHistoricoWebhook();
+
+        if (typeof io !== 'undefined') {
+            const socket = io();
+
+            socket.on('webhook_omie_recebido', (data) => {
+                const consoleEl = document.getElementById('consoleWebhook');
+
+                if (consoleEl.innerHTML.includes('# Escutando eventos')) {
+                    consoleEl.innerHTML = '';
+                }
+
+                const time = new Date().toLocaleTimeString('pt-BR');
+                const isPing = data.payload && data.payload.ping;
+
+                const colorTitle = isPing ? 'text-info' : 'text-success';
+                const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + (data.payload.topic || 'Desconhecido');
+
+                const stringified = formatarPayloadWebhook(data.payload);
+
+                const logEntry = document.createElement('div');
+                logEntry.className = "border-bottom border-custom pb-2 mb-2";
+
+                logEntry.innerHTML =
+                    '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
+                    '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
+                    escapeHtmlWebhook(stringified) +
+                    '</pre>';
+
+                consoleEl.appendChild(logEntry);
+
+                consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
+            });
+        }
+    });
+
+    function copiarUrlWebhook() {
+        const copyText = document.getElementById("webhookUrlInput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        mostrarToast('sucesso', 'Copiado!', 'Link do endpoint copiado para a área de transferência.');
+    }
+
+    function limparConsoleWebhook() {
+        document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos</div>';
+    }
     </script>
   </body>
   </html>

@@ -278,10 +278,29 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                 prazo = dados.pedido.cabecalho.data_previsao.split('/').reverse().join('-');
             }
 
+            // 3. Coluna 'descricao' (Com observações da venda e dos itens)
             const itens = dados.pedido.det || [];
-            let descricaoCard = `<div style="font-weight:bold; margin-bottom:10px;">ITENS DO PEDIDO</div>`;
+
+            // Puxa a observação geral do pedido, se existir
+            const obsGeral = dados.pedido.observacoes && dados.pedido.observacoes.obs_venda
+                ? dados.pedido.observacoes.obs_venda
+                : "";
+
+            let descricaoCard = "";
+            // Se houver observação geral, cria uma caixa de destaque amarela
+            if (obsGeral) {
+                descricaoCard += `<div style="font-weight:bold; margin-bottom:5px; color: #ffc107;"><i class="fa-solid fa-circle-exclamation"></i> OBSERVAÇÕES DO PEDIDO</div>`;
+                // O .replace(/\n/g, '<br>') garante que as quebras de linha que o comercial deu no Omie apareçam certinhas no Kanban
+                descricaoCard += `<div style="margin-bottom:15px; padding: 10px; background: rgba(255,193,7,0.1); border-left: 3px solid #ffc107; border-radius: 4px; font-size: 0.85rem;">${obsGeral.replace(/\n/g, '<br>')}</div>`;
+            }
+            descricaoCard += `<div style="font-weight:bold; margin-bottom:10px;">ITENS DO PEDIDO</div>`;
             itens.forEach(item => {
-                descricaoCard += `<div><input type="checkbox" disabled> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b></div>`;
+                // Se existir observação no item, adiciona o " - Texto", senão, fica vazio
+                const obsItem = item.observacao && item.observacao.obs_item
+                    ? ` - ${item.observacao.obs_item.trim()}`
+                    : "";
+
+                descricaoCard += `<div style="margin-bottom: 6px;"><input type="checkbox" disabled> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b>${obsItem}</div>`;
             });
 
             // Busca a coluna "Pedidos" ou usa a ID 1 como fallback

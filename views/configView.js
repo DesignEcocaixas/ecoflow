@@ -381,7 +381,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                 <div class="card-header border-custom p-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">
                         <i class="fa-solid fa-satellite-dish text-info me-2"></i>
-                        Configuração e Monitoramento Webhook
+                        Configuração Webhook
                     </h6>
                 </div>
 
@@ -390,7 +390,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
                         <div class="col-lg-5">
                             <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
-                                Endpoint do Ecoflow
+                                Endpoint
                             </label>
 
                             <div class="input-group input-group-sm shadow-sm mb-3">

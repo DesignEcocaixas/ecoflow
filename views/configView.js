@@ -14,12 +14,10 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       }
   };
 
-  // Formatador especial para os inputs do tipo datetime-local
   const fmtInputDateTime = (d) => {
       try {
           if (!d) return "";
           const dt = new Date(d);
-          // Ajusta o fuso horário local para exibir corretamente no input
           dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
           return dt.toISOString().slice(0, 16);
       } catch {
@@ -29,14 +27,12 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
   const modaisDinamicos = [];
 
-  // Histórico de Notificações Globais Lançadas
   const linhasNotificacoes = historicoNotificacoes.length > 0 ? historicoNotificacoes.map(n => {
       const imgSrc = n.imagem ? `/uploads/mensagensSistema/${n.imagem}` : '';
       const imgHtml = n.imagem
           ? `<img src="${imgSrc}" class="rounded me-2 border border-custom shadow-sm" style="width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;">`
           : `<div class="rounded me-2 bg-custom-dark border border-custom d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; flex-shrink: 0;"><i class="fa-solid fa-image text-muted opacity-50"></i></div>`;
 
-      // Modal de Edição
       modaisDinamicos.push(`
         <div class="modal fade" id="editarNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -92,7 +88,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
         </div>
       `);
 
-      // Modal de Exclusão
       modaisDinamicos.push(`
         <div class="modal fade" id="excluirNotificacao${n.id}" tabindex="-1">
             <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -155,7 +150,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <style>
-      /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
@@ -164,16 +158,13 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
       body { display: flex; height: 100vh; margin: 0; background-color: #1f1f1f; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
       .sidebar { width: 240px; background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
-      
       .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; background-color: #1f1f1f; }
       
-      /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
       .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
-      /* Modificadores Bootstrap */
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
       
@@ -185,19 +176,16 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-      /* Inputs e Selects */
       .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
-      /* Placeholder dos inputs e textareas */
       .form-control::placeholder,
       textarea.form-control::placeholder {
           color: rgba(255, 255, 255, 0.38) !important;
           opacity: 1;
       }
 
-      /* Tabelas e Modais */
       .table { 
           --bs-table-bg: transparent; 
           --bs-table-color: #fff; 
@@ -206,24 +194,15 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           color: #fff; 
           margin-bottom: 0;
       }
-      .table thead th { 
-          background-color: #222 !important; 
-          color: rgba(255,255,255,0.6) !important; 
-          border-bottom: 1px solid rgba(255,255,255,0.1) !important; 
-          font-weight: 600; 
-      }
-      .table tbody td { 
-          border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
-          background-color: transparent !important; 
-          color: #fff !important; 
-      }
+      .table thead th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; }
+      .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.05) !important; background-color: transparent !important; color: #fff !important; }
       .table-hover-row { transition: background-color 0.2s ease; }
       .table-hover-row:hover > td, 
       .table-hover > tbody > tr:hover > td, 
       .table-hover > tbody > tr:hover > * { 
           background-color: rgba(255,255,255,0.06) !important; 
           color: #fff !important; 
-          box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
+          box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.03);
       }
 
       .erp-card { transition: all 0.3s ease; border-width: 1px !important; background-color: #2a2a2a !important; border-style: solid; border-color: rgba(255,255,255,0.05) !important; }
@@ -231,7 +210,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
 
-      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
       .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
@@ -240,12 +218,10 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      /* Upload de Imagem Notificação (Dark) */
       .image-upload-wrapper { border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; text-align: center; padding: 20px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; background: #222; }
       .image-upload-wrapper:hover { border-color: #08c068; background: #2a2a2a; }
       .image-upload-wrapper img { max-height: 150px; object-fit: contain; position: relative; z-index: 2; border-radius: 6px; }
 
-      /* SKELETON LOADING (MODO ESCURO) */
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
           background-size: 200% 100% !important;
@@ -259,11 +235,16 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       .skeleton-dark * { visibility: hidden !important; }
       .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
       .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
-      
-      @keyframes skeleton-loading-view {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-      }
+      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+      /* ========================================================
+         CSS EXCLUSIVO PARA O ACORDEÃO NO TEMA ESCURO
+      ======================================================== */
+      .accordion-button { transition: background-color 0.2s ease, box-shadow 0.2s ease; }
+      .accordion-button::after { filter: invert(1) grayscale(100%) brightness(200%); }
+      .accordion-button:not(.collapsed) { background-color: #2a2a2a; color: #fff; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.1); }
+      .accordion-button:focus { box-shadow: none; border-color: rgba(255,255,255,0.1); }
+      .accordion-item { background-color: transparent; border: none; }
 
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
@@ -377,70 +358,49 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           </div>
 
           <div class="col-12">
-              <div class="card erp-card shadow-sm h-100 border-custom">
-                <div class="card-header border-custom p-3 d-flex justify-content-between align-items-center">
+              <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom">
+                <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">
-                        <i class="fa-solid fa-satellite-dish text-info me-2"></i>
-                        Console
+                        <i class="fa-solid fa-satellite-dish text-info me-2"></i> Configuração e Monitoramento Webhook
                     </h6>
                 </div>
 
                 <div class="card-body p-4 bg-custom-dark">
-                    <div class="row g-4 h-100">
+                    <div class="row h-100">
 
-                        <div class="col-lg-4">
-                            <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
-                                Endpoint
-                            </label>
+                        <div class="col-md-4 d-flex flex-column border-end border-custom pe-4">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Endpoint do Ecoflow</label>
 
                             <div class="input-group input-group-sm shadow-sm mb-3">
-                                <span class="input-group-text bg-custom-darker border-custom text-accent">
-                                    <i class="fa-solid fa-link"></i>
-                                </span>
-
+                                <span class="input-group-text bg-custom-darker border-custom text-accent"><i class="fa-solid fa-link"></i></span>
                                 <input type="text" id="webhookUrlInput" class="form-control border-custom bg-custom-darker text-white-50" value="Carregando..." readonly>
-
-                                <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()">
-                                    <i class="fa-regular fa-copy"></i>
-                                    Copiar
-                                </button>
+                                <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()"><i class="fa-regular fa-copy"></i> Copiar</button>
                             </div>
 
-                            <div class="small text-white-50">
+                            <div class="small text-white-50 mb-4">
                                 Utilize este endpoint para receber os eventos enviados pelo Omie e processá-los automaticamente no EcoFlow.
+                            </div>
+
+                            <div class="mt-auto">
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100 border-custom py-2" onclick="limparConsoleWebhook()">
+                                    <i class="fa-solid fa-trash me-2"></i> Limpar Console
+                                </button>
                             </div>
                         </div>
 
-                        <div class="col-lg-8 d-flex flex-column">
-
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label text-muted fw-bold mb-0" style="font-size:0.75rem;">
-                                    Console
-                                </label>
-
-                                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">
-                                    Limpar
-                                </button>
-                            </div>
+                        <div class="col-md-8 ps-4 d-flex flex-column">
+                            <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Console de Eventos (JSON)</label>
 
                             <div class="terminal-container flex-grow-1 p-3 rounded border border-custom shadow-sm"
-                                style="
-                                    background-color:#0d0d0d;
-                                    min-height:500px;
-                                    height:65vh;
-                                    overflow-y:auto;
-                                    font-family:monospace;
-                                    font-size:0.65rem; 
-                                ">
-
-                                <div id="consoleWebhook" class="d-flex flex-column gap-2">
-                                    <div class="text-white-50">
-                                        # Escutando eventos
+                                style="background-color:#0d0d0d; min-height:350px; height:45vh; overflow-y:auto;">
+                                
+                                <div id="consoleWebhook" class="accordion d-flex flex-column gap-2">
+                                    <div class="text-white-50 p-2" id="consolePlaceholder" style="font-family: monospace; font-size: 0.75rem;">
+                                        # Escutando eventos do Omie...
                                     </div>
                                 </div>
 
                             </div>
-
                         </div>
 
                     </div>
@@ -489,9 +449,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
     <script src="./script/checkLogin.js"></script>
 
     <script>
-      // =======================================================================
-      // FUNÇÃO DE PREVIEW DE IMAGEM DA NOTIFICAÇÃO (NOVO E EDIÇÃO)
-      // =======================================================================
       function previewNotificationImage(inputElement) {
           const previewImg = document.getElementById('previewImgNotificacao');
           const icon = document.getElementById('iconUploadNotificacao');
@@ -547,9 +504,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           resetImagePreview();
       }
 
-      // =======================================================================
-      // AJAX E SUBMISSÃO DE FORMS COM SKELETON
-      // =======================================================================
       function mostrarToast(tipo, titulo, mensagem) {
           const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
           if (toastEl) {
@@ -619,21 +573,15 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           if (mainRow) mainRow.style.display = 'flex';
       }
 
-      // Executa no load
       mostrarSkeletonGlobais();
-      window.addEventListener('load', () => {
-          ocultarSkeletonGlobais();
-      });
-      window.addEventListener('beforeunload', () => {
-          mostrarSkeletonGlobais();
-      });
+      window.addEventListener('load', () => { ocultarSkeletonGlobais(); });
+      window.addEventListener('beforeunload', () => { mostrarSkeletonGlobais(); });
 
       async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
           if (!form.checkValidity()) { form.reportValidity(); return; }
           if (isSubmitting) return;
 
-          // Fecha os modais que possam estar abertos
           const modalEl = form.closest('.modal');
           if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -679,7 +627,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                       resetFormNotificacao();
                   }
 
-                  // Atualiza modais dinamicos de exclusão/edição no dom
                   const staticModals = ['sidebarMenu'];
                   document.querySelectorAll('.modal').forEach(m => {
                       if (!staticModals.includes(m.id)) m.remove();
@@ -706,21 +653,43 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           return div.innerHTML;
       }
 
-    // LÓGICA DO CONSOLE WEBHOOK (OMIE)
     function formatarPayloadWebhook(payload) {
         try {
             if (typeof payload === 'string') {
                 const parsed = JSON.parse(payload);
-                return JSON.stringify(parsed, null, 2);
+                return JSON.stringify(parsed, null, 4);
             }
-
-            return JSON.stringify(payload, null, 2);
+            return JSON.stringify(payload, null, 4);
         } catch (e) {
             return payload;
         }
     }
 
-    // Função para ler o Histórico de Logs do banco ao carregar a página
+    // ========================================================
+    // NOVA FUNÇÃO: GERAR HTML DO CARD ACORDEÃO PARA OS LOGS
+    // ========================================================
+    function gerarHtmlLogAccordion(id, time, isPing, titleMsg, stringified) {
+        const colorTitle = isPing ? 'text-info' : 'text-success';
+        const collapseId = 'collapseLog_' + id;
+        const headingId = 'headingLog_' + id;
+
+        return \`
+        <div class="accordion-item bg-custom-darker border-custom mb-2 rounded overflow-hidden shadow-sm">
+            <h2 class="accordion-header" id="\${headingId}">
+                <button class="accordion-button collapsed bg-custom-dark text-white shadow-none py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#\${collapseId}" aria-expanded="false" aria-controls="\${collapseId}" style="font-size: 0.75rem;">
+                    <span class="text-white-50 me-3">[\${time}]</span> 
+                    <strong class="\${colorTitle}">\${titleMsg}</strong>
+                </button>
+            </h2>
+            <div id="\${collapseId}" class="accordion-collapse collapse" aria-labelledby="\${headingId}">
+                <div class="accordion-body p-0 border-top border-custom">
+                    <pre class="m-0 p-3 bg-custom-darker text-white-50" style="font-family: monospace; font-size: 0.70rem; white-space: pre-wrap; word-break: break-all;">\${escapeHtmlWebhook(stringified)}</pre>
+                </div>
+            </div>
+        </div>
+        \`;
+    }
+
     async function carregarHistoricoWebhook() {
         try {
             const resp = await fetch('/webhook/omie/logs');
@@ -728,26 +697,17 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
             if (data.success && data.logs.length > 0) {
                 const consoleEl = document.getElementById('consoleWebhook');
-                consoleEl.innerHTML = '';
+                const placeholder = document.getElementById('consolePlaceholder');
+                if (placeholder) placeholder.remove();
 
                 data.logs.forEach(log => {
                     const time = new Date(log.criado_em).toLocaleTimeString('pt-BR');
                     const isPing = log.topico === 'PING';
-                    const colorTitle = isPing ? 'text-info' : 'text-success';
                     const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + log.topico;
-
                     const stringified = formatarPayloadWebhook(log.payload);
+                    const uniqueId = 'hist_' + log.id;
 
-                    const logEntry = document.createElement('div');
-                    logEntry.className = "border-custom pb-2 mb-2";
-
-                    logEntry.innerHTML =
-                        '<span class="text-white-50" style="font-size: 0.75rem;">[' + time + ']</span> <strong class="' + colorTitle + '" style="font-size: 0.75rem;">' + titleMsg + '</strong>' +
-                        '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.70rem; white-space: pre-wrap; word-break: break-all;">' +
-                        escapeHtmlWebhook(stringified) +
-                        '</pre>';
-
-                    consoleEl.appendChild(logEntry);
+                    consoleEl.insertAdjacentHTML('beforeend', gerarHtmlLogAccordion(uniqueId, time, isPing, titleMsg, stringified));
                 });
 
                 consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
@@ -771,30 +731,17 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
             socket.on('webhook_omie_recebido', (data) => {
                 const consoleEl = document.getElementById('consoleWebhook');
-
-                if (consoleEl.innerHTML.includes('# Escutando eventos')) {
-                    consoleEl.innerHTML = '';
-                }
+                const placeholder = document.getElementById('consolePlaceholder');
+                if (placeholder) placeholder.remove();
 
                 const time = new Date().toLocaleTimeString('pt-BR');
                 const isPing = data.payload && data.payload.ping;
-
-                const colorTitle = isPing ? 'text-info' : 'text-success';
                 const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + (data.payload.topic || 'Desconhecido');
-
                 const stringified = formatarPayloadWebhook(data.payload);
+                const uniqueId = 'live_' + Date.now() + Math.floor(Math.random() * 1000);
 
-                const logEntry = document.createElement('div');
-                logEntry.className = "border-bottom border-custom pb-2 mb-2";
-
-                logEntry.innerHTML =
-                    '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
-                    '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
-                    escapeHtmlWebhook(stringified) +
-                    '</pre>';
-
-                consoleEl.appendChild(logEntry);
-
+                // Adiciona o novo card do acordeão e desliza o scroll
+                consoleEl.insertAdjacentHTML('beforeend', gerarHtmlLogAccordion(uniqueId, time, isPing, titleMsg, stringified));
                 consoleEl.parentElement.scrollTop = consoleEl.parentElement.scrollHeight;
             });
         }
@@ -809,7 +756,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
     }
 
     function limparConsoleWebhook() {
-        document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos</div>';
+        document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50 p-2" id="consolePlaceholder" style="font-family: monospace; font-size: 0.75rem;"># Escutando eventos do Omie...</div>';
     }
     </script>
   </body>

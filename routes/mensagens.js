@@ -313,7 +313,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                 [colunaId, tituloCard, descricaoCard, prazo]
             );
 
-            await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card gerado via Omie Webhook', 'Omie Bot')", [insert.insertId]);
+            await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Criado via Omie Webhook', 'Omie')", [insert.insertId]);
             console.log(`✅ Card criado: ${tituloCard}`);
 
             if (io) {

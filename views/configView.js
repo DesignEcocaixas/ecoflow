@@ -374,26 +374,86 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
           <div class="col-12">
               <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom">
-                  <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
-                      <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-satellite-dish text-info me-2"></i> Console</h6>
-                  </div>
-                  <div class="card-body p-4 bg-custom-dark">
-                      <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Endpoint</label>
-                          <div class="input-group input-group-sm shadow-sm">
-                              <span class="input-group-text bg-custom-darker border-custom text-accent"><i class="fa-solid fa-link"></i></span>
-                              <input type="text" id="webhookUrlInput" class="form-control border-custom bg-custom-darker text-white-50" value="Carregando..." readonly>
-                              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()"><i class="fa-regular fa-copy"></i> Copiar</button>
-                              <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">Limpar</button>
-                          </div>
-                      </div>
-                      <div class="terminal-container p-3 rounded border border-custom shadow-sm" style="background-color: #0d0d0d; height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;">
-                          <div id="consoleWebhook" class="d-flex flex-column gap-2">
-                              <div class="text-white-50"># Escutando eventos</div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
+                <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">
+                        <i class="fa-solid fa-satellite-dish text-info me-2"></i>
+                        Console
+                    </h6>
+                </div>
+
+                <div class="card-body p-4 bg-custom-dark">
+                    <div class="row g-4 h-100">
+
+                        <!-- LADO ESQUERDO -->
+                        <div class="col-lg-4">
+                            <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
+                                Endpoint EcoFlow
+                            </label>
+
+                            <div class="input-group input-group-sm shadow-sm mb-3">
+                                <span class="input-group-text bg-custom-darker border-custom text-accent">
+                                    <i class="fa-solid fa-link"></i>
+                                </span>
+
+                                <input
+                                    type="text"
+                                    id="webhookUrlInput"
+                                    class="form-control border-custom bg-custom-darker text-white-50"
+                                    value="Carregando..."
+                                    readonly>
+
+                                <button
+                                    class="btn btn-outline-secondary border-custom bg-custom-darker text-white"
+                                    type="button"
+                                    onclick="copiarUrlWebhook()">
+                                    <i class="fa-regular fa-copy"></i>
+                                    Copiar
+                                </button>
+                            </div>
+
+                            <div class="small text-white-50">
+                                Utilize este endpoint para receber os eventos enviados pelo Omie e processá-los automaticamente no EcoFlow.
+                            </div>
+                        </div>
+
+                        <!-- LADO DIREITO -->
+                        <div class="col-lg-8 d-flex flex-column">
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label text-muted fw-bold mb-0" style="font-size:0.75rem;">
+                                    Console
+                                </label>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1"
+                                    onclick="limparConsoleWebhook()">
+                                    Limpar
+                                </button>
+                            </div>
+
+                            <div class="terminal-container flex-grow-1 p-3 rounded border border-custom shadow-sm"
+                                style="
+                                    background-color:#0d0d0d;
+                                    height:280px;
+                                    overflow-y:auto;
+                                    font-family:monospace;
+                                    font-size:0.8rem;
+                                ">
+
+                                <div id="consoleWebhook" class="d-flex flex-column gap-2">
+                                    <div class="text-white-50">
+                                        # Escutando eventos
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
           </div>
 
       </div>
@@ -746,7 +806,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
       }
 
       function limparConsoleWebhook() {
-          document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos do Omie na porta do servidor...</div>';
+          document.getElementById('consoleWebhook').innerHTML = '<div class="text-white-50"># Escutando eventos</div>';
       }
     </script>
   </body>

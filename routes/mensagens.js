@@ -159,13 +159,13 @@ router.post("/notificacoes/global/deletar/:id", (req, res) => {
 
 // CONFIGURAÇÃO DAS UNIDADES E CHAVES OMIE
 const EMPRESAS_OMIE = {
-    "6855005144988": {
+    [process.env.OMIE_ECO_CMC_APP_KEY]: {
         nome: "ECO CMC",
-        secret: "51686239198d05bcc4312a45cc6b9263"
+        secret: process.env.OMIE_ECO_CMC_APP_SECRET
     },
-    "4367695632300": {
+    [process.env.OMIE_ECO_BA_APP_KEY]: {
         nome: "ECO BA",
-        secret: "7b5cc60e8d6a2b115e91fb997dd3f6df"
+        secret: process.env.OMIE_ECO_BA_APP_SECRET
     }
 };
 

@@ -377,8 +377,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
           </div>
 
           <div class="col-12">
-              <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom">
-                <div class="card-header bg-custom-darker border-bottom border-custom p-3 d-flex justify-content-between align-items-center">
+              <div class="card erp-card shadow-sm h-100 border-custom">
+                <div class="card-header bg-custom-darker border-custom p-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">
                         <i class="fa-solid fa-satellite-dish text-info me-2"></i>
                         Console
@@ -388,7 +388,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                 <div class="card-body p-4 bg-custom-dark">
                     <div class="row g-4 h-100">
 
-                        <!-- LADO ESQUERDO -->
                         <div class="col-lg-4">
                             <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
                                 Endpoint
@@ -399,17 +398,9 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                                     <i class="fa-solid fa-link"></i>
                                 </span>
 
-                                <input
-                                    type="text"
-                                    id="webhookUrlInput"
-                                    class="form-control border-custom bg-custom-darker text-white-50"
-                                    value="Carregando..."
-                                    readonly>
+                                <input type="text" id="webhookUrlInput" class="form-control border-custom bg-custom-darker text-white-50" value="Carregando..." readonly>
 
-                                <button
-                                    class="btn btn-outline-secondary border-custom bg-custom-darker text-white"
-                                    type="button"
-                                    onclick="copiarUrlWebhook()">
+                                <button class="btn btn-outline-secondary border-custom bg-custom-darker text-white" type="button" onclick="copiarUrlWebhook()">
                                     <i class="fa-regular fa-copy"></i>
                                     Copiar
                                 </button>
@@ -420,7 +411,6 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                             </div>
                         </div>
 
-                        <!-- LADO DIREITO -->
                         <div class="col-lg-8 d-flex flex-column">
 
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -428,10 +418,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                                     Console
                                 </label>
 
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1"
-                                    onclick="limparConsoleWebhook()">
+                                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 py-1" onclick="limparConsoleWebhook()">
                                     Limpar
                                 </button>
                             </div>
@@ -443,7 +430,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                                     height:65vh;
                                     overflow-y:auto;
                                     font-family:monospace;
-                                    font-size:0.8rem;
+                                    font-size:0.65rem; 
                                 ">
 
                                 <div id="consoleWebhook" class="d-flex flex-column gap-2">

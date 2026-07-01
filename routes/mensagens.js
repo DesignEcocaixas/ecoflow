@@ -353,7 +353,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                         // Atualiza a data no banco de dados
                         await dbPromise.query("UPDATE kanban_cards SET prazo = ? WHERE id = ?", [prazoFormatado, cardAlvo.id]);
 
-                        await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Data de entrega atualizada via Omie', 'Omie Bot')", [cardAlvo.id]);
+                        await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Prazo atualizado via Omie', 'Omie')", [cardAlvo.id]);
 
                         // 4. Emite o evento do Socket.io para mover o card visualmente
                         if (io) {

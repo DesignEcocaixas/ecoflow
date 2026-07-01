@@ -743,7 +743,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
                     logEntry.innerHTML =
                         '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
-                        '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
+                        '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
                         escapeHtmlWebhook(stringified) +
                         '</pre>';
 
@@ -789,7 +789,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
                 logEntry.innerHTML =
                     '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +
-                    '<pre class="m-0 mt-2 p-2 bg-custom-dark border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
+                    '<pre class="m-0 mt-2 p-2 border border-custom rounded text-white-50" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-all;">' +
                     escapeHtmlWebhook(stringified) +
                     '</pre>';
 

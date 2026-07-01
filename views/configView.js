@@ -378,7 +378,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
 
           <div class="col-12">
               <div class="card erp-card shadow-sm h-100 border-custom">
-                <div class="card-header bg-custom-darker border-custom p-3 d-flex justify-content-between align-items-center">
+                <div class="card-header border-custom p-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">
                         <i class="fa-solid fa-satellite-dish text-info me-2"></i>
                         Console
@@ -739,7 +739,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                     const stringified = formatarPayloadWebhook(log.payload);
 
                     const logEntry = document.createElement('div');
-                    logEntry.className = "border-bottom border-custom pb-2 mb-2";
+                    logEntry.className = "border-custom pb-2 mb-2";
 
                     logEntry.innerHTML =
                         '<span class="text-white-50">[' + time + ']</span> <strong class="' + colorTitle + '">' + titleMsg + '</strong>' +

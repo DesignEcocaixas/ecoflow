@@ -387,7 +387,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                         <!-- LADO ESQUERDO -->
                         <div class="col-lg-4">
                             <label class="form-label text-muted fw-bold mb-2" style="font-size:0.75rem;">
-                                Endpoint EcoFlow
+                                Endpoint
                             </label>
 
                             <div class="input-group input-group-sm shadow-sm mb-3">

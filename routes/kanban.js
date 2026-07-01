@@ -51,21 +51,35 @@ router.get("/kanban", isLogged, (req, res) => {
                     // 4. Busca os anexos e as relações de etiquetas simultaneamente
                     db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
                         db.query("SELECT * FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsCards], (errEtiquetasCards, relacoes) => {
-                            
+
                             const anexosGerais = anexos || [];
                             const relacoesGerais = relacoes || [];
 
                             cards.forEach(card => {
                                 // Mapeia anexos
                                 card.anexos = anexosGerais.filter(a => a.card_id === card.id);
-                                
+
                                 // Mapeia as etiquetas cruzando os IDs da tabela de relação com os dados reais
                                 const idsEtiquetasDesteCard = relacoesGerais.filter(r => r.card_id === card.id).map(r => r.etiqueta_id);
                                 card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
                             });
 
+                            // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS JÁ ORDENANDO POR PRAZO
                             colunas.forEach(col => {
-                                col.cards = cards.filter(c => c.coluna_id === col.id);
+                                col.cards = cards
+                                    .filter(c => c.coluna_id === col.id)
+                                    .sort((a, b) => {
+                                        // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
+                                        if (!a.prazo && b.prazo) return 1;  // 'a' não tem prazo, vai para baixo
+                                        if (a.prazo && !b.prazo) return -1; // 'b' não tem prazo, 'a' fica em cima
+                                        if (!a.prazo && !b.prazo) return 0; // Ambos sem prazo, mantém a ordem
+
+                                        // 2. Ordenação por data: Menor prazo (mais próximo/urgente) no topo (ASC)
+                                        const dataA = new Date(a.prazo);
+                                        const dataB = new Date(b.prazo);
+
+                                        return dataA - dataB;
+                                    });
                             });
 
                             res.send(kanbanView(req.session.user, colunas, espacoAtual));
@@ -112,7 +126,7 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
     const values = files.map(file => [
         cardId,
         file.originalname,
-        "kanban/" + file.filename, 
+        "kanban/" + file.filename,
         file.mimetype,
         file.path
     ]);

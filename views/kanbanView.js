@@ -1019,10 +1019,26 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   let cardsHTML = '';
                   if (col.cards && col.cards.length > 0) {
                       let cardsOrdenados = [...col.cards].sort((a, b) => {
-                          if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
-                          if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
-                          return 0; 
-                      });
+                        // 1. ORDENAÇÃO POR PRAZO (Principal)
+                        if (!a.prazo && b.prazo) return 1;  // 'a' não tem prazo, desce
+                        if (a.prazo && !b.prazo) return -1; // 'b' não tem prazo, desce
+
+                        if (a.prazo && b.prazo) {
+                            const dataA = new Date(a.prazo);
+                            const dataB = new Date(b.prazo);
+                            
+                            // Se as datas forem diferentes, o menor prazo sobe
+                            if (dataA.getTime() !== dataB.getTime()) {
+                                return dataA - dataB;
+                            }
+                        }
+
+                        // 2. CRITÉRIO DE DESEMPATE (Prioridade Alta sobe se os prazos forem iguais)
+                        if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
+                        if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+
+                        return 0; 
+                    });
                       cardsOrdenados.forEach(card => { cardsHTML += gerarHTMLCard(card, corColuna); });
                   }
 

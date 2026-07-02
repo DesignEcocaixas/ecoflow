@@ -198,6 +198,11 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                       </div>
                     `);
 
+                // Indicador visual de anexo no card da lista
+                const badgeAnexoMini = c.documento 
+                    ? `<span class="text-muted" title="Possui documento em anexo"><i class="fa-solid fa-paperclip"></i> Anexo</span>` 
+                    : '';
+
                 // Card da lista de checklists
                 return `
                       <div
@@ -216,9 +221,10 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
                         <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
                           <div class="text-truncate me-3" style="max-width: 85%;">
                             <span class="d-block fw-bold text-truncate text-white" style="font-size: 0.8rem;">${servicoTitulo || "Serviço"}</span>
-                            <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
+                            <div class="d-flex align-items-center gap-3 text-muted mt-1" style="font-size: 0.7rem;">
                               <span><i class="fa-regular fa-calendar me-1"></i> ${fmtData(c.data_servico)}</span>
                               <span><i class="fa-solid fa-wrench me-1"></i> ${c.oficina}</span>
+                              ${badgeAnexoMini}
                             </div>
                           </div>
                           <div>

@@ -206,11 +206,11 @@ function qrGeneratorView(usuario, qrCodes = []) {
 
             <div class="row g-2 mb-4">
               <div class="col-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cor Principal</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cor</label>
                 <input type="color" id="inputCorQR" class="form-control form-control-sm form-control-color w-100 bg-custom-darker border-custom" value="#000000" onchange="gerarPreviewInstantaneo()">
               </div>
               <div class="col-6">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nível de Correção</label>
+                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Qualidade</label>
                 <select id="inputCorrecaoQR" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="gerarPreviewInstantaneo()">
                   <option value="H" selected>Alto (Melhor p/ impressão)</option>
                   <option value="M">Médio (Padrão)</option>

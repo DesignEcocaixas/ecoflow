@@ -40,16 +40,17 @@ router.post("/login", (req, res) => {
         if (rows.length > 0) {
             const user = rows[0];
 
+            // CORREÇÃO: Incluindo termos_aceitos na sessão
             req.session.user = {
                 id: user.id,
                 nome: user.nome,
                 tipo_usuario: user.tipo_usuario,
-                foto: user.foto
+                foto: user.foto,
+                termos_aceitos: user.termos_aceitos // <-- O segredo está aqui!
             };
 
             return res.redirect("/home");
         } else {
-            // REDIRECIONA COM A FLAG DE ERRO EM VEZ DE DAR SEND()
             return res.redirect("/login?erro=credenciais");
         }
     });

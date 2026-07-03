@@ -5,6 +5,7 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const path = require("path");
 const MySQLStore = require("express-mysql-session")(session);
+const { notFoundHandler, globalErrorHandler } = require("./middlewares/errorHandler");
 
 const db = require("./db");
 
@@ -401,4 +402,7 @@ app.get("/ping-sessao", (req, res) => {
     return res.status(401).json({ status: "expirado" });
 });
 
+
+app.use(notFoundHandler);     // Captura qualquer rota não existente (404)
+app.use(globalErrorHandler);
 server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta " + PORT));

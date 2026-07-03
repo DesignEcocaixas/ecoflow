@@ -14,13 +14,12 @@ router.get("/cadastro", (req, res) => {
     if (req.session.user.tipo_usuario !== "admin")
         return res.status(403).send("Acesso negado.");
 
-    // Atualizado para incluir as novas colunas no SELECT
-    db.query("SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco FROM usuarios ORDER BY id DESC", (err, rows) => {
+    // CORREÇÃO: Incluídas as colunas termos_aceitos e data_aceite_termos
+    db.query("SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco, termos_aceitos, data_aceite_termos FROM usuarios ORDER BY id DESC", (err, rows) => {
         if (err) {
             console.error("Erro ao listar usuários:", err);
             return res.status(500).send("Erro ao carregar usuários.");
         }
-        // >>> PASSA o user aqui <<<
         res.send(cadastroView(req.session.user, rows || []));
     });
 });
@@ -34,10 +33,8 @@ router.post("/usuarios/novo", uploadUsuarios.single("foto"), (req, res) => {
 
     const { nome, email, senha, tipo_usuario, cpf, telefone, pix, banco } = req.body;
 
-    // Salva com o prefixo da pasta correspondente
     const foto = req.file ? "usuarios/perfil/" + req.file.filename : null;
 
-    // Lógica para perfis com/sem login
     const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipo_usuario);
     const finalEmail = (isNoLogin || !email || email.trim() === '') ? null : email;
     const finalSenha = isNoLogin ? null : senha;
@@ -53,7 +50,8 @@ router.post("/usuarios/novo", uploadUsuarios.single("foto"), (req, res) => {
             if (err) {
                 console.error("Erro ao cadastrar:", err);
                 return db.query(
-                    "SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco FROM usuarios ORDER BY id DESC",
+                    // CORREÇÃO: Incluídas as colunas de termos também no fallback
+                    "SELECT id, nome, email, tipo_usuario, foto, cpf, telefone, pix, banco, termos_aceitos, data_aceite_termos FROM usuarios ORDER BY id DESC",
                     (erro2, rows) => {
                         if (erro2) return res.status(500).send("Erro no sistema.");
                         return res.send(cadastroView(req.session.user, rows || []));
@@ -75,10 +73,8 @@ router.post("/usuarios/editar/:id", uploadUsuarios.single("foto"), (req, res) =>
     const { id } = req.params;
     const { nome, email, senha, tipo_usuario, cpf, telefone, pix, banco } = req.body;
 
-    // Salva com o prefixo da pasta. O Multer automaticamente renomeará para id_X_nome.jpg
     const novaFoto = req.file ? "usuarios/perfil/" + req.file.filename : null;
 
-    // Lógica para perfis com/sem login
     const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipo_usuario);
     const finalEmail = (isNoLogin || !email || email.trim() === '') ? null : email;
     const finalCpf = isNoLogin ? cpf : null;
@@ -86,7 +82,6 @@ router.post("/usuarios/editar/:id", uploadUsuarios.single("foto"), (req, res) =>
     const finalPix = isNoLogin ? pix : null;
     const finalBanco = isNoLogin ? banco : null;
 
-    // Função interna para rodar o UPDATE
     const executarUpdate = () => {
         let sql;
         let params;
@@ -115,7 +110,6 @@ router.post("/usuarios/editar/:id", uploadUsuarios.single("foto"), (req, res) =>
                 return res.status(500).send("Erro ao editar usuário.");
             }
 
-            // Atualiza a sessão em tempo real
             if (req.session.user && req.session.user.id === parseInt(id)) {
                 req.session.user.nome = nome;
                 req.session.user.tipo_usuario = tipo_usuario;
@@ -128,7 +122,6 @@ router.post("/usuarios/editar/:id", uploadUsuarios.single("foto"), (req, res) =>
         });
     };
 
-    // Se o usuário fez upload de uma foto nova, removemos a antiga do disco primeiro
     if (novaFoto) {
         db.query("SELECT foto FROM usuarios WHERE id = ?", [id], (errSel, rows) => {
             if (!errSel && rows.length > 0 && rows[0].foto) {
@@ -158,7 +151,6 @@ router.post("/usuarios/excluir/:id", (req, res) => {
 
     const { id } = req.params;
 
-    // Primeiro busca a foto para excluí-la do disco de forma segura
     db.query("SELECT foto FROM usuarios WHERE id = ?", [id], (errSel, rows) => {
         if (!errSel && rows.length > 0 && rows[0].foto) {
             const fotoAntiga = rows[0].foto;
@@ -172,7 +164,6 @@ router.post("/usuarios/excluir/:id", (req, res) => {
             }
         }
 
-        // Em seguida, apaga o registro do banco de dados
         db.query("DELETE FROM usuarios WHERE id=?", [id], (err) => {
             if (err) {
                 console.error("Erro ao excluir usuário:", err);
@@ -190,7 +181,6 @@ router.post("/cadastros/usuarios/novo", uploadUsuarios.single("foto"), async (re
 
     const { nome, tipo_usuario, cpf, telefone, pix, banco, redirect_to } = req.body;
 
-    // A MÁGICA AQUI: Salva com o prefixo da pasta
     const foto = req.file ? "usuarios/perfil/" + req.file.filename : null;
 
     try {
@@ -198,7 +188,6 @@ router.post("/cadastros/usuarios/novo", uploadUsuarios.single("foto"), async (re
             "INSERT INTO usuarios (nome, tipo_usuario, cpf, telefone, pix, banco, foto) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [nome, tipo_usuario, cpf || null, telefone || null, pix || null, banco || null, foto]
         );
-        // O redirect_to garante que a requisição AJAX da view sabe para onde voltar
         res.redirect(redirect_to || "/diaristas");
     } catch (error) {
         console.error("Erro ao cadastrar colaborador:", error);
@@ -217,7 +206,6 @@ router.post("/cadastros/usuarios/editar/:id", uploadUsuarios.single("foto"), asy
         if (req.file) {
             const novaFoto = "usuarios/perfil/" + req.file.filename;
 
-            // 1. Busca a foto antiga para apagá-la do disco (evita acúmulo de lixo)
             const [[oldUser]] = await db.promise().query("SELECT foto FROM usuarios WHERE id = ?", [id]);
             if (oldUser && oldUser.foto) {
                 const fs = require('fs');
@@ -226,13 +214,11 @@ router.post("/cadastros/usuarios/editar/:id", uploadUsuarios.single("foto"), asy
                 if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
             }
 
-            // 2. Atualiza todos os dados INCLUINDO a nova foto
             await db.promise().query(
                 "UPDATE usuarios SET nome=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=?, foto=? WHERE id=?",
                 [nome, tipo_usuario, cpf, telefone, pix, banco, novaFoto, id]
             );
         } else {
-            // Atualiza os dados MANTENDO a foto antiga
             await db.promise().query(
                 "UPDATE usuarios SET nome=?, tipo_usuario=?, cpf=?, telefone=?, pix=?, banco=? WHERE id=?",
                 [nome, tipo_usuario, cpf, telefone, pix, banco, id]
@@ -253,7 +239,6 @@ router.post("/cadastros/usuarios/excluir/:id", async (req, res) => {
     const redirect_to = req.body.redirect_to || "/diaristas";
 
     try {
-        // Primeiro busca a foto para excluí-la do diretório 'uploads'
         const [[oldUser]] = await db.promise().query("SELECT foto FROM usuarios WHERE id = ?", [id]);
         if (oldUser && oldUser.foto) {
             const fs = require('fs');
@@ -264,7 +249,6 @@ router.post("/cadastros/usuarios/excluir/:id", async (req, res) => {
             }
         }
 
-        // Depois apaga o registro do banco
         await db.promise().query("DELETE FROM usuarios WHERE id = ?", [id]);
         res.redirect(redirect_to);
     } catch (error) {

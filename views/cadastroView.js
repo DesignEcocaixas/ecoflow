@@ -1,11 +1,20 @@
 // views/cadastroView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent");
 
 function cadastroView(usuario, usuarios = []) {
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
-  // Fallback seguro
+  const termosHTML = termosComponent(usuario);
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+
+  // =========================================================================
+  // CÁLCULO E CONSTRUÇÃO DO TOOLTIP DOS TERMOS ACEITOS
+  // =========================================================================
+  const usuariosComTermos = (usuarios || []).filter(u => u.termos_aceitos === 1 || u.termos_aceitos === "1" || u.termos_aceitos === true);
+  const qtdTermosAceitos = usuariosComTermos.length;
+  
+  const tooltipTermosHtml = (usuariosComTermos.length > 0
+    ? `<div class='text-start py-1' style='font-size:0.75rem;'><strong>Aceitou os termos:</strong><br>${usuariosComTermos.map(u => `&bull; ${u.nome}`).join("<br>")}</div>`
+    : "Nenhum usuário aceitou os termos ainda.").replace(/"/g, '&quot;');
 
   // Funções de formatação para injetar os valores já com máscara no HTML gerado
   const applyMaskPhone = (v) => {
@@ -29,25 +38,21 @@ function cadastroView(usuario, usuarios = []) {
       return v;
   };
 
-  // Acumuladores para separar o conteúdo da tabela dos modais
   const listaModais = [];
 
   const linhas =
     usuarios && usuarios.length
       ? usuarios
           .map((u) => {
-            // Gera um avatar automático se o utilizador não tiver foto
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=1f1f1f&color=08c068&size=120`;
             const imgSrc = u.foto ? `/uploads/${u.foto}` : defaultAvatar;
 
-            // Verificação de tipos "Sem Login"
             const noLoginTypes = ['motorista_avulso', 'ajudante', 'diarista'];
             const isNoLogin = noLoginTypes.includes(u.tipo_usuario);
             const loginStyle = isNoLogin ? 'display: none;' : '';
             const noLoginStyle = isNoLogin ? '' : 'display: none;';
             const emailRequired = isNoLogin ? '' : 'required';
 
-            // Tratamento das cores dos Badges
             let badgeColor = 'bg-custom-dark border-custom text-accent';
             if (u.tipo_usuario === 'admin') badgeColor = 'bg-custom-dark border-custom text-danger';
             else if (u.tipo_usuario === 'financeiro') badgeColor = 'bg-custom-dark border-custom text-success';
@@ -55,11 +60,9 @@ function cadastroView(usuario, usuarios = []) {
             else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-custom-dark border-custom text-warning';
             else if (isNoLogin) badgeColor = 'bg-custom-darker border-custom text-muted';
 
-            // Aplica as máscaras para usar no Modal e na Tabela
             const cpfFormatado = applyMaskCPF(u.cpf);
             const telefoneFormatado = applyMaskPhone(u.telefone);
 
-            // Adiciona o Modal de Edição ao acumulador
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -218,12 +221,26 @@ function cadastroView(usuario, usuarios = []) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
       ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
       html, body, .content, .table-responsive, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
+
+      /* =========================================================
+        CORREÇÃO DOS PLACEHOLDERS NO TEMA ESCURO
+        ========================================================= */
+      .form-control::placeholder,
+      .form-select::placeholder,
+      input::placeholder,
+      textarea::placeholder {
+          color: rgba(255, 255, 255, 0.45) !important; /* Branco suave/cinza claro */
+          opacity: 1 !important; /* Essencial: Impede o Firefox/Chrome de deixar transparente */
+      }
+
+      /* Suporte extra para navegadores webkit/mozilla antigos */
+      .form-control::-webkit-input-placeholder { color: rgba(255, 255, 255, 0.45) !important; }
+      .form-control::-moz-placeholder { color: rgba(255, 255, 255, 0.45) !important; opacity: 1 !important; }
 
       body { 
           display: flex; 
@@ -236,17 +253,14 @@ function cadastroView(usuario, usuarios = []) {
       .sidebar { width: 240px; background-color: #1f1f1f !important; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
       .content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; position: relative; background-color: #1f1f1f; }
       
-      /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
       .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
-      /* Modificadores Bootstrap */
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
 
-      /* Botões */
       .btn-primary, .btn-success { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
       .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
       .btn-outline-primary, .btn-outline-success { color: #08c068; border-color: #08c068; }
@@ -254,12 +268,10 @@ function cadastroView(usuario, usuarios = []) {
       .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-      /* Inputs e Selects */
       .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
-      /* Tabelas e Modais */
       .erp-card {
           border-radius: 12px;
           background: #2a2a2a;
@@ -289,7 +301,6 @@ function cadastroView(usuario, usuarios = []) {
           color: #fff !important; 
       }
       
-      /* Efeito de Hover na Tabela */
       .table-hover-row { transition: background-color 0.2s ease; }
       .table-hover-row:hover > td, 
       .table-hover > tbody > tr:hover > td, 
@@ -303,7 +314,6 @@ function cadastroView(usuario, usuarios = []) {
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
 
-      /* Container da Foto de Perfil */
       .profile-upload-container {
           width: 90px;
           height: 90px;
@@ -314,11 +324,7 @@ function cadastroView(usuario, usuarios = []) {
           box-shadow: 0 4px 12px rgba(0,0,0,0.3);
           cursor: pointer;
       }
-      .profile-upload-container img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-      }
+      .profile-upload-container img { width: 100%; height: 100%; object-fit: cover; }
       .profile-upload-overlay {
           position: absolute;
           bottom: 0;
@@ -332,50 +338,21 @@ function cadastroView(usuario, usuarios = []) {
           opacity: 0;
           transition: opacity 0.3s ease;
       }
-      .profile-upload-container:hover .profile-upload-overlay {
-          opacity: 1;
-      }
+      .profile-upload-container:hover .profile-upload-overlay { opacity: 1; }
 
-      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
-      .toast {
-          transform: translateX(120%);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
-      }
-      .toast.showing, .toast.show {
-          transform: translateX(0);
-      }
-      .modal.fade .modal-dialog {
-          transform: scale(0.85) translateY(30px);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-      }
-      .modal.show .modal-dialog {
-          transform: scale(1) translateY(0);
-      }
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
+      .toast.showing, .toast.show { transform: translateX(0); }
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+      .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      .toast-timer {
-          height: 4px;
-          background: #08c068;
-          width: 100%;
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          transform-origin: left;
-      }
-      @keyframes shrinkToast {
-          from { width: 100%; }
-          to { width: 0%; }
-      }
+      .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+      @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      /* SKELETON LOADING DA TABELA E GRID (DARK) */
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
           background-size: 200% 100% !important;
           animation: skeleton-loading-view 1.5s infinite linear !important;
-          border-radius: 4px;
-          color: transparent !important;
-          border-color: transparent !important;
-          box-shadow: none !important;
-          pointer-events: none;
+          border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none;
       }
       .skeleton-dark * { visibility: hidden !important; }
       .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
@@ -425,9 +402,21 @@ function cadastroView(usuario, usuarios = []) {
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom flex-wrap gap-2">
-        <div>
-            <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total Registado: <strong class="text-white">${usuarios.length}</strong> pessoas</h6>
+      <div class="d-flex justify-content-between align-items-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="bg-custom-dark px-3 py-1 rounded border border-custom d-flex align-items-center gap-2 shadow-sm"
+                 style="cursor: help;"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 data-bs-html="true"
+                 title="${tooltipTermosHtml}">
+                <i class="fa-solid fa-file-circle-check text-accent"></i>
+                <span class="text-muted" style="font-size:0.8rem;">Termos Aceitos: <strong class="text-white">${qtdTermosAceitos}</strong></span>
+            </div>
+
+            <div>
+                <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total Registado: <strong class="text-white">${usuarios.length}</strong> pessoas</h6>
+            </div>
         </div>
         <button class="btn btn-sm btn-success px-3 shadow-sm fw-bold text-dark" style="font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
           <i class="fa-solid fa-user-plus me-1"></i> Novo usuário
@@ -540,7 +529,7 @@ function cadastroView(usuario, usuarios = []) {
           </div>
           <div class="modal-footer border-0 bg-custom-darker d-flex flex-nowrap pt-3">
             <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark shadow-sm"><i class="fa-solid fa-check me-1"></i> Salvar Cadastro</button>
+            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark shadow-sm"><i class="fa-solid fa-check me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -584,6 +573,19 @@ function cadastroView(usuario, usuarios = []) {
 
     <script>
         // =======================================================================
+        // INICIALIZAÇÃO DE TOOLTIPS NATIVOS DO BOOTSTRAP
+        // =======================================================================
+        function initTooltips() {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].forEach(tooltipTriggerEl => {
+                const oldInstance = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+                if (oldInstance) oldInstance.dispose();
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+        window.addEventListener('load', initTooltips);
+
+        // =======================================================================
         // MÁSCARAS DE INPUT PARA CPF E TELEFONE
         // =======================================================================
         function maskPhone(v) {
@@ -616,9 +618,6 @@ function cadastroView(usuario, usuarios = []) {
             return v;
         }
 
-        // =======================================================================
-        // CONTROLE DINÂMICO DE CAMPOS DO FORMULÁRIO (LOGIN VS SEM LOGIN)
-        // =======================================================================
         function toggleRoleFields(selectEl) {
             const form = selectEl.closest('form');
             const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(selectEl.value);
@@ -631,22 +630,16 @@ function cadastroView(usuario, usuarios = []) {
             const confirmaInput = form.querySelector('input[name="confirma_senha"]');
 
             if (isNoLogin) {
-                // Esconde E-mail e Senhas
                 loginFields.forEach(el => el.style.display = 'none');
-                // Mostra CPF, PIX, Banco, Telefone
                 noLoginFields.forEach(el => el.style.display = ''); 
                 
-                // Remove a obrigatoriedade dos campos de login
                 if (emailInput) emailInput.removeAttribute('required');
                 if (senhaInput && form.action.includes('/novo')) senhaInput.removeAttribute('required');
                 if (confirmaInput && form.action.includes('/novo')) confirmaInput.removeAttribute('required');
             } else {
-                // Mostra E-mail e Senhas
                 loginFields.forEach(el => el.style.display = '');
-                // Esconde CPF, PIX, Banco, Telefone
                 noLoginFields.forEach(el => el.style.display = 'none');
                 
-                // Retorna a obrigatoriedade
                 if (emailInput) emailInput.setAttribute('required', 'true');
                 if (form.action.includes('/novo')) {
                     if (senhaInput) senhaInput.setAttribute('required', 'true');
@@ -655,7 +648,6 @@ function cadastroView(usuario, usuarios = []) {
             }
         }
 
-        // Executa a verificação em todos os modais ao iniciar a página
         function initRoleToggles() {
             document.querySelectorAll('select[name="tipo_usuario"]').forEach(select => {
                 toggleRoleFields(select);
@@ -663,9 +655,6 @@ function cadastroView(usuario, usuarios = []) {
         }
         window.addEventListener('load', initRoleToggles);
 
-        // =======================================================================
-        // SKELETON LOADING (CORRIGIDO MODO ESCURO)
-        // =======================================================================
         function gerarSkeletonTabela(quantidade = 4) {
             let html = '';
             for(let i=0; i<quantidade; i++) {
@@ -689,7 +678,6 @@ function cadastroView(usuario, usuarios = []) {
 
         function mostrarSkeletonGlobais() {
             const tableContainer = document.querySelector('.content > .erp-card .table-responsive');
-            
             if (document.getElementById('skeleton-temp-container')) return;
 
             const skeletonHTML = \`
@@ -735,9 +723,6 @@ function cadastroView(usuario, usuarios = []) {
             mostrarSkeletonGlobais();
         });
 
-        // =======================================================================
-        // FUNÇÃO GENÉRICA DE TOASTS
-        // =======================================================================
         function mostrarToast(tipo, titulo, mensagem) {
             const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
             if (toastEl) {
@@ -755,18 +740,11 @@ function cadastroView(usuario, usuarios = []) {
                 const oldInstance = bootstrap.Toast.getInstance(toastEl);
                 if (oldInstance) oldInstance.dispose();
 
-                const toast = new bootstrap.Toast(toastEl, {
-                    autohide: true,
-                    delay: 5000
-                });
-                
+                const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
                 toast.show();
             }
         }
 
-        // =======================================================================
-        // VISIBILIDADE DE SENHA E VALIDAÇÃO
-        // =======================================================================
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
             const icon = btn.querySelector('i');
@@ -782,14 +760,11 @@ function cadastroView(usuario, usuarios = []) {
         }
 
         function validarSenhaConfirmacao(form) {
-            // Busca o select do tipo de usuário
             const tipoUsuarioSelect = form.querySelector('select[name="tipo_usuario"]');
-            
-            // Se o formulário não tiver esse campo (ex: formulário de excluir), pula a validação e deixa seguir
             if (!tipoUsuarioSelect) return true;
 
             const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(tipoUsuarioSelect.value);
-            if (isNoLogin) return true; // Se for sem login, não precisa validar as senhas pois estão inativas
+            if (isNoLogin) return true;
 
             const senha = form.querySelector('input[name="senha"]');
             const confirma = form.querySelector('input[name="confirma_senha"]');
@@ -802,9 +777,6 @@ function cadastroView(usuario, usuarios = []) {
             return true;
         }
 
-        // =======================================================================
-        // SUBMISSÃO AJAX COM SUPORTE A UPLOAD DE ARQUIVOS
-        // =======================================================================
         let isSubmitting = false;
 
         async function prepararSubmissaoSimples(event, form, defaultMsg) {
@@ -867,7 +839,8 @@ function cadastroView(usuario, usuarios = []) {
                         previewImg.src = previewImg.dataset.defaultSrc || "https://ui-avatars.com/api/?name=Novo+Registro&background=1f1f1f&color=08c068&size=120";
                     }
 
-                    initRoleToggles(); // Reaplica as máscaras/visibilidade aos selects renderizados no AJAX
+                    initRoleToggles();
+                    initTooltips(); // Reinicializa os tooltips para manter o funcionamento da SPA
 
                     const responseUrl = new URL(response.url);
                     let finalMsg = defaultMsg;
@@ -888,9 +861,6 @@ function cadastroView(usuario, usuarios = []) {
             }
         }
 
-        // =======================================================================
-        // PREVIEW DE IMAGEM ANTES DO UPLOAD
-        // =======================================================================
         function previewImage(inputElement, imgId) {
             if (inputElement.files && inputElement.files[0]) {
                 const reader = new FileReader();

@@ -116,7 +116,7 @@ function termosComponent(user) {
             <div class="modal-content erp-modal bg-custom-darker shadow-lg border-custom">
                 <div class="modal-header bg-custom-dark border-bottom border-custom p-3">
                     <h6 class="modal-title fw-bold text-white mb-0" style="font-size: 0.95rem;">
-                        <i class="fa-solid fa-file-contract text-accent me-2"></i> Termos de uso do Ecoflow
+                        <i class="fa-solid fa-file-contract text-accent me-2"></i> Termos de uso
                     </h6>
                 </div>
                 <div class="modal-body bg-custom-dark p-4">

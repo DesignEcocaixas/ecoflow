@@ -1,8 +1,10 @@
 // views/configView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function configView(usuario, taxas = {}, historicoNotificacoes = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   const fmtDataHora = (d) => {
       try {
@@ -480,6 +482,8 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
             <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
         </div>
     </div>
+
+    ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>

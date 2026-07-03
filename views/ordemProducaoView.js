@@ -1,9 +1,11 @@
 // views/ordemProducaoView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], query = {}, rotativaNovas = 0, flexoNovas = 0, historico = [], paginacao = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/producao");
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   function formatarCor(cor) {
     if (!cor || cor === 'N/D') return 'Não definida';
@@ -629,6 +631,8 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       </div>
     </div>
   </div>
+
+  ${termosHTML}
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>

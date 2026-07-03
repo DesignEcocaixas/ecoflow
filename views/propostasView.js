@@ -1,9 +1,11 @@
 // views/propostasView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 module.exports = function propostasView(usuario) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/propostas"); 
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   return `
 <!DOCTYPE html>
@@ -369,6 +371,7 @@ module.exports = function propostasView(usuario) {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  ${termosHTML}
 
   <script>
     let periodosCache = [];

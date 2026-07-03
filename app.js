@@ -207,6 +207,9 @@ app.use("/", kanbanRoutes);
 const qrGeneratorRoutes = require("./routes/qrGenerator");
 app.use("/", qrGeneratorRoutes);
 
+const termosRoutes = require("./routes/termos");
+app.use(termosRoutes);
+
 // Importando o testador
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);

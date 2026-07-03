@@ -1,9 +1,10 @@
 // views/diaristasView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, paginacao = {}, taxas = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
@@ -840,6 +841,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
     </div>
 
     ${modaisDinamicosExcluir.join('')}
+    ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>

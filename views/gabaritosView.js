@@ -1,9 +1,11 @@
 // views/gabaritosView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 module.exports = function renderGabaritos(usuario, gabaritos = []) {
     const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-    const menuHTML = menuLateral(user, "/admin/gabaritos"); 
+    const menuHTML = menuLateral(user, "/admin/gabaritos");
+    const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
     
     // Função auxiliar para corrigir caracteres de upload quebrados (ex: alÃ§a -> alça)
     const fixEncoding = (str) => {
@@ -327,6 +329,7 @@ module.exports = function renderGabaritos(usuario, gabaritos = []) {
         </div>
 
         ${modaisExclusao}
+        ${termosHTML}
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script>

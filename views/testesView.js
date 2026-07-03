@@ -1,9 +1,11 @@
 // views/testesView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function renderTestesView(usuarioLogado, rotasEncontradas) {
     const user = usuarioLogado || { nome: "Desenvolvedor", tipo_usuario: "admin" };
     const menuHTML = menuLateral(user, "/dev/testes");
+    const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
     // 1. Motor de Agrupamento Dinâmico Inteligente
     const gruposMapeados = {};
@@ -449,6 +451,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
             </div>
         </div>
 
+        ${termosHTML}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         
         <script>

@@ -1,9 +1,11 @@
 // views/qrGeneratorView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function qrGeneratorView(usuario, qrCodes = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/qr-generator");
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   const fmtData = (d) => {
     try {
@@ -282,6 +284,7 @@ function qrGeneratorView(usuario, qrCodes = []) {
       </div>
     </div>
 
+    ${termosHTML}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
 

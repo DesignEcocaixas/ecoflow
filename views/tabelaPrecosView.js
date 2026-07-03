@@ -1,18 +1,14 @@
 // views/tabelaPrecosView.js
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
-function tabelaPrecosView(
-  usuario,
-  caixas = [],
-  ultimaAlteracao = null,
-  fornecedores = [],
-  paginacao = {},
-  filtros = {} 
+function tabelaPrecosView(usuario, caixas = [], ultimaAlteracao = null, fornecedores = [], paginacao = {}, filtros = {}
 ) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   const dataFormatada = ultimaAlteracao
     ? new Date(ultimaAlteracao.atualizado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
@@ -669,6 +665,7 @@ function tabelaPrecosView(
         </div>
     </div>
 
+    ${termosHTML}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>

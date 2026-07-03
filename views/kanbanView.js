@@ -1,9 +1,11 @@
 // views/kanbanView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban", etiquetas: [] }) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   // Paleta de cores oficial
   const paletaCores = ['#08c068', '#0d6efd', '#dc3545', '#ffc107', '#6f42c1', '#fd7e14', '#20c997', '#6c757d'];
@@ -593,6 +595,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
       <script src="/socket.io/socket.io.js"></script>
+
+      ${termosHTML}
       
       <script>
           const NOME_USUARIO = "${user.nome}";

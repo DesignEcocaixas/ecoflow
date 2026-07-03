@@ -1,7 +1,9 @@
 // views/cadastroView.js
 const menuLateral = require("./menuLateral");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function cadastroView(usuario, usuarios = []) {
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
   // Fallback seguro
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
@@ -575,6 +577,7 @@ function cadastroView(usuario, usuarios = []) {
     </div>
 
     ${listaModais.join("")}
+    ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>

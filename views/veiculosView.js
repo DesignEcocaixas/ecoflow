@@ -1,8 +1,10 @@
 // views/veiculosView.js
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
   const fmtKM = (n) => Number(n || 0).toLocaleString("pt-BR");
   const fmtMoeda = (n) =>
     Number(n || 0).toLocaleString("pt-BR", {
@@ -676,6 +678,7 @@ function veiculosView(usuario, veiculos = [], checklistsMap = {}) {
 
     ${modaisNovoChecklist.join("")}
     ${modaisDetalheEditarExcluir.join("")}
+    ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

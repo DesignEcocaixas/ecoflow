@@ -1,9 +1,11 @@
 // views/chapasView.js
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
+const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
 function chapasView(usuario, chapas = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
 
   // --- LÓGICA DE SAÚDE DO ESTOQUE (COM CONTAINER RETRÁTIL E DEGRADÊ E ÍCONES ANIMADOS NO MODO ESCURO) ---
   let containerSaude = "";
@@ -544,6 +546,7 @@ function chapasView(usuario, chapas = []) {
     </div>
 
     ${modais}
+    ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>

@@ -127,7 +127,7 @@ function termosComponent(user) {
                         
                         <p class="mb-1"><strong>EMPRESA:</strong> Eco Caixas BA</p>
                         <p class="mb-1"><strong>COLABORADOR(A):</strong> ${nomeColaborador}</p>
-                        <p class="mb-4"><strong>DATA DO ACEITE:</strong> ${dataFormatada}</p>
+                        <p class="mb-4"><strong>DATA:</strong> ${dataFormatada}</p>
 
                         <h6 class="fw-bold mt-4" style="font-size: 0.95rem;">Objetivo</h6>
                         <p>O presente Termo tem por finalidade estabelecer as responsabilidades do colaborador quanto ao acesso e utilização do Sistema Ecoflow, disponibilizado pela Eco Caixas BA para o desempenho de suas atividades profissionais.</p>

@@ -95,7 +95,7 @@ function termosComponent(user) {
                     </div>
 
                     <div class="toast-content flex-grow-1 pe-3">
-                        <strong class="d-block mb-1 fs-6">Termos e Privacidade</strong>
+                        <strong class="d-block mb-1 fs-6">Termos e Política de uso</strong>
                         <span class="text-white-50 d-block" style="font-size: 0.82rem; line-height: 1.35;">
                             Para continuar a utilizar o Ecoflow com total segurança, leia e aceite as nossas políticas de uso.
                         </span>

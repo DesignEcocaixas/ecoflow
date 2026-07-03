@@ -192,12 +192,12 @@ function qrGeneratorView(usuario, qrCodes = []) {
           <div class="modal-body p-4 bg-custom-dark">
             
             <div class="mb-3">
-              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Título ou Identificação</label>
+              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Título</label>
               <input type="text" name="titulo" id="inputTituloQR" class="form-control form-control-sm shadow-sm" placeholder="Ex: Catálogo de Produtos 2026" required maxlength="100">
             </div>
 
             <div class="mb-3">
-              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link / URL de Destino</label>
+              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link/URL</label>
               <div class="input-group input-group-sm shadow-sm">
                 <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-link"></i></span>
                 <input type="url" name="link" id="inputLinkQR" class="form-control border-custom bg-custom-darker text-white" placeholder="https://seudominio.com.br/pagina" required oninput="gerarPreviewInstantaneo()">
@@ -220,7 +220,7 @@ function qrGeneratorView(usuario, qrCodes = []) {
             </div>
 
             <div class="text-center p-3 border border-custom rounded bg-custom-darker position-relative">
-              <span class="text-muted d-block fw-bold mb-2" style="font-size:0.7rem;"><i class="fa-solid fa-eye text-accent me-1"></i> PRÉ-VISUALIZAÇÃO EM TEMPO REAL</span>
+              <span class="text-muted d-block fw-bold mb-2" style="font-size:0.7rem;"><i class="fa-solid fa-eye text-accent me-1"></i> PRÉ-VISUALIZAÇÃO</span>
               
               <div id="previewQRBox" class="qr-preview-box my-2" style="display: none;">
                 <div id="qrcodePreview"></div>
@@ -232,7 +232,7 @@ function qrGeneratorView(usuario, qrCodes = []) {
 
               <div class="mt-3 justify-content-center gap-2" id="boxDownloadPreview" style="display: none !important;">
                 <button type="button" class="btn btn-sm btn-outline-success fw-bold px-3 shadow-sm" onclick="baixarSVGPreview()">
-                  <i class="fa-solid fa-download me-1"></i> Baixar SVG Agora
+                  <i class="fa-solid fa-download me-1"></i> Baixar SVG
                 </button>
               </div>
             </div>
@@ -240,7 +240,7 @@ function qrGeneratorView(usuario, qrCodes = []) {
           </div>
           <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal" onclick="resetFormQR()">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-primary fw-bold text-dark w-100 shadow-sm" id="btnSalvarQR"><i class="fa-solid fa-save me-1"></i> Salvar no Sistema</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-bold text-dark w-100 shadow-sm" id="btnSalvarQR"><i class="fa-solid fa-save me-1"></i> Salvar</button>
           </div>
         </form>
       </div>

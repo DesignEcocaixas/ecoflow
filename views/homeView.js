@@ -56,7 +56,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
   const rotaClientes = Array.isArray(rota?.clientes) ? rota.clientes : [];
 
   // Dados para o Gráfico Mensal e Select vindos do backend
-  const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {} };
+  const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {}, totalAnterior: 0, variacaoPct: 0 };
   const mesesDisponiveis = Array.isArray(dashboard.mesesDisponiveis) ? dashboard.mesesDisponiveis : [];
   const mesSelecionado = dashboard.mesSelecionado || { mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), modo: 'diario' };
   const modoVisao = mesSelecionado.modo || 'diario';
@@ -481,28 +481,23 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           font-family: 'Roboto', system-ui, -apple-system, sans-serif;
         }
         
-        /* Sidebar (Override para ter certeza) */
         .sidebar { width: 240px; background-color: #1f1f1f !important; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
         
         .content { flex: 1; padding: 24px; overflow-y: auto; background-color: #1f1f1f; }
         
-        /* Tema Escuro Customizado */
         .bg-custom-dark { background-color: #2a2a2a !important; }
         .bg-custom-darker { background-color: #222222 !important; }
         .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
         .text-accent { color: #08c068 !important; }
 
-        /* Substituindo as cores base do Bootstrap */
         .text-dark { color: #ffffff !important; }
         .text-muted { color: rgba(255,255,255,0.5) !important; }
 
-        /* Botões */
         .btn-primary { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
         .btn-primary:hover, .btn-primary:focus, .btn-primary:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
         .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
         .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-        /* Topbar / Badges */
         .usuario-badge {
             background-color: #2a2a2a;
             color: #08c068;
@@ -513,11 +508,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             font-weight: 500;
         }
 
-        /* Inputs e Selects */
         .form-select, .form-control { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
         .form-select:focus, .form-control:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
         
-        /* ERP Cards */
         .dashboard-section-card {
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.05);
@@ -534,21 +527,17 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             gap: 8px;
         }
         
-        /* List items */
         .chk-item { background-color: #2a2a2a; border-left: 2px solid #08c068 !important; border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; }
         .chk-item:hover { background-color: #333333; }
         
-        /* Animação suave para os cards do Carousel */
         .carousel-indicators [data-bs-target] { background-color: #08c068; }
         .carousel-item { transition: transform 0.6s ease-in-out, opacity 0.6s ease-out; }
 
-        /* Modals */
         .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
         .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
         .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #fff;}
 
-        /* SKELETON LOADING (CORRIGIDO PARA MODO ESCURO TRANSPARENTE) */
         .skeleton-dark {
             background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
             background-size: 200% 100% !important;
@@ -568,7 +557,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             100% { background-position: -200% 0; }
         }
 
-        /* Offcanvas Mobile */
         @media (max-width: 767.98px) {
           body { flex-direction: column; }
           .sidebar { display: none; }
@@ -651,6 +639,21 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                     </div>
                     ${selectMesesHTML}
                 </div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between bg-custom-darker p-2 px-3 rounded border border-custom mb-3 flex-wrap gap-2 shadow-sm">
+                  <div class="d-flex align-items-center gap-2">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-accent flex-shrink-0" style="width: 34px; height: 34px;">
+                          <i class="fa-solid fa-boxes-stacked"></i>
+                      </div>
+                      <div>
+                          <span class="text-muted d-block" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Total do Período</span>
+                          <strong class="text-white fs-6" id="totalVolumePeriodo">0 caixas</strong>
+                      </div>
+                  </div>
+                  <div id="badgeVariacaoVolume" class="d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                      <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary">Calculando...</span>
+                  </div>
               </div>
 
               <div class="flex-grow-1 position-relative w-100" style="min-height: 250px;">
@@ -755,16 +758,36 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     ${termosHTML} <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-      // Configurações globais do Chart.js para Dark Mode
       Chart.defaults.color = 'rgba(255,255,255,0.6)';
       Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
 
-      // Variáveis globais para armazenar o estado atual
       let mesSelecionadoJS = ${JSON.stringify(mesSelecionado)};
       let chartData = ${JSON.stringify(graficoMensal)};
       let chartInstance = null;
 
-      // Função AJAX para buscar e atualizar os dados do gráfico
+      // FUNÇÃO PARA ATUALIZAR O MINI CONTAINER E A COMPARATIVA MENSAL NO DOM
+      function atualizarMiniContainerVolume() {
+          const totalEl = document.getElementById('totalVolumePeriodo');
+          const badgeEl = document.getElementById('badgeVariacaoVolume');
+          if (!totalEl || !badgeEl || !chartData || !Array.isArray(chartData.data)) return;
+
+          // Soma de todas as caixas do mês/ano atualmente em exibição
+          const totalAtual = chartData.data.reduce((acc, val) => acc + Number(val || 0), 0);
+          totalEl.textContent = totalAtual.toLocaleString('pt-BR') + ' caixas';
+
+          // Renderiza o badge dinamicamente (+X% ou -X%)
+          const pct = Number(chartData.variacaoPct || 0);
+          const periodoLabel = mesSelecionadoJS.modo === 'mensal' ? 'ano passado' : 'mês passado';
+
+          if (pct > 0) {
+              badgeEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1"><i class="fa-solid fa-arrow-trend-up me-1"></i> +\${pct}% vs \${periodoLabel}</span>\`;
+          } else if (pct < 0) {
+              badgeEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="fa-solid fa-arrow-trend-down me-1"></i> \${pct}% vs \${periodoLabel}</span>\`;
+          } else {
+              badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary px-2 py-1">0% vs \${periodoLabel}</span>\`;
+          }
+      }
+
       async function mudarFiltroDashboard(novoModo, novoValorSelect) {
           let mes = mesSelecionadoJS.mes;
           let ano = mesSelecionadoJS.ano;
@@ -776,7 +799,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               ano = parts[1];
           }
 
-          // Atualiza o aspeto visual dos botões
           const btnDiario = document.getElementById('btn-diario');
           const btnMensal = document.getElementById('btn-mensal');
           
@@ -790,29 +812,28 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               }
           }
           
-          // Atualiza a dica no rodapé do gráfico
           const dicaObj = document.getElementById('dica-grafico');
           if (dicaObj) {
               dicaObj.innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
           }
 
           try {
-              // Requisição AJAX para o novo endpoint
               const response = await fetch(\`/api/dashboard-chart?mes=\${mes}&ano=\${ano}&modo=\${modo}\`);
               if (!response.ok) throw new Error('Falha ao buscar dados do gráfico');
               
               const dadosResposta = await response.json();
               
-              // Atualiza o estado global para que o Modal leia a informação correta ao clicar
               chartData = dadosResposta.graficoMensal;
               mesSelecionadoJS = dadosResposta.mesSelecionado;
 
-              // Atualiza as opções e os dados do Chart.js
               if (chartInstance) {
                   chartInstance.data.labels = chartData.labels;
                   chartInstance.data.datasets[0].data = chartData.data;
                   chartInstance.update();
               }
+
+              // ATUALIZA O MINI CONTAINER DE FORMA REATIVA
+              atualizarMiniContainerVolume();
 
           } catch (error) {
               console.error("Erro na requisição AJAX:", error);
@@ -822,7 +843,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
       document.addEventListener('DOMContentLoaded', function() {
         const canvasObj = document.getElementById('graficoMensalCanvas');
-        if (!canvasObj) return; // Segurança para perfil Motorista que não exibe o gráfico
+        if (!canvasObj) return;
 
         Chart.register(ChartDataLabels);
 
@@ -856,7 +877,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 const index = elements[0].index;
                 const chaveClicada = chart.data.labels[index]; 
                 
-                // Vai buscar os dados ao objeto global atualizado via AJAX
                 const rankingData = chartData.ranking ? chartData.ranking[chaveClicada] : [];
                 
                 if (mesSelecionadoJS.modo === 'mensal') {
@@ -923,13 +943,13 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             }
           }
         });
+
+        // DISPARA O CÁLCULO INICIAL ASSIM QUE O GRÁFICO É CRIADO
+        atualizarMiniContainerVolume();
       });
     </script>
 
     <script>
-      // =======================================================================
-      // SKELETON LOADING
-      // =======================================================================
       function gerarSkeletonCard() {
           let html = '';
           for(let i=0; i<3; i++) {
@@ -1008,20 +1028,17 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     ${notificacaoAtiva ? `
     <script>
       window.addEventListener('load', () => {
-          // Identificador único para a notificação atual
           const notifId = 'aviso_${notificacaoAtiva.id}';
           
-          // Verifica se o aviso já foi mostrado nesta sessão
           if (!sessionStorage.getItem(notifId)) {
               setTimeout(() => {
                   const modalEl = document.getElementById('modalAvisoGlobal');
                   if (modalEl) {
                       const modal = new bootstrap.Modal(modalEl);
                       modal.show();
-                      // Regista no navegador que o utilizador já visualizou
                       sessionStorage.setItem(notifId, 'true');
                   }
-              }, 600); // 600ms de atraso para a página terminar as suas próprias animações
+              }, 600);
           }
       });
     </script>
@@ -1033,7 +1050,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (urlParams.has('erro')) {
               const tipoErro = urlParams.get('erro');
               if (tipoErro === 'acesso_negado') {
-                  // Reutiliza a lógica de modal/toast existente do sistema
                   alert('Acesso Restrito! O seu perfil não tem permissão para aceder a esta funcionalidade.');
               }
               if (window.history.replaceState) {

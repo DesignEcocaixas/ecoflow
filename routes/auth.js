@@ -17,10 +17,8 @@ router.get("/", (req, res) => {
 //FAZER LOGIN
 router.get("/login", verificarHierarquia, (req, res) => {
     if (req.session.user) {
-        // Se já está logado, vai direto para home
         return res.redirect("/home");
     }
-    // Impede cache
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
@@ -40,13 +38,12 @@ router.post("/login", (req, res) => {
         if (rows.length > 0) {
             const user = rows[0];
 
-            // CORREÇÃO: Incluindo termos_aceitos na sessão
             req.session.user = {
                 id: user.id,
                 nome: user.nome,
                 tipo_usuario: user.tipo_usuario,
                 foto: user.foto,
-                termos_aceitos: user.termos_aceitos // <-- O segredo está aqui!
+                termos_aceitos: user.termos_aceitos
             };
 
             return res.redirect("/home");
@@ -80,9 +77,8 @@ router.get("/home", (req, res) => {
     const dataAtual = new Date();
     let mesFiltro = req.query.mes ? parseInt(req.query.mes) : dataAtual.getMonth() + 1;
     let anoFiltro = req.query.ano ? parseInt(req.query.ano) : dataAtual.getFullYear();
-    const modoFiltro = req.query.modo === 'mensal' ? 'mensal' : 'diario'; // Novo Modo
+    const modoFiltro = req.query.modo === 'mensal' ? 'mensal' : 'diario';
 
-    // 1. NOVA BUSCA: Notificação Global Ativa
     db.query("SELECT * FROM notificacoes_globais WHERE status = 'ATIVA' ORDER BY criado_em DESC LIMIT 1", (errGlobal, resultGlobal) => {
         if (errGlobal) console.error("Erro ao buscar notificação global:", errGlobal);
         const notificacaoAtiva = (resultGlobal && resultGlobal.length > 0) ? resultGlobal[0] : null;
@@ -186,10 +182,10 @@ router.get("/home", (req, res) => {
                             `, (errMeses, mesesRows) => {
                                 if (errMeses) {
                                     console.error("Erro ao buscar meses disponíveis:", errMeses);
-                                    mesRows = [];
+                                    mesesRows = [];
                                 }
 
-                                const mesesDisponiveis = mesesRows.map(row => {
+                                const mesesDisponiveis = (mesesRows || []).map(row => {
                                     const dateObj = new Date(row.ano, row.mes - 1, 1);
                                     const mesNome = dateObj.toLocaleString('pt-BR', { month: 'long' });
                                     return {
@@ -212,7 +208,6 @@ router.get("/home", (req, res) => {
                                 let parametrosSQL = [];
 
                                 if (modoFiltro === 'mensal') {
-                                    // Agrupa por Mês
                                     queryGrafico = `
                                         SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                                         FROM caderno_entregas ce
@@ -231,7 +226,6 @@ router.get("/home", (req, res) => {
                                     `;
                                     parametrosSQL = [anoFiltro];
                                 } else {
-                                    // Agrupa por Dia
                                     queryGrafico = `
                                         SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                                         FROM caderno_entregas ce
@@ -296,26 +290,68 @@ router.get("/home", (req, res) => {
                                             });
                                         }
 
-                                        const graficoMensal = { labels, data: dadosGrafico, ranking: rankingObj };
+                                        // --- CÁLCULO DO TOTAL ANTERIOR PARA COMPARAÇÃO ---
+                                        let queryAnterior = '';
+                                        let paramsAnterior = [];
 
-                                        db.query(`SELECT * FROM entregas_pedidos ORDER BY criado_em DESC, id DESC LIMIT 1`, (errRota, rotaRows) => {
-                                            if (errRota) console.error("Erro rota:", errRota);
-                                            const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+                                        if (modoFiltro === 'mensal') {
+                                            queryAnterior = `
+                                                SELECT SUM(cei.quantidade) AS total_anterior
+                                                FROM caderno_entregas ce
+                                                JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                                WHERE YEAR(ce.data_criacao) = ?
+                                            `;
+                                            paramsAnterior = [anoFiltro - 1];
+                                        } else {
+                                            const mesAnt = mesFiltro === 1 ? 12 : mesFiltro - 1;
+                                            const anoAnt = mesFiltro === 1 ? anoFiltro - 1 : anoFiltro;
+                                            queryAnterior = `
+                                                SELECT SUM(cei.quantidade) AS total_anterior
+                                                FROM caderno_entregas ce
+                                                JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                                                WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                                            `;
+                                            paramsAnterior = [mesAnt, anoAnt];
+                                        }
 
-                                            if (!rota) {
-                                                return res.send(homeView(req.session.user, notificacoes, {
-                                                    veiculos, checklists, precos, rota: null,
-                                                    graficoMensal, mesesDisponiveis, mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
-                                                }, notificacaoAtiva)); // REPASSANDO notificacaoAtiva AQUI
+                                        db.query(queryAnterior, paramsAnterior, (errAnt, antRows) => {
+                                            const totalAnterior = (antRows && antRows.length > 0) ? Number(antRows[0].total_anterior || 0) : 0;
+                                            const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
+                                            let variacaoPct = 0;
+
+                                            if (totalAnterior > 0) {
+                                                variacaoPct = (((totalAtual - totalAnterior) / totalAnterior) * 100).toFixed(1);
+                                            } else if (totalAtual > 0) {
+                                                variacaoPct = 100.0;
                                             }
 
-                                            db.query(`SELECT id, pedido_id, cliente_nome, status, observacao, atualizado_por, atualizado_em FROM entregas_clientes WHERE pedido_id = ? ORDER BY id DESC`, [rota.id], (errClientes, clientes) => {
-                                                if (errClientes) console.error("Erro clientes rota:", errClientes);
-                                                return res.send(homeView(req.session.user, notificacoes, {
-                                                    veiculos, checklists, precos, graficoMensal, mesesDisponiveis,
-                                                    mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro },
-                                                    rota: { ...rota, clientes: clientes || [] }
-                                                }, notificacaoAtiva)); // E REPASSANDO notificacaoAtiva AQUI
+                                            const graficoMensal = { 
+                                                labels, 
+                                                data: dadosGrafico, 
+                                                ranking: rankingObj,
+                                                totalAnterior,
+                                                variacaoPct
+                                            };
+
+                                            db.query(`SELECT * FROM entregas_pedidos ORDER BY criado_em DESC, id DESC LIMIT 1`, (errRota, rotaRows) => {
+                                                if (errRota) console.error("Erro rota:", errRota);
+                                                const rota = rotaRows && rotaRows.length ? rotaRows[0] : null;
+
+                                                if (!rota) {
+                                                    return res.send(homeView(req.session.user, notificacoes, {
+                                                        veiculos, checklists, precos, rota: null,
+                                                        graficoMensal, mesesDisponiveis, mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
+                                                    }, notificacaoAtiva));
+                                                }
+
+                                                db.query(`SELECT id, pedido_id, cliente_nome, status, observacao, atualizado_por, atualizado_em FROM entregas_clientes WHERE pedido_id = ? ORDER BY id DESC`, [rota.id], (errClientes, clientes) => {
+                                                    if (errClientes) console.error("Erro clientes rota:", errClientes);
+                                                    return res.send(homeView(req.session.user, notificacoes, {
+                                                        veiculos, checklists, precos, graficoMensal, mesesDisponiveis,
+                                                        mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro },
+                                                        rota: { ...rota, clientes: clientes || [] }
+                                                    }, notificacaoAtiva));
+                                                });
                                             });
                                         });
                                     });
@@ -329,7 +365,7 @@ router.get("/home", (req, res) => {
     });
 });
 
-//DADOS DO GRÁFICO DA HOME
+//DADOS DO GRÁFICO DA HOME VIA AJAX
 router.get("/api/dashboard-chart", (req, res) => {
     if (!req.session.user) return res.status(401).json({ error: "Não autorizado" });
 
@@ -425,10 +461,51 @@ router.get("/api/dashboard-chart", (req, res) => {
                 });
             }
 
-            // Devolve as informações puras em JSON (AJAX)
-            return res.json({
-                graficoMensal: { labels, data: dadosGrafico, ranking: rankingObj },
-                mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
+            // --- CÁLCULO DO TOTAL ANTERIOR PARA O AJAX ---
+            let queryAnterior = '';
+            let paramsAnterior = [];
+
+            if (modoFiltro === 'mensal') {
+                queryAnterior = `
+                    SELECT SUM(cei.quantidade) AS total_anterior
+                    FROM caderno_entregas ce
+                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                    WHERE YEAR(ce.data_criacao) = ?
+                `;
+                paramsAnterior = [anoFiltro - 1];
+            } else {
+                const mesAnt = mesFiltro === 1 ? 12 : mesFiltro - 1;
+                const anoAnt = mesFiltro === 1 ? anoFiltro - 1 : anoFiltro;
+                queryAnterior = `
+                    SELECT SUM(cei.quantidade) AS total_anterior
+                    FROM caderno_entregas ce
+                    JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
+                    WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                `;
+                paramsAnterior = [mesAnt, anoAnt];
+            }
+
+            db.query(queryAnterior, paramsAnterior, (errAnt, antRows) => {
+                const totalAnterior = (antRows && antRows.length > 0) ? Number(antRows[0].total_anterior || 0) : 0;
+                const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
+                let variacaoPct = 0;
+
+                if (totalAnterior > 0) {
+                    variacaoPct = (((totalAtual - totalAnterior) / totalAnterior) * 100).toFixed(1);
+                } else if (totalAtual > 0) {
+                    variacaoPct = 100.0;
+                }
+
+                return res.json({
+                    graficoMensal: { 
+                        labels, 
+                        data: dadosGrafico, 
+                        ranking: rankingObj,
+                        totalAnterior,
+                        variacaoPct
+                    },
+                    mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
+                });
             });
         });
     });

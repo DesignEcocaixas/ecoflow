@@ -227,7 +227,7 @@ function qrGeneratorView(usuario, qrCodes = []) {
               </div>
 
               <div id="placeholderPreview" class="text-muted py-4 small">
-                Digite um link acima para gerar o vetor SVG no servidor.
+                Digite um link acima para gerar o SVG.
               </div>
 
               <div class="mt-3 justify-content-center gap-2" id="boxDownloadPreview" style="display: none !important;">

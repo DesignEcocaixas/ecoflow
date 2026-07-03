@@ -765,7 +765,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                     const dataFormatada = dataObj.toLocaleDateString('pt-BR') + ' às ' + dataObj.toLocaleTimeString('pt-BR');
                     
                     const isPing = log.topico === 'PING';
-                    const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + log.topico;
+                    const titleMsg = isPing ? '[PING] Validação do Omie' : '[OMIE] ' + log.topico;
                     const stringified = formatarPayloadWebhook(log.payload);
 
                     // Cria o wrapper e injeta o HTML do acordeão
@@ -806,7 +806,7 @@ function configView(usuario, taxas = {}, historicoNotificacoes = []) {
                 const dataFormatada = dataObj.toLocaleDateString('pt-BR') + ' às ' + dataObj.toLocaleTimeString('pt-BR');
                 
                 const isPing = data.payload && data.payload.ping;
-                const titleMsg = isPing ? '[PING] Validação do Omie' : '[EVENTO] ' + (data.payload.topic || 'Desconhecido');
+                const titleMsg = isPing ? '[PING] Validação do Omie' : '[OMIE] ' + (data.payload.topic || 'Desconhecido');
                 const stringified = formatarPayloadWebhook(data.payload);
 
                 // Cria o novo card acordeão em tempo real no topo

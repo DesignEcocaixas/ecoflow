@@ -23,7 +23,7 @@ function errosView(status = 500, titulo = "Erro no Servidor", mensagem = "Ocorre
     404: "/img/error-404.svg",
     403: "/img/error-403.svg",
     401: "/img/error-401.svg",
-    500: "/img/error-500.svg",
+    500: "/img/error.svg",
     default: "/img/error.svg"
   };
 

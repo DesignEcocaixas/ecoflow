@@ -47,7 +47,8 @@ function menuLateral(usuario, rotaAtiva = "") {
   const desLinks = [
     { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
     { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" },
-    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
+    { href: "/qr-generator", icone: "fa-solid fa-qrcode", texto: "QR Codes" }
   ];
 
   // --- FUNÇÕES DE RENDERIZAÇÃO ---

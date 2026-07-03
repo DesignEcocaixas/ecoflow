@@ -5,7 +5,7 @@ const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO 
 function renderTestesView(usuarioLogado, rotasEncontradas) {
     const user = usuarioLogado || { nome: "Desenvolvedor", tipo_usuario: "admin" };
     const menuHTML = menuLateral(user, "/dev/testes");
-    const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+    const termosHTML = termosComponent(user); // <--- CORRIGIDO: passando 'user' corretamente
 
     // 1. Motor de Agrupamento Dinâmico Inteligente
     const gruposMapeados = {};
@@ -204,7 +204,7 @@ function renderTestesView(usuarioLogado, rotasEncontradas) {
             /* Inputs */
             .form-control { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #ffffff !important; }
             .form-control:focus { background-color: #2a2a2a; border-color: #08c068; color: #ffffff !important; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
-            .form-control::placeholder { color: rgba(255, 255, 255, 0.4) !important; }
+            .form-control::placeholder { color: rgba(255, 255, 255, 0.45) !important; opacity: 1 !important; }
             
             /* Acordeão Otimizado (Sem lag) */
             .accordion-button { border-radius: 6px !important; transition: background-color 0.2s, color 0.2s; }

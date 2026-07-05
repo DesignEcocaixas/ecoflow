@@ -269,7 +269,7 @@ module.exports = function renderGabaritos(usuario, gabaritos = []) {
                     </div>
                     
                     <button type="submit" class="btn btn-sm btn-primary fw-bold shadow-sm px-4 py-2 text-dark text-nowrap">
-                        <i class="fa-solid fa-upload me-1"></i> Salvar Gabarito
+                        <i class="fa-solid fa-upload me-1"></i> Enviar Gabarito
                     </button>
                 </form>
                 <div class="text-muted mt-2" style="font-size: 0.7rem;"><i class="fa-solid fa-circle-info me-1"></i> Formatos aceitos: <strong>.cdr</strong> (CorelDraw) e <strong>.ai</strong> (Adobe Illustrator).</div>

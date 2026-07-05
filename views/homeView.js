@@ -56,7 +56,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
   const rotaClientes = Array.isArray(rota?.clientes) ? rota.clientes : [];
 
   // Dados para o Gráfico Mensal e Select vindos do backend
-  const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {}, totalAnterior: 0, variacaoPct: 0 };
+  const graficoMensal = dashboard.graficoMensal || { labels: [], data: [], ranking: {}, totalAnterior: 0, variacaoPct: 0, totalPeriodoAnterior: 0, variacaoPeriodoPct: 0 };
   const mesesDisponiveis = Array.isArray(dashboard.mesesDisponiveis) ? dashboard.mesesDisponiveis : [];
   const mesSelecionado = dashboard.mesSelecionado || { mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), modo: 'diario' };
   const modoVisao = mesSelecionado.modo || 'diario';
@@ -641,6 +641,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 </div>
               </div>
 
+              <!-- MINI CONTAINER DE TOTAL COM DOIS BADGES EMPILHADOS -->
               <div class="d-flex align-items-center justify-content-between bg-custom-darker p-2 px-3 rounded border border-custom mb-3 flex-wrap gap-2 shadow-sm">
                   <div class="d-flex align-items-center gap-2">
                       <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-accent flex-shrink-0" style="width: 34px; height: 34px;">
@@ -651,8 +652,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                           <strong class="text-white fs-6" id="totalVolumePeriodo">0 caixas</strong>
                       </div>
                   </div>
-                  <div id="badgeVariacaoVolume" class="d-flex align-items-center gap-1" style="font-size: 0.75rem;">
-                      <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary">Calculando...</span>
+                  
+                  <!-- BADGES COM LARGURA FIXA E ALINHAMENTO PADRONIZADO -->
+                  <div class="d-flex flex-column align-items-end gap-1" style="font-size: 0.75rem; min-width: 165px;">
+                      <div id="badgeVariacaoVolume" class="w-100">
+                          <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-center py-1">Calculando...</span>
+                      </div>
+                      <div id="badgeVariacaoPeriodo" class="w-100">
+                          <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-center py-1">Calculando...</span>
+                      </div>
                   </div>
               </div>
 
@@ -765,26 +773,40 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       let chartData = ${JSON.stringify(graficoMensal)};
       let chartInstance = null;
 
-      // FUNÇÃO PARA ATUALIZAR O MINI CONTAINER E A COMPARATIVA MENSAL NO DOM
+      // FUNÇÃO QUE RENDERIZA OS DOIS COMPARATIVOS ALINHADOS À ESQUERDA (COM ESCAPES PARA O BROWSER)
       function atualizarMiniContainerVolume() {
           const totalEl = document.getElementById('totalVolumePeriodo');
           const badgeEl = document.getElementById('badgeVariacaoVolume');
+          const badgePeriodoEl = document.getElementById('badgeVariacaoPeriodo');
           if (!totalEl || !badgeEl || !chartData || !Array.isArray(chartData.data)) return;
 
-          // Soma de todas as caixas do mês/ano atualmente em exibição
           const totalAtual = chartData.data.reduce((acc, val) => acc + Number(val || 0), 0);
           totalEl.textContent = totalAtual.toLocaleString('pt-BR') + ' caixas';
 
-          // Renderiza o badge dinamicamente (+X% ou -X%)
+          // 1. Badge vs Mês Passado / Ano Passado (Alinhado à esquerda com px-3)
           const pct = Number(chartData.variacaoPct || 0);
           const periodoLabel = mesSelecionadoJS.modo === 'mensal' ? 'ano passado' : 'mês passado';
 
           if (pct > 0) {
-              badgeEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1"><i class="fa-solid fa-arrow-trend-up me-1"></i> +\${pct}% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1"><i class="fa-solid fa-arrow-trend-up me-2"></i> +\${pct}% vs \${periodoLabel}</span>\`;
           } else if (pct < 0) {
-              badgeEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="fa-solid fa-arrow-trend-down me-1"></i> \${pct}% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-start px-3 py-1"><i class="fa-solid fa-arrow-trend-down me-2"></i> \${pct}% vs \${periodoLabel}</span>\`;
           } else {
-              badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary px-2 py-1">0% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1"><i class="fa-solid fa-minus me-2"></i> 0% vs \${periodoLabel}</span>\`;
+          }
+
+          // 2. Badge vs Período Passado / Meses Anteriores (Alinhado à esquerda com px-3)
+          if (badgePeriodoEl) {
+              const pctPeriodo = Number(chartData.variacaoPeriodoPct || 0);
+              const subLabel = mesSelecionadoJS.modo === 'mensal' ? 'meses anteriores' : 'período passado';
+              
+              if (pctPeriodo > 0) {
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-arrow-trend-up me-2"></i> +\${pctPeriodo}% vs \${subLabel}</span>\`;
+              } else if (pctPeriodo < 0) {
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-center text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-arrow-trend-down me-2"></i> \${pctPeriodo}% vs \${subLabel}</span>\`;
+              } else {
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-minus me-2"></i> 0% vs \${subLabel}</span>\`;
+              }
           }
       }
 
@@ -832,7 +854,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   chartInstance.update();
               }
 
-              // ATUALIZA O MINI CONTAINER DE FORMA REATIVA
               atualizarMiniContainerVolume();
 
           } catch (error) {
@@ -944,7 +965,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           }
         });
 
-        // DISPARA O CÁLCULO INICIAL ASSIM QUE O GRÁFICO É CRIADO
         atualizarMiniContainerVolume();
       });
     </script>

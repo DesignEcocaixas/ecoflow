@@ -290,39 +290,69 @@ router.get("/home", (req, res) => {
                                             });
                                         }
 
-                                        // --- CÁLCULO DO TOTAL ANTERIOR PARA COMPARAÇÃO ---
+                                        // --- CÁLCULO DO TOTAL ANTERIOR E PERÍODO EQUIVALENTE ---
                                         let queryAnterior = '';
                                         let paramsAnterior = [];
 
                                         if (modoFiltro === 'mensal') {
                                             queryAnterior = `
-                                                SELECT SUM(cei.quantidade) AS total_anterior
+                                                SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                                                 FROM caderno_entregas ce
                                                 JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
                                                 WHERE YEAR(ce.data_criacao) = ?
+                                                GROUP BY MONTH(ce.data_criacao)
                                             `;
                                             paramsAnterior = [anoFiltro - 1];
                                         } else {
                                             const mesAnt = mesFiltro === 1 ? 12 : mesFiltro - 1;
                                             const anoAnt = mesFiltro === 1 ? anoFiltro - 1 : anoFiltro;
                                             queryAnterior = `
-                                                SELECT SUM(cei.quantidade) AS total_anterior
+                                                SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                                                 FROM caderno_entregas ce
                                                 JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
                                                 WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                                                GROUP BY DAY(ce.data_criacao)
                                             `;
                                             paramsAnterior = [mesAnt, anoAnt];
                                         }
 
                                         db.query(queryAnterior, paramsAnterior, (errAnt, antRows) => {
-                                            const totalAnterior = (antRows && antRows.length > 0) ? Number(antRows[0].total_anterior || 0) : 0;
-                                            const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
-                                            let variacaoPct = 0;
+                                            let totalAnterior = 0;
+                                            let totalPeriodoAnterior = 0;
 
+                                            // Define o dia ou mês de corte (se for o mês atual, corte = dia de hoje)
+                                            let corte = dadosGrafico.length;
+                                            if (modoFiltro === 'diario' && mesFiltro === dataAtual.getMonth() + 1 && anoFiltro === dataAtual.getFullYear()) {
+                                                corte = dataAtual.getDate();
+                                            } else if (modoFiltro === 'mensal' && anoFiltro === dataAtual.getFullYear()) {
+                                                corte = dataAtual.getMonth() + 1;
+                                            }
+
+                                            if (antRows && antRows.length > 0) {
+                                                antRows.forEach(r => {
+                                                    const qtd = Number(r.total_quantidade || 0);
+                                                    totalAnterior += qtd;
+                                                    if (Number(r.chave) <= corte) {
+                                                        totalPeriodoAnterior += qtd;
+                                                    }
+                                                });
+                                            }
+
+                                            const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
+                                            const totalPeriodoAtual = dadosGrafico.slice(0, corte).reduce((acc, val) => acc + Number(val), 0);
+
+                                            let variacaoPct = 0;
                                             if (totalAnterior > 0) {
                                                 variacaoPct = (((totalAtual - totalAnterior) / totalAnterior) * 100).toFixed(1);
                                             } else if (totalAtual > 0) {
                                                 variacaoPct = 100.0;
+                                            }
+
+                                            let variacaoPeriodoPct = 0;
+                                            if (totalPeriodoAnterior > 0) {
+                                                variacaoPeriodoPct = (((totalPeriodoAtual - totalPeriodoAnterior) / totalPeriodoAnterior) * 100).toFixed(1);
+                                            } else if (totalPeriodoAtual > 0) {
+                                                variacaoPeriodoPct = 100.0;
                                             }
 
                                             const graficoMensal = { 
@@ -330,7 +360,9 @@ router.get("/home", (req, res) => {
                                                 data: dadosGrafico, 
                                                 ranking: rankingObj,
                                                 totalAnterior,
-                                                variacaoPct
+                                                variacaoPct,
+                                                totalPeriodoAnterior,
+                                                variacaoPeriodoPct
                                             };
 
                                             db.query(`SELECT * FROM entregas_pedidos ORDER BY criado_em DESC, id DESC LIMIT 1`, (errRota, rotaRows) => {
@@ -461,39 +493,67 @@ router.get("/api/dashboard-chart", (req, res) => {
                 });
             }
 
-            // --- CÁLCULO DO TOTAL ANTERIOR PARA O AJAX ---
             let queryAnterior = '';
             let paramsAnterior = [];
 
             if (modoFiltro === 'mensal') {
                 queryAnterior = `
-                    SELECT SUM(cei.quantidade) AS total_anterior
+                    SELECT MONTH(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                     FROM caderno_entregas ce
                     JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
                     WHERE YEAR(ce.data_criacao) = ?
+                    GROUP BY MONTH(ce.data_criacao)
                 `;
                 paramsAnterior = [anoFiltro - 1];
             } else {
                 const mesAnt = mesFiltro === 1 ? 12 : mesFiltro - 1;
                 const anoAnt = mesFiltro === 1 ? anoFiltro - 1 : anoFiltro;
                 queryAnterior = `
-                    SELECT SUM(cei.quantidade) AS total_anterior
+                    SELECT DAY(ce.data_criacao) AS chave, SUM(cei.quantidade) AS total_quantidade
                     FROM caderno_entregas ce
                     JOIN caderno_entregas_itens cei ON ce.id = cei.caderno_id
                     WHERE MONTH(ce.data_criacao) = ? AND YEAR(ce.data_criacao) = ?
+                    GROUP BY DAY(ce.data_criacao)
                 `;
                 paramsAnterior = [mesAnt, anoAnt];
             }
 
             db.query(queryAnterior, paramsAnterior, (errAnt, antRows) => {
-                const totalAnterior = (antRows && antRows.length > 0) ? Number(antRows[0].total_anterior || 0) : 0;
-                const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
-                let variacaoPct = 0;
+                let totalAnterior = 0;
+                let totalPeriodoAnterior = 0;
 
+                let corte = dadosGrafico.length;
+                if (modoFiltro === 'diario' && mesFiltro === dataAtual.getMonth() + 1 && anoFiltro === dataAtual.getFullYear()) {
+                    corte = dataAtual.getDate();
+                } else if (modoFiltro === 'mensal' && anoFiltro === dataAtual.getFullYear()) {
+                    corte = dataAtual.getMonth() + 1;
+                }
+
+                if (antRows && antRows.length > 0) {
+                    antRows.forEach(r => {
+                        const qtd = Number(r.total_quantidade || 0);
+                        totalAnterior += qtd;
+                        if (Number(r.chave) <= corte) {
+                            totalPeriodoAnterior += qtd;
+                        }
+                    });
+                }
+
+                const totalAtual = dadosGrafico.reduce((acc, val) => acc + Number(val), 0);
+                const totalPeriodoAtual = dadosGrafico.slice(0, corte).reduce((acc, val) => acc + Number(val), 0);
+
+                let variacaoPct = 0;
                 if (totalAnterior > 0) {
                     variacaoPct = (((totalAtual - totalAnterior) / totalAnterior) * 100).toFixed(1);
                 } else if (totalAtual > 0) {
                     variacaoPct = 100.0;
+                }
+
+                let variacaoPeriodoPct = 0;
+                if (totalPeriodoAnterior > 0) {
+                    variacaoPeriodoPct = (((totalPeriodoAtual - totalPeriodoAnterior) / totalPeriodoAnterior) * 100).toFixed(1);
+                } else if (totalPeriodoAtual > 0) {
+                    variacaoPeriodoPct = 100.0;
                 }
 
                 return res.json({
@@ -502,7 +562,9 @@ router.get("/api/dashboard-chart", (req, res) => {
                         data: dadosGrafico, 
                         ranking: rankingObj,
                         totalAnterior,
-                        variacaoPct
+                        variacaoPct,
+                        totalPeriodoAnterior,
+                        variacaoPeriodoPct
                     },
                     mesSelecionado: { mes: mesFiltro, ano: anoFiltro, modo: modoFiltro }
                 });

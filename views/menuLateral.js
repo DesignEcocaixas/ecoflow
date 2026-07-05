@@ -9,7 +9,7 @@ try {
     versaoSistemaCache = require(pPath).version;
   }
 } catch (e) {
-  console.log("Aviso: Não foi possível ler a versão do package.json para o menu.");
+  console.log("Aviso: Não foi possível lire a versão do package.json para o menu.");
 }
 
 function menuLateral(usuario, rotaAtiva = "") {
@@ -120,8 +120,6 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
     menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Usuários");
-    
-    // MUDANÇA AQUI: Botão Dev Lab apenas para Admin, logo abaixo de Usuários
     menuLinks += renderLink("/dev/testes", "fa-solid fa-vial-virus", "Dev Lab");
   }
 
@@ -317,10 +315,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       // =======================================================================
       window.addEventListener('pageshow', (event) => {
           if (event.persisted) {
-              // 1. Oculta o skeleton do próprio menu lateral
               ocultarSkeletonMenuLateral();
-              
-              // 2. Procura automaticamente se a view atual tem a função global e executa-a!
               if (typeof window.ocultarSkeletonGlobais === 'function') {
                   window.ocultarSkeletonGlobais();
               }
@@ -496,12 +491,24 @@ function menuLateral(usuario, rotaAtiva = "") {
     </script>
   `;
 
-  // --- RETORNO COM O NOVO CSS (DARK & GREEN & SLIM SCROLL) ---
+  // --- RETORNO COM O NOVO CSS (INTER GLOBAL FONTS & SLIM SCROLL) ---
   return `
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-      body{
-        font-family: 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+      /* RESET E SOBRESCRITA GLOBAL FORÇADA PARA A FONTE INTER */
+      html, body, .content, .form-control, .form-select, .btn, .modal-content, .accordion-button, .card, .table, th, td, span, label {
+          font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
       }
+
+      /* Scrollbar Discreta e Mínima */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
+      html, body, .content { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
 
       /* OVERRIDE DA SIDEBAR NAS VIEWS */
       .sidebar {
@@ -614,7 +621,6 @@ function menuLateral(usuario, rotaAtiva = "") {
         color: #08c068 !important;
       }
       
-      /* Scrollbar Discreta e Mínima */
       .sidebar-scroll-area {
         overflow-y: auto;
         overflow-x: hidden;
@@ -689,9 +695,7 @@ function menuLateral(usuario, rotaAtiva = "") {
         opacity: 0.5;
       }
 
-      /* =========================================================
-         SKELETON LOADING PARA MENU LATERAL (DARK) E GERAIS
-         ========================================================= */
+      /* SKELETON LOADING PARA MENU LATERAL (DARK) */
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
           background-size: 200% 100%;

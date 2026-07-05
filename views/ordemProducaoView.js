@@ -270,7 +270,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <input type="file" name="planilha" accept=".xlsx,.xls" class="form-control form-control-sm shadow-sm" required>
             </div>
             <div class="col-12 col-xl-4 d-flex gap-2">
-              <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-bold">Gerar Ordens</button>
+              <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-bold">Gerar</button>
               <button type="button" class="btn btn-sm btn-outline-danger shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalLimpar" title="Limpar Tudo"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </form>

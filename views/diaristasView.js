@@ -725,7 +725,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                          <input type="hidden" name="colaborador_id" id="formItemColabId">
 
                          <div class="mb-3">
-                             <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Executada</label>
+                             <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data da diária</label>
                              <input type="date" name="data_servico" id="itemData" class="form-control form-control-sm shadow-sm" required onchange="verificarDataDomingoPasta(); calcularDiariaPasta()">
                          </div>
                          <div class="mb-3">
@@ -778,14 +778,14 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
                      <div class="p-4 bg-custom-darker border-top border-custom shadow-sm d-flex flex-wrap align-items-center justify-content-between" id="rodapeFechamentoPasta">
                          <div class="mb-3 mb-md-0">
-                             <span class="text-muted d-block mb-1" style="font-size: 0.7rem; text-transform: uppercase;">Total Acumulado na Pasta</span>
+                             <span class="text-muted d-block mb-1" style="font-size: 0.7rem; text-transform: uppercase;">Total</span>
                              <h4 class="fw-bold text-accent mb-0" id="visorSomaPasta">R$ 0,00</h4>
                              <div class="text-muted mt-1" style="font-size: 0.7rem;"><i class="fa-brands fa-pix text-accent"></i> <span id="visorPixPasta"></span></div>
                          </div>
                          
                          <form id="formFecharPasta" method="POST" action="" enctype="multipart/form-data" class="d-flex align-items-center gap-2" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta Fechada e Paga com Sucesso!')">
                              <div class="bg-custom-dark p-2 rounded border-custom" style="min-width: 250px;">
-                                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-paperclip"></i> Anexar Comprovante Geral</label>
+                                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-paperclip"></i> Anexar Comprovante</label>
                                  <input type="file" name="comprovante" class="form-control form-control-sm shadow-sm" accept="image/*,.pdf" required>
                              </div>
                              <button type="button" id="btnWppPasta" class="btn btn-outline-secondary border-custom text-accent fw-bold shadow-sm px-3" style="height: fit-content;" title="Enviar Resumo por WhatsApp" onclick=""><i class="fa-brands fa-whatsapp fs-5"></i></button>

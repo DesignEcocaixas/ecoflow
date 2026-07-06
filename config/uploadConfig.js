@@ -45,6 +45,9 @@ const uploadVeiculosFotos = multer({ storage: criarStorage("veiculos/fotos") });
 const uploadWorkspaces = multer({ storage: criarStorage("workspaces") });
 const uploadMensagens = multer({ storage: criarStorage("mensagensSistema") });
 
+// NOVO: Upload específico para logos e artes das caixas dos clientes
+const uploadClientes = multer({ storage: criarStorage("clientes") });
+
 module.exports = {
     upload,
     uploadKanban,
@@ -57,5 +60,6 @@ module.exports = {
     uploadGabaritos,
     uploadVeiculosFotos,
     uploadWorkspaces,
-    uploadMensagens
+    uploadMensagens,
+    uploadClientes // <--- Exportado aqui para ser usado no routes/cadernos.js
 };

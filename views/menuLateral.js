@@ -25,7 +25,8 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
-    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
+    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" }
   ];
 
   const motLinks = [
@@ -41,7 +42,8 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
     { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
     { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
-    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
+    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" }
   ];
 
   const desLinks = [

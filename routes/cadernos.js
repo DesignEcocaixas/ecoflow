@@ -6,6 +6,7 @@ const pdfkit = require("pdfkit"); // Para gerar o PDF com o QR Code
 const fs = require("fs");
 const path = require("path");
 const ExcelJS = require("exceljs");
+const { uploadClientes } = require("../config/uploadConfig");
 
 // A MÁGICA AQUI: Importando as funções do Google Maps do nosso Service
 const { 
@@ -62,7 +63,7 @@ router.get("/caderno-entregas", async (req, res) => {
         const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
 
         // NOVO: Busca o histórico fixo de clientes imune à exclusão (com a Cidade para a tag azul)
-        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade FROM clientes_historico ORDER BY nome ASC");
+        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade, logo, arte, contato FROM clientes_historico ORDER BY nome ASC");
 
         // NOVO: Busca o catálogo de itens do pedido (as dezenas de caixas que inserimos via script SQL)
         const [itensCatalogo] = await db.promise().query("SELECT nome FROM itens_catalogo ORDER BY nome ASC");
@@ -83,6 +84,20 @@ router.get("/caderno-entregas", async (req, res) => {
     } catch (error) {
         console.error("Erro no Caderno de Entregas:", error);
         res.status(500).send("Erro interno ao carregar cadernos.");
+    }
+});
+
+// Adicione junto com as rotas de listagem
+router.get("/clientes", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    try {
+        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade FROM clientes_historico ORDER BY nome ASC");
+        
+        res.send(require('../views/clientesView')(req.session.user, clientesDB));
+    } catch (error) {
+        console.error("Erro ao carregar tela de Clientes:", error);
+        res.status(500).send("Erro interno.");
     }
 });
 
@@ -318,39 +333,51 @@ router.post("/caderno-entregas/excluir/:id", async (req, res) => {
     }
 });
 
-//CADASTRAR CLIENTE PELO CADERNO
-router.post("/caderno-entregas/clientes/novo", async (req, res) => {
+// =========================================================================
+// ROTA POST: CADASTRAR CLIENTE (COM LOGO E ARTE)
+// =========================================================================
+router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    let { nome, link_endereco, coordenadas } = req.body;
+    let { nome, link_endereco, coordenadas, contato } = req.body;
+
+    const logoFile = req.files && req.files['logo'] ? "clientes/" + req.files['logo'][0].filename : null;
+    const arteFile = req.files && req.files['arte'] ? "clientes/" + req.files['arte'][0].filename : null;
 
     try {
         if (nome && nome.trim() !== '') {
-            // SE A COORDENADA VEIO VAZIA, MAS TEM LINK: O servidor decodifica o link curto agora mesmo!
             if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
                 const localizacaoResolvida = await obterLocalizacao(nome, link_endereco);
-
-                // Valida se o que foi retornado segue o padrão de coordenadas numéricas (lat,lng)
                 if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
                     coordenadas = localizacaoResolvida.trim();
                 }
             }
 
+            let cidadeCli = null;
+            if (coordenadas && coordenadas.trim() !== '') {
+                cidadeCli = await obterCidadeDasCoordenadas(coordenadas.trim());
+            }
+
             await db.promise().query(`
-                INSERT INTO clientes_historico (nome, link_endereco, coordenadas) VALUES (?, ?, ?) 
+                INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade, contato, logo, arte) VALUES (?, ?, ?, ?, ?, ?, ?) 
                 ON DUPLICATE KEY UPDATE 
-                    link_endereco = COALESCE(?, link_endereco), 
-                    coordenadas = COALESCE(?, coordenadas)
+                    link_endereco = COALESCE(VALUES(link_endereco), link_endereco), 
+                    coordenadas = COALESCE(VALUES(coordenadas), coordenadas),
+                    cidade = COALESCE(VALUES(cidade), cidade),
+                    contato = COALESCE(VALUES(contato), contato),
+                    logo = COALESCE(VALUES(logo), logo),
+                    arte = COALESCE(VALUES(arte), arte)
             `, [
                 nome.trim(),
                 link_endereco || null,
                 coordenadas || null,
-                link_endereco || null,
-                coordenadas || null
+                cidadeCli || null,
+                contato || null,
+                logoFile,
+                arteFile
             ]);
         }
 
-        // CORREÇÃO: Enviando o parâmetro na URL para ativar o Toast na View
-        res.redirect("/caderno-entregas?sucessoCliente=1");
+        res.redirect("/clientes?sucessoCliente=1");
 
     } catch (error) {
         console.error("[ERRO AO CADASTRAR CLIENTE]:", error);
@@ -358,37 +385,57 @@ router.post("/caderno-entregas/clientes/novo", async (req, res) => {
     }
 });
 
-//EDITAR CLIENTE DO CADERNO
-router.post("/caderno-entregas/clientes/editar", async (req, res) => {
+// =========================================================================
+// ROTA POST: EDITAR CLIENTE (COM TRATAMENTO DE IMAGENS)
+// =========================================================================
+router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    let { nomeOriginal, nomeNovo, link_endereco, coordenadas } = req.body;
+    let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato } = req.body;
+
+    const novoLogo = req.files && req.files['logo'] ? "clientes/" + req.files['logo'][0].filename : null;
+    const novaArte = req.files && req.files['arte'] ? "clientes/" + req.files['arte'][0].filename : null;
 
     try {
         if (nomeOriginal && nomeNovo) {
-            // SE NA EDIÇÃO A COORDENADA FICOU VAZIA, MAS FOI PASSADO UM LINK: Decodifica também!
             if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
                 const localizacaoResolvida = await obterLocalizacao(nomeNovo, link_endereco);
-
                 if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
                     coordenadas = localizacaoResolvida.trim();
                 }
             }
 
-            await db.promise().query(`
-                UPDATE clientes_historico 
-                SET nome = ?, link_endereco = ?, coordenadas = ? 
-                WHERE nome = ?
-            `, [nomeNovo.trim(), link_endereco || null, coordenadas || null, nomeOriginal.trim()]);
+            // Busca arquivos antigos para exclusão se novos foram enviados
+            const [[clienteAntigo]] = await db.promise().query("SELECT logo, arte FROM clientes_historico WHERE nome = ?", [nomeOriginal.trim()]);
+            const fs = require('fs');
+            const path = require('path');
 
-            await db.promise().query(`
-                UPDATE caderno_entregas_itens 
-                SET local_entrega = ? 
-                WHERE local_entrega = ?
-            `, [nomeNovo.trim(), nomeOriginal.trim()]);
+            if (novoLogo && clienteAntigo && clienteAntigo.logo) {
+                const p = path.join(__dirname, "..", "uploads", clienteAntigo.logo);
+                if (fs.existsSync(p)) fs.unlinkSync(p);
+            }
+            if (novaArte && clienteAntigo && clienteAntigo.arte) {
+                const p = path.join(__dirname, "..", "uploads", clienteAntigo.arte);
+                if (fs.existsSync(p)) fs.unlinkSync(p);
+            }
+
+            let sql = "UPDATE clientes_historico SET nome = ?, link_endereco = ?, coordenadas = ?, contato = ?";
+            let params = [nomeNovo.trim(), link_endereco || null, coordenadas || null, contato || null];
+
+            if (novoLogo) { sql += ", logo = ?"; params.push(novoLogo); }
+            if (novaArte) { sql += ", arte = ?"; params.push(novaArte); }
+
+            sql += " WHERE nome = ?";
+            params.push(nomeOriginal.trim());
+
+            await db.promise().query(sql, params);
+
+            // Se mudou de nome, reflete no caderno de entregas existente
+            if (nomeOriginal.trim() !== nomeNovo.trim()) {
+                await db.promise().query("UPDATE caderno_entregas_itens SET local_entrega = ? WHERE local_entrega = ?", [nomeNovo.trim(), nomeOriginal.trim()]);
+            }
         }
 
-        // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
-        res.redirect("/caderno-entregas?sucessoCliente=1");
+        res.redirect("/clientes?sucessoCliente=1");
 
     } catch (error) {
         console.error("[ERRO AO EDITAR CLIENTE]:", error);
@@ -396,18 +443,32 @@ router.post("/caderno-entregas/clientes/editar", async (req, res) => {
     }
 });
 
-//EXCLUIR CLIENTE CADERNO
+// =========================================================================
+// ROTA POST: EXCLUIR CLIENTE (APAGANDO IMAGENS FÍSICAS)
+// =========================================================================
 router.post("/caderno-entregas/clientes/excluir", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     const { nome } = req.body;
 
     try {
         if (nome) {
+            const [[cli]] = await db.promise().query("SELECT logo, arte FROM clientes_historico WHERE nome = ?", [nome.trim()]);
+            if (cli) {
+                const fs = require('fs');
+                const path = require('path');
+                if (cli.logo) {
+                    const p = path.join(__dirname, "..", "uploads", cli.logo);
+                    if (fs.existsSync(p)) fs.unlinkSync(p);
+                }
+                if (cli.arte) {
+                    const p = path.join(__dirname, "..", "uploads", cli.arte);
+                    if (fs.existsSync(p)) fs.unlinkSync(p);
+                }
+            }
             await db.promise().query("DELETE FROM clientes_historico WHERE nome = ?", [nome.trim()]);
         }
 
-        // REDIRECIONAMENTO ATUALIZADO: Ativa o Toast de Sucesso na View
-        res.redirect("/caderno-entregas?sucessoCliente=1");
+        res.redirect("/clientes?sucessoCliente=1");
 
     } catch (error) {
         console.error("[ERRO AO EXCLUIR CLIENTE]:", error);

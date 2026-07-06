@@ -1,9 +1,9 @@
 // views/cadernoEntregasView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent");
 
 function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = [], colaboradores = []) {
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario);
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
@@ -20,7 +20,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // GERAÇÃO DO LINK DE ROTA DO GOOGLE MAPS OFICIAL (COM COORDENADAS)
   cadernos.forEach(c => {
       if (c.entregas && c.entregas.length > 0) {
           const paradas = c.entregas.map(e => {
@@ -29,7 +28,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               } 
               return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
           }).join('/');
-          
           const baseMapsUrl = "https://www" + ".google.com/maps/dir//";
           c.linkNavegacao = baseMapsUrl + paradas;
       } else {
@@ -37,9 +35,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       }
   });
 
-  // LÓGICA DE INTELIGÊNCIA: Montagem do dicionário de clientes fixos
   const historicoClientes = {};
-  
   if (clientesHistorico && clientesHistorico.length > 0) {
       clientesHistorico.forEach(c => {
           historicoClientes[c.nome] = {
@@ -49,7 +45,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       });
   }
 
-  // Gera o Input HTML com suporte à nova caixa de seleção (Lista Suspensa de Cliente)
   const renderClienteField = (clienteAtual = "") => {
       const safeVal = clienteAtual.replace(/"/g, '"');
       return `
@@ -59,99 +54,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           </div>
       `;
   };
-
-  // TABELA E MODAIS DE GESTÃO DE CLIENTES
-  const listaClientesTabela = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
-    <tr 
-        class="cliente-row-filtro table-hover-row" 
-        data-bs-toggle="modal" 
-        data-bs-target="#editarClienteModal${i}" 
-        style="cursor: pointer;"
-        title="Clique para editar este cliente"
-    >
-        <td class="fw-bold text-white py-2 px-3 cliente-nome-filtro">
-            ${c.nome} 
-            ${c.coordenadas ? '<span class="badge bg-success ms-1" style="font-size:0.55rem;" title="Coordenadas cadastradas">GPS</span>' : ''}
-        </td>
-
-        <td class="py-2 px-3">
-            ${c.cidade 
-                ? `<span class="badge text-dark" style="background-color: #08c068; font-size:0.65rem;" title="Cidade vinculada">${c.cidade}</span>` 
-                : '<span class="badge bg-secondary" style="font-size:0.65rem;">Sem cidade</span>'
-            }
-        </td>
-
-        <td class="text-end py-2 px-3">
-            <button 
-                type="button" 
-                class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2" 
-                data-bs-toggle="modal" 
-                data-bs-target="#excluirClienteModal${i}" 
-                title="Excluir Cliente"
-                onclick="event.stopPropagation();"
-            >
-                <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
-            </button>
-        </td>
-    </tr>
-`).join('') : `
-    <tr>
-        <td colspan="3" class="text-center text-muted py-4">
-            <i class="fa-solid fa-users-slash fa-lg opacity-25 mb-2"></i>
-            <br><span style="font-size: 0.8rem;">Nenhum cliente cadastrado no histórico.</span>
-        </td>
-    </tr>
-`;
-
-  const modaisEdicaoExclusaoClientes = (clientesHistorico && clientesHistorico.length > 0) ? clientesHistorico.map((c, i) => `
-      <div class="modal fade" id="editarClienteModal${i}" tabindex="-1" style="z-index: 1060;">
-          <div class="modal-dialog modal-dialog-centered">
-              <form method="POST" action="/caderno-entregas/clientes/editar" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Atualizado!')">
-                  <input type="hidden" name="nomeOriginal" value="${c.nome}">
-                  <div class="modal-header bg-custom-darker text-white border-0">
-                      <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Dados do Cliente</h6>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                  </div>
-                  <div class="modal-body p-4 bg-custom-dark">
-                      <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Nome do Cliente / Pizzaria</label>
-                          <input type="text" name="nomeNovo" class="form-control form-control-sm shadow-sm" value="${c.nome}" required>
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
-                          <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" oninput="extrairCoordenadasAoColar(this)">
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-location-crosshairs text-accent me-1"></i> Coordenadas (Opcional)</label>
-                          <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
-                          <div class="form-text text-muted" style="font-size:0.65rem;">Se preenchido, o sistema usará isto para criar a rota perfeita.</div>
-                      </div>
-                  </div>
-                  <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
-                      <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#novoClienteModal">Voltar à Lista</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar Alteração</button>
-                  </div>
-              </form>
-          </div>
-      </div>
-
-      <div class="modal fade" id="excluirClienteModal${i}" tabindex="-1" style="z-index: 1060;">
-          <div class="modal-dialog modal-sm modal-dialog-centered">
-              <form method="POST" action="/caderno-entregas/clientes/excluir" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Excluído!')">
-                  <input type="hidden" name="nome" value="${c.nome}">
-                  <div class="modal-body text-center p-4">
-                      <i class="fa-solid fa-triangle-exclamation fa-2x text-danger mb-3"></i>
-                      <h6 class="mb-2 fw-bold text-white" style="font-size: 0.9rem;">Excluir Cliente?</h6>
-                      <p class="text-muted mb-0" style="font-size:0.75rem;"><strong>${c.nome}</strong> será removido permanentemente do histórico de preenchimento automático.</p>
-                  </div>
-                  <div class="modal-footer justify-content-center bg-custom-darker border-0 d-flex flex-nowrap">
-                      <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#novoClienteModal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-danger w-100">Sim, Excluir</button>
-                  </div>
-              </form>
-          </div>
-      </div>
-  `).join('') : '';
 
   const renderSubItensEdicao = (itensStr, totalQtd) => {
     if (!itensStr) {
@@ -182,7 +84,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         nomeItem = matchQtd[1].trim();
         qtdItem = parseInt(matchQtd[2], 10);
       }
-      
       const safeItem = nomeItem.replace(/"/g, '"');
 
       return `
@@ -208,7 +109,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
   const linhas = cadernos.map(c => {
     const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
-
     return `
     <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();">
       <td class="text-muted fw-medium py-2 px-3"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
@@ -242,13 +142,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   const modais = cadernos.map(c => {
     const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
     
-    // Grelha de Edição (Itens já existentes) - Mantém os IDs
     const itensEdicaoHtml = (c.entregas && c.entregas.length > 0) ? c.entregas.map((e) => `
         <div class="row g-2 mb-3 entrega-item align-items-start border-custom p-3 rounded bg-custom-darker position-relative shadow-sm mx-1">
             <input type="hidden" name="id[]" value="${e.id || ''}">
             <input type="hidden" name="entrega_id[]" value="${e.id || ''}">
             <input type="hidden" name="id_entrega[]" value="${e.id || ''}">
-            
             <input type="hidden" name="itens_pedido[]" class="hidden-itens">
             <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
@@ -264,7 +162,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Coordenadas(Opcional)</label>
                 <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm shadow-sm coord-input" value="${e.coordenadas || ''}" placeholder="Lat, Lng">
             </div>
-            
             <div class="col-12 col-md-8 mt-2">
                 <label class="form-label text-white fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
                 <div class="sub-itens-container bg-custom-dark p-2 rounded border-custom">
@@ -274,7 +171,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     <i class="fa-solid fa-plus-circle me-1"></i> Adicionar outro item
                 </button>
             </div>
-
             <div class="col-12 col-md-4 mt-2">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Valor a Receber (Opcional)</label>
                 <div class="input-group input-group-sm shadow-sm">
@@ -292,7 +188,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         ? `<button type="button" onclick="iniciarNavegacao(${paradasData.replace(/"/g, "'")})" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm"><i class="fa-solid fa-location-arrow me-1"></i> Iniciar Navegação</button>`
         : '';
 
-    // Lógica para carregar a foto correta nos modais de edição
     const colabMotorista = colaboradores.find(col => col.nome === c.motorista) || {};
     const imgMotEdit = colabMotorista.foto ? `/uploads/${colabMotorista.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.motorista || 'Motorista')}&background=1f1f1f&color=08c068`;
 
@@ -328,13 +223,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                             ${e.local_entrega}
                             ${e.coordenadas ? '<i class="fa-solid fa-location-crosshairs ms-1 text-accent" title="Usando Coordenadas Exatas"></i>' : ''}
                         </h6>
-                        
                         <div class="text-muted mb-2 mt-1" style="font-size:0.75rem;">
                             <div><i class="fa-solid fa-box-open me-1 opacity-75"></i> <strong class="text-white">Itens:</strong> ${e.itens_pedido || '-'}</div>
                             <div><i class="fa-solid fa-cubes me-1 opacity-75"></i> <strong class="text-white">Qtd Total:</strong> ${e.quantidade || '-'}</div>
                             ${e.valor_aberto && Number(e.valor_aberto) > 0 ? `<div class="mt-1"><i class="fa-solid fa-sack-dollar text-accent me-1"></i> <strong class="text-accent">A Receber: R$ ${fmtMoeda(e.valor_aberto)}</strong></div>` : ''}
                         </div>
-
                         ${e.link_endereco ? `<a href="${e.link_endereco}" target="_blank" class="small text-accent text-decoration-none fw-medium"><i class="fa-solid fa-map-location-dot me-1"></i> Ver no Mapa</a>` : '<span class="text-muted small">Sem link cadastrado</span>'}
                     </div>
                     ${e.link_endereco ? `
@@ -462,7 +355,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
   const menuHTML = menuLateral(user, "/caderno-entregas");
 
-  // Modal de Impressão Refinado
   const modalImprimirNovoHtml = `
     <div class="modal fade" id="modalImprimirNovo" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -492,6 +384,26 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
   `;
 
+  // --- ÍCONE TROCADO PARA ENGRENAGEM GIRATÓRIA ---
+  const modalProcessandoRotaHtml = `
+    <div class="modal fade" id="modalProcessandoRota" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content erp-modal border-0 shadow-lg text-center p-4 bg-custom-darker">
+          <div class="modal-body p-2">
+            <div class="mb-3">
+              <i class="fa-solid fa-gear fa-spin text-accent fa-3x"></i>
+            </div>
+            <h6 class="fw-bold text-white mb-2" id="loadingModalTitulo">Otimizando Rota...</h6>
+            <p class="text-muted small mb-3" id="loadingModalSub" style="font-size: 0.75rem;">Consultando inteligência geográfica do Google Maps...</p>
+            <div class="progress bg-custom-dark border-custom rounded-pill" style="height: 8px;">
+              <div id="loadingModalBarra" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 15%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
   return `
   <!DOCTYPE html>
   <html lang="pt-br">
@@ -504,7 +416,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-      /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
@@ -513,16 +424,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
       body { display: flex; height: 100vh; margin: 0; background-color: #1f1f1f; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
       .sidebar { width: 240px; background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; }
-      
       .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; background-color: #1f1f1f; }
       
-      /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
       .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
-      /* Modificadores Bootstrap */
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
       
@@ -530,123 +438,53 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
       .btn-outline-primary, .btn-outline-success { color: #08c068; border-color: #08c068; }
       .btn-outline-primary:hover, .btn-outline-success:hover { background-color: #08c068; color: #1f1f1f; border-color: #08c068; }
-      
       .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-      /* Inputs e Selects */
       .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
       .form-control::placeholder { color: rgba(255,255,255,0.5); font-size: 0.8rem; }
 
-      /* Tabelas e Modais */
-      .table { 
-          --bs-table-bg: transparent; 
-          --bs-table-color: #fff; 
-          --bs-table-hover-bg: rgba(255,255,255,0.06);
-          --bs-table-hover-color: #fff;
-          color: #fff; 
-          margin-bottom: 0;
-      }
-      .table thead th { 
-          background-color: #222 !important; 
-          color: rgba(255,255,255,0.6) !important; 
-          border-bottom: 1px solid rgba(255,255,255,0.1) !important; 
-          font-weight: 600; 
-      }
-      .table tbody td { 
-          border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
-          background-color: transparent !important; 
-          color: #fff !important; 
-      }
+      .table { --bs-table-bg: transparent; --bs-table-color: #fff; --bs-table-hover-bg: rgba(255,255,255,0.06); --bs-table-hover-color: #fff; color: #fff; margin-bottom: 0; }
+      .table thead th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; }
+      .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.05) !important; background-color: transparent !important; color: #fff !important; }
       .table-hover-row { transition: background-color 0.2s ease; }
-      .table-hover-row:hover > td, 
-      .table-hover > tbody > tr:hover > td, 
-      .table-hover > tbody > tr:hover > * { 
-          background-color: rgba(255,255,255,0.06) !important; 
-          color: #fff !important; 
-          box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
-      }
+      .table-hover-row:hover > td { background-color: rgba(255,255,255,0.06) !important; color: #fff !important; box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03); }
 
       .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
-      
       .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #fff; }
 
-      /* Pagination */
       .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
       .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; }
       .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
       .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); }
 
-      /* ANIMAÇÃO DE ENTRADA E SAÍDA DO TOAST */
-      .toast {
-          transform: translateX(120%);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important;
-      }
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
-
-      /* ANIMAÇÃO DE ENTRADA E SAÍDA DOS MODAIS */
-      .modal.fade .modal-dialog {
-          transform: scale(0.85) translateY(30px);
-          transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-      }
+      .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
       
-      .btn-flutuante {
-        position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%;
-        background-color: #08c068; color: #1f1f1f; border: none; box-shadow: 0 4px 15px rgba(8, 192, 104, 0.3);
-        display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 1050; transition: all 0.3s ease;
-      }
+      .btn-flutuante { position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background-color: #08c068; color: #1f1f1f; border: none; box-shadow: 0 4px 15px rgba(8, 192, 104, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 1050; transition: all 0.3s ease; }
       .btn-flutuante:hover { transform: scale(1.1); background-color: #06a055; color: #1f1f1f; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.5); }
 
-      /* CSS DO AUTOCOMPLETE / DROPDOWN */
       .autocomplete-container { position: relative; width: 100%; }
-      .autocomplete-dropdown {
-          position: absolute; top: 100%; left: 0; right: 0; z-index: 2000;
-          background-color: #2a2a2a; border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 6px 6px;
-          max-height: 250px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;
-      }
-      .autocomplete-item {
-          padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: rgba(255,255,255,0.8);
-      }
+      .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 2000; background-color: #2a2a2a; border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none; }
+      .autocomplete-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: rgba(255,255,255,0.8); }
       .autocomplete-item:last-child { border-bottom: none; }
       .autocomplete-item:hover { background-color: rgba(8,192,104,0.1); color: #08c068; }
       .autocomplete-item strong { color: #08c068; }
 
-      /* CSS DAS BARRAS DE TEMPO ANIMADAS DOS TOASTS */
-      .toast-timer {
-          height: 4px;
-          background: rgba(255, 255, 255, 0.4);
-          width: 100%;
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          transform-origin: left;
-      }
+      .toast-timer { height: 4px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      /* SKELETON LOADING (CORRIGIDO PARA MODO ESCURO TRANSPARENTE) */
-      .skeleton-dark {
-          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
-          background-size: 200% 100% !important;
-          animation: skeleton-loading-view 1.5s infinite linear !important;
-          border-radius: 4px;
-          color: transparent !important;
-          border-color: transparent !important;
-          box-shadow: none !important;
-          pointer-events: none;
-      }
+      .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
       .skeleton-dark * { visibility: hidden !important; }
       .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
       .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
-      
-      @keyframes skeleton-loading-view {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-      }
+      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
       .offcanvas { background-color: #1f1f1f !important; }
@@ -701,9 +539,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <div class="d-flex gap-2 flex-nowrap">
                 <button class="btn btn-sm btn-outline-warning shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#migracaoModal" title="Sincronizar clientes antigos">
                     <i class="fa-solid fa-satellite-dish"></i> <span class="d-none d-md-inline ms-1">Sincronizar GPS</span>
-                </button>
-                <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
-                    <i class="fa-solid fa-users"></i> <span class="d-none d-md-inline ms-1">Clientes</span>
                 </button>
                 <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
                     <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
@@ -778,231 +613,42 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
 
     <div class="modal fade" id="migracaoModal" tabindex="-1" data-bs-backdrop="static">
-    <div 
-        class="modal-dialog modal-dialog-centered modal-dialog-scrollable" 
-        style="max-width: 520px;"
-    >
-        <div class="modal-content erp-modal shadow-lg">
-
-            <div class="modal-header bg-custom-darker text-white border-0">
-                <h6 class="modal-title fw-bold" style="font-size: 0.85rem;">
-                    <i class="fa-solid fa-satellite-dish me-2 text-warning"></i> 
-                    Sincronizar Coordenadas
-                </h6>
-
-                <button 
-                    type="button" 
-                    class="btn-close btn-close-white" 
-                    onclick="fecharMigracao()"
-                ></button>
-            </div>
-
-            <div 
-                class="modal-body p-4 bg-custom-dark text-center" 
-                id="migracaoStartScreen"
-            >
-                <i class="fa-solid fa-satellite-dish fa-2x text-warning mb-3"></i>
-
-                <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">
-                    Atualizar Clientes Antigos?
-                </h6>
-
-                <p class="text-muted small mb-0">
-                    O sistema irá varrer todos os clientes que ainda não possuem coordenadas exatas 
-                    e tentará buscar a localização precisa no Google Maps. O processo atualizará um 
-                    por um e mostrará o resultado nesta tela.
-                </p>
-            </div>
-
-            <div 
-                class="modal-body p-0 bg-custom-darker" 
-                id="migracaoProcessScreen" 
-                style="display: none; height: 400px;"
-            >
-                <iframe 
-                    id="iframeMigracao" 
-                    src="about:blank" 
-                    style="width: 100%; height: 100%; border: none; background: #2a2a2a;"
-                ></iframe>
-            </div>
-
-            <div class="modal-footer bg-custom-darker border-0 p-3">
-                <div class="d-flex gap-2 w-100">
-                    <button 
-                        type="button" 
-                        class="btn btn-sm btn-warning fw-bold text-dark w-50"
-                        onclick="iniciarMigracao()"
-                    >
-                        <i class="fa-solid fa-rotate me-1"></i> Sincronizar
-                    </button>
-
-                    <button 
-                        type="button" 
-                        class="btn btn-sm btn-outline-secondary text-white fw-bold w-50" 
-                        onclick="fecharMigracao()"
-                    >
-                        Fechar
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-    <div class="modal fade" id="novoClienteModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 520px;">
             <div class="modal-content erp-modal shadow-lg">
 
                 <div class="modal-header bg-custom-darker text-white border-0">
                     <h6 class="modal-title fw-bold" style="font-size: 0.85rem;">
-                        <i class="fa-solid fa-users me-2 text-accent"></i> Gerenciamento de Clientes (Maps)
+                        <i class="fa-solid fa-satellite-dish me-2 text-warning"></i> 
+                        Sincronizar Coordenadas
                     </h6>
-
-                    <button 
-                        type="button" 
-                        class="btn-close btn-close-white" 
-                        data-bs-dismiss="modal"
-                    ></button>
+                    <button type="button" class="btn-close btn-close-white" onclick="fecharMigracao()"></button>
                 </div>
 
-                <div class="modal-body p-4 bg-custom-dark">
-
-                    <form 
-                        method="POST" 
-                        action="/caderno-entregas/clientes/novo" 
-                        class="bg-custom-darker p-3 rounded border-custom shadow-sm mb-4" 
-                        onsubmit="prepararSubmissaoSimples(event, this, 'Cliente Cadastrado!')"
-                    >
-                        <h6 class="fw-bold text-accent mb-3" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Novo Cliente
-                        </h6>
-                        
-                        <div class="row g-2 align-items-end">
-                            <div class="col-12 col-md-3">
-                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">
-                                    Nome / Pizzaria
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="nome"
-                                    class="form-control form-control-sm bg-custom-dark border-custom text-white shadow-sm"
-                                    required
-                                    placeholder="Ex: Pizzaria Bella Napoli"
-                                >
-                            </div>
-                            
-                            <div class="col-12 col-md-3">
-                                <label 
-                                    class="form-label text-white-50 fw-bold mb-1 d-flex align-items-center gap-1" 
-                                    style="font-size:0.75rem;"
-                                >
-                                    Link do Maps
-
-                                    <span
-                                        class="text-accent"
-                                        style="cursor: help;"
-                                        tabindex="0"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
-                                        data-bs-html="true"
-                                        data-bs-title="Abra a localização do cliente no Google Maps, clique em Compartilhar <i class='fa-solid fa-paperclip mx-1'></i> e clique em copiar link. Cole o link aqui."
-                                    >
-                                        <i class="fa-solid fa-circle-question"></i>
-                                    </span>
-                                </label>
-
-                                <input
-                                    type="url"
-                                    name="link_endereco"
-                                    class="form-control form-control-sm bg-custom-dark border-custom text-white shadow-sm"
-                                    placeholder="Cole o link aqui"
-                                    oninput="extrairCoordenadasAoColar(this)"
-                                >
-                            </div>
-                            
-                            <div class="col-12 col-md-3">
-                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">
-                                    Coord. (Opcional)
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="coordenadas"
-                                    class="form-control form-control-sm bg-custom-dark border-custom text-white shadow-sm coord-input"
-                                    placeholder="Lat, Lng"
-                                >
-                            </div>
-
-                            <div class="col-12 col-md-3 d-flex gap-2">
-                                <a 
-                                    href="/caderno-entregas/clientes/exportar-excel" 
-                                    target="_blank" 
-                                    class="btn btn-sm btn-outline-success shadow-sm flex-shrink-0" 
-                                    title="Relatório Excel Clientes" 
-                                    onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O relatório Excel dos clientes está sendo gerado e será baixado em breve.')"
-                                >
-                                    <i class="fa-solid fa-file-excel"></i>
-                                </a>
-
-                                <button
-                                    type="submit"
-                                    class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"
-                                    title="Salvar"
-                                >
-                                    <i class="fa-solid fa-save me-1"></i> Salvar
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
-                    <h6 class="fw-bold text-white mb-2" style="font-size: 0.8rem;">
-                        <i class="fa-solid fa-list me-1 text-muted"></i> Histórico de Clientes Cadastrados
+                <div class="modal-body p-4 bg-custom-dark text-center" id="migracaoStartScreen">
+                    <i class="fa-solid fa-satellite-dish fa-2x text-warning mb-3"></i>
+                    <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">
+                        Atualizar Clientes Antigos?
                     </h6>
+                    <p class="text-muted small mb-0">
+                        O sistema irá varrer todos os clientes que ainda não possuem coordenadas exatas 
+                        e tentará buscar a localização precisa no Google Maps. O processo atualizará um 
+                        por um e mostrará o resultado nesta tela.
+                    </p>
+                </div>
 
-                    <div class="input-group input-group-sm mb-2 shadow-sm">
-                        <span class="input-group-text bg-custom-darker border-end-0 border-custom">
-                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                        </span>
+                <div class="modal-body p-0 bg-custom-darker" id="migracaoProcessScreen" style="display: none; height: 400px;">
+                    <iframe id="iframeMigracao" src="about:blank" style="width: 100%; height: 100%; border: none; background: #2a2a2a;"></iframe>
+                </div>
 
-                        <input
-                            type="text"
-                            id="searchInputClientes"
-                            class="form-control border-start-0 border-end-0 border-custom bg-custom-darker text-white"
-                            placeholder="Pesquisar cliente por nome..."
-                            onkeyup="filtrarClientes()"
-                        >
-
-                        <button
-                            class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger"
-                            type="button"
-                            onclick="limparBuscaClientes()"
-                            title="Limpar pesquisa"
-                        >
-                            <i class="fa-solid fa-xmark"></i>
+                <div class="modal-footer bg-custom-darker border-0 p-3">
+                    <div class="d-flex gap-2 w-100">
+                        <button type="button" class="btn btn-sm btn-warning fw-bold text-dark w-50" onclick="iniciarMigracao()">
+                            <i class="fa-solid fa-rotate me-1"></i> Sincronizar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary text-white fw-bold w-50" onclick="fecharMigracao()">
+                            Fechar
                         </button>
                     </div>
-
-                    <div
-                        class="table-responsive bg-custom-darker rounded border-custom shadow-sm"
-                        style="height: 58vh; max-height: 560px; overflow-y: auto;"
-                    >
-                        <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
-                            <thead style="position: sticky; top: 0; z-index: 1;">
-                                <tr>
-                                    <th class="py-2 px-3">Nome do Cliente</th>
-                                    <th class="py-2 px-3">Cidade</th>
-                                    <th class="py-2 px-3 text-end">Ações</th>
-                                </tr>
-                            </thead>
-
-                            <tbody id="tabelaClientesBody">
-                                ${listaClientesTabela}
-                            </tbody>
-                        </table>
-                    </div>
-
                 </div>
 
             </div>
@@ -1115,23 +761,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </div>
           </div>
           <div class="modal-footer bg-custom-darker border-0 d-flex justify-content-end gap-2 flex-wrap">
-    <button 
-        type="button" 
-        class="btn btn-sm btn-outline-secondary text-white fw-bold px-3"
-        style="min-width: 140px;"
-        data-bs-dismiss="modal"
-    >
-        Cancelar
-    </button>
-
-    <button 
-        type="submit" 
-        class="btn btn-sm btn-success fw-bold px-3"
-        style="min-width: 140px;"
-    >
-        <i class="fa-solid fa-location-arrow me-1"></i> Gerar Caderno
-    </button>
-</div>
+              <button type="button" class="btn btn-sm btn-outline-secondary text-white fw-bold px-3" style="min-width: 140px;" data-bs-dismiss="modal">
+                  Cancelar
+              </button>
+              <button type="submit" class="btn btn-sm btn-success fw-bold px-3" style="min-width: 140px;">
+                  <i class="fa-solid fa-location-arrow me-1"></i> Gerar Caderno
+              </button>
+          </div>
         </form>
       </div>
     </div>
@@ -1148,9 +784,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </div>
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
                 <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
-                <div class="progress shadow-sm bg-custom-dark position-absolute bottom-0 start-0 w-100 rounded-0" style="height: 4px; display: none;" id="progressoContainer">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success text-white fw-bold" id="barraProgresso" role="progressbar" style="width: 0%; font-size: 0.6rem;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
             </div>
             <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
         </div>
@@ -1172,8 +805,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
 
     ${modais}
-    ${modaisEdicaoExclusaoClientes}
     ${modalImprimirNovoHtml}
+    ${modalProcessandoRotaHtml}
     ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1184,7 +817,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
       const listaColabDB = ${JSON.stringify(colaboradores || [])};
 
-      // AUTOCOMPLETAR DE COLABORADORES (MOTORISTA E AJUDANTE) COM FOTO
       function handleColabInput(event, inputEl, imgId) {
           const dropdown = inputEl.nextElementSibling;
           let val = inputEl.value;
@@ -1252,21 +884,17 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO)
       function mostrarToast(tipo, titulo, mensagem) {
           const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
           if (toastEl) {
               document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
               document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
 
-              const progressoContainer = document.getElementById('progressoContainer');
-              if (tipo === 'sucesso' && progressoContainer) progressoContainer.style.display = 'none';
-
               const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
               if (timerEl) {
                   timerEl.style.display = 'block';
                   timerEl.style.animation = 'none';
-                  timerEl.offsetHeight; // Força o reflow para a animação reiniciar
+                  timerEl.offsetHeight; 
                   timerEl.style.animation = 'shrinkToast 5s linear forwards';
               }
 
@@ -1282,27 +910,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      function mostrarToastCarregando(mensagem) {
-          const successToastEl = document.getElementById('sucessoToast');
-          if(!successToastEl) return;
-          document.getElementById('sucessoTitulo').innerText = "A Processar";
-          document.getElementById('sucessoSub').innerText = mensagem;
-
-          const progressoContainer = document.getElementById('progressoContainer');
-          if(progressoContainer) progressoContainer.style.display = 'none';
-
-          successToastEl.setAttribute('data-bs-autohide', 'false');
-
-          const timerEl = document.getElementById('sucessoTimer');
-          if (timerEl) timerEl.style.display = 'none';
-
-          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
-          if (oldInstance) oldInstance.dispose();
-          const successToast = new bootstrap.Toast(successToastEl);
-          successToast.show();
-      }
-
-      // SKELETON LOADING
       function gerarSkeletonTabela(quantidade = 5) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
@@ -1365,7 +972,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           if (emptyState) emptyState.style.display = '';
       }
 
-      // ACIONAMENTO AUTOMÁTICO DO SKELETON PARA TABELA (LOAD/RELOAD)
       mostrarSkeletonGlobais();
 
       if (document.readyState === 'complete') {
@@ -1378,7 +984,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           mostrarSkeletonGlobais();
       });
 
-      // CARREGAMENTO INICIAL: CHECA URL PARA MODAIS (Caso haja Refresh)
       document.addEventListener("DOMContentLoaded", () => {
           const urlParams = new URLSearchParams(window.location.search);
 
@@ -1397,25 +1002,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               url.searchParams.delete('cadernoCriado');
               window.history.replaceState({}, document.title, url.toString());
           }
-
-          if (urlParams.has('sucessoCliente')) {
-              mostrarToast('sucesso', 'Sucesso!', 'Histórico de clientes atualizado com sucesso.');
-
-              const url = new URL(window.location.href);
-              url.searchParams.delete('sucessoCliente');
-              window.history.replaceState({}, document.title, url.toString());
-          }
-
-          if (urlParams.has('erroExportacao')) {
-              mostrarToast('erro', 'Erro!', 'Não foi possível gerar o arquivo de clientes.');
-
-              const url = new URL(window.location.href);
-              url.searchParams.delete('erroExportacao');
-              window.history.replaceState({}, document.title, url.toString());
-          }
       });
 
-      // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
       async function prepararBuscaSimples(event, form, titleMsg) {
           if (event) event.preventDefault();
 
@@ -1485,9 +1073,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // Função cirúrgica para garantir que todos os modais novos entrem e os velhos saiam
       function atualizarModaisDinamicos(doc) {
-          const staticModals = ['modalInstrucoes', 'migracaoModal', 'novoClienteModal', 'novoCadernoModal', 'modalImprimirNovo', 'sidebarMenu'];
+          const staticModals = ['modalInstrucoes', 'migracaoModal', 'novoCadernoModal', 'modalImprimirNovo', 'modalProcessandoRota', 'sidebarMenu'];
           document.querySelectorAll('.modal').forEach(m => {
               if (!staticModals.includes(m.id)) m.remove();
           });
@@ -1496,7 +1083,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           });
       }
 
-      // NAVEGAÇÃO E URLs SEGURAS
       function iniciarNavegacao(listaParadas) {
           const paradasFormatadas = listaParadas.map(p => encodeURIComponent(p)).join('/');
           const url = "https://www.google.com/maps/dir//" + paradasFormatadas;
@@ -1518,7 +1104,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // AUTOCOMPLETAR CUSTOMIZADO COM TYPEAHEAD (SUGESTÃO INLINE)
       function handleClientInput(event, inputEl) {
           const containerItem = inputEl.closest('.entrega-item');
           if (!containerItem) return;
@@ -1681,7 +1266,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA (CRUD)
       async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
           if (!form.checkValidity()) {
@@ -1690,67 +1274,45 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
           if (isSubmitting) return;
 
-          // Esconde qualquer modal aberto para não bloquear a tela, exceto o de clientes
           const modalEl = form.closest('.modal');
-          if (modalEl && modalEl.id !== 'novoClienteModal') {
+          if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
               modal.hide();
           }
 
-          document.getElementById('sucessoTitulo').innerText = titleMsg;
-          const progressoContainer = document.getElementById('progressoContainer');
-          const barraProgresso = document.getElementById('barraProgresso');
-          const sucessoSub = document.getElementById('sucessoSub');
-          const sucessoIcon = document.getElementById('sucessoIcon');
-          const timerEl = document.getElementById('sucessoTimer');
-          const successToastEl = document.getElementById('sucessoToast');
-
-          // Desabilita o auto-hide para não fechar o toast durante o processamento do servidor
-          successToastEl.setAttribute('data-bs-autohide', 'false');
-          if (timerEl) timerEl.style.display = 'none';
-
-          // Força a recriação da instância
-          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
-          if (oldInstance) oldInstance.dispose();
-          const successToast = new bootstrap.Toast(successToastEl);
-          successToast.show();
-
           limparMoedas(form);
           isSubmitting = true;
 
-          let intervalProgress;
-          if (titleMsg.toLowerCase().includes('otimizar')) {
-              sucessoIcon.className = "fa-solid fa-satellite-dish text-accent fs-5 me-2";
-              if(progressoContainer) progressoContainer.style.display = 'flex';
-              if(barraProgresso) {
-                 barraProgresso.style.width = '0%';
-                 barraProgresso.innerText = '0%';
-              }
-              sucessoSub.innerText = "Iniciando otimização...";
+          let intervalProgress = null;
+          const loadingModalEl = document.getElementById('modalProcessandoRota');
+          const barraModal = document.getElementById('loadingModalBarra');
+          const subModal = document.getElementById('loadingModalSub');
+          const tituloModal = document.getElementById('loadingModalTitulo');
 
-              let progresso = 0;
+          if (titleMsg.toLowerCase().includes('otimizar')) {
+              if (tituloModal) tituloModal.innerText = "Otimizando Rota...";
+              if (subModal) subModal.innerText = "Consultando inteligência geográfica do Google Maps...";
+              if (barraModal) barraModal.style.width = '15%';
+
+              if (loadingModalEl) {
+                  const modalLoading = bootstrap.Modal.getOrCreateInstance(loadingModalEl);
+                  modalLoading.show();
+              }
+
+              let progresso = 15;
               intervalProgress = setInterval(() => {
                   if (progresso < 98) {
                       progresso += Math.floor(Math.random() * 8) + 2;
                       if (progresso > 98) progresso = 98;
-                      if(barraProgresso) {
-                          barraProgresso.style.width = progresso + '%';
-                      }
+                      if (barraModal) barraModal.style.width = progresso + '%';
 
-                      if (progresso > 20 && progresso < 50) sucessoSub.innerText = "Consultando Google Maps API...";
-                      if (progresso >= 50 && progresso < 80) sucessoSub.innerText = "Traçando rota inteligente...";
-                      if (progresso >= 80) sucessoSub.innerText = "Gerando caderno e salvando dados da cidade...";
+                      if (progresso > 30 && progresso < 60 && subModal) subModal.innerText = "Consultando Google Maps API...";
+                      if (progresso >= 60 && progresso < 85 && subModal) subModal.innerText = "Traçando rota inteligente e calculando tempos...";
+                      if (progresso >= 85 && subModal) subModal.innerText = "Gerando caderno e salvando dados da cidade...";
                   }
               }, 400);
-
           } else {
-              sucessoIcon.className = "fa-solid fa-circle-check text-accent fs-5 me-2";
-              if(progressoContainer) progressoContainer.style.display = 'none';
-              sucessoSub.innerText = "Por favor, aguarde...";
-
-              if(!titleMsg.toLowerCase().includes('cliente')) {
-                 mostrarSkeletonGlobais();
-              }
+              mostrarSkeletonGlobais();
           }
 
           try {
@@ -1768,8 +1330,13 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
               if (intervalProgress) clearInterval(intervalProgress);
 
+              if (loadingModalEl) {
+                  const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+                  if (modalLoading) modalLoading.hide();
+              }
+
               if (response.ok) {
-                  await new Promise(r => setTimeout(r, 800));
+                  await new Promise(r => setTimeout(r, 600));
 
                   const freshResponse = await fetch(window.location.href);
                   const html = await freshResponse.text();
@@ -1783,40 +1350,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       oldContent.innerHTML = newContent.innerHTML;
                   }
 
-                  const oldTbody = document.getElementById('tabelaClientesBody');
-                  const newTbody = doc.getElementById('tabelaClientesBody');
-                  if (oldTbody && newTbody) {
-                      oldTbody.innerHTML = newTbody.innerHTML;
-                  }
-
                   atualizarModaisDinamicos(doc);
-
-                  if (form.action.includes('/clientes/novo')) {
-                      const n = fd.get('nome');
-                      if (n) {
-                          dictClientes[n] = { link: fd.get('link_endereco') || '', coord: fd.get('coordenadas') || '' };
-                          if (!clientNames.includes(n)) clientNames.push(n);
-                      }
-                  } else if (form.action.includes('/clientes/editar')) {
-                      const nOri = fd.get('nomeOriginal');
-                      const nNovo = fd.get('nomeNovo');
-                      if (nOri && dictClientes[nOri]) {
-                          delete dictClientes[nOri];
-                          const idx = clientNames.indexOf(nOri);
-                          if (idx > -1) clientNames.splice(idx, 1);
-                      }
-                      if (nNovo) {
-                          dictClientes[nNovo] = { link: fd.get('link_endereco') || '', coord: fd.get('coordenadas') || '' };
-                          if (!clientNames.includes(nNovo)) clientNames.push(nNovo);
-                      }
-                  } else if (form.action.includes('/clientes/excluir')) {
-                      const n = fd.get('nome');
-                      if (n && dictClientes[n]) {
-                          delete dictClientes[n];
-                          const idx = clientNames.indexOf(n);
-                          if (idx > -1) clientNames.splice(idx, 1);
-                      }
-                  }
 
                   form.reset();
                   const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
@@ -1841,47 +1375,29 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                       }
                       const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
                       modalImp.show();
-                  } else if (responseUrl.searchParams.has('sucessoCliente')) {
-                      mostrarToast('sucesso', 'Sucesso!', 'Histórico de clientes atualizado com sucesso.');
                   } else {
                       mostrarToast('sucesso', 'Concluído!', titleMsg);
                   }
 
               } else {
                   if (intervalProgress) clearInterval(intervalProgress);
+                  if (loadingModalEl) {
+                      const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+                      if (modalLoading) modalLoading.hide();
+                  }
                   mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
               }
           } catch (err) {
               console.error(err);
               if (intervalProgress) clearInterval(intervalProgress);
+              if (loadingModalEl) {
+                  const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+                  if (modalLoading) modalLoading.hide();
+              }
               mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua internet e tente novamente.');
           } finally {
               isSubmitting = false;
           }
-      }
-
-      function filtrarClientes() {
-          const input = document.getElementById("searchInputClientes");
-          const filter = input.value.toLowerCase();
-          const tbody = document.getElementById("tabelaClientesBody");
-          const trs = tbody.getElementsByTagName("tr");
-
-          for (let i = 0; i < trs.length; i++) {
-              if (trs[i].cells.length === 1) continue;
-              const tdNome = trs[i].getElementsByTagName("td")[0];
-              if (tdNome) {
-                  const txtValue = tdNome.textContent || tdNome.innerText;
-                  if (txtValue.toLowerCase().indexOf(filter) > -1) trs[i].style.display = "";
-                  else trs[i].style.display = "none";
-              }
-          }
-      }
-
-      function limparBuscaClientes() {
-          const input = document.getElementById("searchInputClientes");
-          input.value = "";
-          filtrarClientes();
-          input.focus();
       }
 
       function addEntregaDinamica(containerId) {

@@ -690,7 +690,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     <div class="modal fade" id="novoCadernoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/caderno-entregas/novo" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'A otimizar rota...')">
+        <form method="POST" action="/caderno-entregas/novo" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Rota montada com sucesso!')">
           <div class="modal-header bg-custom-darker text-white border-0">
             <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-plus-circle me-2 text-accent"></i> Criar Caderno de Entregas (Otimizado)</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

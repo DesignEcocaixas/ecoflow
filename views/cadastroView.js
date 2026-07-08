@@ -179,7 +179,7 @@ function cadastroView(usuario, usuarios = []) {
             `);
 
             return `
-              <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
+              <tr class="align-middle table-hover-row usuario-row-item" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
                 <td class="fw-medium text-white py-2 px-3">
                   <div class="d-flex align-items-center">
                     ${u.foto 
@@ -234,11 +234,10 @@ function cadastroView(usuario, usuarios = []) {
       .form-select::placeholder,
       input::placeholder,
       textarea::placeholder {
-          color: rgba(255, 255, 255, 0.45) !important; /* Branco suave/cinza claro */
-          opacity: 1 !important; /* Essencial: Impede o Firefox/Chrome de deixar transparente */
+          color: rgba(255, 255, 255, 0.45) !important; 
+          opacity: 1 !important; 
       }
 
-      /* Suporte extra para navegadores webkit/mozilla antigos */
       .form-control::-webkit-input-placeholder { color: rgba(255, 255, 255, 0.45) !important; }
       .form-control::-moz-placeholder { color: rgba(255, 255, 255, 0.45) !important; opacity: 1 !important; }
 
@@ -348,6 +347,12 @@ function cadastroView(usuario, usuarios = []) {
       .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
+      /* ESTILOS PAGINAÇÃO */
+      .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); cursor: pointer; }
+      .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; font-weight: bold; }
+      .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
+      .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.05); }
+
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
           background-size: 200% 100% !important;
@@ -423,6 +428,8 @@ function cadastroView(usuario, usuarios = []) {
         </button>
       </div>
 
+      <span id="resumoRegistrosText" class="text-muted d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo registros...</span>
+
       <div class="erp-card border-custom">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem;">
@@ -440,7 +447,11 @@ function cadastroView(usuario, usuarios = []) {
           </table>
         </div>
       </div>
-    </div>
+      
+      <div id="paginacaoUsuariosContainer" class="d-flex flex-column align-items-center justify-content-center mt-4 gap-2 text-white-50 small w-100">
+          <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="listaPaginasUl"></ul></nav>
+      </div>
+      </div>
 
     <div class="modal fade" id="novoUsuarioModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -450,7 +461,7 @@ function cadastroView(usuario, usuarios = []) {
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-sm p-4 bg-custom-darker">
-            <div class="row g-3 bg-custom-dark p-3 rounded border-custom shadow-sm">
+            <div class="row g-3 p-3 rounded border-custom shadow-sm">
               <div class="col-12 text-center mb-2">
                   <label class="form-label text-muted mb-2 fw-bold d-block" style="font-size:0.75rem;">Foto (Opcional)</label>
                   <div class="profile-upload-container position-relative mx-auto border-custom" onclick="document.getElementById('uploadFotoNovo').click()" title="Escolher Foto">
@@ -584,6 +595,92 @@ function cadastroView(usuario, usuarios = []) {
             });
         }
         window.addEventListener('load', initTooltips);
+
+        // =======================================================================
+        // LÓGICA DA PAGINAÇÃO INTELIGENTE (12 ITENS POR PÁGINA)
+        // =======================================================================
+        let paginaAtual = 1;
+        const limitePorPagina = 12;
+
+        function renderizarPaginacaoUsuarios(pg = 1) {
+            paginaAtual = pg;
+            const linhas = document.querySelectorAll('.usuario-row-item');
+            const totalRegistros = linhas.length;
+            
+            if (totalRegistros === 0) {
+                const infoText = document.getElementById("resumoRegistrosText");
+                if (infoText) infoText.innerText = "0 registros encontrados";
+                return;
+            }
+
+            const totalPaginas = Math.max(1, Math.ceil(totalRegistros / limitePorPagina));
+
+            if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+            if (paginaAtual < 1) paginaAtual = 1;
+
+            const inicio = (paginaAtual - 1) * limitePorPagina;
+            const fim = inicio + limitePorPagina;
+
+            // Percorre as linhas e oculta as que estão fora da página atual
+            linhas.forEach((linha, index) => {
+                if (index >= inicio && index < fim) {
+                    linha.style.display = ''; 
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+
+            renderizarControlesPaginacao(totalPaginas, totalRegistros, inicio + 1, Math.min(fim, totalRegistros));
+        }
+
+        function renderizarControlesPaginacao(totalPaginas, totalRegistros, exibInicio, exibFim) {
+            const ul = document.getElementById("listaPaginasUl");
+            const infoText = document.getElementById("resumoRegistrosText");
+
+            if (infoText) {
+                infoText.innerText = totalRegistros > 0 ? \`Exibindo \${exibInicio} - \${exibFim} de \${totalRegistros} colaboradores\` : "0 registros encontrados";
+            }
+
+            if (!ul) return;
+            if (totalPaginas <= 1) { ul.innerHTML = ""; return; }
+
+            let liHtml = \`<li class="page-item \${paginaAtual === 1 ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual - 1})">«</a></li>\`;
+
+            const addBotaoPagina = (num) => {
+                liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${num})">\${num}</a></li>\`;
+            };
+
+            const addReticencias = () => {
+                liHtml += \`<li class="page-item disabled"><a class="page-link">...</a></li>\`;
+            };
+
+            const maxBotoesVisiveis = 5;
+
+            if (totalPaginas <= maxBotoesVisiveis + 2) {
+                for (let i = 1; i <= totalPaginas; i++) addBotaoPagina(i);
+            } else {
+                addBotaoPagina(1);
+                if (paginaAtual > 3) addReticencias();
+
+                let limInf = Math.max(2, paginaAtual - 1);
+                let limSup = Math.min(totalPaginas - 1, paginaAtual + 1);
+
+                if (paginaAtual <= 2) limSup = 3;
+                if (paginaAtual >= totalPaginas - 1) limInf = totalPaginas - 2;
+
+                for (let i = limInf; i <= limSup; i++) addBotaoPagina(i);
+
+                if (paginaAtual < totalPaginas - 2) addReticencias();
+                addBotaoPagina(totalPaginas);
+            }
+
+            liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual + 1})">»</a></li>\`;
+            ul.innerHTML = liHtml;
+        }
+
+        window.addEventListener('load', () => {
+            renderizarPaginacaoUsuarios(1); // Executa no primeiro load da página
+        });
 
         // =======================================================================
         // MÁSCARAS DE INPUT PARA CPF E TELEFONE
@@ -841,6 +938,9 @@ function cadastroView(usuario, usuarios = []) {
 
                     initRoleToggles();
                     initTooltips(); // Reinicializa os tooltips para manter o funcionamento da SPA
+                    
+                    // REINICIALIZA A PAGINAÇÃO ASSIM QUE O AJAX ATUALIZAR O HTML DA TABELA
+                    renderizarPaginacaoUsuarios(1);
 
                     const responseUrl = new URL(response.url);
                     let finalMsg = defaultMsg;

@@ -381,7 +381,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             ${pageLinks}
             <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link" href="/caderno-entregas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">»</a></li>
         </ul></nav>
-        <span id="resumoRegistrosText" class="text-muted" style="font-size: 0.75rem;">Exibindo página ${page} de ${totalPages} (Total: ${paginacao.total || 0} cadernos)</span>
     </div>
   ` : "";
 
@@ -581,6 +580,8 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             </div>
          </div>
       </div>
+
+      <span id="resumoRegistrosText" class="text-muted d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo página ${page} de ${totalPages}</span>
 
       ${cadernos.length > 0 
         ? `<div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom mb-4">

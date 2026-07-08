@@ -243,6 +243,8 @@ function clientesView(usuario, clientesHistorico = []) {
           <button class="btn btn-outline-secondary bg-custom-dark border-custom border-start-0 text-danger" type="button" onclick="limparBuscaClientes()" title="Limpar"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
+      <span id="resumoRegistrosText" class="text-white-50 d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo registros...</span>
+
       <div class="table-responsive bg-custom-dark rounded-3 border-custom shadow-sm mb-3" style="min-height: 480px;" id="tabelaContainer">
           <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
               <thead>
@@ -260,7 +262,6 @@ function clientesView(usuario, clientesHistorico = []) {
 
       <div id="paginacaoClientesContainer" class="d-flex flex-column align-items-center justify-content-center mt-4 gap-2 text-white-50 small w-100">
           <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="listaPaginasUl"></ul></nav>
-          <span id="resumoRegistrosText" class="text-white-50" style="font-size: 0.75rem;">Exibindo registros...</span>
       </div>
     </div>
 

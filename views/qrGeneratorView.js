@@ -214,8 +214,8 @@ function qrGeneratorView(usuario, qrCodes = []) {
               <div class="col-6">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Qualidade</label>
                 <select id="inputCorrecaoQR" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="gerarPreviewInstantaneo()">
-                  <option value="H" selected>Alto (Melhor p/ impressão)</option>
-                  <option value="M">Médio (Padrão)</option>
+                  <option value="H">Alto (Melhor p/ impressão)</option>
+                  <option value="M" selected>Médio (Padrão)</option>
                   <option value="L">Baixo (Mais compacto)</option>
                 </select>
               </div>

@@ -22,7 +22,7 @@ router.get("/caderno-entregas", async (req, res) => {
 
     try {
         const page = parseInt(req.query.page || "1", 10);
-        const limit = 10;
+        const limit = 12;
         const offset = (page - 1) * limit;
         const { data_inicio, data_fim } = req.query;
 
@@ -87,14 +87,15 @@ router.get("/caderno-entregas", async (req, res) => {
     }
 });
 
-// Adicione junto com as rotas de listagem
+// ROTA GET: TELA DE GESTÃO DE CLIENTES
 router.get("/clientes", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade FROM clientes_historico ORDER BY nome ASC");
+        // CORREÇÃO: "SELECT *" garante que logo, arte e contato também sejam enviados para a View
+        const [clientesDB] = await db.promise().query("SELECT * FROM clientes_historico ORDER BY nome ASC");
         
-        res.send(require('../views/clientesView')(req.session.user, clientesDB));
+        res.send(require('../views/clientesView')(req.session.user, clientesDB || []));
     } catch (error) {
         console.error("Erro ao carregar tela de Clientes:", error);
         res.status(500).send("Erro interno.");

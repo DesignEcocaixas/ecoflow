@@ -13,77 +13,79 @@ function clientesView(usuario, clientesHistorico = []) {
 
       return `
       <div class="modal fade" id="editarClienteModal${i}" tabindex="-1">
-          <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-              <form method="POST" action="/caderno-entregas/clientes/editar" enctype="multipart/form-data" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoArquivos(event, this, 'Cliente Atualizado!')">
-                  <input type="hidden" name="nomeOriginal" value="${c.nome}">
-                  
-                  <div class="modal-header bg-custom-darker text-white border-0">
-                      <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Dados de ${c.nome}</h6>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                  </div>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 540px;">
+        <form method="POST" action="/caderno-entregas/clientes/editar" enctype="multipart/form-data" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoArquivos(event, this, 'Cliente Atualizado!')">
+            <input type="hidden" name="nomeOriginal" value="${c.nome}">
+            
+            <div class="modal-header bg-custom-darker text-white border-0">
+                <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Dados de ${c.nome}</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
 
-                  <div class="modal-body p-4 bg-custom-dark text-sm">
-                      <div class="row g-3 align-items-center">
-                          <div class="col-12 col-md-3 text-center">
-                              <label class="form-label text-white-50 fw-bold mb-2 d-block" style="font-size:0.75rem;">Logo (Quadrada)</label>
-                              <div class="upload-box-square mx-auto border-custom position-relative shadow-sm" onclick="document.getElementById('inputLogoEdit${i}').click()">
-                                  <img id="previewLogoEdit${i}" src="${logoSrc}" alt="Logo">
-                                  <div class="upload-overlay d-flex align-items-center justify-content-center"><span>Alterar</span></div>
-                              </div>
-                              <input type="file" name="logo" id="inputLogoEdit${i}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewLogoEdit${i}')">
-                          </div>
+            <div class="modal-body p-4 bg-custom-dark text-sm">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    
+                    <div class="text-center flex-shrink-0">
+                        <label class="form-label text-white-50 fw-bold mb-2 d-block" style="font-size:0.75rem;">Logo</label>
+                        <div class="upload-box-square border-custom position-relative shadow-sm m-0" onclick="document.getElementById('inputLogoEdit${i}').click()">
+                            <img id="previewLogoEdit${i}" src="${logoSrc}" alt="Logo">
+                            <div class="upload-overlay d-flex align-items-center justify-content-center"><span>Alterar</span></div>
+                        </div>
+                        <input type="file" name="logo" id="inputLogoEdit${i}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewLogoEdit${i}')">
+                    </div>
 
-                          <div class="col-12 col-md-9">
-                              <div class="row g-2">
-                                  <div class="col-12 col-md-6">
-                                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nome / Pizzaria</label>
-                                      <input type="text" name="nomeNovo" class="form-control form-control-sm shadow-sm" value="${c.nome}" required>
-                                  </div>
-                                  <div class="col-12 col-md-6">
-                                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Telefone / WhatsApp</label>
-                                      <input type="text" name="contato" class="form-control form-control-sm shadow-sm" value="${contatoFmt}" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
-                                  </div>
-                                  <div class="col-12">
-                                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
-                                      <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" placeholder="https://maps.app.goo.gl/..." oninput="extrairCoordenadasAoColar(this)">
-                                  </div>
-                                  <div class="col-12">
-                                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-location-crosshairs text-accent me-1"></i> Coordenadas Exatas (Opcional)</label>
-                                      <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
-                                  </div>
-                              </div>
-                          </div>
+                    <div class="flex-grow-1">
+                        <div class="mb-2">
+                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Cliente</label>
+                            <input type="text" name="nomeNovo" class="form-control form-control-sm shadow-sm" value="${c.nome}" required>
+                        </div>
+                        <div>
+                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato</label>
+                            <input type="text" name="contato" class="form-control form-control-sm shadow-sm" value="${contatoFmt}" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                        </div>
+                    </div>
+                </div>
 
-                          <div class="col-12 mt-3">
-                              <hr class="border-custom my-2">
-                              <label class="form-label text-white fw-bold mt-1 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Layout de Embalagem do Cliente</label>
-                              <div class="p-3 bg-custom-darker rounded border-custom d-flex flex-column flex-md-row align-items-center gap-3">
-                                  <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 140px; height: 100px; overflow: hidden;">
-                                      ${arteSrc 
-                                        ? `<img id="previewArteEdit${i}" src="${arteSrc}" class="img-fluid" style="max-height: 100%; object-fit: contain;">`
-                                        : `<img id="previewArteEdit${i}" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;"><span id="placeholderArteEdit${i}" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block mb-1"></i>Sem arte</span>`
-                                      }
-                                  </div>
-                                  <div class="flex-grow-1 text-center text-md-start">
-                                      <p class="text-white-50 mb-2" style="font-size: 0.75rem;">Faça o upload do arquivo de imagem (JPG, PNG) contendo o modelo da caixa de pizza aprovado pelo cliente.</p>
-                                      <div class="d-flex gap-2 justify-content-center justify-content-md-start">
-                                          <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="document.getElementById('inputArteEdit${i}').click()"><i class="fa-solid fa-upload me-1"></i> Anexar Nova Arte</button>
-                                          ${arteSrc ? `<a href="${arteSrc}" target="_blank" class="btn btn-sm btn-outline-secondary text-white"><i class="fa-solid fa-expand me-1"></i> Ampliar</a>` : ''}
-                                      </div>
-                                      <input type="file" name="arte" id="inputArteEdit${i}" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteEdit${i}', 'placeholderArteEdit${i}')">
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
+                        <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" value="${c.link_endereco || ''}" placeholder="https://maps.app.goo.gl/..." oninput="extrairCoordenadasAoColar(this)">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-location-crosshairs text-accent me-1"></i> Coordenadas Exatas (Opcional)</label>
+                        <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" value="${c.coordenadas || ''}" placeholder="Ex: -12.6974, -38.3241">
+                    </div>
+                </div>
 
-                  <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
-                      <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
-                  </div>
-              </form>
-          </div>
-      </div>
+                <div class="mt-4">
+                    <hr class="border-custom my-1">
+                    <label class="form-label text-white fw-bold mt-2 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Layout de Embalagem</label>
+                    <div class="p-3 bg-custom-darker rounded border-custom d-flex align-items-center gap-3">
+                        <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 100px; height: 70px; overflow: hidden;">
+                            ${arteSrc 
+                                ? `<img id="previewArteEdit${i}" src="${arteSrc}" class="img-fluid" style="max-height: 100%; object-fit: contain;">`
+                                : `<img id="previewArteEdit${i}" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;"><span id="placeholderArteEdit${i}" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block"></i></span>`
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex gap-2 mb-1">
+                                <button type="button" class="btn btn-sm btn-outline-success fw-bold w-100" onclick="document.getElementById('inputArteEdit${i}').click()"><i class="fa-solid fa-upload me-1"></i> Alterar</button>
+                                ${arteSrc ? `<a href="${arteSrc}" target="_blank" class="btn btn-sm btn-outline-secondary text-white w-100"><i class="fa-solid fa-expand me-1"></i> Ampliar</a>` : ''}
+                            </div>
+                            <span class="text-white-50 d-block" style="font-size: 0.65rem;">JPG ou PNG</span>
+                            <input type="file" name="arte" id="inputArteEdit${i}" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteEdit${i}', 'placeholderArteEdit${i}')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
       <div class="modal fade" id="excluirClienteModal${i}" tabindex="-1">
           <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -258,71 +260,78 @@ function clientesView(usuario, clientesHistorico = []) {
 
       <div id="paginacaoClientesContainer" class="d-flex flex-column align-items-center justify-content-center mt-4 gap-2 text-white-50 small w-100">
           <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="listaPaginasUl"></ul></nav>
-          <span id="resumoRegistrosText" class="text-muted" style="font-size: 0.75rem;">Exibindo registros...</span>
+          <span id="resumoRegistrosText" class="text-white-50" style="font-size: 0.75rem;">Exibindo registros...</span>
       </div>
     </div>
 
     <div class="modal fade" id="novoClienteModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
-            <form method="POST" action="/caderno-entregas/clientes/novo" enctype="multipart/form-data" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoArquivos(event, this, 'Cliente Cadastrado!')">
-                <div class="modal-header bg-custom-darker text-white border-0">
-                    <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-2 text-accent"></i> Cadastrar Novo Cliente</h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
+        <form method="POST" action="/caderno-entregas/clientes/novo" enctype="multipart/form-data" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoArquivos(event, this, 'Cliente Cadastrado!')">
+            <div class="modal-header bg-custom-darker text-white border-0">
+                <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-2 text-accent"></i> Cadastrar Novo Cliente</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
 
-                <div class="modal-body p-4 bg-custom-dark text-sm">
-                    <div class="text-center mb-4">
-                        <label class="form-label text-white-50 fw-bold mb-2 d-block" style="font-size:0.75rem;">Logo da Pizzaria (Quadrada)</label>
-                        <div class="upload-box-square mx-auto border-custom position-relative shadow-sm" onclick="document.getElementById('inputLogoNovo').click()">
+            <div class="modal-body p-4 bg-custom-dark text-sm">
+                
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    
+                    <div class="text-center flex-shrink-0">
+                        <label class="form-label text-white-50 fw-bold mb-2 d-block" style="font-size:0.75rem;">Logo</label>
+                        <div class="upload-box-square border-custom position-relative shadow-sm m-0" onclick="document.getElementById('inputLogoNovo').click()">
                             <img id="previewLogoNovo" src="https://ui-avatars.com/api/?name=Novo+Cliente&background=1f1f1f&color=08c068" alt="Novo">
                             <div class="upload-overlay d-flex align-items-center justify-content-center"><span>Escolher</span></div>
                         </div>
                         <input type="file" name="logo" id="inputLogoNovo" class="d-none" accept="image/*" onchange="previewImage(this, 'previewLogoNovo')">
                     </div>
 
-                    <div class="row g-2">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Nome / Pizzaria *</label>
+                    <div class="flex-grow-1">
+                        <div class="mb-2">
+                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Cliente</label>
                             <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
                         </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Telefone / WhatsApp</label>
+                        <div>
+                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato</label>
                             <input type="text" name="contato" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
                         </div>
-                        <div class="col-12">
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
-                            <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="https://maps.app.goo.gl/..." oninput="extrairCoordenadasAoColar(this)">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-location-crosshairs text-accent me-1"></i> Coordenadas Exatas (Opcional)</label>
-                            <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" placeholder="Lat, Lng">
-                        </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <hr class="border-custom my-1">
-                        <label class="form-label text-white fw-bold mt-2 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Embalagem da Caixa</label>
-                        <div class="p-3 bg-custom-darker rounded border-custom d-flex align-items-center gap-3">
-                            <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 100px; height: 70px; overflow: hidden;">
-                                <img id="previewArteNovo" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;">
-                                <span id="placeholderArteNovo" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block"></i></span>
-                            </div>
-                            <div class="flex-grow-1">
-                                <button type="button" class="btn btn-sm btn-outline-success fw-bold w-100 mb-1" onclick="document.getElementById('inputArteNovo').click()"><i class="fa-solid fa-upload me-1"></i> Selecionar Arquivo</button>
-                                <span class="text-white-50 d-block" style="font-size: 0.65rem;">JPG ou PNG com o layout aprovado.</span>
-                                <input type="file" name="arte" id="inputArteNovo" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteNovo', 'placeholderArteNovo')">
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
-                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark"><i class="fa-solid fa-check me-1"></i> Cadastrar Cliente</button>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Link do Google Maps</label>
+                        <input type="url" name="link_endereco" class="form-control form-control-sm shadow-sm" placeholder="https://maps.app.goo.gl/..." oninput="extrairCoordenadasAoColar(this)">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-location-crosshairs text-accent me-1"></i> Coordenadas (Opcional)</label>
+                        <input type="text" name="coordenadas" class="form-control form-control-sm shadow-sm" placeholder="Lat, Lng">
+                    </div>
                 </div>
-            </form>
-        </div>
+
+                <div class="mt-4">
+                    <hr class="border-custom my-1">
+                    <label class="form-label text-white fw-bold mt-2 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Embalagem da Caixa</label>
+                    <div class="p-3 bg-custom-darker rounded border-custom d-flex align-items-center gap-3">
+                        <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 100px; height: 70px; overflow: hidden;">
+                            <img id="previewArteNovo" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;">
+                            <span id="placeholderArteNovo" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block"></i></span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold w-100 mb-1" onclick="document.getElementById('inputArteNovo').click()"><i class="fa-solid fa-upload me-1"></i> Selecionar Arquivo</button>
+                            <span class="text-white-50 d-block" style="font-size: 0.65rem;">JPG ou PNG</span>
+                            <input type="file" name="arte" id="inputArteNovo" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteNovo', 'placeholderArteNovo')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold text-dark"><i class="fa-solid fa-check me-1"></i> Cadastrar</button>
+            </div>
+        </form>
     </div>
+</div>
 
     <div class="modal fade" id="migracaoModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 520px;">

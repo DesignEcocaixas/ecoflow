@@ -162,6 +162,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Coordenadas(Opcional)</label>
                 <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm shadow-sm coord-input" value="${e.coordenadas || ''}" placeholder="Lat, Lng">
             </div>
+            
             <div class="col-12 col-md-8 mt-2">
                 <label class="form-label text-white fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
                 <div class="sub-itens-container bg-custom-dark p-2 rounded border-custom">
@@ -171,6 +172,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                     <i class="fa-solid fa-plus-circle me-1"></i> Adicionar outro item
                 </button>
             </div>
+
             <div class="col-12 col-md-4 mt-2">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Valor a Receber (Opcional)</label>
                 <div class="input-group input-group-sm shadow-sm">
@@ -337,20 +339,50 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
   const baseQueryString = qsParams.length > 0 ? '&' + qsParams.join('&') : '';
 
+  // =======================================================================
+  // ALGORITMO DE PAGINAÇÃO INTELIGENTE (Server-side rendered)
+  // =======================================================================
   const pageLinks = (() => {
     let html = '';
-    for (let i = 1; i <= totalPages; i++) {
-      html += `<li class="page-item ${i === page ? "active" : ""}"><a class="page-link ${i === page ? "fw-bold" : ""}" href="/caderno-entregas?page=${i}${baseQueryString}" onclick="navegarPagina(event, this.href)">${i}</a></li>`;
+    const maxVisible = 5;
+
+    const addPage = (num) => {
+        html += `<li class="page-item ${num === page ? "active" : ""}"><a class="page-link ${num === page ? "fw-bold text-white" : ""}" href="/caderno-entregas?page=${num}${baseQueryString}" onclick="navegarPagina(event, this.href)">${num}</a></li>`;
+    };
+
+    const addEllipsis = () => {
+        html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
+    };
+
+    if (totalPages <= maxVisible + 2) {
+        for (let i = 1; i <= totalPages; i++) addPage(i);
+    } else {
+        addPage(1);
+        if (page > 3) addEllipsis();
+
+        let limInf = Math.max(2, page - 1);
+        let limSup = Math.min(totalPages - 1, page + 1);
+
+        if (page <= 2) limSup = 3;
+        if (page >= totalPages - 1) limInf = totalPages - 2;
+
+        for (let i = limInf; i <= limSup; i++) addPage(i);
+
+        if (page < totalPages - 2) addEllipsis();
+        addPage(totalPages);
     }
     return html;
   })();
 
   const paginacaoHtml = totalPages > 1 ? `
-    <nav class="mt-4"><ul class="pagination pagination-sm justify-content-center mb-4">
-        <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link" href="/caderno-entregas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">«</a></li>
-        ${pageLinks}
-        <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link" href="/caderno-entregas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">»</a></li>
-    </ul></nav>
+    <div id="paginacaoCadernosContainer" class="d-flex flex-column align-items-center justify-content-center mt-4 gap-2 text-white-50 small w-100">
+        <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="listaPaginasUl">
+            <li class="page-item ${page <= 1 ? "disabled" : ""}"><a class="page-link" href="/caderno-entregas?page=${page - 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">«</a></li>
+            ${pageLinks}
+            <li class="page-item ${page >= totalPages ? "disabled" : ""}"><a class="page-link" href="/caderno-entregas?page=${page + 1}${baseQueryString}" onclick="navegarPagina(event, this.href)">»</a></li>
+        </ul></nav>
+        <span id="resumoRegistrosText" class="text-muted" style="font-size: 0.75rem;">Exibindo página ${page} de ${totalPages} (Total: ${paginacao.total || 0} cadernos)</span>
+    </div>
   ` : "";
 
   const menuHTML = menuLateral(user, "/caderno-entregas");
@@ -384,7 +416,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
     </div>
   `;
 
-  // --- ÍCONE TROCADO PARA ENGRENAGEM GIRATÓRIA ---
   const modalProcessandoRotaHtml = `
     <div class="modal fade" id="modalProcessandoRota" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -450,17 +481,18 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       .table thead th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; }
       .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.05) !important; background-color: transparent !important; color: #fff !important; }
       .table-hover-row { transition: background-color 0.2s ease; }
-      .table-hover-row:hover > td { background-color: rgba(255,255,255,0.06) !important; color: #fff !important; box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03); }
+      .table-hover-row:hover > td, .table-hover > tbody > tr:hover > td, .table-hover > tbody > tr:hover > * { background-color: rgba(255,255,255,0.06) !important; color: #fff !important; box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03); }
 
       .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #fff; }
 
-      .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
-      .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; }
+      /* PAGINATION SMART */
+      .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); cursor: pointer; }
+      .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; font-weight: bold; }
       .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
-      .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); }
+      .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.05); }
 
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
@@ -1463,6 +1495,12 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               </div>
           \`
           container.insertAdjacentHTML('beforeend', html);
+          
+          setTimeout(() => {
+              if (container.lastElementChild) {
+                  container.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+          }, 50);
       }
 
       function addSubItemLinha(btn) {

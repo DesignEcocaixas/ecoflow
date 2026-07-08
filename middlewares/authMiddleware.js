@@ -1,5 +1,4 @@
 // middlewares/authMiddleware.js
-
 const permissoesPorCargo = {
     admin: ['*'], // Acesso total
 
@@ -18,6 +17,8 @@ const permissoesPorCargo = {
         '/checklist-motoristas',
         '/entregas',
         '/caderno-entregas',
+        '/espacos-trabalho', // <-- ADICIONADO
+        '/clientes',         // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',
@@ -30,6 +31,10 @@ const permissoesPorCargo = {
         '/entradas-saidas',
         '/producao',
         '/caderno-entregas',
+        '/diaristas',        // <-- ADICIONADO
+        '/pagamentos',       // <-- ADICIONADO
+        '/espacos-trabalho', // <-- ADICIONADO
+        '/clientes',         // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',
@@ -40,6 +45,8 @@ const permissoesPorCargo = {
     design: [
         '/propostas',
         '/admin/gabaritos',
+        '/espacos-trabalho', // <-- ADICIONADO
+        '/qr-generator',     // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',
@@ -52,8 +59,15 @@ function verificarHierarquia(req, res, next) {
 
     // 1. Verifica se está logado
     if (!req.session || !req.session.user) {
-        if (rotaRequisitada === '/login') return next();
+        // Se não estiver logado, liberta as rotas públicas para ele conseguir fazer o login
+        if (rotaRequisitada === '/login' || rotaRequisitada === '/') return next();
         return res.redirect('/login?erro=nao_logado');
+    }
+
+    // --- CORREÇÃO AQUI ---
+    // Se o usuário JÁ está logado e tenta acessar a tela de login ou a raiz, joga pra home direto em paz!
+    if (rotaRequisitada === '/login' || rotaRequisitada === '/') {
+        return res.redirect('/home');
     }
 
     const tipoUsuario = (req.session.user.tipo_usuario || 'admin').toLowerCase();

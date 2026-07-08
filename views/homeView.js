@@ -1070,7 +1070,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (urlParams.has('erro')) {
               const tipoErro = urlParams.get('erro');
               if (tipoErro === 'acesso_negado') {
-                  alert('Acesso Restrito! O seu perfil não tem permissão para aceder a esta funcionalidade.');
+                  alert('Acesso Restrito! O seu perfil não tem permissão para acessar esta funcionalidade.');
               }
               if (window.history.replaceState) {
                   const url = new URL(window.location.href);

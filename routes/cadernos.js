@@ -9,10 +9,10 @@ const ExcelJS = require("exceljs");
 const { uploadClientes } = require("../config/uploadConfig");
 
 // A MÁGICA AQUI: Importando as funções do Google Maps do nosso Service
-const { 
-    obterLocalizacao, 
-    otimizarRotaGoogleAPI, 
-    obterCidadeDasCoordenadas 
+const {
+    obterLocalizacao,
+    otimizarRotaGoogleAPI,
+    obterCidadeDasCoordenadas
 } = require("../services/mapsService");
 
 //------------------------------------------------------------------------------ROTAS PARA CADERNOS------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ router.get("/clientes", async (req, res) => {
     try {
         // CORREÇÃO: "SELECT *" garante que logo, arte e contato também sejam enviados para a View
         const [clientesDB] = await db.promise().query("SELECT * FROM clientes_historico ORDER BY nome ASC");
-        
+
         res.send(require('../views/clientesView')(req.session.user, clientesDB || []));
     } catch (error) {
         console.error("Erro ao carregar tela de Clientes:", error);
@@ -419,10 +419,30 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
                 if (fs.existsSync(p)) fs.unlinkSync(p);
             }
 
+            // 1. Adicione a leitura do novo campo que criamos no formulário:
+            let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato, removerLogo } = req.body;
+
+            // ... código de obtenção de coordenadas etc ...
+
+            // 2. A lógica do UPDATE deve ficar assim:
             let sql = "UPDATE clientes_historico SET nome = ?, link_endereco = ?, coordenadas = ?, contato = ?";
             let params = [nomeNovo.trim(), link_endereco || null, coordenadas || null, contato || null];
 
-            if (novoLogo) { sql += ", logo = ?"; params.push(novoLogo); }
+            // Se ele submeteu uma foto nova, ele substitui.
+            if (novoLogo) {
+                sql += ", logo = ?"; params.push(novoLogo);
+            }
+            // Se não há foto nova, mas o botão de remover foi clicado:
+            else if (removerLogo === 'true') {
+                sql += ", logo = NULL";
+
+                // Exclui fisicamente o ficheiro antigo do disco se existir
+                if (clienteAntigo && clienteAntigo.logo) {
+                    const p = path.join(__dirname, "..", "uploads", clienteAntigo.logo);
+                    if (fs.existsSync(p)) fs.unlinkSync(p);
+                }
+            }
+
             if (novaArte) { sql += ", arte = ?"; params.push(novaArte); }
 
             sql += " WHERE nome = ?";

@@ -31,7 +31,9 @@ function clientesView(usuario, clientesHistorico = []) {
                             <img id="previewLogoEdit${i}" src="${logoSrc}" alt="Logo">
                             <div class="upload-overlay d-flex align-items-center justify-content-center"><span>Alterar</span></div>
                         </div>
-                        <input type="file" name="logo" id="inputLogoEdit${i}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewLogoEdit${i}')">
+                        <input type="file" name="logo" id="inputLogoEdit${i}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewLogoEdit${i}', 'removerLogoFlag${i}')">
+                        <input type="hidden" name="removerLogo" id="removerLogoFlag${i}" value="false">
+                        ${c.logo ? `<button type="button" class="btn btn-sm btn-link text-danger p-0 mt-2 text-decoration-none w-100" style="font-size: 0.7rem;" onclick="removerLogoEdit(${i}, 'previewLogoEdit${i}', '${encodeURIComponent(c.nome)}')"><i class="fa-solid fa-trash me-1"></i>Remover</button>` : ''}
                     </div>
 
                     <div class="flex-grow-1">
@@ -108,6 +110,17 @@ function clientesView(usuario, clientesHistorico = []) {
   const menuHTML = menuLateral(user, "/clientes");
 
   const dadosClientesJSON = JSON.stringify(clientesHistorico || []).replace(/</g, '\\u003c');
+
+  const modalVisualizarImagemHTML = `
+    <div class="modal fade" id="modalVisualizarImagem" tabindex="-1" style="z-index: 2060;" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen" style="background-color: rgba(0,0,0,0.85);">
+            <div class="modal-content bg-transparent border-0 shadow-none position-relative w-100 h-100 d-flex align-items-center justify-content-center" data-bs-dismiss="modal">
+                <button type="button" class="btn-close btn-close-white position-absolute" style="top: 25px; left: 25px; z-index: 2070; opacity: 1;" aria-label="Fechar" data-bs-dismiss="modal"></button>
+                <img id="imagemAmpliadaModal" src="" class="img-fluid shadow-lg rounded" style="max-height: 85vh; max-width: 90vw; object-fit: contain;" onclick="event.stopPropagation();">
+            </div>
+        </div>
+    </div>
+  `;
 
   return `
   <!DOCTYPE html>
@@ -379,6 +392,7 @@ function clientesView(usuario, clientesHistorico = []) {
     </div>
 
     ${modaisEdicaoExclusaoClientes}
+    ${modalVisualizarImagemHTML}
     ${termosHTML}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -447,11 +461,31 @@ function clientesView(usuario, clientesHistorico = []) {
       window.addEventListener('load', ocultarSkeletonGlobais);
       window.addEventListener('beforeunload', mostrarSkeletonGlobais);
 
-      function previewImage(input, imgId) {
+      function previewImage(input, imgId, flagId) {
           if (input.files && input.files[0]) {
               const reader = new FileReader();
               reader.onload = e => document.getElementById(imgId).src = e.target.result;
               reader.readAsDataURL(input.files[0]);
+
+              // Reseta a flag de remoção se o usuário escolher um arquivo novo
+              if(flagId) {
+                  const flagInput = document.getElementById(flagId);
+                  if(flagInput) flagInput.value = 'false';
+              }
+          }
+      }
+
+      function removerLogoEdit(idx, imgId, clientNameRaw) {
+          const flagInput = document.getElementById('removerLogoFlag' + idx);
+          if (flagInput) flagInput.value = 'true';
+
+          const fileInput = document.getElementById('inputLogoEdit' + idx);
+          if (fileInput) fileInput.value = '';
+
+          const img = document.getElementById(imgId);
+          if (img) {
+              const nomeDecode = decodeURIComponent(clientNameRaw || 'Cliente');
+              img.src = \`https://ui-avatars.com/api/?name=\${encodeURIComponent(nomeDecode)}&background=1f1f1f&color=08c068\`;
           }
       }
 
@@ -546,7 +580,7 @@ function clientesView(usuario, clientesHistorico = []) {
                 <tr class=\"cliente-row-filtro table-hover-row\" data-bs-toggle=\"modal\" data-bs-target=\"#editarClienteModal\${idxOriginal}\" style=\"cursor: pointer;\">
                     <td class=\"py-2 px-3\">
                         <div class=\"d-flex align-items-center\">
-                            <img src=\"\${logoSrc}\" alt=\"\${c.nome}\" class=\"rounded-circle me-3 border-custom shadow-sm\" style=\"width: 34px; height: 34px; object-fit: cover; flex-shrink: 0;\">
+                            <img src=\"\${logoSrc}\" alt=\"\${c.nome}\" class=\"rounded-circle me-3 border-custom shadow-sm\" style=\"width: 34px; height: 34px; object-fit: cover; flex-shrink: 0; cursor: zoom-in;\" data-bs-toggle=\"modal\" data-bs-target=\"#modalVisualizarImagem\" onclick=\"event.stopPropagation(); document.getElementById('imagemAmpliadaModal').src='\${logoSrc}';\">
                             <div>
                                 <span class=\"fw-bold text-white d-block\" style=\"font-size:0.85rem;\">\${c.nome}</span>
                                 <div class=\"d-flex gap-2 mt-1\">

@@ -198,6 +198,11 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
         ? (colabAjudante.foto ? `/uploads/${colabAjudante.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.ajudante)}&background=1f1f1f&color=08c068`) 
         : `https://ui-avatars.com/api/?name=Ajudante&background=222&color=6c757d`;
 
+    const veiculoAtual = veiculos.find(v => String(v.id) === String(c.veiculo_id)) || {};
+    const imgVeiculoDetalhe = veiculoAtual.foto
+        ? `/uploads/${veiculoAtual.foto}`
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.veiculo_modelo || 'Veiculo')}&background=1f1f1f&color=08c068`;
+
     return `
     <div class="modal fade" id="detalheModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -209,9 +214,27 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           <div class="modal-body p-4 bg-custom-dark">
             <div class="bg-custom-darker p-3 rounded shadow-sm border-custom mb-3" style="font-size: 0.8rem;">
                 <div class="row">
-                    <div class="col-6 col-md-4 mb-2"><span class="text-muted">Motorista:</span><br><strong class="text-white">${c.motorista}</strong></div>
-                    <div class="col-6 col-md-4 mb-2"><span class="text-muted">Ajudante:</span><br><strong class="text-white">${c.ajudante || '-'}</strong></div>
-                    <div class="col-12 col-md-4"><span class="text-muted">Veículo:</span><br><strong class="text-white"><i class="fa-solid fa-car me-1 text-muted"></i> ${c.veiculo_modelo || 'Não informado'}</strong></div>
+                    <div class="col-12 col-md-4 mb-2">
+                        <span class="text-muted">Motorista:</span>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <img src="${imgMotEdit}" alt="Foto de ${c.motorista || 'Motorista'}" class="rounded shadow-sm border-custom bg-custom-dark" style="width: 38px; height: 38px; object-fit: cover; flex-shrink: 0;">
+                            <strong class="text-white text-truncate">${c.motorista}</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 mb-2">
+                        <span class="text-muted">Ajudante:</span>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <img src="${imgAjuEdit}" alt="Foto de ${c.ajudante || 'Ajudante'}" class="rounded shadow-sm border-custom bg-custom-dark" style="width: 38px; height: 38px; object-fit: cover; flex-shrink: 0;">
+                            <strong class="text-white text-truncate">${c.ajudante || '-'}</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <span class="text-muted">Veículo:</span>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <img src="${imgVeiculoDetalhe}" alt="Foto do veículo ${c.veiculo_modelo || ''}" class="rounded shadow-sm border-custom bg-custom-dark" style="width: 38px; height: 38px; object-fit: cover; flex-shrink: 0;">
+                            <strong class="text-white text-truncate">${c.veiculo_modelo || 'Não informado'}</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -961,6 +984,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
           return html;
       }
+
       function mostrarSkeletonGlobais() {
           const tableContainer = document.querySelector('.content > .table-responsive');
           const emptyState = document.querySelector('.content > .text-center-empty');
@@ -1299,33 +1323,46 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-      async function prepararSubmissaoSimples(event, form, titleMsg) {
+            async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
+
           if (!form.checkValidity()) {
               form.reportValidity();
               return;
           }
-          if (isSubmitting) return;
 
-          const modalEl = form.closest('.modal');
-          if (modalEl) {
-              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
-              modal.hide();
-          }
+          if (isSubmitting) return;
 
           limparMoedas(form);
           isSubmitting = true;
 
           let intervalProgress = null;
+
           const loadingModalEl = document.getElementById('modalProcessandoRota');
           const barraModal = document.getElementById('loadingModalBarra');
           const subModal = document.getElementById('loadingModalSub');
           const tituloModal = document.getElementById('loadingModalTitulo');
 
-          if (titleMsg.toLowerCase().includes('otimizar')) {
-              if (tituloModal) tituloModal.innerText = "Otimizando Rota...";
-              if (subModal) subModal.innerText = "Consultando inteligência geográfica do Google Maps...";
-              if (barraModal) barraModal.style.width = '15%';
+          const isProcessamentoRota = form.action.includes('/caderno-entregas/novo') ||
+                                     form.action.includes('/caderno-entregas/editar/');
+
+          const abrirModalProcessamento = () => {
+              if (!isProcessamentoRota) {
+                  mostrarSkeletonGlobais();
+                  return;
+              }
+
+              if (tituloModal) {
+                  tituloModal.innerText = "Otimizando Rota...";
+              }
+
+              if (subModal) {
+                  subModal.innerText = "Consultando inteligência geográfica do Google Maps...";
+              }
+
+              if (barraModal) {
+                  barraModal.style.width = '15%';
+              }
 
               if (loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getOrCreateInstance(loadingModalEl);
@@ -1333,39 +1370,87 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               }
 
               let progresso = 15;
+
               intervalProgress = setInterval(() => {
                   if (progresso < 98) {
                       progresso += Math.floor(Math.random() * 8) + 2;
-                      if (progresso > 98) progresso = 98;
-                      if (barraModal) barraModal.style.width = progresso + '%';
 
-                      if (progresso > 30 && progresso < 60 && subModal) subModal.innerText = "Consultando Google Maps API...";
-                      if (progresso >= 60 && progresso < 85 && subModal) subModal.innerText = "Traçando rota inteligente e calculando tempos...";
-                      if (progresso >= 85 && subModal) subModal.innerText = "Gerando caderno e salvando dados da cidade...";
+                      if (progresso > 98) {
+                          progresso = 98;
+                      }
+
+                      if (barraModal) {
+                          barraModal.style.width = progresso + '%';
+                      }
+
+                      if (progresso > 30 && progresso < 60 && subModal) {
+                          subModal.innerText = "Consultando Google Maps API...";
+                      }
+
+                      if (progresso >= 60 && progresso < 85 && subModal) {
+                          subModal.innerText = "Traçando rota inteligente e calculando tempos...";
+                      }
+
+                      if (progresso >= 85 && subModal) {
+                          subModal.innerText = "Gerando caderno e salvando dados da cidade...";
+                      }
                   }
               }, 400);
+          };
+
+          const modalEl = form.closest('.modal');
+
+          if (modalEl) {
+              const modalAtual = bootstrap.Modal.getInstance(modalEl) ||
+                                 bootstrap.Modal.getOrCreateInstance(modalEl);
+
+              modalEl.addEventListener('hidden.bs.modal', () => {
+                  abrirModalProcessamento();
+              }, { once: true });
+
+              modalAtual.hide();
           } else {
-              mostrarSkeletonGlobais();
+              abrirModalProcessamento();
           }
 
           try {
               const formData = new URLSearchParams();
               const fd = new FormData(form);
+
               for (const [key, value] of fd.entries()) {
                   formData.append(key, value);
               }
 
               const response = await fetch(form.action, {
                   method: form.method || 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  headers: {
+                      'Content-Type': 'application/x-www-form-urlencoded'
+                  },
                   body: formData.toString()
               });
 
-              if (intervalProgress) clearInterval(intervalProgress);
+              if (intervalProgress) {
+                  clearInterval(intervalProgress);
+              }
+
+              if (barraModal && isProcessamentoRota) {
+                  barraModal.style.width = '100%';
+              }
+
+              if (subModal && isProcessamentoRota) {
+                  subModal.innerText = "Finalizando processamento...";
+              }
+
+              if (isProcessamentoRota) {
+                  await new Promise(resolve => setTimeout(resolve, 350));
+              }
 
               if (loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
-                  if (modalLoading) modalLoading.hide();
+
+                  if (modalLoading) {
+                      modalLoading.hide();
+                  }
               }
 
               if (response.ok) {
@@ -1379,6 +1464,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
                   const oldContent = document.querySelector('.content');
                   const newContent = doc.querySelector('.content');
+
                   if (oldContent && newContent) {
                       oldContent.innerHTML = newContent.innerHTML;
                   }
@@ -1386,48 +1472,91 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   atualizarModaisDinamicos(doc);
 
                   form.reset();
+
                   const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
                   dynamicContainers.forEach(el => el.remove());
 
                   const defaultImgMot = "https://ui-avatars.com/api/?name=Motorista&background=1f1f1f&color=08c068";
                   const defaultImgAju = "https://ui-avatars.com/api/?name=Ajudante&background=222&color=6c757d";
+
                   const fotoMotNovo = document.getElementById('fotoMotoristaNovo');
                   const fotoAjuNovo = document.getElementById('fotoAjudanteNovo');
-                  if (fotoMotNovo) fotoMotNovo.src = defaultImgMot;
-                  if (fotoAjuNovo) fotoAjuNovo.src = defaultImgAju;
+
+                  if (fotoMotNovo) {
+                      fotoMotNovo.src = defaultImgMot;
+                  }
+
+                  if (fotoAjuNovo) {
+                      fotoAjuNovo.src = defaultImgAju;
+                  }
 
                   const responseUrl = new URL(response.url);
 
                   if (responseUrl.searchParams.has('cadernoCriado')) {
                       const cadernoCriadoId = responseUrl.searchParams.get('cadernoCriado');
-                      mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
+
+                      mostrarToast(
+                          'sucesso',
+                          'Sucesso!',
+                          'Caderno criado e otimizado com sucesso.'
+                      );
 
                       const btnImprimir = document.getElementById('btnImprimirNovoModal');
+
                       if (btnImprimir) {
                           btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
                       }
-                      const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
+
+                      const modalImp = bootstrap.Modal.getOrCreateInstance(
+                          document.getElementById('modalImprimirNovo')
+                      );
+
                       modalImp.show();
                   } else {
                       mostrarToast('sucesso', 'Concluído!', titleMsg);
                   }
 
               } else {
-                  if (intervalProgress) clearInterval(intervalProgress);
+                  if (intervalProgress) {
+                      clearInterval(intervalProgress);
+                  }
+
                   if (loadingModalEl) {
                       const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
-                      if (modalLoading) modalLoading.hide();
+
+                      if (modalLoading) {
+                          modalLoading.hide();
+                      }
                   }
-                  mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
+
+                  mostrarToast(
+                      'erro',
+                      'Erro',
+                      'Não foi possível salvar os dados no servidor.'
+                  );
               }
+
           } catch (err) {
               console.error(err);
-              if (intervalProgress) clearInterval(intervalProgress);
+
+              if (intervalProgress) {
+                  clearInterval(intervalProgress);
+              }
+
               if (loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
-                  if (modalLoading) modalLoading.hide();
+
+                  if (modalLoading) {
+                      modalLoading.hide();
+                  }
               }
-              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua internet e tente novamente.');
+
+              mostrarToast(
+                  'erro',
+                  'Falha de Conexão',
+                  'Verifique a sua internet e tente novamente.'
+              );
+
           } finally {
               isSubmitting = false;
           }

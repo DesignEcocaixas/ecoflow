@@ -60,7 +60,7 @@ router.get("/caderno-entregas", async (req, res) => {
             c.entregas = itens;
         }
 
-        const [veiculos] = await db.promise().query("SELECT id, modelo FROM veiculos ORDER BY modelo ASC");
+        const [veiculos] = await db.promise().query("SELECT id, modelo, foto FROM veiculos ORDER BY modelo ASC");
 
         // NOVO: Busca o histórico fixo de clientes imune à exclusão (com a Cidade para a tag azul)
         const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade, logo, arte, contato FROM clientes_historico ORDER BY nome ASC");

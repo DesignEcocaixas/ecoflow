@@ -262,7 +262,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
 
     <div class="modal fade" id="editarCadernoModal${c.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/caderno-entregas/editar/${c.id}" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'A otimizar rota...')">
+        <form method="POST" action="/caderno-entregas/editar/${c.id}" class="modal-content erp-modal shadow-lg" onsubmit="prepararSubmissaoSimples(event, this, 'Rota montada com sucesso!')">
           <div class="modal-header bg-custom-darker text-white border-0">
             <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Caderno de Entregas</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

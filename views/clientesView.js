@@ -490,7 +490,7 @@ function clientesView(usuario, clientesHistorico = []) {
 
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.has('sucessoCliente')) {
-              mostrarToast('sucesso', 'Concluído!', 'Carteira de clientes atualizada com sucesso.');
+              mostrarToast('sucesso', 'Concluído!', 'Cliente atualizado com sucesso');
               const url = new URL(window.location.href);
               url.searchParams.delete('sucessoCliente');
               window.history.replaceState({}, document.title, url.toString());

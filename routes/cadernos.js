@@ -387,17 +387,21 @@ router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'l
 });
 
 // =========================================================================
-// ROTA POST: EDITAR CLIENTE (COM TRATAMENTO DE IMAGENS)
+// ROTA POST: EDITAR CLIENTE (CORRIGIDA)
 // =========================================================================
 router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato } = req.body;
+
+    // Garantimos que todos os campos vêm do req.body de uma única vez
+    let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato, removerLogo } = req.body;
 
     const novoLogo = req.files && req.files['logo'] ? "clientes/" + req.files['logo'][0].filename : null;
     const novaArte = req.files && req.files['arte'] ? "clientes/" + req.files['arte'][0].filename : null;
 
     try {
         if (nomeOriginal && nomeNovo) {
+            
+            // Lógica de coordenadas: apenas atribui se estiver vazia e houver link
             if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
                 const localizacaoResolvida = await obterLocalizacao(nomeNovo, link_endereco);
                 if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
@@ -405,52 +409,37 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
                 }
             }
 
-            // Busca arquivos antigos para exclusão se novos foram enviados
+            // Busca arquivos antigos para exclusão
             const [[clienteAntigo]] = await db.promise().query("SELECT logo, arte FROM clientes_historico WHERE nome = ?", [nomeOriginal.trim()]);
             const fs = require('fs');
             const path = require('path');
 
-            if (novoLogo && clienteAntigo && clienteAntigo.logo) {
-                const p = path.join(__dirname, "..", "uploads", clienteAntigo.logo);
-                if (fs.existsSync(p)) fs.unlinkSync(p);
-            }
-            if (novaArte && clienteAntigo && clienteAntigo.arte) {
-                const p = path.join(__dirname, "..", "uploads", clienteAntigo.arte);
-                if (fs.existsSync(p)) fs.unlinkSync(p);
-            }
-
-            // 1. Adicione a leitura do novo campo que criamos no formulário:
-            let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato, removerLogo } = req.body;
-
-            // ... código de obtenção de coordenadas etc ...
-
-            // 2. A lógica do UPDATE deve ficar assim:
+            // --- LÓGICA DE REMOÇÃO DE LOGO ---
+            // Se o usuário submeteu uma foto nova, ignora o removerLogo
+            // Se não submeteu foto nova, mas marcou 'removerLogo', limpamos no BD
             let sql = "UPDATE clientes_historico SET nome = ?, link_endereco = ?, coordenadas = ?, contato = ?";
             let params = [nomeNovo.trim(), link_endereco || null, coordenadas || null, contato || null];
 
-            // Se ele submeteu uma foto nova, ele substitui.
-            if (novoLogo) {
-                sql += ", logo = ?"; params.push(novoLogo);
-            }
-            // Se não há foto nova, mas o botão de remover foi clicado:
-            else if (removerLogo === 'true') {
+            if (novoLogo) { 
+                sql += ", logo = ?"; params.push(novoLogo); 
+            } else if (removerLogo === 'true') {
                 sql += ", logo = NULL";
-
-                // Exclui fisicamente o ficheiro antigo do disco se existir
                 if (clienteAntigo && clienteAntigo.logo) {
                     const p = path.join(__dirname, "..", "uploads", clienteAntigo.logo);
                     if (fs.existsSync(p)) fs.unlinkSync(p);
                 }
             }
 
-            if (novaArte) { sql += ", arte = ?"; params.push(novaArte); }
+            if (novaArte) { 
+                sql += ", arte = ?"; params.push(novaArte); 
+            }
 
             sql += " WHERE nome = ?";
             params.push(nomeOriginal.trim());
 
             await db.promise().query(sql, params);
 
-            // Se mudou de nome, reflete no caderno de entregas existente
+            // Se mudou de nome, atualiza itens vinculados
             if (nomeOriginal.trim() !== nomeNovo.trim()) {
                 await db.promise().query("UPDATE caderno_entregas_itens SET local_entrega = ? WHERE local_entrega = ?", [nomeNovo.trim(), nomeOriginal.trim()]);
             }

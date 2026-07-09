@@ -233,7 +233,7 @@ function clientesView(usuario, clientesHistorico = []) {
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-users text-accent me-2"></i>Carteira de Clientes & Locais</h5>
+              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-users text-accent me-2"></i>Clientes & Locais</h5>
               <span class="text-white-50 d-none d-sm-block mt-1" style="font-size:0.7rem;">Base de dados para preenchimento automático de rotas e embalagens</span>
             </div>
         </div>

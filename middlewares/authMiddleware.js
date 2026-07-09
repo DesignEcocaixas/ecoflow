@@ -17,6 +17,7 @@ const permissoesPorCargo = {
         '/checklist-motoristas',
         '/entregas',
         '/caderno-entregas',
+        '/envios-whatsapp',
         '/espacos-trabalho', // <-- ADICIONADO
         '/clientes',         // <-- ADICIONADO
         '/home',
@@ -31,6 +32,7 @@ const permissoesPorCargo = {
         '/entradas-saidas',
         '/producao',
         '/caderno-entregas',
+        '/envios-whatsapp',
         '/diaristas',        // <-- ADICIONADO
         '/pagamentos',       // <-- ADICIONADO
         '/espacos-trabalho', // <-- ADICIONADO

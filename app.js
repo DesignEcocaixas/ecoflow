@@ -211,6 +211,10 @@ app.use("/", qrGeneratorRoutes);
 const termosRoutes = require("./routes/termos");
 app.use(termosRoutes);
 
+// No seu app.js, adicione junto com as outras chamadas app.use:
+const enviosRoutes = require("./routes/envios");
+app.use("/", enviosRoutes);
+
 // Importando o testador
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);

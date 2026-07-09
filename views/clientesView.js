@@ -10,6 +10,7 @@ function clientesView(usuario, clientesHistorico = []) {
       const logoSrc = c.logo ? `/uploads/${c.logo}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nome)}&background=2a2a2a&color=08c068`;
       const arteSrc = c.arte ? `/uploads/${c.arte}` : null;
       const contatoFmt = c.contato || '';
+      const contatoSecundarioFmt = c.contato_secundario || ''; // Recupera o contato secundário do DB
 
       return `
       <div class="modal fade" id="editarClienteModal${i}" tabindex="-1">
@@ -41,9 +42,15 @@ function clientesView(usuario, clientesHistorico = []) {
                             <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Cliente</label>
                             <input type="text" name="nomeNovo" class="form-control form-control-sm shadow-sm" value="${c.nome}" required>
                         </div>
-                        <div>
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato</label>
-                            <input type="text" name="contato" class="form-control form-control-sm shadow-sm" value="${contatoFmt}" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato Principal</label>
+                                <input type="text" name="contato" class="form-control form-control-sm shadow-sm" value="${contatoFmt}" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato Secundário</label>
+                                <input type="text" name="contato_secundario" class="form-control form-control-sm shadow-sm" value="${contatoSecundarioFmt}" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -304,9 +311,15 @@ function clientesView(usuario, clientesHistorico = []) {
                             <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Cliente</label>
                             <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: Pizzaria Bella Napoli">
                         </div>
-                        <div>
-                            <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato</label>
-                            <input type="text" name="contato" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato Principal</label>
+                                <input type="text" name="contato" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Contato Secundário</label>
+                                <input type="text" name="contato_secundario" class="form-control form-control-sm shadow-sm" placeholder="(00) 0 0000-0000" oninput="mascaraTelefone(this)" maxlength="16">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -532,7 +545,6 @@ function clientesView(usuario, clientesHistorico = []) {
       });
 
       function filtrarClientesPaginado(pg = 1) {
-          paginaAtual = pg;
           const termo = (document.getElementById("searchInputClientes").value || "").toLowerCase().trim();
 
           const clientesFiltrados = todosClientesDB.filter(c => {
@@ -544,6 +556,7 @@ function clientesView(usuario, clientesHistorico = []) {
           const totalRegistros = clientesFiltrados.length;
           const totalPaginas = Math.max(1, Math.ceil(totalRegistros / limitePorPagina));
 
+          paginaAtual = pg;
           if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
           if (paginaAtual < 1) paginaAtual = 1;
 
@@ -562,9 +575,9 @@ function clientesView(usuario, clientesHistorico = []) {
           if (itens.length === 0) {
               tbody.innerHTML = \`
                 <tr>
-                    <td colspan=\"4\" class=\"text-center text-white-50 py-5\">
-                        <i class=\"fa-solid fa-users-slash fa-2x opacity-25 mb-3 d-block\"></i>
-                        <span style=\"font-size: 0.8rem;\">Nenhum cliente encontrado.</span>
+                    <td colspan="4" class="text-center text-white-50 py-5">
+                        <i class="fa-solid fa-users-slash fa-2x opacity-25 mb-3 d-block"></i>
+                        <span style="font-size: 0.8rem;">Nenhum cliente encontrado.</span>
                     </td>
                 </tr>
               \`;
@@ -577,33 +590,33 @@ function clientesView(usuario, clientesHistorico = []) {
               const contatoFmt = c.contato || '';
 
               return \`
-                <tr class=\"cliente-row-filtro table-hover-row\" data-bs-toggle=\"modal\" data-bs-target=\"#editarClienteModal\${idxOriginal}\" style=\"cursor: pointer;\">
-                    <td class=\"py-2 px-3\">
-                        <div class=\"d-flex align-items-center\">
-                            <img src=\"\${logoSrc}\" alt=\"\${c.nome}\" class=\"rounded-circle me-3 border-custom shadow-sm\" style=\"width: 34px; height: 34px; object-fit: cover; flex-shrink: 0; cursor: zoom-in;\" data-bs-toggle=\"modal\" data-bs-target=\"#modalVisualizarImagem\" onclick=\"event.stopPropagation(); document.getElementById('imagemAmpliadaModal').src='\${logoSrc}';\">
+                <tr class="cliente-row-filtro table-hover-row" data-bs-toggle="modal" data-bs-target="#editarClienteModal\${idxOriginal}" style="cursor: pointer;">
+                    <td class="py-2 px-3">
+                        <div class="d-flex align-items-center">
+                            <img src="\${logoSrc}" alt="\${c.nome}" class="rounded-circle me-3 border-custom shadow-sm" style="width: 34px; height: 34px; object-fit: cover; flex-shrink: 0; cursor: zoom-in;" data-bs-toggle="modal" data-bs-target="#modalVisualizarImagem" onclick="event.stopPropagation(); document.getElementById('imagemAmpliadaModal').src='\${logoSrc}';">
                             <div>
-                                <span class=\"fw-bold text-white d-block\" style=\"font-size:0.85rem;\">\${c.nome}</span>
-                                <div class=\"d-flex gap-2 mt-1\">
-                                    \${c.coordenadas ? '<span class=\"badge bg-success\" style=\"font-size:0.55rem;\"><i class=\"fa-solid fa-location-crosshairs me-1\"></i>GPS</span>' : ''}
-                                    \${c.arte ? '<span class=\"badge bg-info text-dark\" style=\"font-size:0.55rem;\"><i class=\"fa-solid fa-image me-1\"></i>Arte</span>' : ''}
+                                <span class="fw-bold text-white d-block" style="font-size:0.85rem;">\${c.nome}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    \${c.coordenadas ? '<span class="badge bg-success" style="font-size:0.55rem;"><i class="fa-solid fa-location-crosshairs me-1"></i>GPS</span>' : ''}
+                                    \${c.arte ? '<span class="badge bg-info text-dark" style="font-size:0.55rem;"><i class="fa-solid fa-image me-1"></i>Arte</span>' : ''}
                                 </div>
                             </div>
                         </div>
                     </td>
-                    <td class=\"py-2 px-3 text-white-50\" style=\"font-size: 0.8rem;\">
-                        \${contatoFmt ? \`<i class=\"fa-solid fa-phone me-1 opacity-50\"></i> \${contatoFmt}\` : '<span class=\"opacity-50\">-</span>'}
+                    <td class="py-2 px-3 text-white-50" style="font-size: 0.8rem;">
+                        \${contatoFmt ? \`<i class="fa-solid fa-phone me-1 opacity-50"></i> \${contatoFmt}\` : '<span class="opacity-50">-</span>'}
                     </td>
-                    <td class=\"py-2 px-3\">
-                        \${c.cidade ? \`<span class=\"badge text-dark\" style=\"background-color: #08c068; font-size:0.65rem;\">\${c.cidade}</span>\` : '<span class=\"badge bg-secondary\" style=\"font-size:0.65rem;\">Sem cidade</span>'}
+                    <td class="py-2 px-3">
+                        \${c.cidade ? \`<span class="badge text-dark" style="background-color: #08c068; font-size:0.65rem;">\${c.cidade}</span>\` : '<span class="badge bg-secondary" style="font-size:0.65rem;">Sem cidade</span>'}
                     </td>
-                    <td class=\"text-end py-2 px-3\">
-                        <button type=\"button\" class=\"btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2\" data-bs-toggle=\"modal\" data-bs-target=\"#excluirClienteModal\${idxOriginal}\" onclick=\"event.stopPropagation();\">
-                            <i class=\"fa-solid fa-trash\" style=\"font-size:0.75rem;\"></i>
+                    <td class="text-end py-2 px-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#excluirClienteModal\${idxOriginal}" onclick="event.stopPropagation();">
+                            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
                         </button>
                     </td>
                 </tr>
               \`;
-          }).join(\"\");
+          }).join("");
       }
 
       function renderizarControlesPaginacao(totalPaginas, totalRegistros, exibInicio, exibFim) {
@@ -617,14 +630,14 @@ function clientesView(usuario, clientesHistorico = []) {
           if (!ul) return;
           if (totalPaginas <= 1) { ul.innerHTML = ""; return; }
 
-          let liHtml = \`<li class=\"page-item \${paginaAtual === 1 ? 'disabled' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${paginaAtual - 1})\">«</a></li>\`;
+          let liHtml = \`<li class="page-item \${paginaAtual === 1 ? 'disabled' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\${paginaAtual - 1})">«</a></li>\`;
 
           const addBotaoPagina = (num) => {
-              liHtml += \`<li class=\"page-item \${paginaAtual === num ? 'active' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${num})\">\${num}</a></li>\`;
+              liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\text{num})">\${num}</a></li>\`;
           };
 
           const addReticencias = () => {
-              liHtml += \`<li class=\"page-item disabled\"><a class=\"page-link\">...</a></li>\`;
+              liHtml += \`<li class="page-item disabled"><a class="page-link">...</a></li>\`;
           };
 
           const maxBotoesVisiveis = 5;
@@ -647,7 +660,7 @@ function clientesView(usuario, clientesHistorico = []) {
               addBotaoPagina(totalPaginas);
           }
 
-          liHtml += \`<li class=\"page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${paginaAtual + 1})\">»</a></li>\`;
+          liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\${paginaAtual + 1})">»</a></li>\`;
           ul.innerHTML = liHtml;
       }
 
@@ -691,7 +704,6 @@ function clientesView(usuario, clientesHistorico = []) {
           }
       }
 
-      // Função para formulários de Cadastro e Edição (com envio de Arquivos Multimídia)
       async function prepararSubmissaoArquivos(event, form, titleMsg) {
           event.preventDefault();
           if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -731,7 +743,6 @@ function clientesView(usuario, clientesHistorico = []) {
           }
       }
 
-      // Função apenas para exclusão sem anexos (converte FormData para urlencoded)
       async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
           if (!form.checkValidity()) { form.reportValidity(); return; }

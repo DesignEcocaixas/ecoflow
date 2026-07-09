@@ -1,6 +1,10 @@
+# Dependências e Variáveis de Ambiente
 node_modules/
 .env
 
-node_modules/
+# Uploads do sistema
 uploads/
-node_modules/
+
+# Sessões e Cache do WhatsApp (whatsapp-web.js)
+.wwebjs_auth/
+.wwebjs_cache/

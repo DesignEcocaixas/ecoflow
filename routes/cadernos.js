@@ -8,6 +8,9 @@ const path = require("path");
 const ExcelJS = require("exceljs");
 const { uploadClientes } = require("../config/uploadConfig");
 
+// SERVIÇO DE WHATSAPP (NOVO)
+const { enviarMensagem } = require("../services/whatsappService");
+
 // A MÁGICA AQUI: Importando as funções do Google Maps do nosso Service
 const {
     obterLocalizacao,
@@ -19,6 +22,9 @@ const {
 //LISTAR CADERNOS
 router.get("/caderno-entregas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+
+    const [[dbConfig]] = await db.promise().query("SELECT valor FROM configuracoes WHERE chave = 'whatsapp_avisos_ativo'");
+    req.session.whatsappAtivo = dbConfig ? dbConfig.valor === 'true' : true;
 
     try {
         const page = parseInt(req.query.page || "1", 10);
@@ -49,7 +55,6 @@ router.get("/caderno-entregas", async (req, res) => {
         `, queryParams);
 
         for (let c of cadernos) {
-            // MUDANÇA: Faz um JOIN para buscar também as coordenadas salvas na tabela de histórico
             const [itens] = await db.promise().query(`
                 SELECT i.*, ch.coordenadas 
                 FROM caderno_entregas_itens i
@@ -62,24 +67,21 @@ router.get("/caderno-entregas", async (req, res) => {
 
         const [veiculos] = await db.promise().query("SELECT id, modelo, foto FROM veiculos ORDER BY modelo ASC");
 
-        // NOVO: Busca o histórico fixo de clientes imune à exclusão (com a Cidade para a tag azul)
         const [clientesDB] = await db.promise().query("SELECT nome, link_endereco, coordenadas, cidade, logo, arte, contato FROM clientes_historico ORDER BY nome ASC");
 
-        // NOVO: Busca o catálogo de itens do pedido (as dezenas de caixas que inserimos via script SQL)
         const [itensCatalogo] = await db.promise().query("SELECT nome FROM itens_catalogo ORDER BY nome ASC");
 
-        // NOVO: Busca os colaboradores (Motoristas, Ajudantes, etc.) para o Autocomplete com foto
         const [colaboradores] = await db.promise().query("SELECT id, nome, tipo_usuario, foto FROM usuarios WHERE tipo_usuario IN ('motorista', 'motorista_avulso', 'ajudante', 'diarista', 'logistica') ORDER BY nome ASC");
 
         res.send(require('../views/cadernoEntregasView')(
-            req.session.user,
+            req,
             cadernos,
             veiculos,
             clientesDB,
             { page, totalPages, total },
             { data_inicio, data_fim },
             itensCatalogo,
-            colaboradores // <--- Parâmetro dos colaboradores injetado aqui!
+            colaboradores
         ));
     } catch (error) {
         console.error("Erro no Caderno de Entregas:", error);
@@ -87,14 +89,15 @@ router.get("/caderno-entregas", async (req, res) => {
     }
 });
 
-// ROTA GET: TELA DE GESTÃO DE CLIENTES
+// =========================================================================
+// 1. ROTA GET: TELA DE GESTÃO DE CLIENTES
+// =========================================================================
 router.get("/clientes", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // CORREÇÃO: "SELECT *" garante que logo, arte e contato também sejam enviados para a View
-        const [clientesDB] = await db.promise().query("SELECT * FROM clientes_historico ORDER BY nome ASC");
-
+        // Seleciona todos os clientes incluindo o novo campo contato_secundario
+        const [clientesDB] = await db.promise().query("SELECT nome, contato, contato_secundario, cidade, coordenadas, link_endereco, logo, arte FROM clientes_historico ORDER BY nome ASC");
         res.send(require('../views/clientesView')(req.session.user, clientesDB || []));
     } catch (error) {
         console.error("Erro ao carregar tela de Clientes:", error);
@@ -115,13 +118,11 @@ router.post("/caderno-entregas/novo", async (req, res) => {
         const cadernoId = result.insertId;
 
         if (local) {
-            // O QUE MUDA NAS ROTAS POST /novo e POST /editar/:id
             const locais = Array.isArray(local) ? local : [local];
             const links = Array.isArray(link) ? link : [link];
             const itens = Array.isArray(itens_pedido) ? itens_pedido : [itens_pedido];
             const quantidades = Array.isArray(quantidade) ? quantidade : [quantidade];
             const valores = Array.isArray(valor_aberto) ? valor_aberto : [valor_aberto];
-            // NOVO: Puxa o array de coordenadas preenchido dinamicamente na tela
             const coordsForm = Array.isArray(req.body.coordenadas_rota) ? req.body.coordenadas_rota : [req.body.coordenadas_rota];
 
             let entregasParaProcessar = [];
@@ -131,7 +132,6 @@ router.post("/caderno-entregas/novo", async (req, res) => {
                 let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
 
                 if (nomeCli !== '') {
-                    // Se não preencheu coordenada na tela, mas tem link, o servidor caça a coordenada sozinho
                     if (!coordCli && linkCli) {
                         const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
                         if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
@@ -139,19 +139,17 @@ router.post("/caderno-entregas/novo", async (req, res) => {
                         }
                     }
 
-                    // Se encontrou a coordenada, descobre a CIDADE na hora
                     let cidadeCli = null;
                     if (coordCli) {
                         cidadeCli = await obterCidadeDasCoordenadas(coordCli);
                     }
 
-                    // Salva no banco de dados o Cliente + Link + Coordenadas + Cidade Automática
                     await db.promise().query(`
                         INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
                         ON DUPLICATE KEY UPDATE 
                             link_endereco = COALESCE(?, link_endereco),
                             coordenadas = COALESCE(?, coordenadas),
-                            cidade = COALESCE(?, cidade)
+                            cidade = COALESCE(?, cidadeCli)
                     `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
 
                     entregasParaProcessar.push({
@@ -165,7 +163,6 @@ router.post("/caderno-entregas/novo", async (req, res) => {
                 }
             }
 
-            // A MÁGICA ACONTECE AQUI: A API do Google devolve o array ordenado com trânsito real
             const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
 
             for (let item of rotaFinal) {
@@ -176,7 +173,6 @@ router.post("/caderno-entregas/novo", async (req, res) => {
             }
         }
 
-        // CORREÇÃO AQUI: Passando o ID do caderno criado pela URL para o frontend detectar
         return res.redirect("/caderno-entregas?cadernoCriado=" + cadernoId);
 
     } catch (error) {
@@ -191,13 +187,6 @@ router.post("/caderno-entregas/editar/:id", async (req, res) => {
     const cadernoId = req.params.id;
     const { motorista, ajudante, veiculo_id } = req.body;
 
-    console.log(`\n\n======================================================`);
-    console.log(`[DEBUG] INICIANDO EDIÇÃO DO CADERNO #${cadernoId}`);
-    console.log(`[DEBUG] BODY RECEBIDO DO FORMULÁRIO:`);
-    console.log(JSON.stringify(req.body, null, 2));
-    console.log(`======================================================\n`);
-
-    // Força a padronização para Array para evitar problemas de sincronia de 1 único item vs múltiplos itens
     const forceArray = (val) => Array.isArray(val) ? val : (val ? [val] : []);
 
     const ids = forceArray(req.body['id[]'] || req.body.id);
@@ -206,34 +195,22 @@ router.post("/caderno-entregas/editar/:id", async (req, res) => {
     const itensPedido = forceArray(req.body['itens_pedido[]'] || req.body.itens_pedido);
     const quantidades = forceArray(req.body['quantidade[]'] || req.body.quantidade);
     const valoresAbertos = forceArray(req.body['valor_aberto[]'] || req.body.valor_aberto);
-    // Recupera as coordenadas preenchidas no front-end durante a edição
     const coordsForm = forceArray(req.body['coordenadas_rota[]'] || req.body.coordenadas_rota);
 
-    console.log(`[DEBUG] Arrays processados:`);
-    console.log(`- Qtd Locais: ${locais.length}`);
-    console.log(`- Qtd IDs: ${ids.length}`);
-    console.log(`- Locais Extraídos:`, locais);
-
     try {
-        // 1. Atualiza caderno principal
         await db.promise().query("UPDATE caderno_entregas SET motorista = ?, ajudante = ?, veiculo_id = ? WHERE id = ?", [motorista, ajudante || null, veiculo_id || null, cadernoId]);
-        console.log(`[DEBUG] 1. Caderno principal atualizado com sucesso.`);
 
         if (locais.length === 0) {
-            console.log(`[DEBUG] Nenhum local recebido no formulário. Apagando todos os itens da rota...`);
             await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
             return res.redirect("/caderno-entregas");
         }
 
-        // 2. Busca status atuais para manter (Ex: Pendente, Em Rota, etc.)
         const [itensAntigos] = await db.promise().query("SELECT id, status FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
         const statusMap = {};
         itensAntigos.forEach(item => {
             statusMap[item.id] = item.status || 'Pendente';
         });
-        console.log(`[DEBUG] 2. Mapa de Status dos itens antigos carregado:`, statusMap);
 
-        // 3. Monta o array para otimização e resolve coordenadas pendentes
         let entregasParaProcessar = [];
 
         for (let i = 0; i < locais.length; i++) {
@@ -242,37 +219,30 @@ router.post("/caderno-entregas/editar/:id", async (req, res) => {
             let coordCli = (coordsForm[i] && coordsForm[i].trim() !== '') ? coordsForm[i].trim() : null;
             const entregaId = ids[i];
 
-            // Mantém o status original ou define como Pendente se for um local recém-adicionado
             let currentStatus = (entregaId && statusMap[entregaId]) ? statusMap[entregaId] : 'Pendente';
 
             if (nomeCli !== '') {
-                console.log(`[DEBUG] 3. Processando Cliente [${i}]: ${nomeCli} | Status herdado: ${currentStatus}`);
-
-                // Inteligência: Se não tem coordenada mas tem link, tenta decodificar agora
                 if (!coordCli && linkCli) {
                     const localizacaoResolvida = await obterLocalizacao(nomeCli, linkCli);
                     if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
                         coordCli = localizacaoResolvida.trim();
-                        console.log(`   -> [INFO] Coordenada extraída do Link para ${nomeCli}: ${coordCli}`);
                     }
                 }
 
-                // Se conseguiu a coordenada, descobre a cidade
                 let cidadeCli = null;
                 if (coordCli) {
                     cidadeCli = await obterCidadeDasCoordenadas(coordCli);
                 }
 
-                // Atualiza o histórico de clientes com os dados mais recentes
                 await db.promise().query(`
-                    INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) VALUES (?, ?, ?, ?) 
+                    INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade) 
+                    VALUES (?, ?, ?, ?) 
                     ON DUPLICATE KEY UPDATE 
                         link_endereco = COALESCE(?, link_endereco),
                         coordenadas = COALESCE(?, coordenadas),
                         cidade = COALESCE(?, cidade)
                 `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
 
-                // Estrutura exigida pelo 'otimizarRotaGoogleAPI'
                 entregasParaProcessar.push({
                     nome: nomeCli,
                     link: linkCli,
@@ -282,33 +252,19 @@ router.post("/caderno-entregas/editar/:id", async (req, res) => {
                     queryLocation: coordCli || await obterLocalizacao(nomeCli, linkCli),
                     status: currentStatus
                 });
-            } else {
-                console.log(`   -> [AVISO] Nome do cliente na posição [${i}] estava em branco. Ignorado.`);
             }
         }
 
-        console.log(`[DEBUG] 4. Array 'entregasParaProcessar' finalizado com ${entregasParaProcessar.length} itens. Enviando para Google Routes API...`);
-
-        // 4. CHAMA O ALGORITMO GOOGLE ROUTES PARA RECALCULAR A ROTA
         const rotaFinal = await otimizarRotaGoogleAPI(entregasParaProcessar);
 
-        console.log(`[DEBUG] 5. Google Routes devolveu um array com ${rotaFinal.length} itens reordenados.`);
-
-        // 5. Deleta antigos e insere os novos na ordem perfeitamente otimizada
         await db.promise().query("DELETE FROM caderno_entregas_itens WHERE caderno_id = ?", [cadernoId]);
-        console.log(`[DEBUG] 6. Itens desatualizados do BD foram deletados.`);
 
-        let insertedCount = 0;
         for (let item of rotaFinal) {
             await db.promise().query(
                 "INSERT INTO caderno_entregas_itens (caderno_id, local_entrega, link_endereco, itens_pedido, quantidade, valor_aberto, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [cadernoId, item.nome, item.link, item.itens, item.qtd, item.valor, item.status]
             );
-            insertedCount++;
         }
-
-        console.log(`[DEBUG] 7. Concluído! ${insertedCount} novos itens inseridos na ordem correta.`);
-        console.log(`======================================================\n`);
 
         res.redirect("/caderno-entregas");
 
@@ -335,11 +291,11 @@ router.post("/caderno-entregas/excluir/:id", async (req, res) => {
 });
 
 // =========================================================================
-// ROTA POST: CADASTRAR CLIENTE (COM LOGO E ARTE)
+// 2. ROTA POST: CADASTRAR NOVO CLIENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
-    let { nome, link_endereco, coordenadas, contato } = req.body;
+    let { nome, link_endereco, coordenadas, contato, contato_secundario } = req.body;
 
     const logoFile = req.files && req.files['logo'] ? "clientes/" + req.files['logo'][0].filename : null;
     const arteFile = req.files && req.files['arte'] ? "clientes/" + req.files['arte'][0].filename : null;
@@ -359,20 +315,30 @@ router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'l
             }
 
             await db.promise().query(`
-                INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade, contato, logo, arte) VALUES (?, ?, ?, ?, ?, ?, ?) 
+                INSERT INTO clientes_historico (nome, link_endereco, coordenadas, cidade, contato, contato_secundario, logo, arte) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
                 ON DUPLICATE KEY UPDATE 
-                    link_endereco = COALESCE(VALUES(link_endereco), link_endereco), 
-                    coordenadas = COALESCE(VALUES(coordenadas), coordenadas),
-                    cidade = COALESCE(VALUES(cidade), cidade),
-                    contato = COALESCE(VALUES(contato), contato),
-                    logo = COALESCE(VALUES(logo), logo),
-                    arte = COALESCE(VALUES(arte), arte)
+                    link_endereco = COALESCE(?, link_endereco), 
+                    coordenadas = COALESCE(?, coordenadas),
+                    cidade = COALESCE(?, cidade),
+                    contato = COALESCE(?, contato),
+                    contato_secundario = COALESCE(?, contato_secundario),
+                    logo = COALESCE(?, logo),
+                    arte = COALESCE(?, arte)
             `, [
                 nome.trim(),
                 link_endereco || null,
                 coordenadas || null,
                 cidadeCli || null,
                 contato || null,
+                contato_secundario || null,
+                logoFile,
+                arteFile,
+                link_endereco || null,
+                coordenadas || null,
+                cidadeCli || null,
+                contato || null,
+                contato_secundario || null,
                 logoFile,
                 arteFile
             ]);
@@ -387,21 +353,19 @@ router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'l
 });
 
 // =========================================================================
-// ROTA POST: EDITAR CLIENTE (CORRIGIDA)
+// 3. ROTA POST: EDITAR CLIENTE EXISTENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
-    // Garantimos que todos os campos vêm do req.body de uma única vez
-    let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato, removerLogo } = req.body;
+    let { nomeOriginal, nomeNovo, link_endereco, coordenadas, contato, contato_secundario, removerLogo } = req.body;
 
     const novoLogo = req.files && req.files['logo'] ? "clientes/" + req.files['logo'][0].filename : null;
     const novaArte = req.files && req.files['arte'] ? "clientes/" + req.files['arte'][0].filename : null;
 
     try {
         if (nomeOriginal && nomeNovo) {
-            
-            // Lógica de coordenadas: apenas atribui se estiver vazia e houver link
+
             if ((!coordenadas || coordenadas.trim() === '') && link_endereco && link_endereco.trim() !== '') {
                 const localizacaoResolvida = await obterLocalizacao(nomeNovo, link_endereco);
                 if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
@@ -409,19 +373,15 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
                 }
             }
 
-            // Busca arquivos antigos para exclusão
             const [[clienteAntigo]] = await db.promise().query("SELECT logo, arte FROM clientes_historico WHERE nome = ?", [nomeOriginal.trim()]);
             const fs = require('fs');
             const path = require('path');
 
-            // --- LÓGICA DE REMOÇÃO DE LOGO ---
-            // Se o usuário submeteu uma foto nova, ignora o removerLogo
-            // Se não submeteu foto nova, mas marcou 'removerLogo', limpamos no BD
-            let sql = "UPDATE clientes_historico SET nome = ?, link_endereco = ?, coordenadas = ?, contato = ?";
-            let params = [nomeNovo.trim(), link_endereco || null, coordenadas || null, contato || null];
+            let sql = "UPDATE clientes_historico SET nome = ?, link_endereco = ?, coordenadas = ?, contato = ?, contato_secundario = ?";
+            let params = [nomeNovo.trim(), link_endereco || null, coordenadas || null, contato || null, contato_secundario || null];
 
-            if (novoLogo) { 
-                sql += ", logo = ?"; params.push(novoLogo); 
+            if (novoLogo) {
+                sql += ", logo = ?"; params.push(novoLogo);
             } else if (removerLogo === 'true') {
                 sql += ", logo = NULL";
                 if (clienteAntigo && clienteAntigo.logo) {
@@ -430,8 +390,8 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
                 }
             }
 
-            if (novaArte) { 
-                sql += ", arte = ?"; params.push(novaArte); 
+            if (novaArte) {
+                sql += ", arte = ?"; params.push(novaArte);
             }
 
             sql += " WHERE nome = ?";
@@ -439,7 +399,6 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
 
             await db.promise().query(sql, params);
 
-            // Se mudou de nome, atualiza itens vinculados
             if (nomeOriginal.trim() !== nomeNovo.trim()) {
                 await db.promise().query("UPDATE caderno_entregas_itens SET local_entrega = ? WHERE local_entrega = ?", [nomeNovo.trim(), nomeOriginal.trim()]);
             }
@@ -454,7 +413,7 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
 });
 
 // =========================================================================
-// ROTA POST: EXCLUIR CLIENTE (APAGANDO IMAGENS FÍSICAS)
+// 4. ROTA POST: EXCLUIR CLIENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/excluir", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -526,7 +485,6 @@ router.get('/caderno-entregas/clientes/exportar-excel', async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=relatorio_clientes.xlsx');
 
-        // Escreve diretamente no stream de resposta
         await workbook.xlsx.write(res);
         return res.end();
 
@@ -536,83 +494,185 @@ router.get('/caderno-entregas/clientes/exportar-excel', async (req, res) => {
     }
 });
 
-//RELATÓRIO EXCEL COMPLETO DOS CADERNOS
-router.get('/exportar/caderno-entregas', async (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
+    const { id } = req.params;
 
     try {
-        const { data_inicio, data_fim } = req.query;
-        let where = [];
-        let params = [];
+        // 1. ADICIONADO: 'ch.contato_secundario' na busca
+        const [itens] = await db.promise().query(`
+            SELECT 
+                i.local_entrega, 
+                i.itens_pedido, 
+                i.quantidade, 
+                i.valor_aberto, 
+                ch.coordenadas, 
+                ch.contato,
+                ch.contato_secundario 
+            FROM caderno_entregas_itens i
+            LEFT JOIN clientes_historico ch ON i.local_entrega = ch.nome
+            WHERE i.caderno_id = ?
+            ORDER BY i.id ASC
+        `, [id]);
 
-        if (data_inicio) { where.push("DATE(c.data_criacao) >= ?"); params.push(data_inicio); }
-        if (data_fim) { where.push("DATE(c.data_criacao) <= ?"); params.push(data_fim); }
-        const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
+        if (itens.length === 0) {
+            return res.status(404).send("Nenhuma rota encontrada para este caderno.");
+        }
 
-        const [dados] = await db.promise().query(`
-            SELECT c.id, c.data_criacao, c.motorista, c.ajudante, v.modelo AS veiculo,
-                   i.local_entrega, i.link_endereco, i.status AS item_status
-            FROM caderno_entregas c
-            LEFT JOIN veiculos v ON c.veiculo_id = v.id
-            LEFT JOIN caderno_entregas_itens i ON i.caderno_id = c.id
-            ${whereSql}
-            ORDER BY c.data_criacao ASC, c.id ASC
-        `, params);
+        // Monta o link do Google Maps para o motorista
+        const paradasUrl = itens.map(e => {
+            if (e.coordenadas && e.coordenadas.trim() !== '') {
+                return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
+            }
+            return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
+        }).join('/');
 
-        const ExcelJS = require('exceljs');
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Caderno de Entregas');
+        const baseDirUrl = "https://www" + ".google.com/maps/dir//";
+        const urlMaps = baseDirUrl + paradasUrl;
 
-        sheet.columns = [
-            { header: 'ID CADERNO', key: 'id', width: 12 },
-            { header: 'DATA/HORA CRIAÇÃO', key: 'data_criacao', width: 22 },
-            { header: 'MOTORISTA', key: 'motorista', width: 25 },
-            { header: 'AJUDANTE', key: 'ajudante', width: 25 },
-            { header: 'VEÍCULO', key: 'veiculo', width: 20 },
-            { header: 'LOCAL / PIZZARIA', key: 'local_entrega', width: 30 },
-            { header: 'STATUS ENTREGA', key: 'item_status', width: 18 },
-            { header: 'LINK ENDEREÇO (MAPS)', key: 'link_endereco', width: 45 }
-        ];
+        // Dispara as mensagens no WhatsApp EM SEGUNDO PLANO
+        (async () => {
+            try {
+                // CONSULTA EM TEMPO REAL: Garante a leitura direta do banco
+                const [[configWhats]] = await db.promise().query(
+                    "SELECT valor FROM configuracoes WHERE chave = 'whatsapp_avisos_ativo'"
+                );
+                const avisosAtivosNoBanco = configWhats ? configWhats.valor === 'true' : true;
 
-        sheet.getRow(1).eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
-            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
+                // TRAVA DO BANCO DE DADOS
+                if (!avisosAtivosNoBanco) {
+                    console.log(`[ROTA #${id}] 🛑 Disparos via WhatsApp cancelados: Funcionalidade desativada globalmente.`);
+                    return;
+                }
 
-        dados.forEach(m => {
-            sheet.addRow({
-                id: m.id,
-                data_criacao: new Date(m.data_criacao).toLocaleString('pt-BR'),
-                motorista: m.motorista,
-                ajudante: m.ajudante || '-',
-                veiculo: m.veiculo || '-',
-                local_entrega: m.local_entrega || 'Nenhum local atribuído',
-                item_status: m.item_status || '-',
-                link_endereco: m.link_endereco || '-'
-            });
-        });
+                const whatsappService = require("../services/whatsappService");
+                console.log(`[ROTA #${id}] Verificando conexão do WhatsApp para iniciar disparos...`);
 
-        sheet.eachRow(row => {
-            row.eachCell(cell => {
-                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-            });
-        });
+                let tentatives = 0;
+                while (!whatsappService.verificarReady() && tentatives < 10) {
+                    console.log(`[ROTA #${id}] Aguardando sincronização com WhatsApp Web... (Tentativa ${tentatives + 1}/10)`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    tentatives++;
+                }
 
-        const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caderno_Entregas_${dataHoje}.xlsx`);
+                if (!whatsappService.verificarReady()) {
+                    console.log(`[ROTA #${id}] ❌ Disparo cancelado: Instância do WhatsApp indisponível no momento.`);
+                    return;
+                }
 
-        await workbook.xlsx.write(res);
-        res.end();
-    } catch (err) {
-        console.error('[ERRO EXPORTAR CADERNOS]', err);
-        res.status(500).send('Erro ao gerar relatório');
+                console.log(`[ROTA #${id}] Conexão validada! Iniciando laço de envio para ${itens.length} locais...`);
+
+                for (let i = 0; i < itens.length; i++) {
+                    const cliente = itens[i];
+
+                    // 2. ADICIONADO: Verifica quais contatos o cliente possui
+                    const contatosValidos = [];
+                    if (cliente.contato && cliente.contato.trim() !== '') {
+                        contatosValidos.push(cliente.contato.trim());
+                    }
+                    if (cliente.contato_secundario && cliente.contato_secundario.trim() !== '') {
+                        contatosValidos.push(cliente.contato_secundario.trim());
+                    }
+
+                    // Se não tiver nenhum número cadastrado, pula para o próximo cliente
+                    if (contatosValidos.length === 0) {
+                        console.log(`[ROTA #${id}] ⚠️ Nenhum contato encontrado para: ${cliente.local_entrega}. Pulando...`);
+                        continue;
+                    }
+
+                    // Organiza a lista de itens que vão nesta entrega
+                    let listaItensFormatada = '';
+                    const itensTexto = cliente.itens_pedido || '';
+
+                    if (itensTexto.trim() !== '' && itensTexto.trim() !== '-') {
+                        const partesItens = itensTexto.split(',');
+
+                        partesItens.forEach(itemStr => {
+                            if (itemStr.trim()) {
+                                listaItensFormatada += `• ${itemStr.trim()}\n`;
+                            }
+                        });
+                    } else {
+                        listaItensFormatada = '-\n';
+                    }
+
+                    // Formata o valor a receber
+                    const valorNum = parseFloat(cliente.valor_aberto || 0);
+                    const valorFmt = valorNum.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
+                    // Monta a mensagem final com base no novo modelo da Eco Caixas
+                    const mensagem = `Olá, *${(cliente.local_entrega || '').toUpperCase()}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *${i + 1}ª parada*.\n\n*📋 Itens do pedido:*\n${listaItensFormatada}\n*🔢 Quantidade Total:* ${cliente.quantidade || '-'}\n\n*💰 Valor a Receber:* R$ ${valorFmt}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
+
+                    // 3. ADICIONADO: Loop para enviar a mensagem para cada contato cadastrado
+                    for (let numero of contatosValidos) {
+                        // Enviamos o local_entrega como nomeCliente para log
+                        const disparou = await whatsappService.enviarMensagem(numero, mensagem, cliente.local_entrega);
+
+                        // Registra o envio (ou falha) individualmente no banco de dados para os Logs do Painel
+                        await db.promise().query(`
+                            INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso) 
+                            VALUES (?, ?, ?, ?)
+                        `, [id, cliente.local_entrega, numero, disparou ? 1 : 0]);
+
+                        // Aguarda 2,5s entre mensagens para o WhatsApp não bloquear como spam
+                        await new Promise(resolve => setTimeout(resolve, 2500));
+                    }
+                }
+                
+                // 4. ADICIONADO: Automação que marca o caderno como enviado (whatsapp_ativo = 0)
+                await db.promise().query(
+                    "UPDATE caderno_entregas SET whatsapp_ativo = 0 WHERE id = ?",
+                    [id]
+                );
+                
+                console.log(`[ROTA #${id}] Processo de segundo plano finalizado com sucesso! Caderno marcado como concluído.`);
+            } catch (errAsync) {
+                console.error(`[ROTA #${id}] Erro no processamento assíncrono do WhatsApp:`, errAsync);
+            }
+        })();
+
+        // Redireciona o motorista instantaneamente para a rota no Google Maps
+        return res.redirect(urlMaps);
+
+    } catch (error) {
+        console.error("Erro ao iniciar rota e disparar mensagens:", error);
+        res.status(500).send("Erro interno ao iniciar a rota.");
+    }
+});
+
+// =========================================================================
+// ROTA POST CORRIGIDA: SALVAR PREFERÊNCIA DO SWITCH DE WHATSAPP GLOBAL
+// =========================================================================
+router.post("/caderno-entregas/config/whatsapp", async (req, res) => {
+    if (!req.session.user) return res.sendStatus(401);
+
+    const { ativo } = req.body;
+
+    // Tratamento rigoroso: se ativo for true, "true", 1 ou "1", vira 'true'. Caso contrário, 'false'.
+    const statusTexto = (ativo === true || ativo === 'true' || ativo === 1 || ativo === '1') ? 'true' : 'false';
+
+    try {
+        // Gravação direta na sua tabela oficial 'configuracoes'
+        await db.promise().query(
+            "INSERT INTO configuracoes (chave, valor) VALUES ('whatsapp_avisos_ativo', ?) ON DUPLICATE KEY UPDATE valor = ?",
+            [statusTexto, statusTexto]
+        );
+
+        // Sincroniza a sessão do usuário atual
+        req.session.whatsappAtivo = (statusTexto === 'true');
+
+        console.log(`[CONFIG GLOBAL WHATSAPP] ⚙️ Status atualizado para: ${statusTexto}`);
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error("[ERRO SQL CONFIG GLOBAL WHATSAPP]:", error);
+        return res.sendStatus(500);
     }
 });
 
 // =======================================================
-// 3. EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS
+// EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS
 // =======================================================
 router.get('/exportar/caderno-entregas', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -641,7 +701,6 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Caderno de Entregas');
 
-        // Adicionadas as novas colunas
         sheet.columns = [
             { header: 'ID CADERNO', key: 'id', width: 12 },
             { header: 'DATA/HORA CRIAÇÃO', key: 'data_criacao', width: 22 },
@@ -678,7 +737,6 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
             });
         });
 
-        // Aplica a formatação de Moeda na coluna de Valor
         sheet.getColumn('valor_aberto').numFmt = '"R$ " #,##0.00';
 
         sheet.eachRow(row => {
@@ -699,14 +757,13 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
     }
 });
 
-//EXPORTAR CADERNO ENTREGAS PARA MOTORISTAS
+//EXPORTAR CADERNO ENTREGAS PARA MOTORISTAS (PDF)
 router.get("/caderno-entregas/pdf/:id", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     const { id } = req.params;
 
     try {
-        // 1. Busca os dados principais do caderno (capa)
         const [cadernoRows] = await db.promise().query(`
             SELECT c.*, v.modelo as veiculo_modelo 
             FROM caderno_entregas c
@@ -720,7 +777,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
         const caderno = cadernoRows[0];
 
-        // 2. Busca todos os locais de entrega associados ao caderno + coordenadas e cidade salvas no histórico
         const [itens] = await db.promise().query(`
             SELECT i.*, ch.coordenadas, ch.cidade 
             FROM caderno_entregas_itens i
@@ -735,32 +791,20 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
         const path = require('path');
 
         // =======================================================
-        // CONSTRÓI A URL DA ROTA INTELIGENTE COMPLETA (TODAS AS PARADAS)
+        // URL DE INTERCEPTAÇÃO: APONTA PARA O NOSSO BACKEND
         // =======================================================
         let linkRotaCompleta = "#";
         if (itens.length > 0) {
-            const paradasUrl = itens.map(e => {
-                if (e.coordenadas && e.coordenadas.trim() !== '') {
-                    return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
-                }
-                return encodeURIComponent(e.local_entrega + ", Camaçari, BA");
-            }).join('/');
-
-            // Truque de concatenação
-            const baseDirUrl = "https://www" + ".google.com/maps/dir//";
-            linkRotaCompleta = baseDirUrl + paradasUrl;
+            //linkRotaCompleta = `http://localhost:3000/caderno-entregas/iniciar-rota/${id}`;
+            linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
         }
 
-        // =======================================================
-        // FUNÇÕES AUXILIARES PARA ORGANIZAR ITENS POR TAMANHO
-        // =======================================================
         function extrairTamanhoDoItem(texto = '') {
             const item = String(texto).toUpperCase();
             const match = item.match(/\b(N\d{1,3}|PP\d*|P\d*|M\d*|G\d*|GG|C\d+|A\d+|L\d+|\d+\s*CM|\d+\s*MM|\d+)\b/);
             return match ? match[0].replace(/\s+/g, '') : '';
         }
 
-        // Fórmula de ordenação sequencial de caixas (PP -> GG)
         function pesoTamanho(tamanho = '') {
             const t = String(tamanho).toUpperCase().replace(/\s+/g, '');
             const ordemLetras = {
@@ -807,9 +851,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             });
         }
 
-        // =======================================================
-        // FUNÇÃO AUXILIAR PARA CAMPO DE RECEBIMENTO
-        // =======================================================
         function desenharCamposRecebimento(doc, x, y) {
             doc.font('Helvetica-Bold')
                 .fontSize(6.8)
@@ -820,21 +861,16 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             doc.text('Cartão [   ]', x + 138, y, { lineBreak: false });
         }
 
-        // Inicializa o documento em tamanho A4 com margens
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
-        // Gera o nome do ficheiro dinâmico com a data
         const dataGerado = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
 
-        // Configura os cabeçalhos para o browser abrir o PDF diretamente
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=caderno(${dataGerado}).pdf`);
         doc.pipe(res);
 
-        // --- DESIGN DO MANIFESTO (Estilo Ecoflow) ---
         doc.rect(0, 0, 600, 15).fill('#0D5749');
 
-        // Inserção da Logo da Ecocaixas
         const logoPath = path.join(process.cwd(), 'public', 'img', 'logo-ecocaixas.png');
         let titleX = 40;
 
@@ -843,13 +879,11 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             titleX = 170;
         }
 
-        // Título Principal
         doc.fillColor('#222222')
             .font('Helvetica-Bold')
             .fontSize(14)
             .text('MANIFESTO DE CARGA E ROTAS', titleX, 35);
 
-        // Dados da Equipe (Em bloco compacto abaixo do título)
         doc.font('Helvetica-Bold')
             .fontSize(9.5)
             .fillColor('#333333');
@@ -858,48 +892,43 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
         const colLabelX = titleX;
         const colValueX = titleX + 65;
 
-        // Motorista
         doc.text('Motorista:', colLabelX, infoY);
         doc.font('Helvetica').fillColor('#555555').text((caderno.motorista || '').toUpperCase(), colValueX, infoY);
         infoY += 14;
 
-        // Ajudante
         doc.font('Helvetica-Bold').fillColor('#333333').text('Ajudante:', colLabelX, infoY);
         doc.font('Helvetica').fillColor('#555555').text((caderno.ajudante || 'SEM AJUDANTE').toUpperCase(), colValueX, infoY);
         infoY += 14;
 
-        // Veículo
         doc.font('Helvetica-Bold').fillColor('#333333').text('Veículo:', colLabelX, infoY);
         doc.font('Helvetica').fillColor('#555555').text((caderno.veiculo_modelo || 'NÃO INFORMADO').toUpperCase(), colValueX, infoY);
         infoY += 16;
 
-        // Data de Geração
         doc.font('Helvetica-Oblique').fontSize(8).fillColor('#888888').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, colLabelX, infoY);
 
         // =======================================================
-        // QR CODE DA ROTA COMPLETA BEM MAIOR (110x110)
+        // CONSTRÓI O LINK DE INTERCEPTAÇÃO E GERA O QR CODE MESTRE
         // =======================================================
-        if (linkRotaCompleta !== "#") {
+        if (itens && itens.length > 0) {
             try {
-                // Solicita o tamanho 250x250 da API externa para garantir densidade e nitidez máxima no papel
+                //const linkRotaCompleta = `http://localhost:3000/caderno-entregas/iniciar-rota/${id}`;
+                const linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
+
                 const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(linkRotaCompleta)}`;
                 const responseGeral = await axios.get(qrUrlGeral, { responseType: 'arraybuffer' });
                 const qrBufferGeral = Buffer.from(responseGeral.data, 'binary');
 
-                // Desenha o QR Code mestre ampliado no canto superior direito
                 doc.image(qrBufferGeral, 445, 25, { width: 110, height: 110 });
+
                 doc.font('Helvetica-Bold')
                     .fontSize(7.5)
                     .fillColor('#0D5749')
                     .text('ROTA COMPLETA NO MAPS (GPS)', 435, 140, { width: 130, align: 'center' });
             } catch (errQrGeral) {
-                console.error("[Erro] Falha ao injetar QR Code Geral no PDF:", errQrGeral.message);
+                console.error("[Erro] Falha ao injetar QR Code Geral no PDF:", errQrGeral.mensagem);
             }
         }
 
-        // =======================================================
-        // CAIXA DE ALERTA VERMELHO DE ARRUMAÇÃO DE CARGA
-        // =======================================================
         doc.rect(40, 155, 515, 30).fill('#FFF5F5');
         doc.lineWidth(1).strokeColor('#F5B7B7').rect(40, 155, 515, 30).stroke();
 
@@ -908,7 +937,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             .fontSize(9.5)
             .text('ORDEM DE CARREGAMENTO: CARREGUE O VEÍCULO DO ÚLTIMO PARA O PRIMEIRO ITEM', 45, 165, { align: 'center', width: 505 });
 
-        // Linha divisória pós-alerta antes de iniciar a listagem das paradas
         doc.moveTo(40, 200).lineTo(555, 200).stroke('#dddddd');
 
         doc.fillColor('#0D5749')
@@ -916,10 +944,8 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             .fontSize(13)
             .text('RELAÇÃO ORDENADA DE ENTREGAS', 40, 212);
 
-        // Posição Y inicial de renderização das caixas ajustada de forma limpa
         let yPosition = 237;
 
-        // Loop para desenhar as caixas de cada entrega com os novos dados e QR Code individual
         for (let i = 0; i < itens.length; i++) {
             const item = itens[i];
             const itensOrganizados = organizarItensPorTamanho(item.itens_pedido);
@@ -932,26 +958,21 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
             const boxHeight = Math.max(108, idY - yPosition + 22);
 
-            // Proteção de Quebra de Página Inteligente
             if (yPosition + boxHeight > doc.page.height - 45) {
                 doc.addPage();
                 doc.rect(0, 0, 600, 12).fill('#0D5749');
                 yPosition = 40;
             }
 
-            // Recalcula posições após possível quebra de página
             const itensStartY = yPosition + 35;
             const qtdStartY = yPosition + 43 + alturaItens;
             const idStartY = qtdStartY + 30;
 
-            // Caixa delimitadora da entrega
             doc.rect(40, yPosition, 515, boxHeight).stroke('#e5e5e5');
 
-            // Formatação do Nome do Cliente e da Cidade
             const cidadeFormatada = item.cidade && item.cidade.trim() !== '' ? ` (${item.cidade.trim().toUpperCase()})` : '';
             const nomeClienteFinal = `${(item.local_entrega || '').toUpperCase()}${cidadeFormatada}`;
 
-            // Nome do Cliente / Localização
             doc.fillColor('#111111')
                 .font('Helvetica-Bold')
                 .fontSize(11)
@@ -960,7 +981,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
                     lineBreak: false
                 });
 
-            // Listagem de Itens
             doc.font('Helvetica-Bold')
                 .fontSize(9)
                 .fillColor('#444444')
@@ -977,7 +997,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 });
             });
 
-            // Quantidades Totais
             doc.font('Helvetica-Bold')
                 .fontSize(9)
                 .fillColor('#444444')
@@ -987,7 +1006,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 .fillColor('#333333')
                 .text((item.quantidade || '-'), 110, qtdStartY);
 
-            // Valores Financeiros em Aberto
             if (item.valor_aberto && parseFloat(item.valor_aberto) > 0) {
                 const valorFormatado = parseFloat(item.valor_aberto).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
@@ -1007,13 +1025,11 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
                 desenharCamposRecebimento(doc, 270, qtdStartY + 1);
             }
 
-            // Metadados de ID e Rastreio
             doc.font('Helvetica')
                 .fontSize(8)
                 .fillColor('#999999')
                 .text(`ID Registo: #${item.id}  |  Manifesto Base: #${id}`, 55, idStartY);
 
-            // QR Code Individual da Parada (Usa Coordenadas se existirem, senão link)
             const searchBaseUrl = "https://www" + ".google.com/maps/search/?api=1&query=";
             const targetLink = (item.coordenadas && item.coordenadas.trim() !== '')
                 ? searchBaseUrl + encodeURIComponent(item.coordenadas.trim().replace(/\s/g, ''))
@@ -1035,7 +1051,7 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
                         height: 70
                     });
                 } catch (errorQr) {
-                    console.error("Falha ao injetar QR Code individual no PDF:", errorQr.message);
+                    console.error("Falha ao injetar QR Code individual no PDF:", errorQr.mensagem);
                     doc.fillColor('#dc3545')
                         .fontSize(8)
                         .text('[Erro QR Code]', 430, yPosition + 32);
@@ -1053,7 +1069,6 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
             yPosition += boxHeight + 15;
         }
 
-        // Finaliza o documento PDF
         doc.end();
 
     } catch (error) {
@@ -1064,12 +1079,11 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
     }
 });
 
-//ATUALIZAR COORDENADAS DAS CIDADES DE ACORDO COM AS COORDENADAS
+//ATUALIZAR COORDENADAS DAS CIDADES
 router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // Busca clientes que não têm coordenada OU que não têm a cidade salva
         const [clientes] = await db.promise().query(`
             SELECT nome, link_endereco, coordenadas 
             FROM clientes_historico 
@@ -1078,13 +1092,12 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
               AND (coordenadas IS NULL OR coordenadas = '' OR cidade IS NULL OR cidade = '')
         `);
 
-        // Cabeçalhos essenciais para forçar o Streaming e desativar o Buffering em Produção
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
         res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Accel-Buffering', 'no'); // <--- A MÁGICA PARA O NGINX EM PRODUÇÃO AQUI
+        res.setHeader('X-Accel-Buffering', 'no');
         res.setHeader('Connection', 'keep-alive');
 
         if (clientes.length === 0) {
@@ -1096,7 +1109,6 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
             `);
         }
 
-        // Envia um "padding" inicial para forçar os browsers/proxies mais teimosos a começarem o stream
         res.write(' '.repeat(1024));
 
         res.write(`
@@ -1119,7 +1131,6 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                 let coordCli = c.coordenadas;
                 let atualizouAlgo = false;
 
-                // Se não tem coordenada, decodifica o link
                 if (!coordCli || coordCli.trim() === '') {
                     const localizacaoResolvida = await obterLocalizacao(c.nome, c.link_endereco);
                     if (localizacaoResolvida && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(localizacaoResolvida.trim())) {
@@ -1128,7 +1139,6 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                     }
                 }
 
-                // Se temos a coordenada na mão, buscamos a cidade
                 if (coordCli && coordCli.trim() !== '') {
                     const cidade = await obterCidadeDasCoordenadas(coordCli);
 
@@ -1143,7 +1153,7 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
                     res.write(`<div class="linha aviso">⚠️ <b>${c.nome}:</b> Coordenada não encontrada.</div>`);
                 }
             } catch (err) {
-                res.write(`<div class="linha erro">❌ <b>Erro em ${c.nome}:</b> ${err.message}</div>`);
+                res.write(`<div class="linha erro">❌ <b>Erro em ${c.nome}:</b> ${err.mensagem}</div>`);
             }
 
             res.write(`<script>window.scrollTo(0, document.body.scrollHeight);</script>`);
@@ -1154,7 +1164,7 @@ router.get("/caderno-entregas/migrar-coordenadas", async (req, res) => {
             <hr style="border: 1px solid #ddd;">
             <div style="text-align: center; padding: 20px 0;">
                 <h4 style="color: #0D5749; margin-bottom: 5px;">Sincronização Concluída!</h4>
-                <p><b>${atualizados}</b> clientes foram atualizados com sucesso.</p>
+                <p><b>${atualizados}</b> clientes foram updated com sucesso.</p>
             </div>
             <script>window.scrollTo(0, document.body.scrollHeight);</script>
         `);

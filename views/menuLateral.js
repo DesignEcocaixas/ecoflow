@@ -25,6 +25,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
+    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" }, // Adicionado em Logística
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
     { href: "/clientes", icone: "fas fa-users", texto: "Clientes" }
   ];
@@ -40,6 +41,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
     { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
+    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" }, // Adicionado em Financeiro
     { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
     { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
@@ -259,7 +261,7 @@ function menuLateral(usuario, rotaAtiva = "") {
           if (btnConfig) btnConfig.classList.add('skeleton-dark');
 
           const btnSair = document.querySelector('.profile-logout-btn');
-          if (btnSair) btnSair.classList.add('skeleton-dark');
+          if (btnSair) btnSair.classList.remove('skeleton-dark');
 
           const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
           linksSpans.forEach(el => el.classList.add('skeleton-dark'));
@@ -381,7 +383,7 @@ function menuLateral(usuario, rotaAtiva = "") {
             return;
           }
           contador.style.display = "flex";
-          contador.textContent = quantidade > 99 ? "99+" : quantidade;
+          contador.textContent = quantidade > 99 ? "99+" : quantity;
         };
 
         const atualizarEstadoVazio = () => {

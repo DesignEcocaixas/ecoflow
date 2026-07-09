@@ -63,6 +63,9 @@ function cadastroView(usuario, usuarios = []) {
             const cpfFormatado = applyMaskCPF(u.cpf);
             const telefoneFormatado = applyMaskPhone(u.telefone);
 
+            // Armazena atributos de busca para a filtragem dinâmica em tempo real do frontend
+            const dadosBusca = `${u.nome.toLowerCase()} | ${(u.email || '').toLowerCase()} | ${(telefoneFormatado || '').toLowerCase()}`;
+
             listaModais.push(`
               <div class="modal fade" id="editarUsuario${u.id}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -179,7 +182,7 @@ function cadastroView(usuario, usuarios = []) {
             `);
 
             return `
-              <tr class="align-middle table-hover-row usuario-row-item" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
+              <tr class="align-middle table-hover-row usuario-row-item" data-search="${dadosBusca}" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarUsuario${u.id}')).show();">
                 <td class="fw-medium text-white py-2 px-3">
                   <div class="d-flex align-items-center">
                     ${u.foto 
@@ -407,7 +410,7 @@ function cadastroView(usuario, usuarios = []) {
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom flex-wrap gap-3">
+      <div class="d-flex justify-content-between align-items-center mb-3 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom flex-wrap gap-3">
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="bg-custom-dark px-3 py-1 rounded border border-custom d-flex align-items-center gap-2 shadow-sm"
                  style="cursor: help;"
@@ -428,6 +431,12 @@ function cadastroView(usuario, usuarios = []) {
         </button>
       </div>
 
+      <div class="input-group input-group-sm mb-3 shadow-sm" style="max-width: 500px;" id="searchBarUsuarios">
+          <span class="input-group-text bg-custom-dark border-end-0 border-custom"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+          <input type="text" id="searchInputUsuarios" class="form-control border-start-0 border-end-0 border-custom bg-custom-dark text-white" placeholder="Pesquisar colaborador por nome, e-mail ou contato..." oninput="renderizarPaginacaoUsuarios(1)">
+          <button class="btn btn-outline-secondary bg-custom-dark border-custom border-start-0 text-danger" type="button" onclick="limparBuscaUsuarios()" title="Limpar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
       <span id="resumoRegistrosText" class="text-muted d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo registros...</span>
 
       <div class="erp-card border-custom">
@@ -441,7 +450,7 @@ function cadastroView(usuario, usuarios = []) {
                 <th class="py-2 px-3 text-end" style="width: 80px;">Ações</th>
               </tr>
             </thead>
-            <tbody class="border-top-0">
+            <tbody class="border-top-0" id="tabelaUsuariosBody">
               ${linhas}
             </tbody>
           </table>
@@ -558,7 +567,7 @@ function cadastroView(usuario, usuarios = []) {
             <div class="toast-body pt-1 pb-4 px-3 position-relative">
                 <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
             </div>
-            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
+            <div class="toast-container position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
         </div>
 
         <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
@@ -597,19 +606,46 @@ function cadastroView(usuario, usuarios = []) {
         window.addEventListener('load', initTooltips);
 
         // =======================================================================
-        // LÓGICA DA PAGINAÇÃO INTELIGENTE (12 ITENS POR PÁGINA)
+        // LÓGICA DA PAGINAÇÃO INTELIGENTE COMBINADA COM A BUSCA EM TEMPO REAL
         // =======================================================================
         let paginaAtual = 1;
         const limitePorPagina = 12;
 
         function renderizarPaginacaoUsuarios(pg = 1) {
             paginaAtual = pg;
+            const termoInput = document.getElementById("searchInputUsuarios");
+            const termoBusca = (termoInput ? termoInput.value : "").toLowerCase().trim();
             const linhas = document.querySelectorAll('.usuario-row-item');
-            const totalRegistros = linhas.length;
             
+            let registrosFiltradosValidos = 0;
+
+            // Fase 1: Filtra e contabiliza as correspondências baseadas no termo pesquisado
+            linhas.forEach(linha => {
+                const metadados = (linha.getAttribute("data-search") || "").toLowerCase();
+                if (termoBusca === "" || metadados.includes(termoBusca)) {
+                    linha.classList.add("match-pesquisa");
+                    registrosFiltradosValidos++;
+                } else {
+                    linha.classList.remove("match-pesquisa");
+                    linha.style.display = 'none';
+                }
+            });
+
+            const totalRegistros = registrosFiltradosValidos;
+            
+            // Tratamento visual para retorno vazio de busca
+            const tbody = document.getElementById("tabelaUsuariosBody");
+            const idNoMatches = "row-no-matches-usuarios";
+            const oldNoMatches = document.getElementById(idNoMatches);
+            if (oldNoMatches) oldNoMatches.remove();
+
             if (totalRegistros === 0) {
                 const infoText = document.getElementById("resumoRegistrosText");
                 if (infoText) infoText.innerText = "0 registros encontrados";
+                if (tbody) {
+                    tbody.insertAdjacentHTML('beforeend', \`<tr id="\${idNoMatches}"><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-magnifying-glass-minus fa-2x mb-3 opacity-25 d-block"></i><span style="font-size: 0.8rem;">Nenhum colaborador corresponde à sua busca.</span></td></tr>\`);
+                }
+                renderizarControlesPaginacao(0, 0, 0, 0);
                 return;
             }
 
@@ -621,12 +657,17 @@ function cadastroView(usuario, usuarios = []) {
             const inicio = (paginaAtual - 1) * limitePorPagina;
             const fim = inicio + limitePorPagina;
 
-            // Percorre as linhas e oculta as que estão fora da página atual
-            linhas.forEach((linha, index) => {
-                if (index >= inicio && index < fim) {
-                    linha.style.display = ''; 
-                } else {
-                    linha.style.display = 'none';
+            let contadorFiltrados = 0;
+
+            // Fase 2: Aplica os recortes da paginação apenas nas linhas validadas no filtro
+            linhas.forEach(linha => {
+                if (linha.classList.contains("match-pesquisa")) {
+                    if (contadorFiltrados >= inicio && contadorFiltrados < fim) {
+                        linha.style.display = ''; 
+                    } else {
+                        linha.style.display = 'none';
+                    }
+                    contadorFiltrados++;
                 }
             });
 
@@ -647,7 +688,7 @@ function cadastroView(usuario, usuarios = []) {
             let liHtml = \`<li class="page-item \${paginaAtual === 1 ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual - 1})">«</a></li>\`;
 
             const addBotaoPagina = (num) => {
-                liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${num})">\${num}</a></li>\`;
+                liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\text{num})">\${num}</a></li>\`;
             };
 
             const addReticencias = () => {
@@ -674,8 +715,18 @@ function cadastroView(usuario, usuarios = []) {
                 addBotaoPagina(totalPaginas);
             }
 
-            liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual + 1})">»</a></li>\`;
+            liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\text{paginaAtual + 1})">»</a></li>\`;
             ul.innerHTML = liHtml;
+        }
+
+        // LIMPAR BARRA DE PESQUISA
+        function limparBuscaUsuarios() {
+            const input = document.getElementById("searchInputUsuarios");
+            if (input) {
+                input.value = "";
+                renderizarPaginacaoUsuarios(1);
+                input.focus();
+            }
         }
 
         window.addEventListener('load', () => {
@@ -794,6 +845,9 @@ function cadastroView(usuario, usuarios = []) {
                 </table>
             </div>\`;
 
+            const searchBar = document.getElementById('searchBarUsuarios');
+            if (searchBar) searchBar.style.display = 'none';
+
             if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
                 tableContainer.style.display = 'none';
                 tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
@@ -805,6 +859,8 @@ function cadastroView(usuario, usuarios = []) {
             if (tempSkeleton) tempSkeleton.remove();
 
             const tableContainer = document.querySelector('.content > .erp-card .table-responsive:not(.skeleton-container)');
+            const searchBar = document.getElementById('searchBarUsuarios');
+            if (searchBar) searchBar.style.display = 'flex';
             if (tableContainer) tableContainer.style.display = '';
         }
 
@@ -937,9 +993,9 @@ function cadastroView(usuario, usuarios = []) {
                     }
 
                     initRoleToggles();
-                    initTooltips(); // Reinicializa os tooltips para manter o funcionamento da SPA
+                    initTooltips(); 
                     
-                    // REINICIALIZA A PAGINAÇÃO ASSIM QUE O AJAX ATUALIZAR O HTML DA TABELA
+                    // Sincroniza a paginação e a busca com a nova árvore DOM injetada
                     renderizarPaginacaoUsuarios(1);
 
                     const responseUrl = new URL(response.url);

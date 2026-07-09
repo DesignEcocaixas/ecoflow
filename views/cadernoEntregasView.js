@@ -2,9 +2,11 @@
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent");
 
-function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = [], colaboradores = []) {
-  const termosHTML = termosComponent(usuario);
-  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = [], colaboradores = []) {
+  // Ajuste seguro para ler o usuário independente se foi passado o objeto req ou usuario direto
+  const usuarioObj = (req && req.session) ? req.session.user : req;
+  const termosHTML = termosComponent(usuarioObj);
+  const user = usuarioObj || { nome: "Usuário", tipo_usuario: "admin" };
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
@@ -362,9 +364,6 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
   if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
   const baseQueryString = qsParams.length > 0 ? '&' + qsParams.join('&') : '';
 
-  // =======================================================================
-  // ALGORITMO DE PAGINAÇÃO INTELIGENTE (Server-side rendered)
-  // =======================================================================
   const pageLinks = (() => {
     let html = '';
     const maxVisible = 5;
@@ -588,12 +587,14 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                 </div>
             </form>
 
-            <div class="vr d-none d-md-block m-0 border-custom"></div>
+            <div class="d-none d-md-block m-0 border-custom"></div>
 
-            <div class="d-flex gap-2 flex-nowrap">
-                <button class="btn btn-sm btn-outline-warning shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#migracaoModal" title="Sincronizar clientes antigos">
-                    <i class="fa-solid fa-satellite-dish"></i> <span class="d-none d-md-inline ms-1">Sincronizar GPS</span>
-                </button>
+            <div class="d-flex align-items-center gap-3 flex-nowrap">
+                <div class="form-check form-switch bg-custom-darker border-custom py-1 px-3 rounded-pill d-flex align-items-center gap-2 m-0 shadow-sm" style="height: 31px;">
+                    <input class="form-check-input text-accent border-secondary" type="checkbox" id="switchWhatsappClientes" style="cursor: pointer; width: 2em; height: 1em; margin-top: 0;" ${req && req.session && (req.session.whatsappAtivo === true || req.session.whatsappAtivo === 'true') ? 'checked' : ''} onchange="window.alternarStatusWhatsapp(this.checked)">
+                    <label class="form-check-label text-white fw-bold" for="switchWhatsappClientes" style="font-size: 0.68rem; cursor: pointer; white-space: nowrap;"><i class="fa-brands fa-whatsapp text-success me-1 fs-6 align-middle"></i> Avisos WhatsApp</label>
+                </div>
+
                 <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
                     <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
                 </a>
@@ -645,7 +646,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
             <ul class="list-group list-group-flush mb-4">
               <li class="list-group-item bg-transparent px-0 border-custom pb-3">
                 <strong class="text-white d-block mb-1"><i class="fa-solid fa-route text-accent me-2"></i> 1. Roteirização Automática</strong>
-                Ao adicionar as entregas e clicar em "Gerar Caderno", o sistema irá usar a inteligência do servidor para traçar e reordenar automaticamente a sequência mais rápida de percurso.
+                Ao adicionar as entregas e clicar em "Gerar Caderno", o systema irá usar a inteligência do servidor para traçar e reordenar automaticamente a sequência mais rápida de percurso.
               </li>
               <li class="list-group-item bg-transparent px-0 border-custom py-3">
                 <strong class="text-white d-block mb-1"><i class="fa-solid fa-location-arrow text-success me-2"></i> 2. Navegação Rápida</strong>
@@ -657,7 +658,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
               </li>
               <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
                 <strong class="text-white d-block mb-1"><i class="fa-solid fa-print text-secondary me-2"></i> 4. Imprimir Manifesto PDF</strong>
-                Após o cálculo do sistema, gere um PDF para o motorista contendo a rota otimizada e os <strong>QR Codes</strong> de navegação de cada local.
+                Após o cálculo do systema, gere um PDF para o motorista contendo a rota otimizada e os <strong>QR Codes</strong> de navegação de cada local.
               </li>
             </ul>
           </div>
@@ -872,6 +873,28 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
       let clientNames = Object.keys(dictClientes);
       const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
       const listaColabDB = ${JSON.stringify(colaboradores || [])};
+
+      // =======================================================================
+      // ALTERNAR CONFIGURAÇÃO DE DISPARO DO WHATSAPP (VINCULADO AO ESCOPO GLOBAL)
+      // =======================================================================
+      window.alternarStatusWhatsapp = async function(ativo) {
+          console.log(\`[WHATSAPP CONFIG] ⚙️ Função de envio automático foi \${ativo ? 'ATIVADA' : 'DESATIVADA'} pelo usuário.\`);
+
+          try {
+              const response = await fetch('/caderno-entregas/config/whatsapp', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ativo })
+              });
+              if (response.ok) {
+                  mostrarToast('sucesso', 'Configuração Salva!', ativo ? 'Os avisos de saída por WhatsApp estão Ativados.' : 'Os avisos por WhatsApp estão Desativados.');
+              } else {
+                  mostrarToast('erro', 'Erro', 'Não foi possível alterar a configuração de avisos.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Falha de Conexão', 'Erro de rede ao tentar salvar configuração.');
+          }
+      };
 
       function handleColabInput(event, inputEl, imgId) {
           const dropdown = inputEl.nextElementSibling;
@@ -1199,7 +1222,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   const item = document.createElement('div');
                   item.className = 'autocomplete-item';
 
-                  const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
+                  const safeRegex = searchVal.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
                   const regex = new RegExp(\`(\${safeRegex})\`, "gi");
                   item.innerHTML = match.replace(regex, "<strong>$1</strong>");
 
@@ -1266,7 +1289,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
                   const item = document.createElement('div');
                   item.className = 'autocomplete-item';
 
-                  const safeRegex = searchVal.replace(/[.*+?^$\{}()|[\\]\\\\]/g, '\\\\$&');
+                  const safeRegex = searchVal.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
                   const regex = new RegExp(\`(\${safeRegex})\`, "gi");
                   item.innerHTML = match.replace(regex, "<strong>$1</strong>");
 
@@ -1323,7 +1346,7 @@ function cadernoEntregasView(usuario, cadernos = [], veiculos = [], clientesHist
           }
       }
 
-            async function prepararSubmissaoSimples(event, form, titleMsg) {
+      async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
 
           if (!form.checkValidity()) {

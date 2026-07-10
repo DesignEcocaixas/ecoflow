@@ -386,7 +386,7 @@ function menuLateral(usuario, rotaAtiva = "") {
             return;
           }
           contador.style.display = "flex";
-          contador.textContent = quantidade > 99 ? "99+" : quantity;
+          contador.textContent = quantidade > 99 ? "99+" : quantidade;
         };
 
         const atualizarEstadoVazio = () => {

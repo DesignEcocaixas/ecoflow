@@ -406,19 +406,25 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               </div>
               
               <div class="d-flex gap-3 align-items-center w-100 w-md-auto flex-wrap justify-content-start">
-                <div class="text-end pe-2 d-none d-sm-block">
-                   <span class="text-white-50 fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
-                   <strong class="text-${corTotal}" style="font-size: 1.5rem;">${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}</strong>
+                
+                <div class="d-flex align-items-center gap-2 pe-2 d-none d-sm-flex">
+                   <button type="button" id="btnToggleVisibilidade" class="btn btn-link text-white-50 p-0 shadow-none hover-verde" onclick="toggleVisibilidadeFinanceira()" title="Mostrar/Ocultar Valores">
+                       <i class="fa-solid fa-eye-slash" id="iconeVisibilidade"></i>
+                   </button>
+                   <div class="text-end">
+                       <span class="text-white-50 fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
+                       <strong class="text-${corTotal} valor-financeiro" style="font-size: 1.5rem;" data-valor="${sinalTotal ? sinalTotal + ' ' : ''}R$ ${fmtMoeda(displayTotalCaixa)}">R$ ****</strong>
+                   </div>
                 </div>
               
                 <div class="text-end border-end border-custom pe-3 d-none d-lg-block pt-2">
                    <span class="text-white-50 fw-bold" style="font-size: 0.70rem;">Entradas</span><br>
-                   <strong class="text-accent" style="font-size: 0.80rem;">+ R$ ${fmtMoeda(totalEntradas)}</strong>
+                   <strong class="text-accent valor-financeiro" style="font-size: 0.80rem;" data-valor="+ R$ ${fmtMoeda(totalEntradas)}">R$ ****</strong>
                 </div>
 
                 <div class="text-end border-end border-custom pe-3 d-none d-sm-block pt-2">
                    <span class="text-white-50 fw-bold" style="font-size: 0.70rem;">Saídas</span><br>
-                   <strong class="text-danger" style="font-size: 0.80rem;">- R$ ${fmtMoeda(totalSaidas)}</strong>
+                   <strong class="text-danger valor-financeiro" style="font-size: 0.80rem;" data-valor="- R$ ${fmtMoeda(totalSaidas)}">R$ ****</strong>
                 </div>
 
                 <div class="d-flex gap-2">
@@ -710,9 +716,36 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     
     <script>
       // =======================================================================
+      // FUNÇÕES DE VISIBILIDADE FINANCEIRA (OLHO) - PADRÃO OCULTO
+      // =======================================================================
+      window.toggleVisibilidadeFinanceira = function() {
+          const isOculto = localStorage.getItem('ocultar_valores_financeiros') !== 'false';
+          localStorage.setItem('ocultar_valores_financeiros', !isOculto);
+          aplicarVisibilidadeFinanceira();
+      };
+
+      window.aplicarVisibilidadeFinanceira = function() {
+          // Trata como oculto por padrão (se for null, !== 'false' retorna true)
+          const isOculto = localStorage.getItem('ocultar_valores_financeiros') !== 'false';
+          const icone = document.getElementById('iconeVisibilidade');
+          if (icone) {
+              icone.className = isOculto ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+          }
+          
+          document.querySelectorAll('.valor-financeiro').forEach(el => {
+              if (isOculto) {
+                  el.innerText = 'R$ ****';
+              } else {
+                  el.innerText = el.getAttribute('data-valor');
+              }
+          });
+      };
+
+      // =======================================================================
       // CHECA URL POR COMPROVANTE NA CARGA INICIAL (Para envios sem AJAX)
       // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {
+          aplicarVisibilidadeFinanceira();
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.has('comprovanteSaida')) {
               const saidaId = urlParams.get('comprovanteSaida');
@@ -1105,6 +1138,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   }
                   
                   atualizarModaisDinamicos(doc);
+                  if (typeof aplicarVisibilidadeFinanceira === 'function') aplicarVisibilidadeFinanceira();
 
                   window.history.pushState({}, '', url);
                   mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
@@ -1147,6 +1181,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   }
                   
                   atualizarModaisDinamicos(doc);
+                  if (typeof aplicarVisibilidadeFinanceira === 'function') aplicarVisibilidadeFinanceira();
+
                   window.history.pushState({}, '', url);
                   
                   carregarFiltrosGrafico();
@@ -1331,6 +1367,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   }
 
                   atualizarModaisDinamicos(doc);
+                  if (typeof aplicarVisibilidadeFinanceira === 'function') aplicarVisibilidadeFinanceira();
 
                   form.reset();
                   if (form.id === 'formEntrada') limparAssinatura('canvasEntrada');

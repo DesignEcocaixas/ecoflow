@@ -276,7 +276,7 @@ function downloadsView(req, arquivos = [], paginacao = {}) {
 
     <div class="modal fade" id="novoArquivoModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="/downloads/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="mostrarToastCarregando('A Enviar arquivo ao servidor...'); document.getElementById('btnSubmitUpload').disabled = true; document.getElementById('btnSubmitUpload').innerHTML = '<i class=\\'fa-solid fa-spinner fa-spin me-1\\'></i> A Enviar...';">
+        <form method="POST" action="/downloads/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="mostrarToastCarregando('Enviando arquivo ao servidor...'); document.getElementById('btnSubmitUpload').disabled = true; document.getElementById('btnSubmitUpload').innerHTML = '<i class=\\'fa-solid fa-spinner fa-spin me-1\\'></i> Enviando.';">
           <div class="modal-header bg-custom-darker text-white border-custom">
             <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-cloud-arrow-up text-accent me-2"></i> Adicionar ao Repositório</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

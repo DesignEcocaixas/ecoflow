@@ -18,8 +18,9 @@ const permissoesPorCargo = {
         '/entregas',
         '/caderno-entregas',
         '/envios-whatsapp',
-        '/espacos-trabalho', // <-- ADICIONADO
-        '/clientes',         // <-- ADICIONADO
+        '/espacos-trabalho',
+        '/clientes',         
+        '/downloads',        // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',
@@ -33,10 +34,11 @@ const permissoesPorCargo = {
         '/producao',
         '/caderno-entregas',
         '/envios-whatsapp',
-        '/diaristas',        // <-- ADICIONADO
-        '/pagamentos',       // <-- ADICIONADO
-        '/espacos-trabalho', // <-- ADICIONADO
-        '/clientes',         // <-- ADICIONADO
+        '/diaristas',        
+        '/pagamentos',       
+        '/espacos-trabalho', 
+        '/clientes',         
+        '/downloads',        // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',
@@ -47,8 +49,9 @@ const permissoesPorCargo = {
     design: [
         '/propostas',
         '/admin/gabaritos',
-        '/espacos-trabalho', // <-- ADICIONADO
-        '/qr-generator',     // <-- ADICIONADO
+        '/espacos-trabalho', 
+        '/qr-generator',     
+        '/downloads',        // <-- ADICIONADO
         '/home',
         '/logout',
         '/notificacoes',

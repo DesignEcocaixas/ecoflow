@@ -25,9 +25,10 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
     { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
-    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" }, // Adicionado em Logística
+    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
-    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" }
+    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" },
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
   ];
 
   const motLinks = [
@@ -41,18 +42,20 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
     { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
     { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
-    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" }, // Adicionado em Financeiro
+    { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" },
     { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
     { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
-    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" }
+    { href: "/clientes", icone: "fas fa-users", texto: "Clientes" },
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
   ];
 
   const desLinks = [
     { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
     { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
-    { href: "/qr-generator", icone: "fa-solid fa-qrcode", texto: "QR Codes" }
+    { href: "/qr-generator", icone: "fa-solid fa-qrcode", texto: "QR Codes" },
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
   ];
 
   // --- FUNÇÕES DE RENDERIZAÇÃO ---

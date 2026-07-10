@@ -215,6 +215,9 @@ app.use(termosRoutes);
 const enviosRoutes = require("./routes/envios");
 app.use("/", enviosRoutes);
 
+const downloadsRoutes = require("./routes/downloads");
+app.use("/", downloadsRoutes);
+
 // Importando o testador
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);

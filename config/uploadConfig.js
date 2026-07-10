@@ -44,9 +44,13 @@ const uploadGabaritos = multer({ storage: criarStorage("gabaritos") });
 const uploadVeiculosFotos = multer({ storage: criarStorage("veiculos/fotos") });
 const uploadWorkspaces = multer({ storage: criarStorage("workspaces") });
 const uploadMensagens = multer({ storage: criarStorage("mensagensSistema") });
-
-// NOVO: Upload específico para logos e artes das caixas dos clientes
 const uploadClientes = multer({ storage: criarStorage("clientes") });
+
+// NOVO: Upload específico para a Central de Downloads (Arquivos, matrizes e PDFs)
+const uploadDownloads = multer({ 
+    storage: criarStorage("downloads"),
+    limits: { fileSize: 50 * 1024 * 1024 } // Limite de 50MB configurado
+});
 
 module.exports = {
     upload,
@@ -61,5 +65,6 @@ module.exports = {
     uploadVeiculosFotos,
     uploadWorkspaces,
     uploadMensagens,
-    uploadClientes // <--- Exportado aqui para ser usado no routes/cadernos.js
+    uploadClientes,
+    uploadDownloads // <--- Exportado com sucesso
 };

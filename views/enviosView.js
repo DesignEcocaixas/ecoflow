@@ -274,9 +274,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               </div>
             </div>
             
-            <div class="mb-3">
+            <div class="mb-3 d-flex flex-column gap-2">
               <button type="button" class="btn btn-sm btn-danger fw-bold shadow-sm px-3 w-100" id="btnDesconectarBotManual" onclick="desconectarWhatsappServidor(this)">
-                  <i class="fa-solid fa-power-off me-1"></i> Desconectar Sessão do WhatsApp
+                  <i class="fa-solid fa-power-off me-1"></i> Desconectar Sessão (Apenas Logout)
+              </button>
+              
+              <button type="button" class="btn btn-sm btn-outline-warning text-warning fw-bold shadow-sm px-3 w-100 border-warning" id="btnHardResetBot" onclick="hardResetWhatsappServidor(this)" style="background: rgba(255, 193, 7, 0.1);">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset (Limpar Cache e Reiniciar VPS)
               </button>
             </div>
 
@@ -746,6 +750,56 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               }
           } catch (err) {
               console.error("[AJAX MONITOR ERROR]:", err);
+          }
+      }
+
+      async function hardResetWhatsappServidor(btn) {
+          if (!confirm("⚠️ ATENÇÃO: Isso vai excluir a sessão salva, apagar o cache corrompido e reiniciar o serviço do Ecoflow na VPS. O painel pode ficar fora do ar por 5 a 10 segundos.\\n\\nDeseja continuar?")) return;
+
+          const iconeOriginal = \`<i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset (Limpar Cache e Reiniciar VPS)\`;
+          
+          btn.disabled = true;
+          document.getElementById('btnDesconectarBotManual').disabled = true;
+          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Apagando sessão e reiniciando servidor...\`;
+
+          try {
+              const res = await fetch('/api/whatsapp/hard-reset', { method: 'POST' });
+              
+              if (res.ok) {
+                  mostrarToast('sucesso', 'Hard Reset Iniciado!', 'O servidor está reiniciando. Aguarde alguns segundos...');
+                  
+                  // Fica "pingando" o servidor de 2 em 2 segundos para saber quando o PM2 subiu o Node de volta
+                  let tentativasReboot = 0;
+                  const checkInstante = setInterval(async () => {
+                      try {
+                          const ping = await fetch('/api/whatsapp/status-monitor');
+                          if (ping.ok) {
+                              clearInterval(checkInstante);
+                              btn.disabled = false;
+                              document.getElementById('btnDesconectarBotManual').disabled = false;
+                              btn.innerHTML = iconeOriginal;
+                              mostrarToast('sucesso', 'Servidor Online!', 'O robô foi reiniciado do zero. Aguarde o novo QR Code.');
+                              carregarQrCodeInfo();
+                          }
+                      } catch (e) {
+                          // Se der catch, significa que o Node ainda está reiniciando (offline)
+                      }
+                      
+                      tentativasReboot++;
+                      if (tentativasReboot > 20) { // Desiste de tentar atualizar o botão após 40s
+                          clearInterval(checkInstante);
+                          btn.innerHTML = iconeOriginal;
+                      }
+                  }, 2000);
+
+              } else {
+                  mostrarToast('erro', 'Falha', 'Não foi possível executar o Hard Reset.');
+                  btn.disabled = false;
+                  document.getElementById('btnDesconectarBotManual').disabled = false;
+                  btn.innerHTML = iconeOriginal;
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Aviso', 'O servidor já está reiniciando, aguarde a volta...');
           }
       }
 

@@ -2,6 +2,8 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const fs = require("fs");
+const path = require("path");
 const whatsappService = require("../services/whatsappService");
 
 // 1. TELA PRINCIPAL DE ENVIOS COM PAGINAÇÃO INTEGRA
@@ -106,6 +108,46 @@ router.post("/api/whatsapp/desconectar", async (req, res) => {
     } catch (error) {
         console.error("Erro crítico ao desconectar WhatsApp:", error);
         return res.status(500).json({ erro: "Falha ao desconectar o robô do servidor." });
+    }
+});
+
+// 3.5 ENDPOINT: HARD RESET (EXCLUIR PASTA E REINICIAR VPS)
+router.post("/api/whatsapp/hard-reset", async (req, res) => {
+    if (!req.session.user) return res.sendStatus(401);
+    
+    try {
+        console.log("[WHATSAPP PAINEL] ⚠️ HARD RESET INICIADO! Destruindo cliente e apagando cache...");
+        
+        // 1. Destrói o cliente atual para liberar os arquivos bloqueados pelo navegador
+        if (whatsappService.client) {
+            await whatsappService.client.destroy().catch(() => console.log("Cliente já estava inativo."));
+        }
+        
+        // 2. Apaga a pasta .wwebjs_auth e .wwebjs_cache
+        const authPath = path.join(process.cwd(), '.wwebjs_auth');
+        const cachePath = path.join(process.cwd(), '.wwebjs_cache');
+        
+        if (fs.existsSync(authPath)) {
+            fs.rmSync(authPath, { recursive: true, force: true });
+            console.log("[WHATSAPP PAINEL] 🗑️ Pasta .wwebjs_auth apagada com sucesso.");
+        }
+        if (fs.existsSync(cachePath)) {
+            fs.rmSync(cachePath, { recursive: true, force: true });
+            console.log("[WHATSAPP PAINEL] 🗑️ Pasta .wwebjs_cache apagada com sucesso.");
+        }
+
+        // 3. Responde ao frontend antes de reiniciar (para o painel não dar erro de timeout)
+        res.status(200).json({ success: true, message: "Hard Reset concluído. O PM2 reiniciará o serviço." });
+
+        // 4. Força o encerramento do processo do Node. O PM2 na VPS detectará a queda e reiniciará o app instantaneamente, de forma limpa.
+        setTimeout(() => {
+            console.log("♻️ Reiniciando o processo via PM2...");
+            process.exit(1); 
+        }, 1500);
+
+    } catch (error) {
+        console.error("Erro crítico ao fazer hard reset:", error);
+        return res.status(500).json({ erro: "Falha ao executar o Hard Reset." });
     }
 });
 

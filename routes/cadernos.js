@@ -795,8 +795,8 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
         // =======================================================
         let linkRotaCompleta = "#";
         if (itens.length > 0) {
-            linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
-            //linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
+            //linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
+            linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
         }
 
         function extrairTamanhoDoItem(texto = '') {
@@ -911,8 +911,8 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
         // =======================================================
         if (itens && itens.length > 0) {
             try {
-                const linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
-                //const linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
+                //const linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
+                const linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
 
                 const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(linkRotaCompleta)}`;
                 const responseGeral = await axios.get(qrUrlGeral, { responseType: 'arraybuffer' });

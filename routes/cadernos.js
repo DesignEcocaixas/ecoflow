@@ -149,7 +149,7 @@ router.post("/caderno-entregas/novo", async (req, res) => {
                         ON DUPLICATE KEY UPDATE 
                             link_endereco = COALESCE(?, link_endereco),
                             coordenadas = COALESCE(?, coordenadas),
-                            cidade = COALESCE(?, cidadeCli)
+                            cidade = COALESCE(?, cidade)
                     `, [nomeCli, linkCli, coordCli, cidadeCli, linkCli, coordCli, cidadeCli]);
 
                     entregasParaProcessar.push({

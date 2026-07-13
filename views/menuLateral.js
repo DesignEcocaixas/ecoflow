@@ -9,14 +9,11 @@ try {
     versaoSistemaCache = require(pPath).version;
   }
 } catch (e) {
-  console.log("Aviso: Não foi possível lire a versão do package.json para o menu.");
+  console.log("Aviso: Não foi possível ler a versão do package.json para o menu.");
 }
 
 function menuLateral(usuario, rotaAtiva = "") {
   const tipo = usuario && usuario.tipo_usuario ? usuario.tipo_usuario : "admin";
-
-  // Variável de controle para garantir que apenas 1 menu inicie aberto
-  let menuJaExpandido = false;
 
   // --- DEFINIÇÃO DOS LINKS ---
   const logLinks = [
@@ -28,7 +25,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
     { href: "/clientes", icone: "fas fa-users", texto: "Clientes" },
-    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" }
   ];
 
   const motLinks = [
@@ -47,7 +44,7 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
     { href: "/clientes", icone: "fas fa-users", texto: "Clientes" },
-    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" }
   ];
 
   const desLinks = [
@@ -55,72 +52,107 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" },
     { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
     { href: "/qr-generator", icone: "fa-solid fa-qrcode", texto: "QR Codes" },
-    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" } // <-- ADICIONADO
+    { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" }
   ];
+
+  // Agrupar links para as sugestões da barra de pesquisa
+  let availableLinks = [ { href: "/home", icone: "fas fa-home", texto: "Início" } ];
 
   // --- FUNÇÕES DE RENDERIZAÇÃO ---
   const renderLink = (href, icone, texto) => {
     const activeClass = rotaAtiva === href ? "active" : "";
 
     return `
-      <a href="${href}" class="${activeClass} d-flex align-items-center text-decoration-none py-2 px-3 menu-item-main">
+      <a href="${href}" onclick="sessionStorage.removeItem('activeMenuParent')" class="${activeClass} d-flex align-items-center text-decoration-none py-2 px-3 menu-item-main mb-1">
         <i class="${icone} menu-icone" style="width: 22px; text-align: center;"></i> 
         <span class="sidebar-text ms-2">${texto}</span>
       </a>`;
   };
 
   const renderCollapse = (id, icone, titulo, linksArray) => {
-    const isActive = linksArray.some(link => rotaAtiva === link.href);
-
-    let showClass = "";
-    let expanded = "false";
-
-    if (isActive && !menuJaExpandido) {
-      showClass = "show";
-      expanded = "true";
-      menuJaExpandido = true;
-    }
-
-    let linksHtml = linksArray.map(l => {
-      const activeClass = rotaAtiva === l.href ? "active" : "";
-
+    // DROPEND EXCLUSIVO PARA DESKTOP
+    let linksHtmlDesktop = linksArray.map(l => {
+      const isMatch = rotaAtiva === l.href;
       return `
-        <a href="${l.href}" class="${activeClass} py-2 mb-1 menu-link-item d-flex align-items-center text-decoration-none">
+        <li>
+          <a href="${l.href}" onclick="sessionStorage.setItem('activeMenuParent', '${id}')" class="dropdown-item py-2 d-flex align-items-center ${isMatch ? 'link-match' : ''}" style="font-size: 0.85rem;">
+            <i class="${l.icone} me-2 text-center menu-icone" style="width: 20px;"></i>
+            <span class="dropdown-item-text-custom sidebar-text-item">${l.texto}</span>
+          </a>
+        </li>`;
+    }).join("");
+
+    const desktopHtml = `
+      <div class="dropdown dropend w-100 menu-dropdown-container d-none d-md-block position-relative mb-1" data-parent-id="${id}">
+        <a href="#" class="d-flex align-items-center text-decoration-none py-2 px-3 menu-item-main" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}'>
+          <i class="${icone} menu-icone" style="width: 22px; text-align: center;"></i>
+          <span class="sidebar-text ms-2">${titulo}</span>
+          <i class="fa-solid fa-chevron-right ms-auto sidebar-text chevron-icon" style="font-size: 0.65rem; opacity: 0.7;"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark shadow-lg border-custom py-2" style="background-color: #222; border-radius: 8px; min-width: 210px; z-index: 1050; margin-left: 5px;">
+          ${linksHtmlDesktop}
+        </ul>
+      </div>
+    `;
+
+    // ACCORDION EXCLUSIVO PARA MOBILE/OFFCANVAS
+    let linksHtmlMobile = linksArray.map(l => {
+      const isMatch = rotaAtiva === l.href;
+      return `
+        <a href="${l.href}" onclick="sessionStorage.setItem('activeMenuParent', '${id}')" class="${isMatch ? 'link-match' : ''} py-2 mb-1 menu-link-item d-flex align-items-center text-decoration-none">
           <i class="${l.icone} menu-icone" style="width: 18px; text-align: center;"></i> 
           <span class="sidebar-text ms-2">${l.texto}</span>
         </a>`;
     }).join("");
 
-    return `
-      <div class="nav-accordion">
-        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="${expanded}" aria-controls="${id}" class="d-flex justify-content-between align-items-center nav-accordion-btn text-decoration-none py-2 px-3 menu-item-main">
+    const mobileHtml = `
+      <div class="nav-accordion d-md-none mb-1" data-parent-id="${id}">
+        <a data-bs-toggle="collapse" href="#${id}" role="button" aria-expanded="false" aria-controls="${id}" class="d-flex justify-content-between align-items-center nav-accordion-btn text-decoration-none py-2 px-3 menu-item-main">
           <span class="d-flex align-items-center">
             <i class="${icone} menu-icone" style="width: 22px; text-align: center;"></i> 
             <span class="sidebar-text ms-2">${titulo}</span>
           </span>
-          <i class="fa-solid fa-chevron-down chevron-icon sidebar-text" style="font-size: 0.65rem; opacity: 0.7;"></i>
+          <i class="fa-solid fa-chevron-right chevron-icon sidebar-text" style="font-size: 0.65rem; opacity: 0.7;"></i>
         </a>
-
-        <div class="collapse ${showClass}" id="${id}" data-bs-parent="#sidebarMenuContainer">
+        <div class="collapse" id="${id}" data-bs-parent="#sidebarMenuContainer">
           <div class="ms-4 ps-2 mt-1 mb-2 sidebar-submenu">
-            ${linksHtml}
+            ${linksHtmlMobile}
           </div>
         </div>
       </div>
     `;
+
+    return desktopHtml + mobileHtml;
   };
 
+  // --- BARRA DE PESQUISA HTML (Acima do Início) ---
+  const searchBarHtml = `
+    <div class="px-3 mb-2 mt-2 sidebar-search-container position-relative" style="z-index: 1060;">
+      <div class="position-relative">
+        <i class="fa-solid fa-search position-absolute text-muted" style="top: 50%; transform: translateY(-50%); left: 10px; font-size: 0.8rem;"></i>
+        <input type="text" id="menuSearchInput" oninput="buscarLinksMenu(this.value)" onfocus="buscarLinksMenu(this.value)" onblur="setTimeout(() => fecharSugestoes(), 200)" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-none" placeholder="Pesquisar..." style="padding-left: 30px; border-radius: 6px;">
+      </div>
+      <div id="searchSuggestions" class="dropdown-menu dropdown-menu-dark w-100 shadow-lg border-custom py-1 position-absolute" style="top: 100%; left: 0; display: none; max-height: 250px; overflow-y: auto; border-radius: 6px; margin-top: 4px;">
+      </div>
+    </div>
+  `;
+
   // --- LÓGICA DE MONTAGEM DO MENU ---
-  let menuLinks = renderLink("/home", "fas fa-home", "Início");
+  let menuLinks = searchBarHtml;
+  menuLinks += renderLink("/home", "fas fa-home", "Início");
 
   if (tipo === "motorista") {
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);
+    availableLinks.push(...motLinks);
   } else if (tipo === "logistica") {
     menuLinks += renderCollapse("collLog", "fas fa-boxes-packing", "Logística", logLinks);
+    availableLinks.push(...logLinks);
   } else if (tipo === "design") {
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
+    availableLinks.push(...desLinks);
   } else if (tipo === "financeiro") {
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
+    availableLinks.push(...finLinks);
   } else {
     menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);
@@ -128,50 +160,64 @@ function menuLateral(usuario, rotaAtiva = "") {
     menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
     menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Usuários");
     menuLinks += renderLink("/dev/testes", "fa-solid fa-vial-virus", "Dev Lab");
+    
+    availableLinks.push(...logLinks, ...motLinks, ...finLinks, ...desLinks);
+    availableLinks.push({ href: "/cadastro", icone: "fas fa-user-plus", texto: "Usuários" });
+    availableLinks.push({ href: "/dev/testes", icone: "fa-solid fa-vial-virus", texto: "Dev Lab" });
   }
 
-  // --- CONTAINER DO PERFIL DO USUÁRIO ---
+  // Remove duplicados nas sugestões
+  const uniqueLinks = Array.from(new Map(availableLinks.map(item => [item.href, item])).values());
+
+  // --- BOTÃO DE TOGGLE DA SIDEBAR ---
+  const toggleBtnHtml = `
+    <button class="d-none d-md-flex align-items-center justify-content-center toggle-sidebar-btn" onclick="toggleSidebarMenu()" title="Recolher Menu">
+      <i class="fa-solid fa-bars-staggered fs-5 toggle-icon"></i>
+    </button>
+  `;
+
+  // --- CONTAINER DO PERFIL DO USUÁRIO (Lado a Lado) ---
   const fotoUrl = usuario && usuario.foto ? `/uploads/${usuario.foto}` : null;
   
   const renderFoto = fotoUrl
-    ? `<a href="#" data-bs-toggle="modal" data-bs-target="#modalFotoPerfil" title="Visualizar Foto" class="d-block shadow-lg img-profile-clickable rounded-circle" style="width: 90px; height: 90px; border: 3px solid rgba(8,192,104,0.3); overflow: hidden; margin: 0 auto; padding: 0;">
+    ? `<a href="#" data-bs-toggle="modal" data-bs-target="#modalFotoPerfil" title="Visualizar Foto" class="d-block shadow-sm img-profile-clickable rounded-circle" style="width: 100%; height: 100%; border: 2px solid rgba(8,192,104,0.3); overflow: hidden; margin: 0; padding: 0;">
          <img src="${fotoUrl}" alt="Foto de perfil" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
        </a>`
-    : `<div class="d-flex align-items-center justify-content-center shadow-lg rounded-circle" style="width: 90px; height: 90px; background-color: rgba(255,255,255,0.05); border: 3px solid rgba(8,192,104,0.3); margin: 0 auto;"><i class="fa-solid fa-user" style="font-size: 2.2rem; color: #08c068;"></i></div>`;
+    : `<div class="d-flex align-items-center justify-content-center shadow-sm rounded-circle img-profile-clickable" style="width: 100%; height: 100%; background-color: rgba(255,255,255,0.05); border: 2px solid rgba(8,192,104,0.3); margin: 0;"><i class="fa-solid fa-user" style="font-size: 1.5rem; color: #08c068;"></i></div>`;
 
   const btnConfigAdmin = tipo === "admin"
-    ? `<a href="/configuracoes" class="ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center profile-config-btn" title="Configurações do Sistema" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(255,255,255,0.7);">
+    ? `<a href="/configuracoes" class="ms-1 mb-0 transition-btn d-flex align-items-center justify-content-center profile-config-btn" title="Configurações do Sistema" style="text-decoration: none; background: transparent; padding: 4px; line-height: 1; color: rgba(255,255,255,0.7);">
          <i class="fa-solid fa-gear" style="font-size: 0.85rem;"></i>
        </a>`
     : "";
 
   const btnNotificacoes = `
-    <button type="button" id="btnAbrirNotificacoes" class="ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center border-0 bg-transparent position-relative profile-notif-btn" title="Notificações" style="padding: 2px; line-height: 1; color: rgba(255,255,255,0.7);">
+    <button type="button" id="btnAbrirNotificacoes" class="mb-0 transition-btn d-flex align-items-center justify-content-center border-0 bg-transparent position-relative profile-notif-btn" title="Notificações" style="padding: 4px; line-height: 1; color: rgba(255,255,255,0.7);">
        <i class="fa-solid fa-bell" style="font-size: 0.85rem;"></i>
        <span id="contadorNotificacoes" class="position-absolute top-0 start-100 translate-middle badge rounded-pill shadow-sm" style="font-size: 0.45rem; min-width: 14px; height: 14px; display: none; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1f1f1f; background-color: #08c068; color: #fff;">0</span>
     </button>
   `;
 
   const btnSair = `
-    <a href="/logout" class="ms-2 mb-0 transition-btn d-flex align-items-center justify-content-center profile-logout-btn" title="Sair do Sistema" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(220, 53, 69, 0.75);">
+    <a href="/logout" class="ms-1 mb-0 transition-btn d-flex align-items-center justify-content-center profile-logout-btn" title="Sair do Sistema" style="text-decoration: none; background: transparent; padding: 4px; line-height: 1; color: rgba(220, 53, 69, 0.75);">
       <i class="fas fa-sign-out-alt" style="font-size: 0.85rem;"></i>
     </a>
   `;
 
   const userProfileHtml = `
-    <div class="user-profile-container px-3 pb-4 pt-0 mb-3 border-bottom border-light border-opacity-10 position-relative text-center">
-      <div class="d-flex flex-column align-items-center justify-content-center">
-        <div class="profile-avatar-box mb-3 position-relative d-flex justify-content-center">
+    <div class="user-profile-container px-2 pb-3 pt-2 mt-2 mb-2 border-bottom border-light border-opacity-10 position-relative">
+      <div class="d-flex flex-row align-items-center justify-content-start gap-2 profile-flex-container">
+        <div class="profile-avatar-box position-relative d-flex justify-content-center align-items-center" style="width: 48px; height: 48px; flex-shrink: 0; transition: all 0.3s ease;">
           ${renderFoto}
         </div>
 
-        <div class="text-truncate w-100 px-1 profile-info-box">
-          <div class="fw-bold text-truncate mb-2 profile-name-text" style="font-size: 0.95rem; color: #ffffff;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
+        <div class="profile-info-box d-flex flex-column text-start justify-content-center flex-grow-1" style="min-width: 0;">
+          <div class="fw-bold text-truncate mb-1 profile-name-text" style="font-size: 0.85rem; color: #ffffff; line-height: 1.1;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
             ${usuario && usuario.nome ? usuario.nome : "Usuário"}
           </div>
-          <div class="d-flex align-items-center justify-content-center">
-            <span class="badge profile-badge-type shadow-sm" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 6px; background-color: rgba(8,192,104,0.15); color: #08c068; border: 1px solid rgba(8,192,104,0.3);">
-              <i class="fa-solid fa-shield-halved me-1 opacity-75"></i> ${tipo}
+          <div class="d-flex align-items-center justify-content-start gap-1 flex-nowrap" style="min-width: 0;">
+            <span class="badge profile-badge-type shadow-sm" style="font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 3px 5px; border-radius: 4px; background-color: rgba(8,192,104,0.15); color: #08c068; border: 1px solid rgba(8,192,104,0.3); flex-shrink: 1;">
+              ${tipo}
             </span>
             ${btnNotificacoes}
             ${btnConfigAdmin}
@@ -201,15 +247,15 @@ function menuLateral(usuario, rotaAtiva = "") {
   // --- RODAPÉ 71DEV COM VERSÃO ---
   const footerHTML = `
     <div class="mt-auto pt-3 pb-2 text-center w-100 footer-sidebar" style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">
-      <div class="mb-2 text-uppercase" style="font-size: 0.6rem; font-weight: 500; letter-spacing: 1px; color: rgba(255,255,255,0.3);">
+      <div class="mb-2 text-uppercase fw-medium sidebar-text" style="font-size: 0.6rem; letter-spacing: 1px; color: rgba(255,255,255,0.3);">
         Ecoflow v${versaoSistemaCache}
       </div>
-      <hr class="border-light border-opacity-10 mb-2 mt-0 mx-3">
+      <hr class="border-light border-opacity-10 mb-2 mt-0 mx-3 footer-hr">
 
       <div class="d-flex flex-column align-items-center justify-content-center gap-2 mb-1">
         <span class="sidebar-text">Desenvolvido por <strong style="color: #08c068;">71dev</strong></span>
 
-        <div class="d-flex align-items-center justify-content-center gap-2">
+        <div class="d-flex align-items-center justify-content-center gap-2 social-icons-footer">
           <a href="https://www.instagram.com/71dev_/" target="_blank" class="transition-btn d-flex align-items-center justify-content-center" title="Instagram" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(255,255,255,0.5);">
             <i class="fa-brands fa-instagram" style="font-size: 1rem;"></i>
           </a>
@@ -245,10 +291,118 @@ function menuLateral(usuario, rotaAtiva = "") {
 
     <script>
       // =======================================================================
+      // LÓGICA DE BARRA DE PESQUISA (SUGESTÕES DINÂMICAS)
+      // =======================================================================
+      window.menuLinksData = ${JSON.stringify(uniqueLinks)};
+
+      window.buscarLinksMenu = function(termo) {
+          const container = document.getElementById("searchSuggestions");
+          if (!container) return;
+          
+          if (!termo.trim()) {
+              container.style.display = "none";
+              return;
+          }
+          
+          const filtrados = window.menuLinksData.filter(l => l.texto.toLowerCase().includes(termo.toLowerCase()));
+          
+          if (filtrados.length === 0) {
+              container.innerHTML = '<div class="px-3 py-2 text-white-50 small">Nenhum resultado encontrado</div>';
+          } else {
+              container.innerHTML = filtrados.map(l => 
+                  '<a href="'+l.href+'" onclick="sessionStorage.removeItem(\\'activeMenuParent\\')" class="dropdown-item py-2 d-flex align-items-center text-white" style="font-size: 0.85rem;"><i class="'+l.icone+' text-muted me-2" style="width:20px; text-align:center;"></i>'+l.texto+'</a>'
+              ).join("");
+          }
+          container.style.display = "block";
+      };
+
+      window.fecharSugestoes = function() {
+          const container = document.getElementById("searchSuggestions");
+          if(container) container.style.display = "none";
+      };
+
+      // =======================================================================
+      // LÓGICA DO BOTÃO COLLAPSE (RECOLHER MENU) E MODAL NO BODY
+      // =======================================================================
+      window.toggleSidebarMenu = function() {
+          const sidebar = document.querySelector(".sidebar");
+          if (sidebar) {
+              sidebar.classList.toggle("collapsed");
+              localStorage.setItem("ecoflow_sidebar_collapsed", sidebar.classList.contains("collapsed"));
+          }
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+          // Restaura o estado de colapso do menu
+          const sidebar = document.querySelector(".sidebar");
+          if (sidebar && localStorage.getItem("ecoflow_sidebar_collapsed") === "true") {
+              sidebar.classList.add("collapsed");
+          }
+
+          // Move o modal da foto de perfil para o body (Corrige o bug de Backdrop sobrepondo a foto)
+          const modalFoto = document.getElementById("modalFotoPerfil");
+          if (modalFoto && modalFoto.parentElement !== document.body) {
+              document.body.appendChild(modalFoto);
+          }
+      });
+
+      // =======================================================================
+      // LÓGICA DE ATIVAÇÃO DE MENU PRECISA (EVITA MARCAÇÃO DUPLA DE LINKS)
+      // =======================================================================
+      document.addEventListener("DOMContentLoaded", () => {
+          const clickedParentId = sessionStorage.getItem('activeMenuParent');
+          const matchedLinks = document.querySelectorAll('.link-match');
+          
+          let foundMatch = false;
+
+          matchedLinks.forEach(link => {
+              const parentContainer = link.closest('.menu-dropdown-container') || link.closest('.nav-accordion');
+              if (!parentContainer) return;
+              
+              const parentId = parentContainer.dataset.parentId;
+
+              if (clickedParentId === parentId) {
+                  link.classList.add('active');
+                  
+                  const mainBtn = parentContainer.querySelector('.menu-item-main');
+                  if (mainBtn) mainBtn.classList.add('active');
+                  
+                  if(parentContainer.classList.contains('nav-accordion')) {
+                       const collapseEl = parentContainer.querySelector('.collapse');
+                       const accBtn = parentContainer.querySelector('.nav-accordion-btn');
+                       if (collapseEl) collapseEl.classList.add('show');
+                       if (accBtn) accBtn.setAttribute('aria-expanded', 'true');
+                  }
+                  foundMatch = true;
+              }
+          });
+
+          // Fallback se não achou via sessionStorage (carregamento direto da URL)
+          if (!foundMatch && matchedLinks.length > 0) {
+              const link = matchedLinks[0]; // Pega o primeiro que encontrar (impede de abrir 2 menus)
+              link.classList.add('active');
+              
+              const parentContainer = link.closest('.menu-dropdown-container') || link.closest('.nav-accordion');
+              if (parentContainer) {
+                  const mainBtn = parentContainer.querySelector('.menu-item-main');
+                  if (mainBtn) mainBtn.classList.add('active');
+                  
+                  if(parentContainer.classList.contains('nav-accordion')) {
+                       const collapseEl = parentContainer.querySelector('.collapse');
+                       const accBtn = parentContainer.querySelector('.nav-accordion-btn');
+                       if (collapseEl) collapseEl.classList.add('show');
+                       if (accBtn) accBtn.setAttribute('aria-expanded', 'true');
+                  }
+                  sessionStorage.setItem('activeMenuParent', parentContainer.dataset.parentId);
+              }
+          }
+      });
+
+      // =======================================================================
       // FUNÇÃO GLOBAL: SKELETON LOADING PARA O MENU LATERAL E PÁGINA
       // =======================================================================
       window.mostrarSkeletonMenuLateral = function() {
-          const avatar = document.querySelector('.profile-avatar-box a') || document.querySelector('.profile-avatar-box div');
+          const avatar = document.querySelector('.profile-avatar-box .img-profile-clickable') || document.querySelector('.profile-avatar-box div');
           if (avatar) avatar.classList.add('skeleton-dark');
           
           const nome = document.querySelector('.user-profile-container .profile-name-text');
@@ -266,7 +420,7 @@ function menuLateral(usuario, rotaAtiva = "") {
           const btnSair = document.querySelector('.profile-logout-btn');
           if (btnSair) btnSair.classList.remove('skeleton-dark');
 
-          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
+          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text, #sidebarMenuContainer .dropdown-item .sidebar-text-item');
           linksSpans.forEach(el => el.classList.add('skeleton-dark'));
           
           const linksIcons = document.querySelectorAll('#sidebarMenuContainer a .menu-icone');
@@ -277,7 +431,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       };
 
       window.ocultarSkeletonMenuLateral = function() {
-          const avatar = document.querySelector('.profile-avatar-box a') || document.querySelector('.profile-avatar-box div');
+          const avatar = document.querySelector('.profile-avatar-box .img-profile-clickable') || document.querySelector('.profile-avatar-box div');
           if (avatar) avatar.classList.remove('skeleton-dark');
           
           const nome = document.querySelector('.user-profile-container .profile-name-text');
@@ -295,7 +449,7 @@ function menuLateral(usuario, rotaAtiva = "") {
           const btnSair = document.querySelector('.profile-logout-btn');
           if (btnSair) btnSair.classList.remove('skeleton-dark');
 
-          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text');
+          const linksSpans = document.querySelectorAll('#sidebarMenuContainer a .sidebar-text, #sidebarMenuContainer .dropdown-item .sidebar-text-item');
           linksSpans.forEach(el => el.classList.remove('skeleton-dark'));
           
           const linksIcons = document.querySelectorAll('#sidebarMenuContainer a .menu-icone');
@@ -519,13 +673,63 @@ function menuLateral(usuario, rotaAtiva = "") {
 
       /* OVERRIDE DA SIDEBAR NAS VIEWS */
       .sidebar {
-        width: 240px !important;
-        overflow-x: hidden;
+        width: 250px !important;
+        position: relative;
+        overflow-x: hidden !important; /* Elimina scroll lateral permanentemente */
         display: flex;
         flex-direction: column;
         background-color: #1f1f1f !important;
         border-right: 1px solid rgba(255,255,255,0.05);
+        transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        z-index: 1030;
       }
+
+      /* LOGO FIX NO COLAPSO */
+      .sidebar.collapsed .text-center.mb-4.mt-2 > img {
+        content: url("/img/logo-reduzida-branca.png");
+        max-width: 30px !important;
+        height: auto;
+        display: block !important;
+        margin: 0 auto;
+      }
+      .sidebar.collapsed .text-center.mb-4.mt-2::after { 
+        display: none !important;
+      }
+
+      /* BOTÃO RECOLHER MENU (ABSOLUTO) */
+      .toggle-sidebar-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.4);
+        cursor: pointer;
+        z-index: 1050;
+        padding: 0;
+        outline: none;
+      }
+      .toggle-sidebar-btn:hover { color: #08c068; }
+
+      /* Lógica de Esconder Elementos (Menu Colapsado) */
+      .sidebar.collapsed { width: 78px !important; }
+      .sidebar.collapsed .sidebar-text,
+      .sidebar.collapsed .chevron-icon,
+      .sidebar.collapsed .profile-info-box,
+      .sidebar.collapsed .sidebar-search-container,
+      .sidebar.collapsed .footer-sidebar span.sidebar-text,
+      .sidebar.collapsed .footer-sidebar .footer-hr {
+        display: none !important;
+      }
+
+      /* Perfil no modo recolhido */
+      .sidebar.collapsed .user-profile-container { padding: 10px 0 !important; }
+      .sidebar.collapsed .profile-flex-container { justify-content: center !important; }
+      .sidebar.collapsed .profile-avatar-box { width: 38px !important; height: 38px !important; margin: 0 auto !important; }
+      
+      .sidebar.collapsed .menu-item-main { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+      .sidebar.collapsed .menu-item-main .menu-icone { margin: 0 !important; font-size: 1.2rem; }
+      .sidebar.collapsed .social-icons-footer { flex-direction: column; margin-top: 10px; }
 
       /* Links Principais do Menu */
       .sidebar a.menu-item-main {
@@ -543,27 +747,43 @@ function menuLateral(usuario, rotaAtiva = "") {
       }
 
       .sidebar a.menu-item-main.active,
-      .sidebar a.nav-accordion-btn[aria-expanded="true"] {
+      .sidebar a.menu-item-main.show {
         color: #08c068 !important;
         background-color: rgba(8, 192, 104, 0.08);
         border-left: 3px solid #08c068;
       }
 
       .sidebar a.active .menu-icone,
-      .sidebar a.nav-accordion-btn[aria-expanded="true"] .menu-icone {
+      .sidebar a.show .menu-icone {
         color: #08c068 !important;
       }
 
-      /* Efeito Sanfona (Accordion) e Submenu */
-      .nav-accordion .collapse {
-        transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Setinha (Sem animação de rotação) */
+      .menu-item-main.show .chevron-icon { color: #08c068 !important; }
+      .nav-accordion-btn[aria-expanded="true"] .chevron-icon { color: #08c068 !important; }
+
+      /* Estilização Submenu Dropend e Sugestões */
+      .dropdown-item {
+        color: rgba(255, 255, 255, 0.6) !important;
+        transition: all 0.2s ease-in-out;
+        border-radius: 4px;
+        margin: 0 4px;
+        width: calc(100% - 8px);
+      }
+      .dropdown-item:hover, .dropdown-item:focus {
+        background-color: rgba(255,255,255,0.05) !important;
+        color: #08c068 !important;
+        transform: translateX(4px);
+      }
+      .dropdown-item.active {
+        background-color: rgba(8, 192, 104, 0.1) !important;
+        color: #08c068 !important;
+        font-weight: 600;
       }
 
-      .sidebar-submenu {
-        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
-        overflow: hidden;
-      }
-
+      /* Accordion Mobile */
+      .nav-accordion .collapse { transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+      .sidebar-submenu { border-left: 1px solid rgba(255, 255, 255, 0.08) !important; overflow: hidden; }
       .menu-link-item {
         color: rgba(255, 255, 255, 0.5) !important;
         font-size: 0.8rem;
@@ -573,23 +793,9 @@ function menuLateral(usuario, rotaAtiva = "") {
         border-radius: 6px;
         margin-right: 8px;
       }
-
-      .nav-accordion .collapse.show .menu-link-item {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .menu-link-item:hover {
-        transform: translateX(6px) !important;
-        color: #08c068 !important;
-        background-color: rgba(255,255,255,0.02);
-      }
-
-      .menu-link-item.active {
-        color: #08c068 !important;
-        font-weight: 600;
-        background-color: rgba(8, 192, 104, 0.05);
-      }
+      .nav-accordion .collapse.show .menu-link-item { opacity: 1; transform: translateY(0); }
+      .menu-link-item:hover { transform: translateX(6px) !important; color: #08c068 !important; background-color: rgba(255,255,255,0.02); }
+      .menu-link-item.active { color: #08c068 !important; font-weight: 600; background-color: rgba(8, 192, 104, 0.05); }
 
       /* Hover para a foto de perfil */
       .img-profile-clickable {
@@ -603,167 +809,48 @@ function menuLateral(usuario, rotaAtiva = "") {
         border-color: rgba(8,192,104,0.6) !important;
       }
 
-      .transition-btn {
-        transition: all 0.2s ease;
-        border-radius: 4px;
-      }
-
-      .transition-btn:hover {
-        background: rgba(255,255,255,0.08) !important;
-        color: #08c068 !important;
-      }
-
-      /* Hover especial para o Botão de Sair */
-      .profile-logout-btn:hover {
-        background: rgba(220, 53, 69, 0.15) !important;
-        color: #dc3545 !important;
-      }
+      .transition-btn { transition: all 0.2s ease; border-radius: 4px; }
+      .transition-btn:hover { background: rgba(255,255,255,0.08) !important; color: #08c068 !important; }
+      .profile-logout-btn:hover { background: rgba(220, 53, 69, 0.15) !important; color: #dc3545 !important; }
       
-      .chevron-icon {
-        transition: transform 0.35s ease;
-      }
-
-      .nav-accordion-btn[aria-expanded="true"] .chevron-icon {
-        transform: rotate(-180deg);
-        color: #08c068 !important;
-      }
-      
-      .sidebar-scroll-area {
-        overflow-y: auto;
-        overflow-x: hidden;
-      }
-
-      .sidebar-scroll-area::-webkit-scrollbar {
-        width: 3px;
-      }
-
-      .sidebar-scroll-area::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .sidebar-scroll-area::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.05);
-        border-radius: 10px;
-      }
-
-      .sidebar-scroll-area:hover::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.15);
-      }
+      .sidebar-scroll-area { overflow-y: auto; overflow-x: hidden !important; }
+      .sidebar-scroll-area::-webkit-scrollbar { width: 3px; }
+      .sidebar-scroll-area::-webkit-scrollbar-track { background: transparent; }
+      .sidebar-scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+      .sidebar-scroll-area:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
 
       /* Estilização do Painel de Notificações (DARK THEME) */
-      .painel-notificacoes-animado {
-        width: min(400px, 92vw);
-        border-left: 0;
-        box-shadow: -18px 0 45px rgba(0, 0, 0, 0.5);
-      }
-
-      .offcanvas-end.painel-notificacoes-animado {
-        transform: translateX(115%) !important;
-      }
-
-      .offcanvas-end.painel-notificacoes-animado.showing {
-        animation: painelNotificacoesEntrada 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
-      }
-
-      .offcanvas-end.painel-notificacoes-animado.show:not(.hiding) {
-        transform: translateX(0) !important;
-      }
-
-      .offcanvas-end.painel-notificacoes-animado.hiding {
-        animation: painelNotificacoesSaida 0.32s ease forwards !important;
-      }
-
-      .painel-notificacoes-header {
-        background-color: #1f1f1f;
-        color: #fff;
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-      }
-
-      .painel-notificacoes-body {
-        background-color: #151515;
-      }
-
-      .painel-notificacoes-footer {
-        background-color: #1f1f1f;
-        border-top: 1px solid rgba(255,255,255,0.05) !important;
-      }
-      
-      .item-notificacao {
-        background-color: #1f1f1f !important;
-        border: 1px solid rgba(255,255,255,0.05);
-        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-      }
-      .item-notificacao:hover {
-        border-color: rgba(8, 192, 104, 0.3) !important;
-        transform: translateY(-2px);
-      }
-
-      .offcanvas-backdrop.show {
-        opacity: 0.5;
-      }
+      .painel-notificacoes-animado { width: min(400px, 92vw); border-left: 0; box-shadow: -18px 0 45px rgba(0, 0, 0, 0.5); }
+      .offcanvas-end.painel-notificacoes-animado { transform: translateX(115%) !important; }
+      .offcanvas-end.painel-notificacoes-animado.showing { animation: painelNotificacoesEntrada 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards !important; }
+      .offcanvas-end.painel-notificacoes-animado.show:not(.hiding) { transform: translateX(0) !important; }
+      .offcanvas-end.painel-notificacoes-animado.hiding { animation: painelNotificacoesSaida 0.32s ease forwards !important; }
+      .painel-notificacoes-header { background-color: #1f1f1f; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
+      .painel-notificacoes-body { background-color: #151515; }
+      .painel-notificacoes-footer { background-color: #1f1f1f; border-top: 1px solid rgba(255,255,255,0.05) !important; }
+      .item-notificacao { background-color: #1f1f1f !important; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+      .item-notificacao:hover { border-color: rgba(8, 192, 104, 0.3) !important; transform: translateY(-2px); }
+      .offcanvas-backdrop.show { opacity: 0.5; }
 
       /* SKELETON LOADING PARA MENU LATERAL (DARK) */
-      .skeleton-dark {
-          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-          background-size: 200% 100%;
-          animation: skeleton-loading 1.5s infinite linear;
-          border-radius: 6px;
-          color: transparent !important;
-          box-shadow: none !important;
-          border-color: transparent !important;
-      }
-      .skeleton-dark * {
-          visibility: hidden !important;
-      }
-
-      .skeleton-view {
-          background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-          background-size: 200% 100%;
-          animation: skeleton-loading 1.5s infinite linear;
-          border-radius: 6px;
-          color: transparent !important;
-      }
-      .skeleton-view * {
-          visibility: hidden !important;
-      }
-
-      .skeleton-text {
-          height: 14px;
-          border-radius: 4px;
-      }
-
-      @keyframes skeleton-loading {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-      }
-
-      @keyframes painelNotificacoesEntrada {
-        0% { transform: translateX(115%); opacity: 0.85; }
-        70% { transform: translateX(-10px); opacity: 1; }
-        100% { transform: translateX(0); opacity: 1; }
-      }
-
-      @keyframes painelNotificacoesSaida {
-        0% { transform: translateX(0); opacity: 1; }
-        100% { transform: translateX(115%); opacity: 0.85; }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .offcanvas-end.painel-notificacoes-animado,
-        .offcanvas-end.painel-notificacoes-animado.showing,
-        .offcanvas-end.painel-notificacoes-animado.hiding {
-          animation: none !important;
-          transition: none !important;
-        }
-      }
+      .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite linear; border-radius: 6px; color: transparent !important; box-shadow: none !important; border-color: transparent !important; }
+      .skeleton-dark * { visibility: hidden !important; }
+      .skeleton-view { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite linear; border-radius: 6px; color: transparent !important; }
+      .skeleton-view * { visibility: hidden !important; }
+      .skeleton-text { height: 14px; border-radius: 4px; }
+      @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @keyframes painelNotificacoesEntrada { 0% { transform: translateX(115%); opacity: 0.85; } 70% { transform: translateX(-10px); opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
+      @keyframes painelNotificacoesSaida { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(115%); opacity: 0.85; } }
+      @media (prefers-reduced-motion: reduce) { .offcanvas-end.painel-notificacoes-animado, .offcanvas-end.painel-notificacoes-animado.showing, .offcanvas-end.painel-notificacoes-animado.hiding { animation: none !important; transition: none !important; } }
     </style>
 
-    <div class="d-flex flex-column h-100 pt-0">
+    ${toggleBtnHtml}
+
+    <div class="d-flex flex-column h-100 pt-0 w-100">
       <div class="flex-grow-1 sidebar-scroll-area" id="sidebarMenuContainer">
         ${userProfileHtml}
         ${menuLinks}
       </div>
-
       ${footerHTML}
     </div>
 

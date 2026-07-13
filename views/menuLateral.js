@@ -125,12 +125,12 @@ function menuLateral(usuario, rotaAtiva = "") {
     return desktopHtml + mobileHtml;
   };
 
-  // --- BARRA DE PESQUISA HTML (Acima do Início) ---
+    // --- BARRA DE PESQUISA HTML (Acima do Início) ---
   const searchBarHtml = `
-    <div class="px-3 mb-2 mt-2 sidebar-search-container position-relative" style="z-index: 1060;">
-      <div class="position-relative">
-        <i class="fa-solid fa-search position-absolute text-muted" style="top: 50%; transform: translateY(-50%); left: 10px; font-size: 0.8rem;"></i>
-        <input type="text" id="menuSearchInput" oninput="buscarLinksMenu(this.value)" onfocus="buscarLinksMenu(this.value)" onblur="setTimeout(() => fecharSugestoes(), 200)" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-none" placeholder="Pesquisar..." style="padding-left: 30px; border-radius: 6px;">
+    <div class="mb-2 mt-2 sidebar-search-container position-relative" style="z-index: 1060;">
+      <div class="position-relative w-100">
+        <i class="fa-solid fa-search position-absolute text-white-50" style="top: 50%; transform: translateY(-50%); left: 10px; font-size: 0.8rem;"></i>
+        <input type="text" id="menuSearchInput" oninput="buscarLinksMenu(this.value)" onfocus="buscarLinksMenu(this.value)" onblur="setTimeout(() => fecharSugestoes(), 200)" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-none w-100" placeholder="Pesquisar..." style="padding-left: 30px; border-radius: 6px;">
       </div>
       <div id="searchSuggestions" class="dropdown-menu dropdown-menu-dark w-100 shadow-lg border-custom py-1 position-absolute" style="top: 100%; left: 0; display: none; max-height: 250px; overflow-y: auto; border-radius: 6px; margin-top: 4px;">
       </div>
@@ -807,6 +807,11 @@ function menuLateral(usuario, rotaAtiva = "") {
         transform: scale(1.05);
         filter: brightness(1.1);
         border-color: rgba(8,192,104,0.6) !important;
+      }
+
+      #menuSearchInput::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+        opacity: 1;
       }
 
       .transition-btn { transition: all 0.2s ease; border-radius: 4px; }

@@ -485,6 +485,24 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
 
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
+
+      /* Customização do balão do Tooltip (Bootstrap 5) */
+    .custom-tooltip .tooltip-inner {
+        background-color: #1a1d20; /* Fundo escuro do seu painel */
+        border: 1px solid #198754; /* Cor da borda verde (ou substitua pela sua variável hexadecimal) */
+        color: #ffffff;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        border-radius: 8px;
+        text-align: left;
+        max-width: 280px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Customização da setinha (Arrow) para acompanhar a cor do balão */
+    .custom-tooltip .tooltip-arrow::before {
+        border-top-color: #198754 !important; /* Cor da borda para a seta superior */
+    }
       
       .btn-primary, .btn-success { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
       .btn-primary:hover, .btn-success:hover, .btn-primary:active, .btn-success:active { background-color: #06a055 !important; border-color: #06a055 !important; color: #ffffff !important; }
@@ -573,37 +591,50 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       </div>
 
       <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
-         <h6 class="fw-bold text-white mb-0 text-nowrap" style="font-size: 0.85rem;"><i class="fa-solid fa-list-ul text-accent me-2"></i> Rotas Registradas</h6>
+    <h6 class="fw-bold text-white mb-0 text-nowrap" style="font-size: 0.85rem;"><i class="fa-solid fa-list-ul text-accent me-2"></i> Rotas Registradas</h6>
          
-         <div class="d-flex align-items-center flex-wrap flex-md-nowrap gap-3 justify-content-xl-end">
-            <form id="formFiltroCaderno" class="d-flex align-items-center mb-0" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-                <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;">
-                    <span class="input-group-text border-custom"><i class="fa-regular fa-calendar"></i></span>
-                    <input type="date" name="data_inicio" class="form-control" value="${filtros.data_inicio || ''}" title="Data Inicial" style="max-width: 130px;">
-                    <span class="input-group-text border-custom">até</span>
-                    <input type="date" name="data_fim" class="form-control" value="${filtros.data_fim || ''}" title="Data Final" style="max-width: 130px;">
-                    <button type="submit" class="btn btn-primary px-3" title="Filtrar Período"><i class="fa-solid fa-filter"></i></button>
-                    <button type="button" class="btn btn-outline-secondary border-custom px-2 text-danger bg-custom-darker" onclick="limparFiltrosCaderno()" title="Limpar Filtro"><i class="fa-solid fa-eraser"></i></button>
-                </div>
-            </form>
+    <div class="d-flex align-items-center flex-wrap flex-md-nowrap gap-3 justify-content-xl-end">
+        <form id="formFiltroCaderno" class="d-flex align-items-center mb-0" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
+            <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;">
+                <span class="input-group-text border-custom"><i class="fa-regular fa-calendar"></i></span>
+                <input type="date" name="data_inicio" class="form-control" value="${filtros.data_inicio || ''}" title="Data Inicial" style="max-width: 130px;">
+                <span class="input-group-text border-custom">até</span>
+                <input type="date" name="data_fim" class="form-control" value="${filtros.data_fim || ''}" title="Data Final" style="max-width: 130px;">
+                <button type="submit" class="btn btn-primary px-3" title="Filtrar Período"><i class="fa-solid fa-filter"></i></button>
+                <button type="button" class="btn btn-outline-secondary border-custom px-2 text-danger bg-custom-darker" onclick="limparFiltrosCaderno()" title="Limpar Filtro"><i class="fa-solid fa-eraser"></i></button>
+            </div>
+        </form>
 
-            <div class="d-none d-md-block m-0 border-custom"></div>
+        <div class="d-none d-md-block m-0 border-custom"></div>
 
-            <div class="d-flex align-items-center gap-3 flex-nowrap">
+        <div class="d-flex align-items-center gap-3 flex-nowrap">
+            
+            <div class="d-flex align-items-center">
                 <div class="form-check form-switch bg-custom-darker border-custom py-1 px-3 rounded-pill d-flex align-items-center gap-2 m-0 shadow-sm" style="height: 31px;">
                     <input class="form-check-input text-accent border-secondary" type="checkbox" id="switchWhatsappClientes" style="cursor: pointer; width: 2em; height: 1em; margin-top: 0;" ${req && req.session && (req.session.whatsappAtivo === true || req.session.whatsappAtivo === 'true') ? 'checked' : ''} onchange="window.alternarStatusWhatsapp(this.checked)">
-                    <label class="form-check-label text-white fw-bold" for="switchWhatsappClientes" style="font-size: 0.68rem; cursor: pointer; white-space: nowrap;"><i class="fa-brands fa-whatsapp text-success me-1 fs-6 align-middle"></i> Avisos WhatsApp</label>
+                    <label class="form-check-label text-white fw-bold" for="switchWhatsappClientes" style="font-size: 0.68rem; cursor: pointer; white-space: nowrap;">
+                        <i class="fa-brands fa-whatsapp text-success me-1 fs-6 align-middle"></i> Avisos WhatsApp
+                    </label>
                 </div>
-
-                <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
-                    <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
-                </a>
-                <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
-                    <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">Novo</span>
-                </button>
+                
+                <i class="fa-regular fa-circle-question text-muted" 
+                   style="cursor: help; font-size: 0.8rem;" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-custom-class="custom-tooltip"
+                   data-bs-placement="top" 
+                   title="Habilita o envio automático de mensagens para os clientes através da leitura QR Code da rota geral nos cadernos.">
+                </i>
             </div>
-         </div>
-      </div>
+
+            <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
+                <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
+            </a>
+            <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
+                <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">Novo</span>
+            </button>
+        </div>
+    </div>
+</div>
 
       <span id="resumoRegistrosText" class="text-muted d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo página ${page} de ${totalPages}</span>
 

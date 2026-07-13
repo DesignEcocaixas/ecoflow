@@ -34,7 +34,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     const btnIcone = isEnviado ? '<i class="fa-solid fa-check-double"></i>' : '<i class="fa-solid fa-check"></i>';
 
     return `
-    <tr class="align-middle table-hover-row fila-caderno" id="cadernoRow-${c.id}" style="font-size: 0.72rem; transition: all 0.3s ease; opacity: ${opacidade};">
+    <tr class="align-middle table-hover-row fila-caderno" id="cadernoRow-${c.id}" style="font-size: 0.72rem; transition: all 0.3s ease; opacity: ${opacidade}; height: 45px;">
       <td class="py-1 px-3" style="width: 30px;">
         <input type="checkbox" name="cadernos_selecionados[]" value="${c.id}" class="form-check-input check-caderno border-secondary shadow-sm" ${isEnviado ? 'disabled' : ''}>
       </td>
@@ -47,7 +47,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
         </span>
       </td>
       <td class="text-end py-1 px-3" style="width: 50px;">
-        <button type="button" class="btn ${btnClasse}" style="font-size: 0.65rem; height: 20px;" onclick="marcarLinhaComoEnviada(${c.id}, this)" title="Marcar caderno como enviado">
+        <button type="button" class="btn ${btnClasse}" style="font-size: 0.65rem; height: 24px;" onclick="marcarLinhaComoEnviada(${c.id}, this)" title="Marcar caderno como enviado">
           ${btnIcone}
         </button>
       </td>
@@ -61,7 +61,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Falhou</span>`;
     
     return `
-      <tr class="align-middle" style="font-size: 0.72rem;">
+      <tr class="align-middle" style="font-size: 0.72rem; height: 45px;">
         <td class="text-muted py-1 px-2" style="font-size:0.68rem;">${fmtData(log.data_envio)}</td>
         <td class="text-white fw-medium py-1 px-2 text-truncate" style="max-width: 120px;">${(log.cliente || '').toUpperCase()}</td>
         <td class="text-muted py-1 px-2" style="font-size:0.68rem;">${log.contato || '-'}</td>
@@ -123,7 +123,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; }
 
       .table { --bs-table-bg: transparent; --bs-table-color: #fff; --bs-table-hover-bg: rgba(255,255,255,0.04); color: #fff; margin-bottom: 0; }
-      .table thead Th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; font-size: 0.75rem; }
+      .table thead Th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; font-size: 0.75rem; height: 35px; }
       .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.04) !important; background-color: transparent !important; color: #fff !important; white-space: nowrap; }
 
       .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.7rem; }
@@ -162,8 +162,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       <div class="flex-grow-1">${menuHTML}</div>
     </div>
 
-    <div class="content">
-      <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="content d-flex flex-column">
+      <div class="d-flex align-items-center justify-content-between mb-4 flex-shrink-0">
         <div>
           <h5 class="mb-0 fw-bold text-white"><i class="fa-brands fa-whatsapp text-success me-2"></i>Painel do Servidor WhatsApp</h5>
           <span class="text-muted mt-1" style="font-size:0.7rem;">Gerencie pareamento, logs de confirmação e disparos manuais</span>
@@ -180,10 +180,11 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
         </div>
       </div>
 
-      <div class="row g-4">
-        <div class="col-12 col-xl-7">
-          <form id="formDisparoManual" onsubmit="executarDisparoManual(event)">
-            <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+      <div class="row g-4 flex-grow-1 align-items-stretch">
+        
+        <div class="col-12 col-xl-6 d-flex flex-column">
+          <form id="formDisparoManual" onsubmit="executarDisparoManual(event)" class="d-flex flex-column flex-grow-1 h-100">
+            <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 flex-shrink-0">
               <div class="d-flex align-items-center gap-2">
                 <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-truck-ramp-box text-accent me-2"></i> Disparar Mensagens Manuais</h6>
                 <i class="fa-regular fa-circle-question text-muted" 
@@ -199,8 +200,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               </button>
             </div>
 
-            <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom">
-              <table class="table table-sm align-middle mb-0">
+            <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom flex-grow-1 d-flex flex-column">
+              <table class="table table-sm align-middle mb-0 w-100 h-100">
                 <thead>
                   <tr>
                     <th class="py-2 px-3" style="width: 30px;"><input type="checkbox" id="checkAllCadernos" class="form-check-input border-secondary shadow-sm" onchange="toggleSelectAllCadernos(this)"></th>
@@ -212,13 +213,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   </tr>
                 </thead>
                 <tbody>
-                  ${linhasCadernos || `<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-circle-check fa-xl opacity-25 mb-2 d-block"></i>Nenhum manifesto encontrado.</td></tr>`}
+                  ${linhasCadernos || `<tr><td colspan="6" class="text-center text-muted py-5"><i class="fa-solid fa-circle-check fa-2x opacity-25 mb-2 d-block"></i>Nenhum manifesto encontrado.</td></tr>`}
                 </tbody>
               </table>
             </div>
 
             ${totalPagesC > 1 ? `
-              <div class="d-flex justify-content-center mt-3 div-paginacao">
+              <div class="d-flex justify-content-center mt-3 div-paginacao flex-shrink-0">
                 <nav><ul class="pagination pagination-sm mb-0 shadow-sm">
                   ${linksCadernosPages}
                 </ul></nav>
@@ -227,13 +228,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           </form>
         </div>
 
-        <div class="col-12 col-xl-5">
-          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3">
+        <div class="col-12 col-xl-6 d-flex flex-column" id="logsContainer">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 flex-shrink-0 d-flex align-items-center h-100" style="max-height: 58px;">
             <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-clipboard-list text-accent me-2"></i> Confirmações de Envio</h6>
           </div>
           
-          <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom">
-            <table class="table table-sm align-middle mb-0">
+          <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom flex-grow-1 d-flex flex-column">
+            <table class="table table-sm align-middle mb-0 w-100 h-100">
               <thead>
                 <tr>
                   <th class="py-2 px-2">Horário</th>
@@ -243,13 +244,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                 </tr>
               </thead>
               <tbody id="listaLogsEnvioBody">
-                ${linhasLogs || `<tr><td colspan="4" class="text-center text-muted py-4">Nenhuma mensagem registrada.</td></tr>`}
+                ${linhasLogs || `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-clipboard-check fa-2x opacity-25 mb-2 d-block"></i>Nenhuma mensagem registrada.</td></tr>`}
               </tbody>
             </table>
           </div>
 
           ${totalPagesL > 1 ? `
-            <div class="d-flex justify-content-center mt-3 div-paginacao">
+            <div class="d-flex justify-content-center mt-3 div-paginacao flex-shrink-0">
               <nav><ul class="pagination pagination-sm mb-0 shadow-sm">
                 ${linksLogsPages}
               </ul></nav>
@@ -274,13 +275,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               </div>
             </div>
             
-            <div class="mb-3 d-flex flex-column gap-2">
-              <button type="button" class="btn btn-sm btn-danger fw-bold shadow-sm px-3 w-100" id="btnDesconectarBotManual" onclick="desconectarWhatsappServidor(this)">
-                  <i class="fa-solid fa-power-off me-1"></i> Desconectar Sessão (Apenas Logout)
+            <div class="mb-3 d-flex flex-column flex-sm-row gap-2 w-100">
+              <button type="button" class="btn btn-sm btn-danger fw-bold shadow-sm w-100 d-flex align-items-center justify-content-center" id="btnDesconectarBotManual" onclick="desconectarWhatsappServidor(this)" style="font-size: 0.75rem;">
+                  <i class="fa-solid fa-power-off me-1"></i> Desconectar
               </button>
               
-              <button type="button" class="btn btn-sm btn-outline-warning text-warning fw-bold shadow-sm px-3 w-100 border-warning" id="btnHardResetBot" onclick="hardResetWhatsappServidor(this)" style="background: rgba(255, 193, 7, 0.1);">
-                  <i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset (Limpar Cache e Reiniciar VPS)
+              <button type="button" class="btn btn-sm btn-outline-warning text-warning fw-bold shadow-sm w-100 border-warning d-flex align-items-center justify-content-center" id="btnHardResetBot" onclick="hardResetWhatsappServidor(this)" style="background: rgba(255, 193, 7, 0.1); font-size: 0.75rem;">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset
               </button>
             </div>
 
@@ -301,7 +302,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
-                <div><i class="fa-solid fa-circle-check fs-5 me-2 text-accent"></i><strong class="fs-6" id="sucessoTitulo">Concluído!</strong></div>
+                <div><i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i><strong class="fs-6" id="sucessoTitulo">Concluído!</strong></div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body pt-1 pb-4 px-3"><p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub"></p></div>
@@ -331,7 +332,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           const containers = document.querySelectorAll('.table-responsive:not(.skeleton-container)');
           
           containers.forEach((container, idx) => {
-              const isLogs = container.closest('.col-xl-5') !== null;
+              // Verifica se a tabela é a de logs pelo ID do Container principal que criamos
+              const isLogs = container.closest('#logsContainer') !== null;
               
               let thead = '';
               if(isLogs) {
@@ -344,7 +346,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               for(let i=0; i<5; i++) {
                   if(isLogs) {
                       htmlBody += \`
-                      <tr class="align-middle" style="height: 38px;">
+                      <tr class="align-middle" style="height: 45px;">
                           <td class="py-2 px-2"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
                           <td class="py-2 px-2"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
                           <td class="py-2 px-2"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
@@ -352,7 +354,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                       </tr>\`;
                   } else {
                       htmlBody += \`
-                      <tr class="align-middle" style="height: 38px;">
+                      <tr class="align-middle" style="height: 45px;">
                           <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 15px; margin: 0;"></div></td>
                           <td class="py-2 px-2"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
                           <td class="py-2 px-2"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
@@ -364,8 +366,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               }
 
               const skeletonHTML = \`
-              <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom skeleton-container" id="skeleton-temp-\${idx}">
-                  <table class="table table-sm align-middle mb-0">
+              <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom skeleton-container flex-grow-1" id="skeleton-temp-\${idx}">
+                  <table class="table table-sm align-middle mb-0 w-100">
                      <thead>\${thead}</thead>
                      <tbody>\${htmlBody}</tbody>
                   </table>
@@ -512,9 +514,9 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       async function desconectarWhatsappServidor(btn) {
           if (!confirm("Tem certeza que deseja encerrar a sessão do WhatsApp e desconectar o robô?")) return;
 
-          const iconeOriginal = \`<i class="fa-solid fa-power-off me-1"></i> Desconectar Sessão do WhatsApp\`;
+          const iconeOriginal = \`<i class="fa-solid fa-power-off me-1"></i> Desconectar\`;
           btn.disabled = true;
-          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Desconectando e reiniciando robô...\`;
+          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Processando...\`;
 
           try {
               const res = await fetch('/api/whatsapp/desconectar', { method: 'POST' });
@@ -731,7 +733,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                             : \`<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Falhou</span>\`;
                           
                           const novaLinhaHTML = \`
-                            <tr class="align-middle" style="font-size: 0.72rem; animation: fadeIn 0.3s ease; background-color: rgba(8, 192, 104, 0.04);">
+                            <tr class="align-middle" style="font-size: 0.72rem; animation: fadeIn 0.3s ease; background-color: rgba(8, 192, 104, 0.04); height: 45px;">
                               <td class="text-muted py-1 px-2" style="font-size:0.68rem;">\${dataCompleta} \${horario}</td>
                               <td class="text-white fw-medium py-1 px-2 text-truncate" style="max-width: 120px;">\${nomeExibicao}</td>
                               <td class="text-muted py-1 px-2" style="font-size:0.68rem;">\${contatoExibicao}</td>
@@ -756,11 +758,11 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       async function hardResetWhatsappServidor(btn) {
           if (!confirm("⚠️ ATENÇÃO: Isso vai excluir a sessão salva, apagar o cache corrompido e reiniciar o serviço do Ecoflow na VPS. O painel pode ficar fora do ar por 5 a 10 segundos.\\n\\nDeseja continuar?")) return;
 
-          const iconeOriginal = \`<i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset (Limpar Cache e Reiniciar VPS)\`;
+          const iconeOriginal = \`<i class="fa-solid fa-triangle-exclamation me-1"></i> Hard Reset\`;
           
           btn.disabled = true;
           document.getElementById('btnDesconectarBotManual').disabled = true;
-          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Apagando sessão e reiniciando servidor...\`;
+          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Reiniciando...\`;
 
           try {
               const res = await fetch('/api/whatsapp/hard-reset', { method: 'POST' });

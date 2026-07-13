@@ -549,7 +549,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           <div class="modal-body p-4 bg-custom-dark">
              <div class="d-flex justify-content-between mb-3 gap-2 flex-wrap align-items-end">
                  <h6 class="fw-bold text-white mb-0" style="font-size: 0.8rem;">
-                     <i class="fa-solid fa-list text-muted me-1"></i> Equipe Avulsa / Operacional Cadastrada
+                     <i class="fa-solid fa-list text-muted me-1"></i> Funcionários avulsos
                  </h6>
                  <button class="btn btn-sm btn-success fw-bold shadow-sm" onclick="abrirModalFormColaborador()">
                      <i class="fa-solid fa-user-plus me-1"></i> Adicionar

@@ -10,7 +10,7 @@ function clientesView(usuario, clientesHistorico = []) {
       const logoSrc = c.logo ? `/uploads/${c.logo}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nome)}&background=2a2a2a&color=08c068`;
       const arteSrc = c.arte ? `/uploads/${c.arte}` : null;
       const contatoFmt = c.contato || '';
-      const contatoSecundarioFmt = c.contato_secundario || ''; // Recupera o contato secundário do DB
+      const contatoSecundarioFmt = c.contato_secundario || ''; 
 
       return `
       <div class="modal fade" id="editarClienteModal${i}" tabindex="-1">
@@ -69,20 +69,32 @@ function clientesView(usuario, clientesHistorico = []) {
                 <div class="mt-4">
                     <hr class="border-custom my-1">
                     <label class="form-label text-white fw-bold mt-2 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Layout de Embalagem</label>
-                    <div class="p-3 bg-custom-darker rounded border-custom d-flex align-items-center gap-3">
-                        <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 100px; height: 70px; overflow: hidden;">
-                            ${arteSrc 
-                                ? `<img id="previewArteEdit${i}" src="${arteSrc}" class="img-fluid" style="max-height: 100%; object-fit: contain;">`
-                                : `<img id="previewArteEdit${i}" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;"><span id="placeholderArteEdit${i}" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block"></i></span>`
-                            }
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex gap-2 mb-1">
-                                <button type="button" class="btn btn-sm btn-outline-success fw-bold w-100" onclick="document.getElementById('inputArteEdit${i}').click()"><i class="fa-solid fa-upload me-1"></i> Alterar</button>
-                                ${arteSrc ? `<a href="${arteSrc}" target="_blank" class="btn btn-sm btn-outline-secondary text-white w-100"><i class="fa-solid fa-expand me-1"></i> Ampliar</a>` : ''}
+                    
+                    <div class="bg-custom-darker rounded border-custom position-relative overflow-hidden shadow-sm w-100">
+                        <div class="w-100 bg-custom-dark d-flex align-items-center justify-content-center position-relative" style="min-height: 160px;">
+                            
+                            <div id="placeholderArteEdit${i}" class="position-absolute top-50 start-50 translate-middle text-white-50 text-center z-0 ${arteSrc ? 'd-none' : ''}">
+                                <i class="fa-solid fa-image-slash fa-2x mb-2 d-block"></i><span class="small">Sem Arte</span>
                             </div>
-                            <span class="text-white-50 d-block" style="font-size: 0.65rem;">JPG ou PNG</span>
-                            <input type="file" name="arte" id="inputArteEdit${i}" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteEdit${i}', 'placeholderArteEdit${i}')">
+                            
+                            <img id="previewArteEdit${i}" src="${arteSrc || ''}" class="w-100 position-relative z-1 ${arteSrc ? '' : 'd-none'}" style="height: auto; max-height: 160px; object-fit: cover; object-position: top; transition: max-height 0.4s ease;">
+                        </div>
+
+                        <div class="position-absolute bottom-0 start-0 w-100 z-2" style="height: 120px; background: linear-gradient(to bottom, rgba(34,34,34,0) 0%, rgba(34,34,34,1) 100%); pointer-events: none;"></div>
+
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3 d-flex align-items-end justify-content-between z-3">
+                            <div>
+                                <span class="text-white fw-bold d-block" style="font-size: 0.8rem; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">Upload de Arte</span>
+                                <span class="text-white-50 d-block" style="font-size: 0.65rem; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">Formato JPG ou PNG</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                ${arteSrc ? `<a href="${arteSrc}" target="_blank" class="btn btn-sm btn-outline-secondary text-white border-custom bg-custom-darker shadow-sm" title="Abrir em Nova Guia"><i class="fa-solid fa-up-right-from-square"></i></a>` : ''}
+                                <button type="button" id="btnExpandirArteEdit${i}" class="btn btn-sm btn-outline-secondary text-white border-custom bg-custom-darker shadow-sm ${arteSrc ? '' : 'd-none'}" onclick="toggleExpandirImagem('previewArteEdit${i}', this)">
+                                    <i class="fa-solid fa-chevron-down me-1"></i> Expandir
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success fw-bold text-dark shadow-sm" onclick="document.getElementById('inputArteEdit${i}').click()"><i class="fa-solid fa-upload me-1"></i> Alterar</button>
+                            </div>
+                            <input type="file" name="arte" id="inputArteEdit${i}" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteEdit${i}', 'placeholderArteEdit${i}', 'btnExpandirArteEdit${i}')">
                         </div>
                     </div>
                 </div>
@@ -115,7 +127,6 @@ function clientesView(usuario, clientesHistorico = []) {
   `}).join('') : '';
 
   const menuHTML = menuLateral(user, "/clientes");
-
   const dadosClientesJSON = JSON.stringify(clientesHistorico || []).replace(/</g, '\\u003c');
 
   const modalVisualizarImagemHTML = `
@@ -162,16 +173,9 @@ function clientesView(usuario, clientesHistorico = []) {
       .form-control { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
       .form-control:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
 
-      /* PLACEHOLDERS EM CINZA CLARO */
-      .form-control::placeholder,
-      .form-select::placeholder,
-      input::placeholder,
-      textarea::placeholder {
-          color: rgba(255, 255, 255, 0.45) !important;
-          opacity: 1 !important;
+      .form-control::placeholder, .form-select::placeholder, input::placeholder, textarea::placeholder {
+          color: rgba(255, 255, 255, 0.45) !important; opacity: 1 !important;
       }
-      .form-control::-webkit-input-placeholder { color: rgba(255, 255, 255, 0.45) !important; }
-      .form-control::-moz-placeholder { color: rgba(255, 255, 255, 0.45) !important; opacity: 1 !important; }
 
       .table { --bs-table-bg: transparent; --bs-table-color: #fff; --bs-table-hover-bg: rgba(255,255,255,0.06); --bs-table-hover-color: #fff; color: #fff; margin-bottom: 0; }
       .table thead th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; }
@@ -196,7 +200,6 @@ function clientesView(usuario, clientesHistorico = []) {
       .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      /* SKELETON LOADING */
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
           background-size: 200% 100% !important;
@@ -286,7 +289,7 @@ function clientesView(usuario, clientesHistorico = []) {
     </div>
 
     <div class="modal fade" id="novoClienteModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 540px;">
         <form method="POST" action="/caderno-entregas/clientes/novo" enctype="multipart/form-data" class="modal-content shadow-lg erp-modal" onsubmit="prepararSubmissaoArquivos(event, this, 'Cliente Cadastrado!')">
             <div class="modal-header bg-custom-darker text-white border-0">
                 <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus me-2 text-accent"></i> Cadastrar Novo Cliente</h6>
@@ -338,15 +341,28 @@ function clientesView(usuario, clientesHistorico = []) {
                 <div class="mt-4">
                     <hr class="border-custom my-1">
                     <label class="form-label text-white fw-bold mt-2 mb-2 d-block" style="font-size:0.8rem;"><i class="fa-solid fa-palette text-accent me-1"></i> Arte / Embalagem da Caixa</label>
-                    <div class="p-3 bg-custom-darker rounded border-custom d-flex align-items-center gap-3">
-                        <div class="preview-arte-box bg-custom-dark border-custom rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 100px; height: 70px; overflow: hidden;">
-                            <img id="previewArteNovo" src="" class="img-fluid d-none" style="max-height: 100%; object-fit: contain;">
-                            <span id="placeholderArteNovo" class="text-white-50 small text-center"><i class="fa-solid fa-image-slash d-block"></i></span>
+                    <div class="bg-custom-darker rounded border-custom position-relative overflow-hidden shadow-sm w-100">
+                        <div class="w-100 bg-custom-dark d-flex align-items-center justify-content-center position-relative" style="min-height: 160px;">
+                            <div id="placeholderArteNovo" class="position-absolute top-50 start-50 translate-middle text-white-50 text-center z-0">
+                                <i class="fa-solid fa-image-slash fa-2x mb-2 d-block"></i><span class="small">Sem Arte</span>
+                            </div>
+                            <img id="previewArteNovo" src="" class="w-100 position-relative z-1 d-none" style="height: auto; max-height: 160px; object-fit: cover; object-position: top; transition: max-height 0.4s ease;">
                         </div>
-                        <div class="flex-grow-1">
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold w-100 mb-1" onclick="document.getElementById('inputArteNovo').click()"><i class="fa-solid fa-upload me-1"></i> Selecionar Arquivo</button>
-                            <span class="text-white-50 d-block" style="font-size: 0.65rem;">JPG ou PNG</span>
-                            <input type="file" name="arte" id="inputArteNovo" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteNovo', 'placeholderArteNovo')">
+
+                        <div class="position-absolute bottom-0 start-0 w-100 z-2" style="height: 120px; background: linear-gradient(to bottom, rgba(34,34,34,0) 0%, rgba(34,34,34,1) 100%); pointer-events: none;"></div>
+
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3 d-flex align-items-end justify-content-between z-3">
+                            <div>
+                                <span class="text-white fw-bold d-block" style="font-size: 0.8rem; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">Upload de Arte</span>
+                                <span class="text-white-50 d-block" style="font-size: 0.65rem; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">Formato JPG ou PNG</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" id="btnExpandirArteNovo" class="btn btn-sm btn-outline-secondary text-white border-custom bg-custom-darker shadow-sm d-none" onclick="toggleExpandirImagem('previewArteNovo', this)">
+                                    <i class="fa-solid fa-chevron-down me-1"></i> Expandir
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success fw-bold text-dark shadow-sm" onclick="document.getElementById('inputArteNovo').click()"><i class="fa-solid fa-upload me-1"></i> Selecionar Arquivo</button>
+                            </div>
+                            <input type="file" name="arte" id="inputArteNovo" class="d-none" accept="image/*" onchange="previewArte(this, 'previewArteNovo', 'placeholderArteNovo', 'btnExpandirArteNovo')">
                         </div>
                     </div>
                 </div>
@@ -416,10 +432,27 @@ function clientesView(usuario, clientesHistorico = []) {
       const limitePorPagina = 12;
 
       // =======================================================================
+      // FUNÇÃO: EXPANDIR IMAGEM INLINE
+      // =======================================================================
+      function toggleExpandirImagem(imgId, btnElement) {
+          const img = document.getElementById(imgId);
+          if (!img) return;
+
+          if (img.style.maxHeight === '160px' || img.style.maxHeight === '') {
+              // 2500px é um limite folgado para que 100% da imagem caiba mantendo a transição CSS
+              img.style.maxHeight = '2500px'; 
+              btnElement.innerHTML = '<i class="fa-solid fa-chevron-up me-1"></i> Recolher';
+          } else {
+              img.style.maxHeight = '160px';
+              btnElement.innerHTML = '<i class="fa-solid fa-chevron-down me-1"></i> Expandir';
+          }
+      }
+
+      // =======================================================================
       // MÁSCARA AUTOMÁTICA DE TELEFONE/WHATSAPP
       // =======================================================================
       function mascaraTelefone(input) {
-          let v = input.value.replace(/\\D/g, ''); // Remove o que não é dígito
+          let v = input.value.replace(/\\D/g, ''); 
           if (v.length > 11) v = v.slice(0, 11);
           
           if (v.length > 10) {
@@ -480,7 +513,6 @@ function clientesView(usuario, clientesHistorico = []) {
               reader.onload = e => document.getElementById(imgId).src = e.target.result;
               reader.readAsDataURL(input.files[0]);
 
-              // Reseta a flag de remoção se o usuário escolher um arquivo novo
               if(flagId) {
                   const flagInput = document.getElementById(flagId);
                   if(flagInput) flagInput.value = 'false';
@@ -502,15 +534,24 @@ function clientesView(usuario, clientesHistorico = []) {
           }
       }
 
-      function previewArte(input, imgId, placeholderId) {
+      // Função melhorada que liga o botão de Expandir para cada novo upload
+      function previewArte(input, imgId, placeholderId, btnExpandirId) {
           if (input.files && input.files[0]) {
               const reader = new FileReader();
               reader.onload = e => {
                   const img = document.getElementById(imgId);
                   const placeholder = document.getElementById(placeholderId);
+                  const btnExpandir = document.getElementById(btnExpandirId);
+
                   img.src = e.target.result;
                   img.classList.remove('d-none');
                   if(placeholder) placeholder.classList.add('d-none');
+                  
+                  if(btnExpandir) {
+                      btnExpandir.classList.remove('d-none');
+                      img.style.maxHeight = '160px'; // Força reset caso já estivesse expandido na tela
+                      btnExpandir.innerHTML = '<i class="fa-solid fa-chevron-down me-1"></i> Expandir';
+                  }
               };
               reader.readAsDataURL(input.files[0]);
           }
@@ -575,9 +616,9 @@ function clientesView(usuario, clientesHistorico = []) {
           if (itens.length === 0) {
               tbody.innerHTML = \`
                 <tr>
-                    <td colspan="4" class="text-center text-white-50 py-5">
-                        <i class="fa-solid fa-users-slash fa-2x opacity-25 mb-3 d-block"></i>
-                        <span style="font-size: 0.8rem;">Nenhum cliente encontrado.</span>
+                    <td colspan=\"4\" class=\"text-center text-white-50 py-5\">
+                        <i class=\"fa-solid fa-users-slash fa-2x opacity-25 mb-3 d-block\"></i>
+                        <span style=\"font-size: 0.8rem;\">Nenhum cliente encontrado.</span>
                     </td>
                 </tr>
               \`;
@@ -590,33 +631,33 @@ function clientesView(usuario, clientesHistorico = []) {
               const contatoFmt = c.contato || '';
 
               return \`
-                <tr class="cliente-row-filtro table-hover-row" data-bs-toggle="modal" data-bs-target="#editarClienteModal\${idxOriginal}" style="cursor: pointer;">
-                    <td class="py-2 px-3">
-                        <div class="d-flex align-items-center">
-                            <img src="\${logoSrc}" alt="\${c.nome}" class="rounded-circle me-3 border-custom shadow-sm" style="width: 34px; height: 34px; object-fit: cover; flex-shrink: 0; cursor: zoom-in;" data-bs-toggle="modal" data-bs-target="#modalVisualizarImagem" onclick="event.stopPropagation(); document.getElementById('imagemAmpliadaModal').src='\${logoSrc}';">
+                <tr class=\"cliente-row-filtro table-hover-row\" data-bs-toggle=\"modal\" data-bs-target=\"#editarClienteModal\${idxOriginal}\" style=\"cursor: pointer;\">
+                    <td class=\"py-2 px-3\">
+                        <div class=\"d-flex align-items-center\">
+                            <img src=\"\${logoSrc}\" alt=\"\${c.nome}\" class=\"rounded-circle me-3 border-custom shadow-sm\" style=\"width: 34px; height: 34px; object-fit: cover; flex-shrink: 0; cursor: zoom-in;\" data-bs-toggle=\"modal\" data-bs-target=\"#modalVisualizarImagem\" onclick=\"event.stopPropagation(); document.getElementById('imagemAmpliadaModal').src='\${logoSrc}';\">
                             <div>
-                                <span class="fw-bold text-white d-block" style="font-size:0.85rem;">\${c.nome}</span>
-                                <div class="d-flex gap-2 mt-1">
-                                    \${c.coordenadas ? '<span class="badge bg-success" style="font-size:0.55rem;"><i class="fa-solid fa-location-crosshairs me-1"></i>GPS</span>' : ''}
-                                    \${c.arte ? '<span class="badge bg-info text-dark" style="font-size:0.55rem;"><i class="fa-solid fa-image me-1"></i>Arte</span>' : ''}
+                                <span class=\"fw-bold text-white d-block\" style=\"font-size:0.85rem;\">\${c.nome}</span>
+                                <div class=\"d-flex gap-2 mt-1\">
+                                    \${c.coordenadas ? '<span class=\"badge bg-success\" style=\"font-size:0.55rem;\"><i class=\"fa-solid fa-location-crosshairs me-1\"></i>GPS</span>' : ''}
+                                    \${c.arte ? '<span class=\"badge bg-info text-dark\" style=\"font-size:0.55rem;\"><i class=\"fa-solid fa-image me-1\"></i>Arte</span>' : ''}
                                 </div>
                             </div>
                         </div>
                     </td>
-                    <td class="py-2 px-3 text-white-50" style="font-size: 0.8rem;">
-                        \${contatoFmt ? \`<i class="fa-solid fa-phone me-1 opacity-50"></i> \${contatoFmt}\` : '<span class="opacity-50">-</span>'}
+                    <td class=\"py-2 px-3 text-white-50\" style=\"font-size: 0.8rem;\">
+                        \${contatoFmt ? \`<i class=\"fa-solid fa-phone me-1 opacity-50\"></i> \${contatoFmt}\` : '<span class=\"opacity-50\">-</span>'}
                     </td>
-                    <td class="py-2 px-3">
-                        \${c.cidade ? \`<span class="badge text-dark" style="background-color: #08c068; font-size:0.65rem;">\${c.cidade}</span>\` : '<span class="badge bg-secondary" style="font-size:0.65rem;">Sem cidade</span>'}
+                    <td class=\"py-2 px-3\">
+                        \${c.cidade ? \`<span class=\"badge text-dark\" style=\"background-color: #08c068; font-size:0.65rem;\">\${c.cidade}</span>\` : '<span class=\"badge bg-secondary\" style=\"font-size:0.65rem;\">Sem cidade</span>'}
                     </td>
-                    <td class="text-end py-2 px-3">
-                        <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#excluirClienteModal\${idxOriginal}" onclick="event.stopPropagation();">
-                            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                    <td class=\"text-end py-2 px-3\">
+                        <button type=\"button\" class=\"btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2\" data-bs-toggle=\"modal\" data-bs-target=\"#excluirClienteModal\${idxOriginal}\" onclick=\"event.stopPropagation();\">
+                            <i class=\"fa-solid fa-trash\" style=\"font-size:0.75rem;\"></i>
                         </button>
                     </td>
                 </tr>
               \`;
-          }).join("");
+          }).join(\"\");
       }
 
       function renderizarControlesPaginacao(totalPaginas, totalRegistros, exibInicio, exibFim) {
@@ -630,14 +671,14 @@ function clientesView(usuario, clientesHistorico = []) {
           if (!ul) return;
           if (totalPaginas <= 1) { ul.innerHTML = ""; return; }
 
-          let liHtml = \`<li class="page-item \${paginaAtual === 1 ? 'disabled' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\${paginaAtual - 1})">«</a></li>\`;
+          let liHtml = \`<li class=\"page-item \${paginaAtual === 1 ? 'disabled' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${paginaAtual - 1})\">«</a></li>\`;
 
           const addBotaoPagina = (num) => {
-              liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\text{num})">\${num}</a></li>\`;
+              liHtml += \`<li class=\"page-item \${paginaAtual === num ? 'active' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${num})\">\${num}</a></li>\`;
           };
 
           const addReticencias = () => {
-              liHtml += \`<li class="page-item disabled"><a class="page-link">...</a></li>\`;
+              liHtml += \`<li class=\"page-item disabled\"><a class=\"page-link\">...</a></li>\`;
           };
 
           const maxBotoesVisiveis = 5;
@@ -660,7 +701,7 @@ function clientesView(usuario, clientesHistorico = []) {
               addBotaoPagina(totalPaginas);
           }
 
-          liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="filtrarClientesPaginado(\${paginaAtual + 1})">»</a></li>\`;
+          liHtml += \`<li class=\"page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}\"><a class=\"page-link\" onclick=\"filtrarClientesPaginado(\${paginaAtual + 1})\">»</a></li>\`;
           ul.innerHTML = liHtml;
       }
 

@@ -213,7 +213,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
         <div class="profile-info-box d-flex flex-column text-start justify-content-center flex-grow-1" style="min-width: 0;">
           <div class="fw-bold text-truncate mb-1 profile-name-text" style="font-size: 0.85rem; color: #ffffff; line-height: 1.1;" title="${usuario && usuario.nome ? usuario.nome : "Usuário"}">
-            ${usuario && usuario.nome ? usuario.nome : "Usuário"}
+            Olá, ${usuario && usuario.nome ? usuario.nome : "Usuário"}
           </div>
           <div class="d-flex align-items-center justify-content-start gap-1 flex-nowrap" style="min-width: 0;">
             <span class="badge profile-badge-type shadow-sm" style="font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 3px 5px; border-radius: 4px; background-color: rgba(8,192,104,0.15); color: #08c068; border: 1px solid rgba(8,192,104,0.3); flex-shrink: 1;">

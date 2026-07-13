@@ -249,7 +249,7 @@ function loginView(msg = "") {
               <i class="fa-solid fa-users-gear slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Diaristas & Pagamentos</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
-                Controle integral dos turnos, pagamentos em lote e geração rápida de comprovativos e mensagens padronizadas de WhatsApp.
+                Controle integral dos turnos, pagamentos em lote e geração rápida de comprovantes e mensagens padronizadas de WhatsApp.
               </p>
             </div>
 
@@ -262,8 +262,8 @@ function loginView(msg = "") {
         <div class="w-100 mt-auto">
           <div class="login-card mx-auto">
             
-            <div class="text-center mb-5">
-              <img src="/img/logo.png" alt="Logo Ecoflow" class="img-fluid" style="max-width: 210px;">
+            <div class="text-center mb-4">
+              <img src="/img/logo-reduzida-verde.png" alt="Logo Ecoflow" class="img-fluid" style="max-width: 80px;">
             </div>
 
             <h5 class="fw-bold text-white mb-1">Acesso ao Sistema</h5>

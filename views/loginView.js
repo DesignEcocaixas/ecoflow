@@ -17,7 +17,7 @@ function loginView(msg = "") {
           height: 100%;
           margin: 0;
           overflow: hidden;
-          font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+          font-family: 'Inter', Roboto, system-ui, -apple-system, sans-serif;
           background-color: #1f1f1f;
           color: #ffffff;
         }
@@ -30,25 +30,28 @@ function loginView(msg = "") {
         .hover-verde:hover { color: #08c068 !important; transform: scale(1.1); }
         .transition-btn { transition: all 0.25s ease; }
 
-        /* VÍDEO DE FUNDO NO SLIDER */
-        #bg-video {
+                /* IMAGEM DE FUNDO NO SLIDER */
+        .slider-background {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          background-image: url('/img/bg.png');
+          background-position: center;
+          background-repeat: no-repeat;
+          background-size: cover;
           z-index: 0;
         }
 
-        /* OVERLAY DO SLIDER */
+                /* OVERLAY DO SLIDER */
         .slider-overlay {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, rgba(31,31,31,0.95) 0%, rgba(8,192,104,0.25) 100%);
+          background: linear-gradient(135deg, rgba(10,10,10,0.94) 0%, rgba(15,35,27,0.88) 100%);
           z-index: 1;
         }
 
@@ -70,9 +73,7 @@ function loginView(msg = "") {
         }
         .slider-icon {
           font-size: 3.5rem;
-          color: #08c068;
           margin-bottom: 1.5rem;
-          filter: drop-shadow(0 0 15px rgba(8, 192, 104, 0.4));
         }
 
         /* CONTAINER DE LOGIN */
@@ -188,9 +189,7 @@ function loginView(msg = "") {
       
       <div class="d-none d-lg-block col-lg-7 col-xl-8 position-relative overflow-hidden">
         
-        <video id="bg-video" autoplay muted loop playsinline>
-          <source src="/img/bg.mp4" type="video/mp4">
-        </video>
+                <div class="slider-background"></div>
         <div class="slider-overlay"></div>
 
         <div id="loginSlider" class="carousel slide carousel-fade h-100 carousel-container w-100" data-bs-ride="carousel" data-bs-interval="5000">
@@ -218,7 +217,7 @@ function loginView(msg = "") {
               <i class="fa-solid fa-money-bill-transfer slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Controle Financeiro</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
-                Registe entradas e saídas e emita comprovativos num ambiente seguro. Controle diário e relatórios detalhados.
+                Registre entradas e saídas e emita comprovantes em um ambiente seguro. Controle diário e relatórios detalhados.
               </p>
             </div>
 
@@ -226,7 +225,7 @@ function loginView(msg = "") {
               <i class="fa-solid fa-layer-group slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Produção & Estoque</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
-                Acompanhe ordens de produção em tempo real, gira o stock de chapas e o fluxo de flexografia e rotativa.
+                Gere ordens de produção, gerencie o stock de chapas e o fluxo da flexografia e rotativa.
               </p>
             </div>
 
@@ -234,7 +233,7 @@ function loginView(msg = "") {
               <i class="fa-solid fa-clipboard-check slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Inspeção de Frota</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
-                Checklists digitais para todos os veículos. Controle manutenção, quilometragem e o estado da frota.
+                Checklists digitais para todos os veículos. Controle manutenção, quilometragem e o estado dos veículos.
               </p>
             </div>
             
@@ -264,7 +263,7 @@ function loginView(msg = "") {
           <div class="login-card mx-auto">
             
             <div class="text-center mb-5">
-              <img src="/img/logo-branca.png" alt="Logo Ecoflow" class="img-fluid" style="max-width: 170px;">
+              <img src="/img/logo.png" alt="Logo Ecoflow" class="img-fluid" style="max-width: 210px;">
             </div>
 
             <h5 class="fw-bold text-white mb-1">Acesso ao Sistema</h5>

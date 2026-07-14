@@ -1,11 +1,11 @@
 // views/ordemProducaoView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent");
 
 module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], query = {}, rotativaNovas = 0, flexoNovas = 0, historico = [], paginacao = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/producao");
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario);
 
   function formatarCor(cor) {
     if (!cor || cor === 'N/D') return 'Não definida';
@@ -60,6 +60,54 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       </ul>
     </nav>
   ` : "";
+
+  // =======================================================================
+  // PRÉ-PROCESSAMENTO DOS DADOS PARA O CALENDÁRIO (DEDUPLICAÇÃO ATIVA)
+  // =======================================================================
+  const ordensCalendario = {};
+  const chavesUnicasDia = {}; // Armazena Hash para impedir duplicatas iguais no mesmo dia
+  
+  const processarParaCalendario = (ordem, tipo) => {
+      if (!ordem.previsao_faturamento) return;
+      try {
+          let d = new Date(ordem.previsao_faturamento);
+          // Ajuste de fuso horário
+          d = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+          const dataStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          
+          if (!ordensCalendario[dataStr]) {
+              ordensCalendario[dataStr] = { rotativa: [], flexo: [] };
+              chavesUnicasDia[dataStr] = new Set();
+          }
+
+          const cliente = ordem.cliente || 'Cliente Indefinido';
+          const modelo = ordem.modelo || '-';
+          const quantidade = ordem.quantidade || 0;
+          const status = ordem.status_producao || 'pendente';
+          
+          // Chave rígida para deduplicação (Se for idêntico e para o mesmo dia, sobreescreve/ignora a cópia)
+          const chaveHash = `${tipo}|${cliente}|${modelo}|${quantidade}|${status}`;
+
+          if (!chavesUnicasDia[dataStr].has(chaveHash)) {
+              chavesUnicasDia[dataStr].add(chaveHash);
+              
+              // Adicionamos os dados que o modal diário necessita
+              ordensCalendario[dataStr][tipo].push({
+                  id: ordem.id,
+                  cliente: cliente,
+                  modelo: modelo,
+                  quantidade: quantidade,
+                  status: status
+              });
+          }
+      } catch(e) {}
+  };
+
+  rotativa.forEach(o => processarParaCalendario(o, 'rotativa'));
+  flexo.forEach(o => processarParaCalendario(o, 'flexo'));
+
+  const jsonCalendario = JSON.stringify(ordensCalendario).replace(/</g, '\\u003c');
+
 
   return `
 <!DOCTYPE html>
@@ -200,6 +248,16 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       .border-lg-end-custom { border-right: 1px solid rgba(255,255,255,0.08); }
     }
 
+    /* ESTILIZAÇÃO DO CALENDÁRIO */
+    .hover-cell-calendar { transition: background-color 0.2s ease; }
+    .hover-cell-calendar:hover { background-color: rgba(255,255,255,0.05) !important; }
+    .cursor-pointer { cursor: pointer; }
+
+    /* Custom CSS para o scroll dentro da célula do calendário caso tenha muitos nomes */
+    .scroll-calendar-cell::-webkit-scrollbar { width: 3px; }
+    .scroll-calendar-cell::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    .scroll-calendar-cell:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); }
+
     /* Botão Flutuante de Ajuda */
     .btn-flutuante {
       position: fixed;
@@ -277,9 +335,15 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         </div>
 
         <div class="col-lg-6 ps-lg-4">
-          <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-bars-progress me-1"></i> ACOMPANHAMENTO DA PRODUÇÃO</h6>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="text-muted fw-bold mb-0" style="font-size: 0.75rem;"><i class="fa-solid fa-bars-progress me-1"></i> ACOMPANHAMENTO DA PRODUÇÃO</h6>
+            <button type="button" class="btn btn-sm btn-outline-info shadow-sm fw-bold px-2 py-1" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalCalendario">
+              <i class="fa-regular fa-calendar-days me-1"></i> Calendário
+            </button>
+          </div>
+          
           <div class="row g-3">
-            
             <div class="col-sm-6">
               <button class="btn btn-outline-primary w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
                       data-bs-toggle="modal"
@@ -352,7 +416,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
           </div>
           <div class="toast-body pt-1 pb-4 px-3 position-relative">
-              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="sucessoSub">Operação realizada com sucesso.</p>
+              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8; white-space: pre-wrap;" id="sucessoSub">Operação realizada com sucesso.</p>
           </div>
           <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none;"></div>
       </div>
@@ -366,9 +430,85 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
           </div>
           <div class="toast-body pt-1 pb-4 px-3 position-relative">
-              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8;" id="erroSub">Ocorreu um erro ao processar.</p>
+              <p class="text-white mb-0" style="font-size:0.8rem; opacity: 0.8; white-space: pre-wrap;" id="erroSub">Ocorreu um erro ao processar.</p>
           </div>
           <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
+      </div>
+  </div>
+
+  <div class="modal fade" id="modalCalendario" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+        <div class="modal-header bg-custom-darker border-custom shadow-sm">
+          <h6 class="modal-title fw-bold text-white"><i class="fa-regular fa-calendar-days text-info me-2"></i> Calendário de Produção e Faturamento</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4 bg-custom-dark">
+          
+          <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-flex align-items-center gap-1 text-white-50 fw-medium" style="font-size: 0.7rem;">
+                    <span style="width:12px; height:12px; background-color:#0d6efd; border-radius:3px; display:inline-block;"></span> Rotativa / Plana
+                </span>
+                <span class="d-flex align-items-center gap-1 text-white-50 fw-medium ms-1" style="font-size: 0.7rem;">
+                    <span style="width:12px; height:12px; background-color:#198754; border-radius:3px; display:inline-block;"></span> Flexográfica
+                </span>
+            </div>
+            
+            <h5 class="mb-0 text-white fw-bold d-none d-md-block position-absolute start-50 translate-middle-x" id="mesAnoCalendario" style="text-transform: capitalize;">Mês Ano</h5>
+            <h5 class="mb-0 text-white fw-bold d-md-none w-100 text-center order-first" id="mesAnoCalendarioMobile" style="text-transform: capitalize;">Mês Ano</h5>
+            
+            <div class="d-flex gap-1 ms-auto ms-md-0">
+                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+          
+          <div class="table-responsive bg-custom-darker border-custom rounded shadow-sm">
+            <table class="table table-bordered table-sm align-middle mb-0" style="table-layout: fixed; min-width: 700px; border-color: rgba(255,255,255,0.05);">
+              <thead class="table-light" style="background-color: #1f1f1f;">
+                <tr>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Dom</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Seg</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Ter</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Qua</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Qui</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Sex</th>
+                  <th class="py-2 px-1 text-white-50 text-center" style="width: 14.28%;">Sáb</th>
+                </tr>
+              </thead>
+              <tbody id="corpoCalendario">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalDetalhesDia" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+          <div class="modal-header bg-custom-darker border-custom shadow-sm">
+            <h6 class="modal-title fw-bold text-white"><i class="fa-regular fa-calendar-check text-accent me-2"></i> Pedidos do Dia: <span id="tituloModalDia"></span></h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-custom-dark text-sm">
+             <div class="row g-4">
+                 <div class="col-md-6 border-md-end pe-md-3">
+                     <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-gear me-1"></i> Rotativa / Plana</h6>
+                     <div id="listaDiaRotativa" class="d-flex flex-column gap-2"></div>
+                 </div>
+                 <div class="col-md-6 ps-md-3 mt-4 mt-md-0">
+                     <h6 class="fw-bold text-success mb-3 mt-4"><i class="fa-solid fa-layer-group me-1"></i> Flexográfica</h6>
+                     <div id="listaDiaFlexo" class="d-flex flex-column gap-2"></div>
+                 </div>
+             </div>
+          </div>
+          <div class="modal-footer border-0 bg-custom-darker">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-4 fw-bold shadow-sm text-white" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
       </div>
   </div>
 
@@ -396,16 +536,16 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               Abra os painéis (Rotativa ou Flexográfica). Pode clicar diretamente em qualquer cartão para alterar o estado do pedido entre <span class="badge bg-custom-darker border border-custom text-muted">Pendente</span> e <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50">Concluído</span>.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-share-nodes text-info me-2"></i> 3. Integração Workspaces</strong>
+              <strong class="text-white d-block mb-1"><i class="fa-regular fa-calendar-days text-info me-2"></i> 3. Calendário de Agendamentos</strong>
+              Utilize o botão "Calendário" para verificar visualmente todas as previsões de faturamento agrupadas por dia com blocos coloridos para cada cliente. Um clique sobre a célula mostra a lista detalhada.
+            </li>
+            <li class="list-group-item bg-transparent px-0 border-custom py-3">
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-share-nodes text-info me-2"></i> 4. Integração Workspaces</strong>
               Dentro dos painéis, clique em "Enviar p/ Workspaces" para exportar as ordens selecionadas diretamente para a coluna do Workspace Produção (Corte ou Pintura).
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 4. Exportar Planilhas</strong>
+              <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 5. Exportar Planilhas</strong>
               Dentro dos modais de produção, o botão "Baixar Todas" faz o download do que está visível naquele exato momento.
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> 5. Histórico de Importações</strong>
-              No final da página, todas as gerações passadas (Lotes) ficam salvas. Clicar em qualquer linha baixa o relatório com os dados exatos daquele momento.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
               <strong class="text-white d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 6. Limpar Tudo</strong>
@@ -555,7 +695,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
-  <!-- MODAL DE SUGESTÃO DE DOWNLOAD / KANBAN APÓS GERAÇÃO -->
   <div class="modal fade" id="modalSugestaoDownload" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
@@ -575,7 +714,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
           </div>
 
           <div class="row g-4">
-             <!-- Coluna de Exportação -->
              <div class="col-md-6">
                  <div class="p-3 bg-custom-darker border border-custom rounded h-100">
                      <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-download me-1"></i> EXPORTAR PLANILHAS</h6>
@@ -590,7 +728,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                  </div>
              </div>
 
-             <!-- Coluna de Kanban -->
              <div class="col-md-6">
                  <div class="p-3 bg-custom-darker border border-custom rounded h-100">
                      <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-share-nodes me-1"></i> INTEGRAÇÃO WORKSPACE</h6>
@@ -615,7 +752,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
-  <!-- NOVO MODAL DE CONFIRMAÇÃO KANBAN -->
   <div class="modal fade" id="modalConfirmarKanban" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
       <div class="modal-content erp-modal border-0 shadow-lg">
@@ -636,6 +772,161 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+
+    // =======================================================================
+    // LÓGICA DO CALENDÁRIO COM QUADRADINHOS COLORIDOS (AVATAR INICIAIS)
+    // =======================================================================
+    const dadosCalendario = ${jsonCalendario};
+    let dataCalendarioAtual = new Date();
+
+    const getIniciais = (nome) => {
+        if(!nome) return '?';
+        const ignoradas = ['de','da','do','e','das','dos'];
+        const partes = nome.trim().split(' ').filter(p => p.length > 0 && !ignoradas.includes(p.toLowerCase()));
+        if(partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+        return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    };
+
+    window.renderizarCalendario = function() {
+        const corpo = document.getElementById('corpoCalendario');
+        const mesAno = document.getElementById('mesAnoCalendario');
+        const mesAnoMobile = document.getElementById('mesAnoCalendarioMobile');
+        
+        if(!corpo) return;
+
+        const ano = dataCalendarioAtual.getFullYear();
+        const mes = dataCalendarioAtual.getMonth();
+
+        const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        mesAno.innerText = nomesMeses[mes] + ' ' + ano;
+        mesAnoMobile.innerText = nomesMeses[mes] + ' ' + ano;
+
+        const primeiroDiaMes = new Date(ano, mes, 1).getDay();
+        const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+
+        let dataDia = 1;
+        let html = '';
+
+        for (let i = 0; i < 6; i++) {
+            let row = '<tr>';
+            for (let j = 0; j < 7; j++) {
+                if (i === 0 && j < primeiroDiaMes) {
+                    row += '<td class="bg-custom-darker border-custom"></td>';
+                } else if (dataDia > diasNoMes) {
+                    row += '<td class="bg-custom-darker border-custom"></td>';
+                } else {
+                    const dataAtualStr = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(dataDia).padStart(2, '0');
+                    const dadosDia = dadosCalendario[dataAtualStr];
+
+                    let avataresHtml = '';
+                    let classesCursor = '';
+                    let onclickEvent = '';
+
+                    if (dadosDia && (dadosDia.rotativa.length > 0 || dadosDia.flexo.length > 0)) {
+                        classesCursor = 'cursor-pointer hover-cell-calendar';
+                        onclickEvent = \`onclick="abrirModalDia('\${dataAtualStr}')"\`;
+
+                        const todosAvatares = [];
+                        
+                        // Extrai apenas nomes únicos para exibir no quadrado, separados por tipo
+                        const clientesRotativa = [...new Set(dadosDia.rotativa.map(i => i.cliente))];
+                        clientesRotativa.forEach(cli => todosAvatares.push({ cli, cor: 'primary' }));
+                        
+                        const clientesFlexo = [...new Set(dadosDia.flexo.map(i => i.cliente))];
+                        clientesFlexo.forEach(cli => todosAvatares.push({ cli, cor: 'success' }));
+
+                        const maxDisplay = 8;
+                        
+                        todosAvatares.slice(0, maxDisplay).forEach(item => {
+                            const iniciais = getIniciais(item.cli);
+                            avataresHtml += \`<div class="d-flex align-items-center justify-content-center bg-\${item.cor} text-white fw-bold shadow-sm" style="width: 22px; height: 22px; border-radius: 4px; font-size: 0.55rem;" title="\${item.cli}">\${iniciais}</div>\`;
+                        });
+                        
+                        if(todosAvatares.length > maxDisplay) {
+                            avataresHtml += \`<div class="d-flex align-items-center justify-content-center bg-secondary text-white fw-bold shadow-sm" style="width: 22px; height: 22px; border-radius: 4px; font-size: 0.55rem;" title="Mais \${todosAvatares.length - maxDisplay} pedidos">+\${todosAvatares.length - maxDisplay}</div>\`;
+                        }
+
+                        avataresHtml = \`<div class="d-flex flex-wrap gap-1 justify-content-start px-1 mb-1">\${avataresHtml}</div>\`;
+                    }
+
+                    const isHoje = new Date().toISOString().split('T')[0] === dataAtualStr;
+                    const styleHoje = isHoje ? 'border: 1px solid #08c068 !important; background-color: rgba(8, 192, 104, 0.05);' : '';
+
+                    row += \`<td class="border-custom align-top p-1 \${classesCursor}" style="height: 80px; \${styleHoje}" \${onclickEvent}>
+                        <div class="text-end text-white-50 fw-bold mb-1 pe-1" style="font-size: 0.75rem;">\${dataDia}</div>
+                        <div class="d-flex flex-column overflow-hidden scroll-calendar-cell" style="max-height: 52px; overflow-y: auto;">
+                            \${avataresHtml}
+                        </div>
+                    </td>\`;
+                    dataDia++;
+                }
+            }
+            row += '</tr>';
+            html += row;
+            if (dataDia > diasNoMes) break;
+        }
+        corpo.innerHTML = html;
+    }
+
+    window.mudarMesCalendario = function(delta) {
+        dataCalendarioAtual.setMonth(dataCalendarioAtual.getMonth() + delta);
+        window.renderizarCalendario();
+    }
+
+    // =======================================================================
+    // ABRE O MODAL COM A LISTAGEM COMPLETA DO DIA CLICADO (DEDUPLICADA)
+    // =======================================================================
+    window.abrirModalDia = function(dataStr) {
+        const dados = dadosCalendario[dataStr];
+        if (!dados) return;
+
+        const partesData = dataStr.split('-');
+        const dataFormatada = partesData[2] + '/' + partesData[1] + '/' + partesData[0];
+        document.getElementById('tituloModalDia').innerText = dataFormatada;
+
+        const containerRotativa = document.getElementById('listaDiaRotativa');
+        const containerFlexo = document.getElementById('listaDiaFlexo');
+
+        const gerarCardDetalhe = (ordem, isRotativa) => {
+            const badgeCor = ordem.status === 'concluido' ? 'success' : 'secondary';
+            const badgeTexto = ordem.status === 'concluido' ? 'Concluído' : 'Pendente';
+            const bgHover = isRotativa ? 'border-primary' : 'border-success';
+
+            return \`
+            <div class="p-2 rounded bg-custom-darker border border-custom shadow-sm mb-2" style="font-size: 0.75rem; border-left: 3px solid var(--bs-\${bgHover.replace('border-', '')}) !important;">
+                <div class="d-flex justify-content-between mb-1 gap-2">
+                    <strong class="text-white text-truncate" style="max-width: 75%;" title="\${ordem.cliente}">\${ordem.cliente}</strong>
+                    <span class="badge bg-\${badgeCor} bg-opacity-10 text-\${badgeCor} border border-\${badgeCor} border-opacity-50" style="font-size: 0.6rem; height: fit-content;">\${badgeTexto}</span>
+                </div>
+                <div class="text-white-50">Mod: \${ordem.modelo} | Qtd: <span class="text-white fw-bold">\${ordem.quantidade}</span></div>
+            </div>\`;
+        };
+
+        if (dados.rotativa && dados.rotativa.length > 0) {
+            containerRotativa.innerHTML = dados.rotativa.map(o => gerarCardDetalhe(o, true)).join('');
+        } else {
+            containerRotativa.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fa-solid fa-inbox opacity-25 d-block mb-2 fa-2x"></i>Nenhum pedido</div>';
+        }
+
+        if (dados.flexo && dados.flexo.length > 0) {
+            containerFlexo.innerHTML = dados.flexo.map(o => gerarCardDetalhe(o, false)).join('');
+        } else {
+            containerFlexo.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fa-solid fa-inbox opacity-25 d-block mb-2 fa-2x"></i>Nenhum pedido</div>';
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalhesDia'));
+        modal.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalCalEl = document.getElementById('modalCalendario');
+        if (modalCalEl) {
+            modalCalEl.addEventListener('shown.bs.modal', function () {
+                window.renderizarCalendario();
+            });
+        }
+    });
+
     // =======================================================================
     // INTEGRAÇÃO KANBAN (ENVIO EM MASSA INTELIGENTE C/ MODAL)
     // =======================================================================

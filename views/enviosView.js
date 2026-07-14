@@ -39,7 +39,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
         <input type="checkbox" name="cadernos_selecionados[]" value="${c.id}" class="form-check-input check-caderno border-secondary shadow-sm" ${isEnviado ? 'disabled' : ''}>
       </td>
       <td class="text-muted fw-medium py-1 px-2 c-data" style="${estiloRiscado}"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
-      <td class="text-white fw-bold py-1 px-2 c-manifesto" style="${estiloRiscado}">Manifesto #${c.id}</td>
+      <td class="text-white fw-bold py-1 px-2 c-manifesto" style="${estiloRiscado}">Rota #${c.id}</td>
       <td class="text-white py-1 px-2 text-truncate c-motorista" style="max-width: 110px; ${estiloRiscado}"><i class="fa-solid fa-id-card text-muted me-1"></i> ${c.motorista}</td>
       <td class="text-center py-1 px-2 c-badge">
         <span class="badge text-dark bg-verde-tag" style="background-color: #08c068; font-size: 0.62rem; padding: 0.25em 0.5em;">

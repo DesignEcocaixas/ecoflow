@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
 
-function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = []) {
+function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb = [], motoristasCadastrados = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
   const page = paginacao.page || 1;
@@ -105,9 +105,13 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                 <div class="col-12 col-md-4">
                   <label class="form-label text-muted mb-1" style="font-size:0.75rem;">Motorista</label>
                   <select name="motorista" class="form-select form-select-sm shadow-sm" required>
-                    <option value="Flávio" ${item.motorista === "Flávio" ? "selected" : ""}>Flávio</option>
-                    <option value="Alexandre" ${item.motorista === "Alexandre" ? "selected" : ""}>Alexandre</option>
-                    <option value="Damião" ${item.motorista === "Damião" ? "selected" : ""}>Damião</option>
+                    <option value="" disabled>Selecione...</option>
+                    ${(() => {
+                        // Garante que o motorista antigo não desapareça caso tenha sido apagado do sistema
+                        const options = [...motoristasCadastrados.map(m => m.nome)];
+                        if (item.motorista && !options.includes(item.motorista)) options.push(item.motorista);
+                        return options.map(nome => `<option value="${nome}" ${item.motorista === nome ? "selected" : ""}>${nome}</option>`).join("");
+                    })()}
                   </select>
                 </div>
                 <div class="col-12 col-md-4">
@@ -436,9 +440,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Motorista</label>
                 <select name="motorista" class="form-select form-select-sm shadow-sm" required>
                   <option value="" disabled selected>Selecione...</option>
-                  <option value="Flávio">Flávio</option>
-                  <option value="Brian">Brian</option>
-                  <option value="Damião">Damião</option>
+                  ${motoristasCadastrados.map(m => `<option value="${m.nome}">${m.nome}</option>`).join("")}
                 </select>
               </div>
               <div class="mb-3">

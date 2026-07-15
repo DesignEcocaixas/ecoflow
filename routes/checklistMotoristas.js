@@ -93,14 +93,20 @@ router.get("/checklist-motoristas", (req, res) => {
 
                 const filtrosData = rowsFiltros && !errFiltros ? rowsFiltros : [];
 
-                res.send(
-                    checklistMotoristasView(
-                        usuario,
-                        checklists,
-                        { page: currentPage, totalPages, total, data_inicio, data_fim },
-                        filtrosData // Passando os dados exatos de relacionamento para a View
-                    )
-                );
+                // BUSCA MOTORISTAS CADASTRADOS NA TABELA DE USUÁRIOS
+                db.query("SELECT nome FROM usuarios WHERE tipo_usuario = 'motorista' ORDER BY nome ASC", (errMot, motoristas) => {
+                    const motoristasCadastrados = motoristas && !errMot ? motoristas : [];
+
+                    res.send(
+                        checklistMotoristasView(
+                            usuario,
+                            checklists,
+                            { page: currentPage, totalPages, total, data_inicio, data_fim },
+                            filtrosData,
+                            motoristasCadastrados // <-- Novo parâmetro
+                        )
+                    );
+                });
             });
         });
     });

@@ -437,7 +437,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                 <select name="motorista" class="form-select form-select-sm shadow-sm" required>
                   <option value="" disabled selected>Selecione...</option>
                   <option value="Flávio">Flávio</option>
-                  <option value="Alexandre">Alexandre</option>
+                  <option value="Brian">Brian</option>
                   <option value="Damião">Damião</option>
                 </select>
               </div>

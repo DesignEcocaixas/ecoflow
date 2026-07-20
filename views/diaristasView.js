@@ -92,7 +92,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
       return `
          <div class="col-12 col-sm-6 col-md-4 col-xl-3 diarista-card-item">
-             <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom" style="cursor: pointer;" onclick="abrirModalCriarPasta('${d.id}')" title="Abrir uma nova pasta de fechamento para este colaborador">
+             <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom" style="cursor: pointer;" onclick="abrirModalCriarPasta('${d.id}')" title="Abrir uma nova pasta de diárias para este colaborador">
                  <div class="card-body text-center p-3 d-flex flex-column justify-content-center align-items-center">
                      <div class="position-relative mb-2">
                          <img src="${fotoUrl}" class="rounded-circle shadow-sm border border-custom" style="width: 55px; height: 55px; object-fit: cover;">
@@ -162,7 +162,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
             </td>
         </tr>
       `;
-  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="fa-solid fa-folder-open fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhuma pasta de fechamento encontrada no período.</p></td></tr>`;
+  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="fa-solid fa-folder-open fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhuma pasta de diárias encontrada no período.</p></td></tr>`;
 
   // =========================================================================
   // GERAÇÃO DA TABELA DO MODAL GESTÃO DE EQUIPE (TODOS OS COLABORADORES)
@@ -506,7 +506,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                 <div class="col-12 col-md-6">
                     <div class="bg-custom-darker p-3 rounded border-custom shadow-sm h-100">
                         <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="fa-solid fa-folder-plus text-success me-1"></i> Criação de Pastas</h6>
-                        <p class="text-muted mb-0" style="font-size:0.7rem;">Para iniciar o registo de trabalho de um diarista, clique no card do colaborador. Isto irá criar uma nova <strong>Pasta de Fechamento Aberta</strong> no histórico, que agrupará todas as diárias daquela semana.</p>
+                        <p class="text-muted mb-0" style="font-size:0.7rem;">Para iniciar o registo de trabalho de um diarista, clique no card do colaborador. Isto irá criar uma nova <strong>Pasta de Diárias Aberta</strong> no histórico, que agrupará todas as diárias daquela semana.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6">
@@ -693,7 +693,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
     <div class="modal fade" id="modalCriarPasta" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
-        <form method="POST" action="/diaristas/pasta/nova" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta de Fechamento Aberta!')">
+        <form method="POST" action="/diaristas/pasta/nova" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta de Diárias Aberta!')">
           <input type="hidden" name="colaborador_id" id="inputCriarPastaColabId">
           <div class="modal-body p-4 text-center bg-custom-darker">
              <i class="fa-solid fa-folder-plus text-accent fa-3x mb-3"></i>
@@ -712,7 +712,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
           <div class="modal-header bg-custom-darker text-white border-0">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-open text-warning me-2"></i> Pasta de Fechamento #<span id="visorPastaId"></span> - <span id="visorPastaNome"></span></h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-open text-warning me-2"></i> Pasta de Diárias #<span id="visorPastaId"></span> - <span id="visorPastaNome"></span></h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 bg-custom-dark">

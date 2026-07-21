@@ -11,11 +11,11 @@ function tratarData(valor) {
 
 //------------------------------------------------------------------------------ROTAS PARA PROPOSTAS E DESIGN------------------------------------------------------------------------------
 
-//RENDERIZAR VIEW DAS PROPOSTAS (Busca dinâmica de designers)
+// RENDERIZAR PROPOSTAS (Busca dinâmica de designers para a combobox)
 router.get('/propostas', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     try {
-        const [designers] = await db.promise().query("SELECT nome FROM usuarios WHERE tipo_usuario = 'designer' ORDER BY nome ASC");
+        const [designers] = await db.promise().query("SELECT nome FROM usuarios WHERE LOWER(tipo_usuario) = 'designer' ORDER BY nome ASC");
         return res.send(require('../views/propostasView')(req.session.user, designers));
     } catch(err) {
         console.error("Erro ao carregar view de propostas:", err);
@@ -23,7 +23,7 @@ router.get('/propostas', async (req, res) => {
     }
 });
 
-//LISTAR PROPOSTAS
+// LISTAR PROPOSTAS (Filtra se for Designer)
 router.get('/propostas/lista', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
@@ -35,7 +35,8 @@ router.get('/propostas/lista', async (req, res) => {
         const params = [];
 
         // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
-        if (req.session.user.tipo_usuario === 'designer') {
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             where += ' AND p.designer = ?';
             params.push(req.session.user.nome);
         }
@@ -68,14 +69,15 @@ router.get('/propostas/lista', async (req, res) => {
     }
 });
 
-//CADASTRAR PROPOSTA
+// CADASTRAR PROPOSTA
 router.post('/propostas', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
         let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
 
         // O usuário designer só pode criar uma proposta para ele mesmo
-        if (req.session.user.tipo_usuario === 'designer') {
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             designer = req.session.user.nome;
         }
 
@@ -101,7 +103,7 @@ router.post('/propostas', async (req, res) => {
     }
 });
 
-//BUSCAR PROPOSTA
+// BUSCAR PROPOSTA DETALHE
 router.get('/propostas/detalhe/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
@@ -109,14 +111,15 @@ router.get('/propostas/detalhe/:id', async (req, res) => {
         let query = 'SELECT * FROM propostas WHERE id = ?';
         const params = [id];
 
-        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
-        if (req.session.user.tipo_usuario === 'designer') {
+        // Isola e busca a proposta APENAS se for deste usuário (caso seja designer)
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             query += ' AND designer = ?';
             params.push(req.session.user.nome);
         }
 
         const [[proposta]] = await db.promise().query(query, params);
-        if (!proposta) return res.status(404).json({ success: false, error: 'Proposta não encontrada' });
+        if (!proposta) return res.status(404).json({ success: false, error: 'Proposta não encontrada ou acesso negado' });
 
         const [modificacoes] = await db.promise().query('SELECT * FROM proposta_modificacoes WHERE proposta_id = ? ORDER BY data_modificacao ASC', [id]);
         return res.json({ proposta, modificacoes });
@@ -126,18 +129,19 @@ router.get('/propostas/detalhe/:id', async (req, res) => {
     }
 });
 
-//EDITAR PROPOSTA
+// EDITAR PROPOSTA
 router.put('/propostas/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
         const { id } = req.params;
         let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
 
-        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
-        if (req.session.user.tipo_usuario === 'designer') {
+        // Isola e permite edição APENAS se for a proposta deste usuário
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             designer = req.session.user.nome;
             const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [id, req.session.user.nome]);
-            if (!prop) return res.status(403).json({ success: false, message: 'Proibido' });
+            if (!prop) return res.status(403).json({ success: false, message: 'Você só pode editar as suas próprias propostas.' });
         }
 
         await db.promise().query(
@@ -158,13 +162,14 @@ router.put('/propostas/:id', async (req, res) => {
     }
 });
 
-//EXCLUIR PROPOSTA
+// EXCLUIR PROPOSTA
 router.delete('/propostas/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
-        if (req.session.user.tipo_usuario === 'designer') {
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [req.params.id, req.session.user.nome]);
-            if (!prop) return res.status(403).json({ success: false, message: 'Proibido' });
+            if (!prop) return res.status(403).json({ success: false, message: 'Você só pode excluir suas próprias propostas.' });
         }
 
         await db.promise().query('DELETE FROM propostas WHERE id = ?', [req.params.id]);
@@ -180,7 +185,9 @@ router.get('/admin/api/periodos-disponiveis', async (req, res) => {
     try {
         let where = '';
         const params = [];
-        if (req.session.user.tipo_usuario === 'designer') {
+        
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             where = 'AND designer = ?';
             params.push(req.session.user.nome);
         }
@@ -192,7 +199,7 @@ router.get('/admin/api/periodos-disponiveis', async (req, res) => {
     }
 });
 
-//RELATÓRIO COMPLETO PROPOSTAS
+// RELATÓRIO COMPLETO PROPOSTAS
 router.get('/propostas/exportar/excel', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     try {
@@ -201,7 +208,8 @@ router.get('/propostas/exportar/excel', async (req, res) => {
         const queryParams = [];
 
         // Isola as propostas apenas deste designer para a exportação
-        if (req.session.user.tipo_usuario === 'designer') {
+        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        if (isDesigner) {
             whereClause += ' AND p.designer = ?';
             queryParams.push(req.session.user.nome);
         }

@@ -7,11 +7,13 @@ module.exports = function propostasView(usuario, designers = []) {
   const menuHTML = menuLateral(user, "/propostas"); 
   const termosHTML = termosComponent(usuario); 
 
-  // Lógica para preencher dinamicamente a lista e travar caso seja um designer
-  const isDesigner = user.tipo_usuario === 'designer';
-  const designerOptions = designers.map(d => 
-      `<option value="${d.nome}" ${isDesigner && user.nome === d.nome ? 'selected' : ''}>${d.nome}</option>`
-  ).join('');
+  // Lógica blindada (case-insensitive) para garantir que o designer só veja e use o seu nome
+  const isDesigner = user.tipo_usuario && String(user.tipo_usuario).toLowerCase() === 'designer';
+  
+  const designerOptions = designers.map(d => {
+      const isThisUser = isDesigner && String(user.nome).toLowerCase() === String(d.nome).toLowerCase();
+      return `<option value="${d.nome}" ${isThisUser ? 'selected' : ''}>${d.nome}</option>`;
+  }).join('');
 
   return `
 <!DOCTYPE html>
@@ -685,7 +687,10 @@ module.exports = function propostasView(usuario, designers = []) {
     async function abrirModalProposta(id = null) {
         document.getElementById('propostaId').value = '';
         document.getElementById('cliente').value = '';
-        document.getElementById('designer').value = '';
+        // Reseta o designer apenas se não for designer logado
+        const designerSelect = document.getElementById('designer');
+        if (!designerSelect.disabled) designerSelect.value = '';
+        
         document.getElementById('dataInicio').value = '';
         document.getElementById('dataFim').value = '';
         document.getElementById('dataSolicitacaoCliche').value = '';
@@ -706,7 +711,10 @@ module.exports = function propostasView(usuario, designers = []) {
                     const p = json.proposta;
                     document.getElementById('propostaId').value = p.id;
                     document.getElementById('cliente').value = p.cliente;
-                    document.getElementById('designer').value = p.designer;
+                    
+                    // Só preenche se o campo não estiver bloqueado ou preenche mesmo bloqueado via script
+                    designerSelect.value = p.designer;
+                    
                     if(p.data_inicio) document.getElementById('dataInicio').value = p.data_inicio.split('T')[0];
                     if(p.data_fim) document.getElementById('dataFim').value = p.data_fim.split('T')[0];
                     if(p.data_solicitacao_cliche) document.getElementById('dataSolicitacaoCliche').value = p.data_solicitacao_cliche.split('T')[0];

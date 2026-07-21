@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const ExcelJS = require("exceljs"); // Necessário para a exportação
+const ExcelJS = require("exceljs"); 
 
-// Cole a função exatamente aqui, solta no arquivo, antes das rotas:
 function tratarData(valor) {
     if (!valor) return null;
     if (typeof valor === 'string' && valor.trim() === '') return null;
@@ -11,16 +10,35 @@ function tratarData(valor) {
 }
 
 //------------------------------------------------------------------------------ROTAS PARA PROPOSTAS E DESIGN------------------------------------------------------------------------------
+
+//RENDERIZAR VIEW DAS PROPOSTAS (Busca dinâmica de designers)
+router.get('/propostas', async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    try {
+        const [designers] = await db.promise().query("SELECT nome FROM usuarios WHERE tipo_usuario = 'designer' ORDER BY nome ASC");
+        return res.send(require('../views/propostasView')(req.session.user, designers));
+    } catch(err) {
+        console.error("Erro ao carregar view de propostas:", err);
+        return res.status(500).send("Erro interno");
+    }
+});
+
 //LISTAR PROPOSTAS
 router.get('/propostas/lista', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
         const { cliente, data_inicio, data_fim, page = 1 } = req.query;
-        const limit = 12; // <--- ALTERADO PARA 12 POR PÁGINA
+        const limit = 12; 
         const offset = (page - 1) * limit;
 
         let where = 'WHERE 1=1';
         const params = [];
+
+        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
+        if (req.session.user.tipo_usuario === 'designer') {
+            where += ' AND p.designer = ?';
+            params.push(req.session.user.nome);
+        }
 
         if (cliente) {
             where += ' AND p.cliente LIKE ?';
@@ -54,7 +72,12 @@ router.get('/propostas/lista', async (req, res) => {
 router.post('/propostas', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
-        const { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
+        let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
+
+        // O usuário designer só pode criar uma proposta para ele mesmo
+        if (req.session.user.tipo_usuario === 'designer') {
+            designer = req.session.user.nome;
+        }
 
         const [result] = await db.promise().query(
             `INSERT INTO propostas (cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -83,7 +106,16 @@ router.get('/propostas/detalhe/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
         const { id } = req.params;
-        const [[proposta]] = await db.promise().query('SELECT * FROM propostas WHERE id = ?', [id]);
+        let query = 'SELECT * FROM propostas WHERE id = ?';
+        const params = [id];
+
+        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
+        if (req.session.user.tipo_usuario === 'designer') {
+            query += ' AND designer = ?';
+            params.push(req.session.user.nome);
+        }
+
+        const [[proposta]] = await db.promise().query(query, params);
         if (!proposta) return res.status(404).json({ success: false, error: 'Proposta não encontrada' });
 
         const [modificacoes] = await db.promise().query('SELECT * FROM proposta_modificacoes WHERE proposta_id = ? ORDER BY data_modificacao ASC', [id]);
@@ -99,7 +131,14 @@ router.put('/propostas/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
         const { id } = req.params;
-        const { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
+        let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
+
+        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
+        if (req.session.user.tipo_usuario === 'designer') {
+            designer = req.session.user.nome;
+            const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [id, req.session.user.nome]);
+            if (!prop) return res.status(403).json({ success: false, message: 'Proibido' });
+        }
 
         await db.promise().query(
             `UPDATE propostas SET cliente = ?, designer = ?, data_inicio = ?, data_fim = ?, observacao = ?, data_solicitacao_cliche = ?, data_chegada_cliche = ? WHERE id = ?`,
@@ -123,6 +162,11 @@ router.put('/propostas/:id', async (req, res) => {
 router.delete('/propostas/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
+        if (req.session.user.tipo_usuario === 'designer') {
+            const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [req.params.id, req.session.user.nome]);
+            if (!prop) return res.status(403).json({ success: false, message: 'Proibido' });
+        }
+
         await db.promise().query('DELETE FROM propostas WHERE id = ?', [req.params.id]);
         return res.json({ success: true });
     } catch (err) {
@@ -130,21 +174,22 @@ router.delete('/propostas/:id', async (req, res) => {
     }
 });
 
-// 6. API Períodos Disponíveis (Para modal do Excel)
+// API Períodos Disponíveis (Para modal do Excel)
 router.get('/admin/api/periodos-disponiveis', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
-        const [rows] = await db.promise().query(`SELECT DISTINCT MONTH(data_inicio) as mes, YEAR(data_inicio) as ano FROM propostas WHERE data_inicio IS NOT NULL ORDER BY ano DESC, mes DESC`);
+        let where = '';
+        const params = [];
+        if (req.session.user.tipo_usuario === 'designer') {
+            where = 'AND designer = ?';
+            params.push(req.session.user.nome);
+        }
+
+        const [rows] = await db.promise().query(`SELECT DISTINCT MONTH(data_inicio) as mes, YEAR(data_inicio) as ano FROM propostas WHERE data_inicio IS NOT NULL ${where} ORDER BY ano DESC, mes DESC`, params);
         return res.json(rows);
     } catch (err) {
         return res.status(500).json({ error: 'Erro' });
     }
-});
-
-//RENDERIZAR PROPOSTAS
-router.get('/propostas', (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
-    return res.send(require('../views/propostasView')(req.session.user));
 });
 
 //RELATÓRIO COMPLETO PROPOSTAS
@@ -152,11 +197,17 @@ router.get('/propostas/exportar/excel', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     try {
         const { mes, ano } = req.query;
-        let whereClause = '';
+        let whereClause = 'WHERE 1=1';
         const queryParams = [];
 
+        // Isola as propostas apenas deste designer para a exportação
+        if (req.session.user.tipo_usuario === 'designer') {
+            whereClause += ' AND p.designer = ?';
+            queryParams.push(req.session.user.nome);
+        }
+
         if (mes && ano) {
-            whereClause = 'WHERE MONTH(p.data_inicio) = ? AND YEAR(p.data_inicio) = ?';
+            whereClause += ' AND MONTH(p.data_inicio) = ? AND YEAR(p.data_inicio) = ?';
             queryParams.push(mes, ano);
         }
 
@@ -232,15 +283,11 @@ router.get('/propostas/exportar/excel', async (req, res) => {
 
                 novaLinha.alignment = { horizontal: 'center' };
 
-                // === NOVA LÓGICA DE CORES DA LINHA EXCEL ===
                 let corFundo = null;
-                // Se algum estourar 2 dias, mantém a linha branca (null)
                 if (diasArteNum > 2 || diasClicheNum > 2) {
                     corFundo = null;
-                }
-                // Se não estourou, e algum tem pelo menos 1 dia (até 2), fica verde
-                else if ((diasArteNum > 0 && diasArteNum <= 2) || (diasClicheNum > 0 && diasClicheNum <= 2)) {
-                    corFundo = 'FFE2EFDA'; // Verde claro
+                } else if ((diasArteNum > 0 && diasArteNum <= 2) || (diasClicheNum > 0 && diasClicheNum <= 2)) {
+                    corFundo = 'FFE2EFDA'; 
                 }
 
                 novaLinha.eachCell((cell) => {

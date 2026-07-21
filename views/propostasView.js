@@ -1,11 +1,17 @@
 // views/propostasView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
-module.exports = function propostasView(usuario) {
+module.exports = function propostasView(usuario, designers = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/propostas"); 
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario); 
+
+  // Lógica para preencher dinamicamente a lista e travar caso seja um designer
+  const isDesigner = user.tipo_usuario === 'designer';
+  const designerOptions = designers.map(d => 
+      `<option value="${d.nome}" ${isDesigner && user.nome === d.nome ? 'selected' : ''}>${d.nome}</option>`
+  ).join('');
 
   return `
 <!DOCTYPE html>
@@ -54,42 +60,14 @@ module.exports = function propostasView(usuario) {
     .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
     .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
-    /* Tabelas e Modais */
-    .table { 
-        --bs-table-bg: transparent; 
-        --bs-table-color: #fff; 
-        --bs-table-hover-bg: rgba(255,255,255,0.06);
-        --bs-table-hover-color: #fff;
-        color: #fff; 
-        margin-bottom: 0;
-    }
-    .table thead th { 
-        background-color: #222 !important; 
-        color: rgba(255,255,255,0.6) !important; 
-        border-bottom: 1px solid rgba(255,255,255,0.1) !important; 
-        font-weight: 600; 
-    }
-    .table tbody td { 
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
-        background-color: transparent !important; 
-        color: #fff !important; 
-    }
-    .table-hover-row { transition: background-color 0.2s ease; }
-    .table-hover-row:hover > td, 
-    .table-hover > tbody > tr:hover > td, 
-    .table-hover > tbody > tr:hover > * { 
-        background-color: rgba(255,255,255,0.06) !important; 
-        color: #fff !important; 
-        box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.03);
-    }
-    
-    /* Efeito de Tabela Específico para Propostas (<= 2 dias) */
-    .table-success-custom > td { background-color: rgba(8, 192, 104, 0.08) !important; border-color: rgba(8, 192, 104, 0.2) !important; }
-    .table-success-custom:hover > td { background-color: rgba(8, 192, 104, 0.15) !important; }
-
+    /* Modais */
     .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
     .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+
+    /* Estilo Hover dos Cards (Propostas) */
+    .hover-card-proposta { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border-radius: 12px; }
+    .hover-card-proposta:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.3) !important; filter: brightness(1.05); }
 
     /* Pagination */
     .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
@@ -126,7 +104,8 @@ module.exports = function propostasView(usuario) {
         pointer-events: none;
     }
     .skeleton-dark * { visibility: hidden !important; }
-    .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
+    .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; border-radius: 4px; }
+    .skeleton-btn-view { border-radius: 4px; display: inline-block; }
     @keyframes skeleton-loading-view {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
@@ -203,7 +182,8 @@ module.exports = function propostasView(usuario) {
       </form>
     </div>
 
-    <div id="listaPropostas" class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4" style="display: none;"></div>
+    <!-- Container dos Cards Dinâmicos -->
+    <div id="listaPropostas" class="mb-4" style="display: none;"></div>
 
     <nav aria-label="Paginação">
       <ul id="paginacaoPropostas" class="pagination pagination-sm justify-content-center"></ul>
@@ -234,7 +214,7 @@ module.exports = function propostasView(usuario) {
   </div>
 
   <div class="modal fade" id="modalProposta" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 580px;">
       <div class="modal-content border-0 shadow-lg erp-modal">
         <div class="modal-header bg-custom-darker border-custom">
           <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-file-signature text-accent me-2"></i> Formulário de Proposta</h6>
@@ -246,17 +226,16 @@ module.exports = function propostasView(usuario) {
 
           <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
             <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">IDENTIFICAÇÃO</h6>
-            <div class="row g-3">
+            <div class="row g-3 justify-content-center">
               <div class="col-md-6">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente *</label>
-                <input type="text" id="cliente" class="form-control form-control-sm shadow-sm" required>
+                <input type="text" id="cliente" class="form-control form-control-sm shadow-sm" style="width: 92%;" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Designer Responsável</label>
-                <select id="designer" class="form-select form-select-sm shadow-sm">
-                  <option value="">Selecione...</option>
-                  <option value="David">David</option>
-                  <option value="Outro">Outro</option>
+                <select id="designer" class="form-select form-select-sm shadow-sm" style="width: 92%;" ${isDesigner ? 'disabled' : ''}>
+                  ${!isDesigner ? '<option value="">Selecione...</option>' : ''}
+                  ${designerOptions}
                 </select>
               </div>
             </div>
@@ -264,43 +243,43 @@ module.exports = function propostasView(usuario) {
 
           <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
             <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">CRONOGRAMA DE ARTE</h6>
-            <div class="row g-3 align-items-end">
+            <div class="row g-3 align-items-end justify-content-center">
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Início</label>
-                <input type="date" id="dataInicio" class="form-control form-control-sm shadow-sm calc-trigger">
+                <input type="date" id="dataInicio" class="form-control form-control-sm shadow-sm calc-trigger" style="width: 92%;">
               </div>
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Fim</label>
-                <input type="date" id="dataFim" class="form-control form-control-sm shadow-sm calc-trigger">
+                <input type="date" id="dataFim" class="form-control form-control-sm shadow-sm calc-trigger" style="width: 92%;">
               </div>
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Duração da Arte</label>
-                <div id="duracaoBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm">—</div>
+                <div id="duracaoBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm" style="width: 92%;">—</div>
               </div>
             </div>
           </div>
 
           <div class="p-3 bg-custom-darker rounded-3 border border-custom shadow-sm mb-4">
             <h6 class="fw-bold text-muted mb-3" style="font-size: 0.75rem;">LOGÍSTICA DE CLICHÊ</h6>
-            <div class="row g-3 align-items-end">
+            <div class="row g-3 align-items-end justify-content-center">
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Solicitação</label>
-                <input type="date" id="dataSolicitacaoCliche" class="form-control form-control-sm shadow-sm calc-trigger">
+                <input type="date" id="dataSolicitacaoCliche" class="form-control form-control-sm shadow-sm calc-trigger" style="width: 92%;">
               </div>
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data Chegada</label>
-                <input type="date" id="dataChegadaCliche" class="form-control form-control-sm shadow-sm calc-trigger">
+                <input type="date" id="dataChegadaCliche" class="form-control form-control-sm shadow-sm calc-trigger" style="width: 92%;">
               </div>
               <div class="col-md-4">
                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tempo de Trânsito</label>
-                <div id="prazoClicheBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm">—</div>
+                <div id="prazoClicheBadge" class="form-control form-control-sm bg-custom-dark text-white border-custom text-center fw-bold py-1 shadow-sm" style="width: 92%;">—</div>
               </div>
             </div>
           </div>
 
           <div class="mb-4">
             <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">OBSERVAÇÕES GERAIS</label>
-            <textarea id="observacao" rows="2" class="form-control form-control-sm shadow-sm"></textarea>
+            <textarea id="observacao" rows="2" class="form-control form-control-sm shadow-sm" style="width: 96%;"></textarea>
           </div>
 
           <div class="mb-2">
@@ -316,8 +295,8 @@ module.exports = function propostasView(usuario) {
         <div class="modal-footer bg-custom-darker border-custom d-flex justify-content-between">
           <button type="button" id="btnExcluirProposta" class="btn btn-sm btn-outline-danger shadow-sm d-none" onclick="confirmarExclusao()"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
           <div class="d-flex gap-2 ms-auto">
-            <button type="button" class="btn btn-sm btn-outline-secondary text-white shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-sm btn-brand fw-bold px-4 shadow-sm text-dark" onclick="salvarProposta()">Guardar</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary text-white shadow-sm" data-bs-dismiss="modal">Fechar</button>
+            <button type="button" class="btn btn-sm btn-brand fw-bold px-4 shadow-sm text-dark" onclick="salvarProposta()">Salvar</button>
           </div>
         </div>
       </div>
@@ -415,19 +394,24 @@ module.exports = function propostasView(usuario) {
     }
 
     // =======================================================================
-    // SKELETON LOADING (MODO ESCURO)
+    // SKELETON LOADING (CARDS - MODO ESCURO)
     // =======================================================================
-    function gerarSkeletonTabela(quantidade = 5) {
+    function gerarSkeletonCards(quantidade = 8) {
         let html = '';
         for(let i=0; i<quantidade; i++) {
             html += \`
-            <tr class="align-middle">
-                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                <td class="py-3 px-3 text-center"><div class="skeleton-dark skeleton-text-view" style="width: 30px; margin: 0 auto;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-                <td class="py-3 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-            </tr>\`;
+            <div class="col">
+                <div class="card h-100 erp-card shadow-sm skeleton-dark" style="border: 1px solid transparent; min-height: 125px;">
+                    <div class="card-body p-3 d-flex flex-column">
+                        <div class="skeleton-text-view w-75 mb-3"></div>
+                        <div class="skeleton-text-view w-50 mb-3"></div>
+                        <div class="mt-auto d-flex justify-content-between">
+                            <div class="skeleton-btn-view" style="width: 50px; height: 18px;"></div>
+                            <div class="skeleton-btn-view" style="width: 50px; height: 18px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>\`;
         }
         return html;
     }
@@ -438,21 +422,10 @@ module.exports = function propostasView(usuario) {
         if (document.getElementById('skeleton-temp-container')) return;
 
         const skeletonHTML = \`
-        <div id="skeleton-temp-container" class="table-responsive bg-custom-darker border-custom rounded-3 shadow-sm mb-4 skeleton-container">
-            <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                <thead>
-                    <tr>
-                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Cliente</th>
-                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Designer</th>
-                        <th class="px-3 py-2 text-muted border-0 text-center" style="font-size:0.75rem;">Alterações</th>
-                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Tempo de Arte</th>
-                        <th class="px-3 py-2 text-muted border-0" style="font-size:0.75rem;">Prazo Clichê</th>
-                    </tr>
-                </thead>
-                <tbody class="border-top-0">
-                    \${gerarSkeletonTabela(5)}
-                </tbody>
-            </table>
+        <div id="skeleton-temp-container" class="mb-4 skeleton-container">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+                \${gerarSkeletonCards(8)}
+            </div>
         </div>\`;
 
         if (listContainer) {
@@ -489,10 +462,10 @@ module.exports = function propostasView(usuario) {
         return -1; 
     }
 
-    // Badge mantido com lógica original, adaptado pro Dark Theme
+    // Badge gerador adaptado para encaixar melhor no formato dos Cards
     function gerarBadgeDias(dias) {
-        if (dias === null) return '<span class="text-muted" style="font-size:0.75rem;"><i class="fa-regular fa-clock me-1"></i>Pendente</span>';
-        if (dias === -1) return '<span class="text-danger" style="font-size:0.75rem;">Erro</span>';
+        if (dias === null) return '<span class="text-muted fw-bold" style="font-size:0.75rem;"><i class="fa-regular fa-clock me-1"></i>Pendente</span>';
+        if (dias === -1) return '<span class="text-danger fw-bold" style="font-size:0.75rem;">Erro</span>';
         
         if (dias > 2) {
             return \`<span class="badge bg-danger bg-opacity-10 border border-danger text-danger px-2 py-1 shadow-sm" style="font-size:0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>\${dias} d</span>\`;
@@ -561,7 +534,7 @@ module.exports = function propostasView(usuario) {
     }
 
     // ==========================================
-    // CRUD E RENDERIZAÇÃO DA TABELA 
+    // CRUD E RENDERIZAÇÃO EM CARDS
     // ==========================================
     async function buscarPropostas(page = 1, toastMsg = null) {
         mostrarSkeletonGlobais();
@@ -594,68 +567,65 @@ module.exports = function propostasView(usuario) {
     function renderTable(propostas) {
         const container = document.getElementById('listaPropostas');
         
+        container.className = 'mb-4'; 
+        
         if (propostas.length === 0) {
-            container.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-solid fa-inbox fa-3x mb-3 opacity-25"></i><br>Nenhuma proposta encontrada.</div>';
+            container.innerHTML = '<div class="text-center text-muted py-5 bg-custom-darker border border-custom rounded-3 shadow-sm"><i class="fa-solid fa-inbox fa-3x mb-3 opacity-25"></i><br>Nenhuma proposta encontrada.</div>';
             return;
         }
 
-        const linhas = propostas.map(p => {
+        const cards = propostas.map(p => {
             const diasArte = calcularDiasReal(p.data_inicio, p.data_fim);
             const diasCliche = calcularDiasReal(p.data_solicitacao_cliche, p.data_chegada_cliche);
             
-            // Define a cor de fundo da linha: > 2 Permanece Transparente | <= 2 Fica Verde Translúcido
-            let rowClass = 'table-hover-row';
-            if (diasArte > 2 || diasCliche > 2) {
-                // Não adiciona classe = permanece normal
-            } else if ((diasArte !== null && diasArte <= 2 && diasArte !== -1) || 
-                       (diasCliche !== null && diasCliche <= 2 && diasCliche !== -1)) {
-                rowClass += ' table-success-custom';
+            let isGreen = false;
+            
+            if (diasArte > 2 || diasCliche > 2 || diasArte === -1 || diasCliche === -1) {
+                isGreen = false;
+            } else if ((diasArte !== null && diasArte <= 2) || (diasCliche !== null && diasCliche <= 2)) {
+                isGreen = true;
+            } else {
+                isGreen = false;
             }
+
+            const customStyles = isGreen 
+                ? 'background-color: rgba(8, 192, 104, 0.08); border: 1px solid rgba(8, 192, 104, 0.4);'
+                : 'background-color: rgba(220, 53, 69, 0.08); border: 1px solid rgba(220, 53, 69, 0.4);';
 
             const qtdAlt = p.total_modificacoes || 0;
             const modBadge = qtdAlt > 0 
                 ? \`<span class="badge bg-danger rounded-pill shadow-sm" style="font-size:0.65rem;" title="\${qtdAlt} alterações registradas">\${qtdAlt}</span>\` 
-                : \`<span class="text-muted" style="font-size:0.75rem;">-</span>\`;
+                : \`<span class="text-muted fw-medium" style="font-size:0.75rem;">-</span>\`;
 
             return \`
-            <tr style="cursor: pointer;" class="align-middle \${rowClass}" onclick="abrirModalProposta(\${p.id})">
-                <td class="py-2 px-3">
-                    <strong class="text-white d-block text-truncate" style="max-width: 250px; font-size: 0.8rem;">\${p.cliente}</strong>
-                </td>
-                <td class="py-2 px-3 text-muted" style="font-size: 0.8rem;">
-                    <i class="fa-solid fa-user-pen me-1 opacity-75"></i> \${p.designer || '-'}
-                </td>
-                <td class="py-2 px-3 text-center">
-                    \${modBadge}
-                </td>
-                <td class="py-2 px-3">
-                    <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Produção da Arte:</span>
-                    \${gerarBadgeDias(diasArte)}
-                </td>
-                <td class="py-2 px-3">
-                    <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Logística Clichê:</span>
-                    \${gerarBadgeDias(diasCliche)}
-                </td>
-            </tr>
+            <div class="col">
+                <div class="card h-100 erp-card shadow-sm hover-card-proposta" style="\${customStyles}" onclick="abrirModalProposta(\${p.id})">
+                    <div class="card-body p-3 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                            <strong class="text-white text-truncate" style="max-width: 85%; font-size: 0.9rem;" title="\${p.cliente}">\${p.cliente}</strong>
+                            <div style="flex-shrink: 0;">\${modBadge}</div>
+                        </div>
+                        <div class="text-white-50 mb-3" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-user-pen me-1 opacity-75"></i> \${p.designer || '-'}
+                        </div>
+                        
+                        <div class="mt-auto d-flex justify-content-between align-items-end">
+                            <div>
+                                <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Arte</span>
+                                \${gerarBadgeDias(diasArte)}
+                            </div>
+                            <div class="text-end">
+                                <span class="text-muted d-block mb-1" style="font-size: 0.65rem;">Clichê</span>
+                                \${gerarBadgeDias(diasCliche)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             \`;
         }).join('');
 
-        container.innerHTML = \`
-            <table class="table table-sm align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                <thead>
-                    <tr>
-                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Cliente</th>
-                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Designer</th>
-                        <th class="px-3 py-2 text-muted fw-bold border-0 text-center" style="font-size:0.75rem;">Alterações</th>
-                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Tempo de Arte</th>
-                        <th class="px-3 py-2 text-muted fw-bold border-0" style="font-size:0.75rem;">Prazo Clichê</th>
-                    </tr>
-                </thead>
-                <tbody class="border-top-0">
-                    \${linhas}
-                </tbody>
-            </table>
-        \`;
+        container.innerHTML = \`<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">\${cards}</div>\`;
     }
 
     // ==========================================

@@ -7,8 +7,8 @@ module.exports = function propostasView(usuario, designers = []) {
   const menuHTML = menuLateral(user, "/propostas"); 
   const termosHTML = termosComponent(usuario); 
 
-  // Lógica blindada (case-insensitive) para garantir que o designer só veja e use o seu nome
-  const isDesigner = user.tipo_usuario && String(user.tipo_usuario).toLowerCase() === 'designer';
+  // CORREÇÃO: Aceita "design" ou "designer"
+  const isDesigner = user.tipo_usuario && ['design', 'designer'].includes(String(user.tipo_usuario).toLowerCase());
   
   const designerOptions = designers.map(d => {
       const isThisUser = isDesigner && String(user.nome).toLowerCase() === String(d.nome).toLowerCase();

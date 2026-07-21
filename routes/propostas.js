@@ -15,7 +15,8 @@ function tratarData(valor) {
 router.get('/propostas', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     try {
-        const [designers] = await db.promise().query("SELECT nome FROM usuarios WHERE LOWER(tipo_usuario) = 'designer' ORDER BY nome ASC");
+        // CORREÇÃO: Busca por 'design' ou 'designer'
+        const [designers] = await db.promise().query("SELECT nome FROM usuarios WHERE LOWER(tipo_usuario) IN ('design', 'designer') ORDER BY nome ASC");
         return res.send(require('../views/propostasView')(req.session.user, designers));
     } catch(err) {
         console.error("Erro ao carregar view de propostas:", err);
@@ -34,8 +35,8 @@ router.get('/propostas/lista', async (req, res) => {
         let where = 'WHERE 1=1';
         const params = [];
 
-        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja designer
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        // Isola e mostra propostas APENAS deste usuário caso a permissão dele seja design
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             where += ' AND p.designer = ?';
             params.push(req.session.user.nome);
@@ -76,7 +77,7 @@ router.post('/propostas', async (req, res) => {
         let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
 
         // O usuário designer só pode criar uma proposta para ele mesmo
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             designer = req.session.user.nome;
         }
@@ -112,7 +113,7 @@ router.get('/propostas/detalhe/:id', async (req, res) => {
         const params = [id];
 
         // Isola e busca a proposta APENAS se for deste usuário (caso seja designer)
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             query += ' AND designer = ?';
             params.push(req.session.user.nome);
@@ -137,7 +138,7 @@ router.put('/propostas/:id', async (req, res) => {
         let { cliente, designer, data_inicio, data_fim, observacao, data_solicitacao_cliche, data_chegada_cliche, modificacoes = [] } = req.body;
 
         // Isola e permite edição APENAS se for a proposta deste usuário
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             designer = req.session.user.nome;
             const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [id, req.session.user.nome]);
@@ -166,7 +167,7 @@ router.put('/propostas/:id', async (req, res) => {
 router.delete('/propostas/:id', async (req, res) => {
     if (!req.session || !req.session.user) return res.status(401).json({ success: false, message: 'Não autorizado' });
     try {
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             const [[prop]] = await db.promise().query('SELECT id FROM propostas WHERE id = ? AND designer = ?', [req.params.id, req.session.user.nome]);
             if (!prop) return res.status(403).json({ success: false, message: 'Você só pode excluir suas próprias propostas.' });
@@ -186,7 +187,7 @@ router.get('/admin/api/periodos-disponiveis', async (req, res) => {
         let where = '';
         const params = [];
         
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             where = 'AND designer = ?';
             params.push(req.session.user.nome);
@@ -208,7 +209,7 @@ router.get('/propostas/exportar/excel', async (req, res) => {
         const queryParams = [];
 
         // Isola as propostas apenas deste designer para a exportação
-        const isDesigner = req.session.user.tipo_usuario && String(req.session.user.tipo_usuario).toLowerCase() === 'designer';
+        const isDesigner = req.session.user.tipo_usuario && ['design', 'designer'].includes(String(req.session.user.tipo_usuario).toLowerCase());
         if (isDesigner) {
             whereClause += ' AND p.designer = ?';
             queryParams.push(req.session.user.nome);

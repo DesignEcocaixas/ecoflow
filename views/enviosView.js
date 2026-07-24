@@ -228,13 +228,13 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           </form>
         </div>
 
-        <div class="col-12 col-xl-6 d-flex flex-column" id="logsContainer">
-          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 flex-shrink-0 d-flex align-items-center h-100" style="max-height: 58px;">
+                <div class="col-12 col-xl-6 d-flex flex-column" id="logsContainer">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border-custom mb-3 flex-shrink-0 d-flex align-items-center" style="height: 58px;">
             <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-clipboard-list text-accent me-2"></i> Confirmações de Envio</h6>
           </div>
           
-          <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom flex-grow-1 d-flex flex-column">
-            <table class="table table-sm align-middle mb-0 w-100 h-100">
+          <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom flex-grow-1">
+            <table class="table table-sm align-top mb-0 w-100">
               <thead>
                 <tr>
                   <th class="py-2 px-2">Horário</th>

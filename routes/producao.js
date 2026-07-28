@@ -72,7 +72,7 @@ router.get('/producao', async (req, res) => {
     }
 });
 
-//EXPORTAR HISTÓRICO DE ORDENS DE PRODUÇÃO
+//EXPORTAR HISTÓRICO DE ORDENS DE PRODUÇÃO (POR LOTE)
 router.get('/exportar/historico', async (req, res) => {
     const loteAlvo = req.query.lote; // agora recebe o ID do lote
 
@@ -114,11 +114,11 @@ router.get('/exportar/historico', async (req, res) => {
             };
 
             sheetRot.columns = [
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'MODELO', key: 'modelo', width: 25 },
                 { header: 'TAMANHO', key: 'tamanho', width: 12 },
-                { header: 'CLIENTE', key: 'cliente', width: 30 },
                 { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
-                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'DATA', key: 'previsao_faturamento', width: 15 },
                 { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
@@ -148,11 +148,11 @@ router.get('/exportar/historico', async (req, res) => {
                 }
 
                 sheetRot.addRow({
+                    cliente: d.cliente,
+                    vendedor: d.vendedor,
                     modelo: d.modelo,
                     tamanho: d.tamanho,
-                    cliente: d.cliente,
                     quantidade: d.quantidade,
-                    vendedor: d.vendedor,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
                     operador: ''
                 });
@@ -257,7 +257,7 @@ router.get('/exportar/historico', async (req, res) => {
     }
 });
 
-// ADICIONE ESTA NOVA ROTA PARA EXPORTAR PELO HISTÓRICO
+// EXPORTAR HISTÓRICO DE ORDENS DE PRODUÇÃO (POR DATA)
 router.get('/exportar/historico', async (req, res) => {
     const dataAlvo = req.query.data; // formato YYYY-MM-DD
 
@@ -296,11 +296,11 @@ router.get('/exportar/historico', async (req, res) => {
             };
 
             sheetRot.columns = [
+                { header: 'CLIENTE', key: 'cliente', width: 30 },
+                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'MODELO', key: 'modelo', width: 25 },
                 { header: 'TAMANHO', key: 'tamanho', width: 12 },
-                { header: 'CLIENTE', key: 'cliente', width: 30 },
                 { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
-                { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'DATA', key: 'previsao_faturamento', width: 15 },
                 { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
@@ -330,11 +330,11 @@ router.get('/exportar/historico', async (req, res) => {
                 }
 
                 sheetRot.addRow({
+                    cliente: d.cliente,
+                    vendedor: d.vendedor,
                     modelo: d.modelo,
                     tamanho: d.tamanho,
-                    cliente: d.cliente,
                     quantidade: d.quantidade,
-                    vendedor: d.vendedor,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
                     operador: ''
                 });

@@ -532,12 +532,12 @@ router.get('/exportar/rotativa', async (req, res) => {
         };
 
         sheet.columns = [
-            { header: 'MODELO', key: 'modelo', width: 25 },
-            { header: 'TAMANHO', key: 'tamanho', width: 12 },
             { header: 'CLIENTE', key: 'cliente', width: 30 },
-            { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
-            { header: 'VENDEDOR', key: 'vendedor', width: 25 },
-            { header: 'DATA', key: 'previsao_faturamento', width: 15 },
+            { header: 'VENDEDOR', key: 'vendedor', width: 10 },
+            { header: 'MODELO', key: 'modelo', width: 20 },
+            { header: 'TAMANHO', key: 'tamanho', width: 10 },
+            { header: 'QUANTIDADE', key: 'quantidade', width: 13 },
+            { header: 'DATA', key: 'previsao_faturamento', width: 10 },
             { header: 'OPERADOR', key: 'operador', width: 20 }
         ];
 
@@ -566,11 +566,11 @@ router.get('/exportar/rotativa', async (req, res) => {
             }
 
             sheet.addRow({
+                cliente: d.cliente,
+                vendedor: d.vendedor,
                 modelo: d.modelo,
                 tamanho: d.tamanho,
-                cliente: d.cliente,
                 quantidade: d.quantidade,
-                vendedor: d.vendedor,
                 previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
                 operador: ''
             });
@@ -631,14 +631,14 @@ router.get('/exportar/flexografica', async (req, res) => {
 
         sheet.columns = [
             { header: 'CLIENTE', key: 'cliente', width: 30 },
-            { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+            { header: 'VENDEDOR', key: 'vendedor', width: 10 },
             { header: 'MODELO', key: 'modelo', width: 20 },
             { header: 'TAMANHO', key: 'tamanho', width: 10 },
-            { header: 'MATERIAL', key: 'material', width: 12 },
-            { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
+            { header: 'MATERIAL', key: 'material', width: 10 },
+            { header: 'QTD CORES', key: 'qtd_cores', width: 10 },
             { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
-            { header: 'QTD', key: 'quantidade', width: 10 },
-            { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
+            { header: 'QTD', key: 'quantidade', width: 6 },
+            { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 10 },
             { header: 'OPERADOR', key: 'operador', width: 20 }
         ];
 

@@ -83,17 +83,14 @@ router.get('/exportar/historico', async (req, res) => {
             SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
             FROM pedidos_rotativa 
             WHERE lote = ? 
-            ORDER BY 
-                modelo,
-                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
-                cliente`, [loteAlvo]
+            ORDER BY previsao_faturamento ASC, cliente ASC`, [loteAlvo]
         );
 
         const [flexo] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica 
             WHERE lote = ? 
-            ORDER BY cliente`, [loteAlvo]
+            ORDER BY previsao_faturamento ASC, cliente ASC`, [loteAlvo]
         );
 
         const ExcelJS = require('exceljs');
@@ -123,8 +120,7 @@ router.get('/exportar/historico', async (req, res) => {
                 { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
                 { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'DATA', key: 'previsao_faturamento', width: 15 },
-                { header: 'OPERADOR', key: 'operador', width: 20 },
-                { header: 'STATUS', key: 'status', width: 15 }
+                { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
 
             sheetRot.insertRow(1, []);
@@ -143,32 +139,25 @@ router.get('/exportar/historico', async (req, res) => {
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             });
 
-            let modeloAtual = null;
-            let tamanhoAtual = null;
+            let clienteAnterior = null;
 
             rotativa.forEach(d => {
-                if (modeloAtual !== null && modeloAtual !== d.modelo) {
-                    sheetRot.addRow({});
-                    sheetRot.addRow({});
-                }
-
-                if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+                // Insere uma linha em branco apenas quando mudar de cliente
+                if (clienteAnterior && d.cliente !== clienteAnterior) {
                     sheetRot.addRow({});
                 }
 
                 sheetRot.addRow({
-                    modelo: modeloAtual === d.modelo ? '' : d.modelo,
-                    tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                    modelo: d.modelo,
+                    tamanho: d.tamanho,
                     cliente: d.cliente,
                     quantidade: d.quantidade,
                     vendedor: d.vendedor,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                    operador: '',
-                    status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+                    operador: ''
                 });
 
-                modeloAtual = d.modelo;
-                tamanhoAtual = d.tamanho;
+                clienteAnterior = d.cliente;
             });
 
             sheetRot.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
@@ -206,10 +195,8 @@ router.get('/exportar/historico', async (req, res) => {
                 { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
                 { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
                 { header: 'QTD', key: 'quantidade', width: 10 },
-                { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
                 { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
-                { header: 'OPERADOR', key: 'operador', width: 20 },
-                { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+                { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
 
             sheetFlexo.insertRow(1, []);
@@ -237,7 +224,6 @@ router.get('/exportar/historico', async (req, res) => {
                 sheetFlexo.addRow({
                     ...d,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                    status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
                     operador: ''
                 });
 
@@ -282,17 +268,14 @@ router.get('/exportar/historico', async (req, res) => {
             SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
             FROM pedidos_rotativa 
             WHERE DATE(created_at) = ? 
-            ORDER BY 
-                modelo,
-                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
-                cliente`, [dataAlvo]
+            ORDER BY previsao_faturamento ASC, cliente ASC`, [dataAlvo]
         );
 
         const [flexo] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, material, qtd_cores, cor_personalizacao, quantidade, status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica 
             WHERE DATE(created_at) = ? 
-            ORDER BY cliente`, [dataAlvo]
+            ORDER BY previsao_faturamento ASC, cliente ASC`, [dataAlvo]
         );
 
         const ExcelJS = require('exceljs');
@@ -319,8 +302,7 @@ router.get('/exportar/historico', async (req, res) => {
                 { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
                 { header: 'VENDEDOR', key: 'vendedor', width: 25 },
                 { header: 'DATA', key: 'previsao_faturamento', width: 15 },
-                { header: 'OPERADOR', key: 'operador', width: 20 },
-                { header: 'STATUS', key: 'status', width: 15 }
+                { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
 
             sheetRot.insertRow(1, []);
@@ -339,32 +321,25 @@ router.get('/exportar/historico', async (req, res) => {
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             });
 
-            let modeloAtual = null;
-            let tamanhoAtual = null;
+            let clienteAnterior = null;
 
             rotativa.forEach(d => {
-                if (modeloAtual !== null && modeloAtual !== d.modelo) {
-                    sheetRot.addRow({});
-                    sheetRot.addRow({});
-                }
-
-                if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+                // Insere uma linha em branco apenas quando mudar de cliente
+                if (clienteAnterior && d.cliente !== clienteAnterior) {
                     sheetRot.addRow({});
                 }
 
                 sheetRot.addRow({
-                    modelo: modeloAtual === d.modelo ? '' : d.modelo,
-                    tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                    modelo: d.modelo,
+                    tamanho: d.tamanho,
                     cliente: d.cliente,
                     quantidade: d.quantidade,
                     vendedor: d.vendedor,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                    operador: '',
-                    status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+                    operador: ''
                 });
 
-                modeloAtual = d.modelo;
-                tamanhoAtual = d.tamanho;
+                clienteAnterior = d.cliente;
             });
 
             sheetRot.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
@@ -402,10 +377,8 @@ router.get('/exportar/historico', async (req, res) => {
                 { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
                 { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
                 { header: 'QTD', key: 'quantidade', width: 10 },
-                { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
                 { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
-                { header: 'OPERADOR', key: 'operador', width: 20 },
-                { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+                { header: 'OPERADOR', key: 'operador', width: 20 }
             ];
 
             sheetFlexo.insertRow(1, []);
@@ -433,7 +406,6 @@ router.get('/exportar/historico', async (req, res) => {
                 sheetFlexo.addRow({
                     ...d,
                     previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                    status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
                     operador: ''
                 });
 
@@ -542,9 +514,8 @@ router.get('/exportar/rotativa', async (req, res) => {
             FROM pedidos_rotativa
             WHERE ativo = 1
             ORDER BY 
-                modelo,
-                CAST(REGEXP_REPLACE(tamanho, '[^0-9]', '') AS UNSIGNED),
-                cliente
+                previsao_faturamento ASC,
+                cliente ASC
         `);
 
         const ExcelJS = require('exceljs');
@@ -567,8 +538,7 @@ router.get('/exportar/rotativa', async (req, res) => {
             { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
             { header: 'VENDEDOR', key: 'vendedor', width: 25 },
             { header: 'DATA', key: 'previsao_faturamento', width: 15 },
-            { header: 'OPERADOR', key: 'operador', width: 20 },
-            { header: 'STATUS', key: 'status', width: 15 }
+            { header: 'OPERADOR', key: 'operador', width: 20 }
         ];
 
         sheet.insertRow(1, []);
@@ -587,32 +557,25 @@ router.get('/exportar/rotativa', async (req, res) => {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        let modeloAtual = null;
-        let tamanhoAtual = null;
+        let clienteAnterior = null;
 
         dados.forEach(d => {
-            if (modeloAtual !== null && modeloAtual !== d.modelo) {
-                sheet.addRow({});
-                sheet.addRow({});
-            }
-
-            if (tamanhoAtual !== null && tamanhoAtual !== d.tamanho && modeloAtual === d.modelo) {
+            // Insere uma linha em branco apenas quando mudar de cliente
+            if (clienteAnterior && d.cliente !== clienteAnterior) {
                 sheet.addRow({});
             }
 
             sheet.addRow({
-                modelo: modeloAtual === d.modelo ? '' : d.modelo,
-                tamanho: tamanhoAtual === d.tamanho && modeloAtual === d.modelo ? '' : d.tamanho,
+                modelo: d.modelo,
+                tamanho: d.tamanho,
                 cliente: d.cliente,
                 quantidade: d.quantidade,
                 vendedor: d.vendedor,
                 previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                operador: '',
-                status: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente'
+                operador: ''
             });
 
-            modeloAtual = d.modelo;
-            tamanhoAtual = d.tamanho;
+            clienteAnterior = d.cliente;
         });
 
         sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
@@ -650,7 +613,7 @@ router.get('/exportar/flexografica', async (req, res) => {
                    status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica
             WHERE ativo = 1
-            ORDER BY cliente
+            ORDER BY previsao_faturamento ASC, cliente ASC
         `);
 
         const ExcelJS = require('exceljs');
@@ -675,10 +638,8 @@ router.get('/exportar/flexografica', async (req, res) => {
             { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
             { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
             { header: 'QTD', key: 'quantidade', width: 10 },
-            { header: 'STATUS PEDIDO', key: 'status_pedido', width: 25 },
             { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
-            { header: 'OPERADOR', key: 'operador', width: 20 },
-            { header: 'STATUS PROD.', key: 'status_producao', width: 15 }
+            { header: 'OPERADOR', key: 'operador', width: 20 }
         ];
 
         sheet.insertRow(1, []);
@@ -706,7 +667,6 @@ router.get('/exportar/flexografica', async (req, res) => {
             sheet.addRow({
                 ...d,
                 previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
-                status_producao: d.status_producao === 'concluido' ? 'Concluído' : 'Pendente',
                 operador: ''
             });
 

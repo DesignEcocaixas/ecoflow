@@ -34,15 +34,19 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
     let iconClass = "text-muted";
     
     if (item.veiculo === "Master") {
-        badgeClass = "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-50 shadow-sm";
-        iconClass = "text-primary";
-    } else if (item.veiculo === "Strada") {
-        badgeClass = "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 shadow-sm";
-        iconClass = "text-warning";
-    } else if (item.veiculo === "Fiorino") {
-        badgeClass = "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 shadow-sm";
-        iconClass = "text-danger";
-    }
+    badgeClass = "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-50 shadow-sm";
+    iconClass = "text-primary";
+  } else if (item.veiculo === "Strada") {
+      badgeClass = "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 shadow-sm";
+      iconClass = "text-warning";
+  } else if (item.veiculo === "Effa E21") {
+      badgeClass = "bg-info bg-opacity-10 text-info border border-info border-opacity-50 shadow-sm";
+      iconClass = "text-info";
+      // iconName = "bi-truck"; // ou "fa-truck-pickup" / "truck" (conforme a biblioteca usada)
+  } else if (item.veiculo === "Fiorino") {
+      badgeClass = "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 shadow-sm";
+      iconClass = "text-danger";
+  }
 
     return `
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
@@ -120,6 +124,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                     <option ${item.veiculo === "Master" ? "selected" : ""}>Master</option>
                     <option ${item.veiculo === "Strada" ? "selected" : ""}>Strada</option>
                     <option ${item.veiculo === "Fiorino" ? "selected" : ""}>Fiorino</option>
+                    <option ${item.veiculo === "Effa E21" ? "selected" : ""}>Effa E21</option>
                   </select>
                 </div>
                 <div class="col-12 col-md-4">
@@ -450,6 +455,7 @@ function checklistMotoristasView(usuario, itens = [], paginacao = {}, filtrosDb 
                   <option value="Master">Renault Master</option>
                   <option value="Strada">Fiat Strada</option>
                   <option value="Fiorino">Fiat Fiorino</option>
+                  <option value="Effa E21">Effa E21</option>
                 </select>
               </div>
               <div class="mb-3">

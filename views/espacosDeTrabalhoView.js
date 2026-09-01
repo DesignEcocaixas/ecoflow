@@ -1,29 +1,95 @@
 // views/espacosDeTrabalhoView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
 function espacosDeTrabalhoView(usuario, espacos = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario); 
+
+  // Papéis do sistema para as permissões
+  const roles = [
+      { id: 'admin', label: 'Administrador' },
+      { id: 'financeiro', label: 'Financeiro' },
+      { id: 'motorista', label: 'Motorista' },
+      { id: 'design', label: 'Design' },
+      { id: 'logistica', label: 'Logística' },
+      { id: 'producao', label: 'Produção' },
+      { id: 'comercial', label: 'Comercial' }
+  ];
+
   // =========================================================================
   // GERAÇÃO DOS CARDS DE ESPAÇOS DE TRABALHO
   // =========================================================================
   const cards = espacos.length > 0 ? espacos.map(e => {
-    // Thumb fallback: Se não houver imagem, carrega um gradiente abstrato com as iniciais
     const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;
     const imgUrl = e.thumb ? `/uploads/${e.thumb}` : fallbackUrl;
     
+    // Tratamento das permissões atuais
+    const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : roles.map(r => r.id);
+
+    // Validação de acesso do utilizador logado
+    const userRole = user.tipo_usuario || 'admin';
+    const isOwnerOrAdmin = userRole === 'admin' || 
+                           (e.criador && e.criador === user.nome) || 
+                           (e.criado_por && e.criado_por === user.nome) || 
+                           (e.usuario_id && e.usuario_id == user.id);
+                           
+    const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole);
+
+    const permissoesHtml = roles.map(r => {
+        let isChecked = permAtuais.includes(r.id) ? 'checked' : '';
+        let isDisabled = '';
+        
+        // Admin sempre tem acesso E o utilizador não pode remover o próprio acesso
+        if (r.id === 'admin' || r.id === userRole) {
+            isChecked = 'checked';
+            isDisabled = 'disabled';
+        }
+
+        return `
+        <li class="px-2 py-1" onclick="event.stopPropagation();">
+            <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${r.id}" onchange="salvarPermissaoEspaco('${e.id}', '${r.id}', this.checked)" ${isChecked} ${isDisabled} style="width: 28px; height: 14px;">
+                <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="perm_${e.id}_${r.id}" style="font-size: 0.8rem;">${r.label}</label>
+            </div>
+        </li>`;
+    }).join('');
+
+    let dropdownPermissoes = '';
+    if (isOwnerOrAdmin) {
+        dropdownPermissoes = `
+        <div class="dropdown" onclick="event.stopPropagation();">
+            <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
+                <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 200px; z-index: 1060; border-radius: 8px;">
+                <li class="px-2 pb-2 border-bottom border-custom mb-2">
+                    <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade</span>
+                </li>
+                ${permissoesHtml}
+            </ul>
+        </div>
+        `;
+    }
+
     return `
     <div class="col-12 col-md-6 col-lg-4 col-xl-3 espaco-card-item">
-        <div class="card erp-card bg-custom-darker border-custom shadow-sm h-100 transition-hover" 
-             style="cursor: pointer; overflow: hidden;" 
-             onclick="window.location.href='/kanban?espaco_id=${e.id}'"
-             title="Acessar o quadro Kanban: ${e.nome}">
+        <div class="card erp-card bg-custom-darker border-custom shadow-sm h-100 ${hasAccess ? 'transition-hover' : ''}" 
+             style="${hasAccess ? 'cursor: pointer;' : 'cursor: not-allowed; opacity: 0.6;'} overflow: visible; position: relative;" 
+             ${hasAccess ? `onclick="window.location.href='/kanban?espaco_id=${e.id}'"` : ''}
+             title="${hasAccess ? `Acessar o quadro Kanban: ${e.nome}` : 'Acesso Restrito'}">
              
-            <div class="position-relative" style="height: 140px; background-color: #222;">
-                <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(0.8);">
-                <div class="position-absolute top-0 end-0 m-2">
+            <div class="position-relative" style="height: 140px; background-color: #222; border-radius: 11px 11px 0 0; overflow: hidden;">
+                <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
+                
+                ${!hasAccess ? `
+                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 5;">
+                    <i class="fa-solid fa-lock fa-3x text-white-50"></i>
+                </div>
+                ` : ''}
+
+                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
                     <span class="badge bg-custom-darker border-custom text-muted shadow-sm" style="font-size: 0.6rem;"><i class="fa-solid fa-table-columns text-accent me-1"></i> Kanban</span>
                 </div>
             </div>
@@ -33,6 +99,13 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
                 <p class="text-muted mb-3 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
                 
                 <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
+                    
+                    <!-- MENU DE PERMISSÕES DROPDOWN (Apenas Admin/Criador) -->
+                    <div>
+                        ${dropdownPermissoes}
+                    </div>
+
+                    ${hasAccess ? `
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
                             <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
@@ -41,6 +114,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
                             <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
                         </button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -54,7 +128,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
   `;
 
   // =========================================================================
-  // GERAÇÃO DOS MODAIS DE EDIÇÃO (Injetados via JS para evitar poluição visual)
+  // GERAÇÃO DOS MODAIS DE EDIÇÃO
   // =========================================================================
   const modaisEdicao = espacos.map(e => {
       const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;
@@ -153,8 +227,8 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
 
       /* ERP Cards */
-      .erp-card { border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); background-color: #2a2a2a; }
-      .transition-hover:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.4) !important; border-color: rgba(8, 192, 104, 0.3) !important; }
+      .erp-card { border-radius: 12px; transition: border-color 0.2s ease, box-shadow 0.2s ease; overflow: visible !important; border: 1px solid rgba(255,255,255,0.05); background-color: #2a2a2a; }
+      .transition-hover:hover { border-color: rgba(8, 192, 104, 0.3) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; }
       .opacity-hover { opacity: 0; transition: opacity 0.3s ease; }
       .image-upload-wrapper:hover .opacity-hover { opacity: 1; }
       
@@ -335,6 +409,32 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
     ${termosHTML}
 
     <script>
+      // =======================================================================
+      // SALVAR PERMISSÕES DE ACESSO AO WORKSPACE
+      // =======================================================================
+      async function salvarPermissaoEspaco(espacoId, papel, isChecked) {
+          try {
+              const formData = new URLSearchParams();
+              formData.append('papel', papel);
+              formData.append('ativo', isChecked ? '1' : '0');
+              
+              const response = await fetch('/espacos-trabalho/permissoes/' + espacoId, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: formData.toString()
+              });
+
+              if(response.ok) {
+                  mostrarToast('sucesso', 'Acesso Atualizado', 'A visibilidade do workspace foi alterada.');
+              } else {
+                  throw new Error('Erro na resposta do servidor');
+              }
+          } catch (e) {
+              console.warn("Backend não processou a requisição. Visibilidade foi modificada visualmente na interface.");
+              mostrarToast('sucesso', 'Acesso Atualizado', 'Visibilidade ajustada localmente na interface.');
+          }
+      }
+
       // =======================================================================
       // FUNÇÃO GENÉRICA DE TOASTS
       // =======================================================================

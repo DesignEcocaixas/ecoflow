@@ -58,6 +58,8 @@ function cadastroView(usuario, usuarios = []) {
             else if (u.tipo_usuario === 'financeiro') badgeColor = 'bg-custom-dark border-custom text-success';
             else if (u.tipo_usuario === 'design') badgeColor = 'bg-custom-dark border-custom text-info';
             else if (u.tipo_usuario === 'logistica') badgeColor = 'bg-custom-dark border-custom text-warning';
+            else if (u.tipo_usuario === 'producao') badgeColor = 'bg-custom-dark border-custom text-light';
+            else if (u.tipo_usuario === 'comercial') badgeColor = 'bg-custom-dark border-custom text-primary';
             else if (isNoLogin) badgeColor = 'bg-custom-darker border-custom text-muted';
 
             const cpfFormatado = applyMaskCPF(u.cpf);
@@ -103,6 +105,8 @@ function cadastroView(usuario, usuarios = []) {
                                 <option value="financeiro" ${u.tipo_usuario === "financeiro" ? "selected" : ""}>Financeiro</option>
                                 <option value="design" ${u.tipo_usuario === "design" ? "selected" : ""}>Design</option>
                                 <option value="logistica" ${u.tipo_usuario === "logistica" ? "selected" : ""}>Logística</option>
+                                <option value="producao" ${u.tipo_usuario === "producao" ? "selected" : ""}>Produção</option>
+                                <option value="comercial" ${u.tipo_usuario === "comercial" ? "selected" : ""}>Comercial</option>
                             </optgroup>
                             <optgroup label="Colaboradores (Sem Login)">
                                 <option value="motorista_avulso" ${u.tipo_usuario === "motorista_avulso" ? "selected" : ""}>Motorista Avulso</option>
@@ -496,6 +500,8 @@ function cadastroView(usuario, usuarios = []) {
                       <option value="motorista" selected>Motorista</option>
                       <option value="design">Design</option>
                       <option value="logistica">Logística</option>
+                      <option value="producao">Produção</option>
+                      <option value="comercial">Comercial</option>
                   </optgroup>
                   <optgroup label="Colaboradores (Sem Login)">
                       <option value="motorista_avulso">Motorista Avulso</option>
@@ -688,7 +694,7 @@ function cadastroView(usuario, usuarios = []) {
             let liHtml = \`<li class="page-item \${paginaAtual === 1 ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual - 1})">«</a></li>\`;
 
             const addBotaoPagina = (num) => {
-                liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\text{num})">\${num}</a></li>\`;
+                liHtml += \`<li class="page-item \${paginaAtual === num ? 'active' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${num})">\${num}</a></li>\`;
             };
 
             const addReticencias = () => {
@@ -715,7 +721,7 @@ function cadastroView(usuario, usuarios = []) {
                 addBotaoPagina(totalPaginas);
             }
 
-            liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\text{paginaAtual + 1})">»</a></li>\`;
+            liHtml += \`<li class="page-item \${paginaAtual === totalPaginas ? 'disabled' : ''}"><a class="page-link" onclick="renderizarPaginacaoUsuarios(\${paginaAtual + 1})">»</a></li>\`;
             ul.innerHTML = liHtml;
         }
 

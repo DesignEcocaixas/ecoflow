@@ -64,25 +64,64 @@ router.get("/kanban", isLogged, (req, res) => {
                                 card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
                             });
 
-                            // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS JÁ ORDENANDO POR PRAZO
+                            // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO > 30 DIAS)
+                            const now = new Date();
+                            const cardsParaDeletar = [];
+                            const avisosExclusao = [];
+
+                            // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS JÁ ORDENANDO POR PRAZO E FILTRANDO OS ANTIGOS
                             colunas.forEach(col => {
-                                col.cards = cards
-                                    .filter(c => c.coluna_id === col.id)
-                                    .sort((a, b) => {
-                                        // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
-                                        if (!a.prazo && b.prazo) return 1;  // 'a' não tem prazo, vai para baixo
-                                        if (a.prazo && !b.prazo) return -1; // 'b' não tem prazo, 'a' fica em cima
-                                        if (!a.prazo && !b.prazo) return 0; // Ambos sem prazo, mantém a ordem
+                                let cardsDaColuna = cards.filter(c => c.coluna_id === col.id);
 
-                                        // 2. Ordenação por data: Menor prazo (mais próximo/urgente) no topo (ASC)
-                                        const dataA = new Date(a.prazo);
-                                        const dataB = new Date(b.prazo);
-
-                                        return dataA - dataB;
+                                // Interceptação caso a coluna seja a "Faturado e Entregue"
+                                if (col.titulo.trim().toLowerCase() === 'faturado e entregue') {
+                                    cardsDaColuna = cardsDaColuna.filter(card => {
+                                        const dataCriacao = new Date(card.criado_em);
+                                        const diffTime = Math.abs(now - dataCriacao);
+                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                        
+                                        if (diffDays >= 30) {
+                                            cardsParaDeletar.push(card.id);
+                                            return false; // Remove da renderização visual
+                                        } else if (diffDays === 29) {
+                                            avisosExclusao.push(card.titulo || 'Sem Título');
+                                        }
+                                        return true; // Mantém o card
                                     });
+                                }
+
+                                col.cards = cardsDaColuna.sort((a, b) => {
+                                    // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
+                                    if (!a.prazo && b.prazo) return 1;  
+                                    if (a.prazo && !b.prazo) return -1; 
+                                    if (!a.prazo && !b.prazo) return 0; 
+
+                                    // 2. Ordenação por data: Menor prazo (mais próximo/urgente) no topo (ASC)
+                                    const dataA = new Date(a.prazo);
+                                    const dataB = new Date(b.prazo);
+
+                                    if (dataA.getTime() !== dataB.getTime()) {
+                                        return dataA - dataB;
+                                    }
+
+                                    // 3. CRITÉRIO DE DESEMPATE
+                                    if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
+                                    if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+
+                                    return 0; 
+                                });
                             });
 
-                            res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                            // Executa a deleção em background caso hajam cards vencidos
+                            if (cardsParaDeletar.length > 0) {
+                                db.query("DELETE FROM kanban_cards WHERE id IN (?)", [cardsParaDeletar], () => {});
+                                db.query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                                db.query("DELETE FROM kanban_historico WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                                db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                            }
+
+                            // Passa os avisos para a View
+                            res.send(kanbanView(req.session.user, colunas, espacoAtual, avisosExclusao));
                         });
                     });
                 });

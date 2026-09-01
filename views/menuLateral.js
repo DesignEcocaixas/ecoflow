@@ -55,6 +55,17 @@ function menuLateral(usuario, rotaAtiva = "") {
     { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" }
   ];
 
+  const prodLinks = [
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
+  ];
+
+  const comLinks = [
+    { href: "/tabela-precos", icone: "fas fa-tags", texto: "Preços" },
+    { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
+    { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" }
+  ];
+
   // Agrupar links para as sugestões da barra de pesquisa
   let availableLinks = [ { href: "/home", icone: "fas fa-home", texto: "Início" } ];
 
@@ -153,6 +164,12 @@ function menuLateral(usuario, rotaAtiva = "") {
   } else if (tipo === "financeiro") {
     menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
     availableLinks.push(...finLinks);
+  } else if (tipo === "producao") {
+    menuLinks += renderCollapse("collProd", "fas fa-industry", "Produção", prodLinks);
+    availableLinks.push(...prodLinks);
+  } else if (tipo === "comercial") {
+    menuLinks += renderCollapse("collCom", "fas fa-briefcase", "Comercial", comLinks);
+    availableLinks.push(...comLinks);
   } else {
     menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
     menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);

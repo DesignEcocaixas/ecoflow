@@ -189,7 +189,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 10px;
+              padding: 5px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;

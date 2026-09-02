@@ -49,35 +49,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
-  // Novo Modal: Configuração individual de exclusão de uma coluna
-  const modalExclusaoColunaHtml = `
-  <div class="modal fade" id="modalExclusaoColuna" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
-          <form id="formExclusaoColuna" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoColunaUnica(event, this)">
-              <div class="modal-header modal-header-dark border-custom">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Limpeza Manual</h6>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body p-4 bg-custom-dark text-center">
-                  <input type="hidden" id="configExclusaoColId" name="colId">
-                  <p class="text-white-50 mb-3" style="font-size: 0.8rem; line-height: 1.4;">Excluir os cards desta coluna a partir de quantos dias de criação?</p>
-                  
-                  <div class="input-group input-group-sm shadow-sm mx-auto" style="width: 140px;">
-                      <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
-                      <input type="number" id="configExclusaoColDias" name="dias" class="form-control bg-custom-darker border-custom text-white fw-bold text-center" min="1" placeholder="Ex: 10">
-                      <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
-                  </div>
-              </div>
-              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
-                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
-              </div>
-          </form>
-      </div>
-  </div>
-  `;
-
-  // Modal de Exclusão Automática (Background Geral)
+  // Modal: Exclusão Automática Geral
   const modalExclusaoAutomaticaHtml = `
   <div class="modal fade" id="modalExclusaoAutomatica" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
@@ -361,7 +333,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
           /* ==================================================================
-             OVERRIDE DE CORES PARA O TEMA CLARO 
+             OVERRIDE DE CORES PARA O TEMA CLARO - RESTRITO A CARDS/COLUNAS/MODAIS 
+             Isso mantém todo o Header principal da View com o seu padrão escuro intacto
           ================================================================== */
           body.theme-light {
               --bg-color: #e4e7ea;
@@ -370,11 +343,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: var(--bg-color) !important;
           }
           
+          /* KANBAN BOARD E ESTRUTURA GERAL (Somente as colunas mudam) */
           body.theme-light .kanban-column {
-              background-color: #f4f5f7 !important;
+              background-color: #f4f5f7 !important; 
               border-right: 1px solid #dcdcdc !important; 
           }
           body.theme-light .kanban-header {
+              background-color: #f8f9fa !important;
               color: #333 !important;
               border-bottom: 1px solid #dcdcdc !important;
           }
@@ -385,6 +360,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: #666 !important;
           }
           
+          /* KANBAN CARDS */
           body.theme-light .kanban-card {
               background-color: #ffffff !important;
               color: #333 !important;
@@ -395,44 +371,27 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           body.theme-light .kanban-card:hover {
               background-color: #f1f3f5 !important;
           }
-          
-          body.theme-light .hover-bg-custom:hover { background-color: rgba(0,0,0,0.05) !important; }
-
-          /* ISOLAMENTO ABSOLUTO DO HEADER (Sempre escuro) */
-          body.theme-light #kanban-top-header .text-white { color: #ffffff !important; }
-          body.theme-light #kanban-top-header .text-white-50 { color: rgba(255, 255, 255, 0.5) !important; }
-          body.theme-light #kanban-top-header .bg-custom-darker { background-color: #222222 !important; border-color: rgba(255,255,255,0.08) !important; }
-          body.theme-light #kanban-top-header .bg-custom-dark { background-color: #2a2a2a !important; }
-          body.theme-light #kanban-top-header .border-custom { border-color: rgba(255,255,255,0.08) !important; }
-          body.theme-light #kanban-top-header .form-control { background-color: #222222 !important; color: #ffffff !important; }
-          body.theme-light #kanban-top-header .form-control::placeholder { color: rgba(255, 255, 255, 0.4) !important; }
-          body.theme-light #kanban-top-header .input-group-text { background-color: #222222 !important; color: rgba(255,255,255,0.5) !important; }
-          body.theme-light #kanban-top-header .fa-magnifying-glass,
-          body.theme-light #kanban-top-header .fa-xmark { color: rgba(255, 255, 255, 0.5) !important; }
-          body.theme-light #kanban-top-header .btn-outline-secondary { color: #ffffff !important; }
-          body.theme-light #kanban-top-header .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1) !important; }
-          body.theme-light #kanban-top-header .dropdown-menu { background-color: #2a2a2a !important; border-color: rgba(255,255,255,0.1) !important; }
-          body.theme-light #kanban-top-header .dropdown-menu .dropdown-item { color: #ffffff !important; }
-          body.theme-light #kanban-top-header .dropdown-menu .dropdown-item:hover { background-color: rgba(255,255,255,0.05) !important; }
-          body.theme-light #kanban-top-header .hover-bg-custom:hover { background-color: rgba(255,255,255,0.05) !important; }
-          
-          /* Correção específica do botão XLSX dentro do menu */
-          body.theme-light #kanban-top-header .dropdown-menu .btn-outline-success { color: #08c068 !important; border-color: #08c068 !important; background-color: transparent !important;}
-          body.theme-light #kanban-top-header .dropdown-menu .btn-outline-success:hover { color: #1f1f1f !important; background-color: #08c068 !important; }
-
-          /* TEMA CLARO - Demais elementos (excluindo header) */
-          body.theme-light .content > :not(#kanban-top-header) .text-white, 
-          body.theme-light .modal .text-white {
-              color: #333 !important;
-          }
-          body.theme-light .content > :not(#kanban-top-header) .text-white-50, 
-          body.theme-light .modal .text-white-50 {
-              color: #666 !important;
-          }
-          body.theme-light .preview-html {
+          body.theme-light .kanban-card .text-white-50 {
               color: #666 !important;
           }
 
+          /* TEMA CLARO - Caixa de Resultados de Pesquisa do Kanban (se aberta) */
+          body.theme-light #searchResultsKanban.bg-custom-darker {
+              background-color: #222222 !important;
+              border-color: rgba(255,255,255,0.08) !important;
+          }
+          body.theme-light #searchResultsKanban .text-white,
+          body.theme-light #searchResultsKanban .fw-bold {
+              color: #ffffff !important;
+          }
+          body.theme-light #searchResultsKanban .hover-bg-custom:hover {
+              background-color: rgba(255,255,255,0.05) !important;
+          }
+          body.theme-light #searchResultsKanban .text-white-50 {
+              color: rgba(255,255,255,0.5) !important;
+          }
+
+          /* MODAIS GERAIS (TEMA CLARO) */
           body.theme-light .modal-content.erp-modal {
               background-color: #ffffff !important;
               border: 1px solid #ccc !important;
@@ -446,90 +405,67 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: #f8f9fa !important;
               border-top: 1px solid #dcdcdc !important;
           }
-          
           body.theme-light .modal .btn-close-white {
               filter: invert(1) grayscale(100%) brightness(10%); 
           }
-
-          body.theme-light .content .bg-custom-dark, 
           body.theme-light .modal .bg-custom-dark {
               background-color: #f1f3f5 !important;
           }
-          body.theme-light .content .bg-custom-darker, 
           body.theme-light .modal .bg-custom-darker {
               background-color: #ffffff !important;
               border-color: #dcdcdc !important;
           }
-          body.theme-light .content .border-custom,
           body.theme-light .modal .border-custom {
               border-color: #dcdcdc !important;
           }
-
-          body.theme-light .form-control:not(#searchInputKanban):not(#menuSearchInput), 
-          body.theme-light .form-select, 
-          body.theme-light .input-group-text:not(.kanban-search-bar .input-group-text) {
+          body.theme-light .modal .text-white {
+              color: #333 !important;
+          }
+          body.theme-light .modal .text-white-50 {
+              color: #666 !important;
+          }
+          body.theme-light .modal .form-control, 
+          body.theme-light .modal .form-select, 
+          body.theme-light .modal .input-group-text {
               background-color: #ffffff !important;
               color: #333 !important;
               border-color: #ccc !important;
           }
-          body.theme-light .form-control:not(#searchInputKanban):not(#menuSearchInput)::placeholder {
+          body.theme-light .modal .form-control::placeholder {
               color: #999 !important;
           }
-          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) {
-              background-color: #ffffff !important;
-              color: #333 !important;
-              border-color: #ccc !important;
-          }
-          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) .form-check-label,
-          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) .form-label {
+          body.theme-light .modal .history-item strong {
               color: #333 !important;
           }
-          body.theme-light .dropdown-divider {
-              border-color: #dcdcdc !important;
-          }
-          body.theme-light .btn-outline-secondary {
-              color: #333 !important;
-              border-color: #ccc !important;
-          }
-          body.theme-light .btn-outline-secondary:hover {
-              background-color: rgba(0,0,0,0.05) !important;
-          }
-
-          body.theme-light .history-item strong {
-              color: #333 !important;
-          }
-          body.theme-light .card-desc-modal {
+          body.theme-light .modal .card-desc-modal {
               background-color: #f8f9fa !important;
               border-color: #dcdcdc !important;
               color: #333 !important;
           }
-          body.theme-light .rich-text-toolbar {
+          body.theme-light .modal .rich-text-toolbar {
               background: #f1f3f5 !important;
               border-color: #dcdcdc !important;
           }
-          body.theme-light .rich-text-toolbar button {
+          body.theme-light .modal .rich-text-toolbar button {
               color: #555 !important;
           }
-          body.theme-light .rich-text-toolbar button:hover {
+          body.theme-light .modal .rich-text-toolbar button:hover {
               background: rgba(0,0,0,0.08) !important;
               color: #000 !important;
           }
-          body.theme-light .inline-date-picker {
+          body.theme-light .modal .inline-date-picker {
               color: #333 !important;
               border-color: #ccc !important;
           }
-          body.theme-light .inline-date-picker::-webkit-calendar-picker-indicator {
+          body.theme-light .modal .inline-date-picker::-webkit-calendar-picker-indicator {
               filter: none;
           }
           body.theme-light #modal-right-col {
               background-color: #f8f9fa !important;
               border-left: 1px solid #dcdcdc !important;
           }
-          body.theme-light .kanban-header .column-title-inline[contenteditable]:empty::before {
-              color: rgba(0,0,0,0.4) !important;
-          }
 
-          /* BACKGROUND WALLPAPER LOGIC (COM EFEITO DEGRADÊ FIXO) */
+          /* BACKGROUND WALLPAPER LOGIC (COM EFEITO DEGRADÊ FLUÍDO) */
           body.has-wallpaper .content {
               background-size: cover;
               background-position: center;
@@ -579,7 +515,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
 
       <div class="content">
-          <div class="row align-items-center w-100 g-3 m-0 position-relative" id="kanban-top-header" style="z-index: 1050;">
+          <!-- Z-index 1050 adicionado à ROW para garantir que o dropdown de Configurações abra sobre as colunas -->
+          <div class="row align-items-center w-100 g-3 m-0 position-relative" style="z-index: 1050;">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
                   <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
@@ -594,16 +531,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative">
                 <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar">
-                    <span class="input-group-text border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="searchInputKanban" class="form-control border-custom border-end-0" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
-                    <button class="btn btn-outline-secondary border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                    <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="searchInputKanban" class="form-control bg-custom-darker border-custom border-end-0 text-white" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
+                    <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div id="searchResultsKanban" class="position-absolute w-100 bg-custom-darker border border-custom rounded shadow-lg mt-1 d-none" style="max-height: 300px; overflow-y: auto; left: 0;"></div>
             </div>
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
-                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
@@ -658,7 +594,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       ${modalAvisoHtml}
       ${modalExclusaoAutomaticaHtml}
-      ${modalExclusaoColunaHtml}
 
       <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
           <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -778,7 +713,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Pintura</span>
                                           <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
-                                      <div id="containerPercasPintura" class="d-flex flex-column"></div>
+                                      <div id="containerPercasPintura" class="d-flex flex-column gap-2"></div>
                                   </div>
 
                                   <div class="mb-3">
@@ -786,7 +721,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Corte</span>
                                           <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
-                                      <div id="containerPercasCorte" class="d-flex flex-column"></div>
+                                      <div id="containerPercasCorte" class="d-flex flex-column gap-2"></div>
                                   </div>
                               </div>
 
@@ -981,7 +916,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
 
           // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL EVITANDO ERROS DE REFERENCE
-          window.limparCardsColuna = async function(colId) {
+          function limparCardsColuna(colId) {
               const input = document.getElementById('input_limpeza_col_' + colId);
               if (!input) return;
               const dias = parseInt(input.value);
@@ -992,19 +927,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               if (confirm(\`Deseja realmente excluir todos os cards desta coluna com \${dias} ou mais dias de criação? Esta ação não pode ser desfeita.\`)) {
-                  try {
-                      const formData = new URLSearchParams();
-                      formData.append('dias', dias);
-                      const response = await fetch(\`/kanban/colunas/\${colId}/limpar\`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                          body: formData.toString()
-                      });
-                      
-                      const data = await response.json();
-                      if (response.ok && data.success) {
+                  fetch(\`/kanban/colunas/\${colId}/limpar\`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: new URLSearchParams({ dias: dias }).toString()
+                  })
+                  .then(res => res.json())
+                  .then(data => {
+                      if (data.success) {
                           mostrarToast('sucesso', 'Limpeza Concluída', \`\${data.deletados || 0} cards antigos foram excluídos.\`);
-                          
                           if (data.ids && data.ids.length > 0) {
                               data.ids.forEach(id => {
                                   for (const col of colunasDados) {
@@ -1018,11 +949,48 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       } else {
                           mostrarToast('erro', 'Erro', 'Falha ao realizar a limpeza da coluna.');
                       }
-                  } catch (e) {
-                      mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.');
-                  }
+                  })
+                  .catch(() => mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.'));
               }
-          };
+          }
+
+          function limparCardsVencidosColuna(colId) {
+              const coluna = colunasDados.find(c => c.id == colId);
+              if (!coluna || !coluna.cards) return;
+
+              const hoje = new Date();
+              hoje.setHours(0, 0, 0, 0);
+
+              const cardsVencidos = coluna.cards.filter(card => {
+                  if (card.concluido) return false;
+                  if (!card.prazo) return false;
+                  
+                  const partes = String(card.prazo).slice(0, 10).split('-');
+                  if (partes.length !== 3) return false;
+                  
+                  const prazoDate = new Date(partes[0], partes[1] - 1, partes[2]);
+                  const diffTime = prazoDate - hoje;
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  return diffDays < 0;
+              });
+
+              if (cardsVencidos.length === 0) {
+                  mostrarToast('erro', 'Aviso', 'Não há cards com status de vencido nesta coluna.');
+                  return;
+              }
+
+              if (confirm(\`Deseja realmente excluir os \${cardsVencidos.length} cards vencidos desta coluna? Esta ação não pode ser desfeita.\`)) {
+                  cardsVencidos.forEach(card => {
+                      const id = card.id;
+                      coluna.cards = coluna.cards.filter(c => c.id != id);
+                      if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
+                      socket.emit('deletar_card', id);
+                  });
+                  renderizarKanban();
+                  mostrarToast('sucesso', 'Limpeza Concluída', \`\${cardsVencidos.length} cards vencidos foram excluídos.\`);
+              }
+          }
 
           document.addEventListener('DOMContentLoaded', () => {
               // INICIALIZAÇÃO TEMA E WALLPAPER E MODAL DE AVISO
@@ -1128,7 +1096,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.aplicarWallpaper = function(url) {
               const contentDiv = document.querySelector('.content');
               if(contentDiv && url) {
-                  contentDiv.style.backgroundImage = \`url('\${url}')\`;
+                  contentDiv.style.backgroundImage = \`linear-gradient(to bottom, rgba(15,15,15,0.85) 0%, rgba(15,15,15,0) 250px), url('\${url}')\`;
                   document.body.classList.add('has-wallpaper');
               }
           };
@@ -1679,7 +1647,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
                   const dropdownCores = \`
                       <div class="dropdown d-inline-block">
-                          <button class="btn btn-sm p-0 border-0 dropdown-toggle hide-caret" type="button" data-bs-toggle="dropdown">
+                          <button class="btn btn-sm p-0 border-0 dropdown-toggle hide-caret" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}'>
                               <div class="rounded shadow-sm" style="width: 18px; height: 18px; background-color: \${corColuna}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);"></div>
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-2 shadow-lg border-custom" style="background-color: #2a2a2a; z-index: 1060;">
@@ -1691,16 +1659,20 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
                   const dropdownConfigColuna = \`
                       <div class="dropdown d-inline-block ms-auto">
-                          <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Configurações da Coluna">
+                          <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Configurações da Coluna" data-bs-popper-config='{"strategy":"fixed"}'>
                               <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-3 shadow-lg border-custom" style="min-width: 240px; background-color: #2a2a2a; z-index: 1060;">
                               <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Limpeza Manual</h6>
                               <p class="text-white-50 mb-2" style="font-size: 0.7rem;">Excluir cards com mais de X dias:</p>
-                              <div class="input-group input-group-sm">
+                              <div class="input-group input-group-sm mb-3">
                                   <input type="number" id="input_limpeza_col_\${col.id}" class="form-control bg-custom-darker border-custom text-white" placeholder="Ex: 10" min="0">
                                   <button class="btn btn-danger fw-bold" type="button" onclick="limparCardsColuna('\${col.id}')">Excluir</button>
                               </div>
+                              <hr class="dropdown-divider border-custom my-2">
+                              <button class="btn btn-sm btn-outline-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2" type="button" onclick="limparCardsVencidosColuna('\${col.id}')">
+                                  <i class="fa-solid fa-calendar-xmark"></i> Excluir Vencidos
+                              </button>
                           </div>
                       </div>
                   \`;

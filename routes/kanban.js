@@ -153,6 +153,7 @@ router.get("/kanban/relatorio", isLogged, async (req, res) => {
         const colMap = {};
         colunas.forEach(c => colMap[c.id] = c.titulo);
 
+        // Uso do ponto e vírgula como delimitador para o Excel entender as colunas no formato PT-BR
         let csv = "Título;Prioridade;Prazo;Coluna Atual;Descrição;Etiquetas;Percas Pintura;Percas Corte\n";
 
         cards.forEach(c => {
@@ -187,7 +188,8 @@ router.get("/kanban/relatorio", isLogged, async (req, res) => {
         });
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.xlsx"`);
+        // Mantida a extensão original .csv para abrir corretamente de forma nativa no Excel
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.csv"`);
         res.send('\uFEFF' + csv);
 
     } catch (error) {

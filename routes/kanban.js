@@ -1,3 +1,4 @@
+// routes/kanban.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -60,20 +61,16 @@ router.get("/kanban", isLogged, (req, res) => {
                                 const relacoesGerais = relacoes || [];
 
                                 cards.forEach(card => {
-                                    // Mapeia anexos
                                     card.anexos = anexosGerais.filter(a => a.card_id === card.id);
-
-                                    // Mapeia as etiquetas cruzando os IDs da tabela de relação com os dados reais
                                     const idsEtiquetasDesteCard = relacoesGerais.filter(r => r.card_id === card.id).map(r => r.etiqueta_id);
                                     card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
                                 });
 
-                                // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO DINÂMICA)
+                                // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO DINÂMICA AUTOMÁTICA)
                                 const now = new Date();
                                 const cardsParaDeletar = [];
                                 const avisosExclusao = [];
 
-                                // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS E FILTRA OS VENCIDOS
                                 colunas.forEach(col => {
                                     let cardsDaColuna = cards.filter(c => c.coluna_id === col.id);
 
@@ -86,21 +83,19 @@ router.get("/kanban", isLogged, (req, res) => {
                                             
                                             if (diffDays >= col.dias_exclusao) {
                                                 cardsParaDeletar.push(card.id);
-                                                return false; // Remove da renderização visual
+                                                return false;
                                             } else if (diffDays === (col.dias_exclusao - 1)) {
                                                 avisosExclusao.push(`${card.titulo || 'Sem Título'} (Coluna: ${col.titulo})`);
                                             }
-                                            return true; // Mantém o card
+                                            return true; 
                                         });
                                     }
 
                                     col.cards = cardsDaColuna.sort((a, b) => {
-                                        // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
                                         if (!a.prazo && b.prazo) return 1;  
                                         if (a.prazo && !b.prazo) return -1; 
                                         if (!a.prazo && !b.prazo) return 0; 
 
-                                        // 2. Ordenação por data: Menor prazo no topo (ASC)
                                         const dataA = new Date(a.prazo);
                                         const dataB = new Date(b.prazo);
 
@@ -108,7 +103,6 @@ router.get("/kanban", isLogged, (req, res) => {
                                             return dataA - dataB;
                                         }
 
-                                        // 3. CRITÉRIO DE DESEMPATE
                                         if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
                                         if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
 
@@ -116,7 +110,6 @@ router.get("/kanban", isLogged, (req, res) => {
                                     });
                                 });
 
-                                // Executa a deleção em background caso hajam cards vencidos
                                 if (cardsParaDeletar.length > 0) {
                                     db.query("DELETE FROM kanban_cards WHERE id IN (?)", [cardsParaDeletar], () => {});
                                     db.query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [cardsParaDeletar], () => {});
@@ -124,7 +117,6 @@ router.get("/kanban", isLogged, (req, res) => {
                                     db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [cardsParaDeletar], () => {});
                                 }
 
-                                // Passa os avisos formatados e os colaboradores para a View
                                 res.send(kanbanView(req.session.user, colunas, espacoAtual, avisosExclusao, listaColaboradores));
                             });
                         });
@@ -135,7 +127,7 @@ router.get("/kanban", isLogged, (req, res) => {
     });
 });
 
-// BAIXAR RELATÓRIO DO KANBAN EM CSV
+// BAIXAR RELATÓRIO DO KANBAN
 router.get("/kanban/relatorio", isLogged, async (req, res) => {
     const espaco_id = req.query.espaco_id;
     if (!espaco_id) return res.status(400).send("Espaço não informado.");
@@ -195,12 +187,42 @@ router.get("/kanban/relatorio", isLogged, async (req, res) => {
         });
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.xlsx"`);
         res.send('\uFEFF' + csv);
 
     } catch (error) {
         console.error("Erro ao gerar relatório:", error);
         res.status(500).send("Erro ao gerar relatório.");
+    }
+});
+
+// LIMPEZA MANUAL DE CARDS DE UMA COLUNA POR IDADE 
+router.post("/kanban/colunas/:id/limpar", isLogged, async (req, res) => {
+    const colId = req.params.id;
+    const dias = parseInt(req.body.dias);
+
+    if (isNaN(dias) || dias < 0) return res.status(400).json({ success: false, message: "Dias inválidos." });
+
+    try {
+        const [cards] = await db.promise().query(
+            "SELECT id FROM kanban_cards WHERE coluna_id = ? AND DATEDIFF(NOW(), criado_em) >= ?", 
+            [colId, dias]
+        );
+
+        let idsDeletar = [];
+        if (cards.length > 0) {
+            idsDeletar = cards.map(c => c.id);
+            await db.promise().query("DELETE FROM kanban_cards WHERE id IN (?)", [idsDeletar]);
+            await db.promise().query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [idsDeletar]);
+            await db.promise().query("DELETE FROM kanban_historico WHERE card_id IN (?)", [idsDeletar]);
+            await db.promise().query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsDeletar]);
+        }
+
+        // DEVOLVE OS IDS APAGADOS PARA ATUALIZAR O FRONT-END SEM RECARREGAR
+        res.json({ success: true, deletados: cards.length, ids: idsDeletar });
+    } catch (error) {
+        console.error("Erro ao limpar cards manualmente:", error);
+        res.status(500).json({ success: false });
     }
 });
 

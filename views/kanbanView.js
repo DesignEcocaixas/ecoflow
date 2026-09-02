@@ -49,40 +49,69 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
+  // Novo Modal: Configuração individual de exclusão de uma coluna
+  const modalExclusaoColunaHtml = `
+  <div class="modal fade" id="modalExclusaoColuna" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
+          <form id="formExclusaoColuna" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoColunaUnica(event, this)">
+              <div class="modal-header modal-header-dark border-custom">
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Limpeza Manual</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark text-center">
+                  <input type="hidden" id="configExclusaoColId" name="colId">
+                  <p class="text-white-50 mb-3" style="font-size: 0.8rem; line-height: 1.4;">Excluir os cards desta coluna a partir de quantos dias de criação?</p>
+                  
+                  <div class="input-group input-group-sm shadow-sm mx-auto" style="width: 140px;">
+                      <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                      <input type="number" id="configExclusaoColDias" name="dias" class="form-control bg-custom-darker border-custom text-white fw-bold text-center" min="1" placeholder="Ex: 10">
+                      <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
+                  </div>
+              </div>
+              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
+              </div>
+          </form>
+      </div>
+  </div>
+  `;
+
+  // Modal de Exclusão Automática (Background Geral)
   const modalExclusaoAutomaticaHtml = `
   <div class="modal fade" id="modalExclusaoAutomatica" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
           <form id="formExclusaoAutomatica" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoAutomatica(event, this)">
               <div class="modal-header modal-header-dark border-custom">
-                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Exclusão Automática</h6>
+                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Regras de Exclusão</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-3 bg-custom-dark">
-                  <p class="text-white-50 mb-3 text-center" style="font-size: 0.8rem; line-height: 1.4;">Ative e defina a quantidade de dias para os cards serem excluídos de cada coluna.</p>
+                  <p class="text-white-50 mb-3 text-center" style="font-size: 0.8rem; line-height: 1.4;">Ative e defina a quantidade de dias para os cards serem excluídos de cada coluna automaticamente pelo sistema.</p>
                   
                   <div class="d-flex flex-column gap-2">
                   ${colunas.map(c => {
                       const hasRule = c.dias_exclusao && c.dias_exclusao > 0;
                       const numCards = c.cards ? c.cards.length : 0;
                       return `
-                        <div class="p-2 border border-custom rounded bg-custom-darker d-flex flex-column gap-2 shadow-sm">
-                            <div class="d-flex align-items-center justify-content-between overflow-hidden w-100">
-                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2" style="padding-left: 0;">
-                                    <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="chk_col_${c.id}" ${hasRule ? 'checked' : ''} onchange="toggleDiasExclusao('${c.id}', this.checked)" style="width: 32px; height: 16px;">
-                                    <label class="form-check-label d-flex align-items-center gap-2 m-0 cursor-pointer" for="chk_col_${c.id}">
-                                        <div class="rounded shadow-sm flex-shrink-0" style="width: 14px; height: 14px; background-color: ${c.cor || '#08c068'}; mt-1"></div>
-                                        <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
-                                    </label>
-                                </div>
-                                <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
-                            </div>
-                            <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
-                                <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
-                                <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
-                                <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
-                            </div>
-                        </div>
-                        `;
+                      <div class="p-2 border border-custom rounded bg-custom-darker d-flex flex-column gap-2 shadow-sm">
+                          <div class="d-flex align-items-center justify-content-between overflow-hidden w-100">
+                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2" style="padding-left: 0;">
+                                  <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="chk_col_${c.id}" ${hasRule ? 'checked' : ''} onchange="toggleDiasExclusao('${c.id}', this.checked)" style="width: 32px; height: 16px;">
+                                  <label class="form-check-label d-flex align-items-center gap-2 m-0 cursor-pointer" for="chk_col_${c.id}">
+                                      <div class="rounded shadow-sm flex-shrink-0" style="width: 14px; height: 14px; background-color: ${c.cor || '#08c068'}; mt-1"></div>
+                                      <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
+                                  </label>
+                              </div>
+                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                          </div>
+                          <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
+                              <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                              <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
+                              <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
+                          </div>
+                      </div>
+                      `;
                   }).join('')}
                   </div>
                   ${colunas.length === 0 ? '<p class="text-white-50 small mb-0 text-center">Nenhuma coluna criada no painel.</p>' : ''}
@@ -107,12 +136,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <style>
+          /* Scrollbars Globais */
           ::-webkit-scrollbar { width: 6px; height: 6px; }
           ::-webkit-scrollbar-track { background: transparent; }
           ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
           ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
           html, body, .content, .kanban-cards-container, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
 
+          /* TEMA ESCURO GLOBAL */
           :root {
               --bg-color: #151515;
               --surface-color: #1f1f1f;
@@ -122,8 +153,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           body { display: flex; height: 100vh; margin: 0; background-color: var(--bg-color); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; transition: background-color 0.3s ease; }
           
-          .sidebar { width: 240px; background-color: var(--surface-color); border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; transition: background-color 0.3s ease, border-color 0.3s ease; }
-          .content { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; background-color: var(--bg-color); transition: background-color 0.3s ease; }
+          .sidebar { width: 240px; background-color: var(--surface-color); border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column; transition: background-color 0.3s ease, border-color 0.3s ease; z-index: 1040; }
+          .content { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; background-color: var(--bg-color); transition: background-color 0.3s ease; position: relative; }
           
           .bg-custom-dark { background-color: #2a2a2a !important; transition: background-color 0.3s ease; }
           .bg-custom-darker { background-color: #222222 !important; transition: background-color 0.3s ease; }
@@ -134,12 +165,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           .btn-primary { background-color: var(--verde-ecoflow); border-color: var(--verde-ecoflow); color: #1f1f1f; }
           .btn-primary:hover { background-color: var(--verde-hover) !important; border-color: var(--verde-hover) !important; color: #1f1f1f !important; }
+          
+          /* Correção do Botão Verde de Download no Tema Claro/Escuro */
+          body.theme-light .btn-outline-success { color: #198754 !important; border-color: #198754 !important; }
+          body.theme-light .btn-outline-success:hover { color: #fff !important; background-color: #198754 !important; }
+          .btn-outline-success:hover { color: #fff !important; background-color: #198754 !important; border-color: #198754 !important; }
 
+          /* Modais ERP */
           .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: background-color 0.3s ease, border-color 0.3s ease; }
           .modal-header-dark { background-color: #151515; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
           .modal-footer-dark { background-color: #151515; border-top: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
 
-          .kanban-wrapper { flex-grow: 1; overflow: hidden; position: relative; margin-top: 10px; }
+          /* KANBAN BOARD */
+          .kanban-wrapper { flex-grow: 1; overflow: hidden; position: relative; margin-top: 10px; z-index: 1; }
           .kanban-board { 
               display: flex; gap: 0px; align-items: flex-start; height: 100%; 
               overflow-x: auto; padding-bottom: 15px;
@@ -179,7 +217,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 5px;
+              padding: 10px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;
@@ -357,44 +395,37 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           body.theme-light .kanban-card:hover {
               background-color: #f1f3f5 !important;
           }
+          
+          body.theme-light .hover-bg-custom:hover { background-color: rgba(0,0,0,0.05) !important; }
 
-          body.theme-light .kanban-search-bar,
-          body.theme-light .kanban-search-bar .form-control,
-          body.theme-light .kanban-search-bar .input-group-text,
-          body.theme-light .kanban-search-bar .btn,
-          body.theme-light .sidebar-search-container .form-control {
-              background-color: #222222 !important;
-              color: #ffffff !important;
-              border-color: rgba(255,255,255,0.08) !important;
-          }
-          body.theme-light .kanban-search-bar .form-control::placeholder,
-          body.theme-light .sidebar-search-container .form-control::placeholder {
-              color: rgba(255, 255, 255, 0.4) !important;
-          }
-          body.theme-light .sidebar-search-container .fa-search {
-              color: rgba(255, 255, 255, 0.5) !important;
-          }
+          /* ISOLAMENTO ABSOLUTO DO HEADER (Sempre escuro) */
+          body.theme-light #kanban-top-header .text-white { color: #ffffff !important; }
+          body.theme-light #kanban-top-header .text-white-50 { color: rgba(255, 255, 255, 0.5) !important; }
+          body.theme-light #kanban-top-header .bg-custom-darker { background-color: #222222 !important; border-color: rgba(255,255,255,0.08) !important; }
+          body.theme-light #kanban-top-header .bg-custom-dark { background-color: #2a2a2a !important; }
+          body.theme-light #kanban-top-header .border-custom { border-color: rgba(255,255,255,0.08) !important; }
+          body.theme-light #kanban-top-header .form-control { background-color: #222222 !important; color: #ffffff !important; }
+          body.theme-light #kanban-top-header .form-control::placeholder { color: rgba(255, 255, 255, 0.4) !important; }
+          body.theme-light #kanban-top-header .input-group-text { background-color: #222222 !important; color: rgba(255,255,255,0.5) !important; }
+          body.theme-light #kanban-top-header .fa-magnifying-glass,
+          body.theme-light #kanban-top-header .fa-xmark { color: rgba(255, 255, 255, 0.5) !important; }
+          body.theme-light #kanban-top-header .btn-outline-secondary { color: #ffffff !important; }
+          body.theme-light #kanban-top-header .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1) !important; }
+          body.theme-light #kanban-top-header .dropdown-menu { background-color: #2a2a2a !important; border-color: rgba(255,255,255,0.1) !important; }
+          body.theme-light #kanban-top-header .dropdown-menu .dropdown-item { color: #ffffff !important; }
+          body.theme-light #kanban-top-header .dropdown-menu .dropdown-item:hover { background-color: rgba(255,255,255,0.05) !important; }
+          body.theme-light #kanban-top-header .hover-bg-custom:hover { background-color: rgba(255,255,255,0.05) !important; }
+          
+          /* Correção específica do botão XLSX dentro do menu */
+          body.theme-light #kanban-top-header .dropdown-menu .btn-outline-success { color: #08c068 !important; border-color: #08c068 !important; background-color: transparent !important;}
+          body.theme-light #kanban-top-header .dropdown-menu .btn-outline-success:hover { color: #1f1f1f !important; background-color: #08c068 !important; }
 
-          body.theme-light #searchResultsKanban .text-white,
-          body.theme-light #searchResultsKanban .fw-bold {
-              color: #ffffff !important;
-          }
-          body.theme-light #searchResultsKanban .text-white-50,
-          body.theme-light .kanban-search-bar .text-muted {
-              color: rgba(255,255,255,0.5) !important;
-          }
-          body.theme-light #searchResultsKanban .border-custom {
-              border-color: rgba(255,255,255,0.08) !important;
-          }
-          body.theme-light #searchResultsKanban .bg-custom-dark {
-              background-color: #2a2a2a !important;
-          }
-
-          body.theme-light .content:not(.kanban-search-bar) .text-white, 
+          /* TEMA CLARO - Demais elementos (excluindo header) */
+          body.theme-light .content > :not(#kanban-top-header) .text-white, 
           body.theme-light .modal .text-white {
               color: #333 !important;
           }
-          body.theme-light .content:not(.kanban-search-bar) .text-white-50, 
+          body.theme-light .content > :not(#kanban-top-header) .text-white-50, 
           body.theme-light .modal .text-white-50 {
               color: #666 !important;
           }
@@ -434,23 +465,23 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               border-color: #dcdcdc !important;
           }
 
-          body.theme-light .form-control, 
+          body.theme-light .form-control:not(#searchInputKanban):not(#menuSearchInput), 
           body.theme-light .form-select, 
-          body.theme-light .input-group-text {
+          body.theme-light .input-group-text:not(.kanban-search-bar .input-group-text) {
               background-color: #ffffff !important;
               color: #333 !important;
               border-color: #ccc !important;
           }
-          body.theme-light .form-control::placeholder {
+          body.theme-light .form-control:not(#searchInputKanban):not(#menuSearchInput)::placeholder {
               color: #999 !important;
           }
-          body.theme-light .dropdown-menu-dark {
+          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) {
               background-color: #ffffff !important;
               color: #333 !important;
               border-color: #ccc !important;
           }
-          body.theme-light .dropdown-menu-dark .form-check-label,
-          body.theme-light .dropdown-menu-dark .form-label {
+          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) .form-check-label,
+          body.theme-light .dropdown-menu-dark:not(#searchSuggestions):not(#kanban-top-header .dropdown-menu) .form-label {
               color: #333 !important;
           }
           body.theme-light .dropdown-divider {
@@ -498,21 +529,31 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: rgba(0,0,0,0.4) !important;
           }
 
+          /* BACKGROUND WALLPAPER LOGIC (COM EFEITO DEGRADÊ FIXO) */
           body.has-wallpaper .content {
               background-size: cover;
               background-position: center;
               background-repeat: no-repeat;
               background-attachment: fixed;
           }
+          body.has-wallpaper .content::before {
+              content: "";
+              position: absolute;
+              top: 0; left: 0; right: 0;
+              height: 250px;
+              background: linear-gradient(to bottom, rgba(15,15,15,0.85) 0%, transparent 100%);
+              z-index: 0;
+              pointer-events: none;
+          }
+          body.has-wallpaper .content > * {
+              position: relative;
+              z-index: 1;
+          }
           body.has-wallpaper .kanban-column {
               background-color: rgba(34, 34, 34, 0.85) !important;
-              backdrop-filter: blur(8px);
-              -webkit-backdrop-filter: blur(8px);
           }
           body.theme-light.has-wallpaper .kanban-column {
               background-color: rgba(248, 249, 250, 0.85) !important;
-              backdrop-filter: blur(8px);
-              -webkit-backdrop-filter: blur(8px);
           }
       </style>
   </head>
@@ -538,7 +579,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
 
       <div class="content">
-          <div class="row align-items-center w-100 g-3 m-0">
+          <div class="row align-items-center w-100 g-3 m-0 position-relative" id="kanban-top-header" style="z-index: 1050;">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
                   <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
@@ -551,22 +592,23 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   </div>
               </div>
               
-              <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative" style="z-index: 1010;">
+              <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative">
                 <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar">
-                    <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="searchInputKanban" class="form-control border-custom bg-custom-darker border-end-0" style="color: #ffffff !important;" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
-                    <button class="btn btn-outline-secondary border-custom border-start-0 bg-custom-darker text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                    <span class="input-group-text border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="searchInputKanban" class="form-control border-custom border-end-0" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
+                    <button class="btn btn-outline-secondary border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div id="searchResultsKanban" class="position-absolute w-100 bg-custom-darker border border-custom rounded shadow-lg mt-1 d-none" style="max-height: 300px; overflow-y: auto; left: 0;"></div>
             </div>
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
+                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 220px; z-index: 9999;">
+                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 220px; z-index: 1060;">
                           <li class="px-3 py-2 border-bottom border-custom">
                               <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                                   <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
@@ -581,12 +623,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Automática
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão automática
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
-                              <a href="/kanban/relatorio?espaco_id=${espacoAtual.id}" target="_blank" class="btn btn-sm btn-outline-success w-100 fw-bold border-custom text-success d-flex align-items-center justify-content-center gap-2">
-                                  <i class="fa-solid fa-file-csv"></i> Baixar Relatório
+                              <a href="/kanban/relatorio?espaco_id=${espacoAtual.id}" target="_blank" class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2">
+                                  <i class="fa-solid fa-file-excel"></i> Baixar Relatório
                               </a>
                           </li>
                           <li class="px-3 py-3">
@@ -616,6 +658,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       ${modalAvisoHtml}
       ${modalExclusaoAutomaticaHtml}
+      ${modalExclusaoColunaHtml}
 
       <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
           <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -712,7 +755,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                             type="button"
                                             data-bs-toggle="dropdown"
                                             aria-expanded="false"
-                                            style="max-width: 280px;">
+                                            style="max-width: 280px;"
+                                            data-bs-popper-config='{"strategy":"fixed"}'>
                                             <span id="modalCardEtiquetasSelecionadas" class="text-truncate">
                                                 Selecione as etiquetas...
                                             </span>
@@ -721,7 +765,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
                                         <ul class="dropdown-menu dropdown-menu-dark p-2 shadow-lg"
                                             id="dropdownEtiquetasLista"
-                                            style="max-width: 280px; background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); max-height: 200px; overflow-y: auto;">
+                                            style="max-width: 280px; background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); max-height: 200px; overflow-y: auto; z-index: 1060;">
                                         </ul>
                                     </div>
                                 </div>
@@ -730,17 +774,17 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                   <h6 class="text-white-50 fw-bold mb-3 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="fa-solid fa-scissors me-1"></i> Controle de Percas</h6>
                                   
                                   <div class="mb-3">
-                                      <div class="d-flex justify-content-between align-items-center mb-2">
+                                      <div class="d-flex align-items-center mb-2">
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Pintura</span>
-                                          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
+                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
                                       <div id="containerPercasPintura" class="d-flex flex-column"></div>
                                   </div>
 
                                   <div class="mb-3">
-                                      <div class="d-flex justify-content-between align-items-center mb-2">
+                                      <div class="d-flex align-items-center mb-2">
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Corte</span>
-                                          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
+                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
                                       <div id="containerPercasCorte" class="d-flex flex-column"></div>
                                   </div>
@@ -936,6 +980,50 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
           }
 
+          // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL EVITANDO ERROS DE REFERENCE
+          window.limparCardsColuna = async function(colId) {
+              const input = document.getElementById('input_limpeza_col_' + colId);
+              if (!input) return;
+              const dias = parseInt(input.value);
+              
+              if (isNaN(dias) || dias < 0) {
+                  mostrarToast('erro', 'Aviso', 'Insira uma quantidade de dias válida.');
+                  return;
+              }
+
+              if (confirm(\`Deseja realmente excluir todos os cards desta coluna com \${dias} ou mais dias de criação? Esta ação não pode ser desfeita.\`)) {
+                  try {
+                      const formData = new URLSearchParams();
+                      formData.append('dias', dias);
+                      const response = await fetch(\`/kanban/colunas/\${colId}/limpar\`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                          body: formData.toString()
+                      });
+                      
+                      const data = await response.json();
+                      if (response.ok && data.success) {
+                          mostrarToast('sucesso', 'Limpeza Concluída', \`\${data.deletados || 0} cards antigos foram excluídos.\`);
+                          
+                          if (data.ids && data.ids.length > 0) {
+                              data.ids.forEach(id => {
+                                  for (const col of colunasDados) {
+                                      col.cards = col.cards.filter(c => c.id != id);
+                                  }
+                                  if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
+                                  socket.emit('deletar_card', id);
+                              });
+                              renderizarKanban();
+                          }
+                      } else {
+                          mostrarToast('erro', 'Erro', 'Falha ao realizar a limpeza da coluna.');
+                      }
+                  } catch (e) {
+                      mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.');
+                  }
+              }
+          };
+
           document.addEventListener('DOMContentLoaded', () => {
               // INICIALIZAÇÃO TEMA E WALLPAPER E MODAL DE AVISO
               const savedTheme = localStorage.getItem('kanbanTheme');
@@ -997,7 +1085,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           // ==========================================
           // GESTÃO DE TEMAS E WALLPAPER
           // ==========================================
-          function toggleTheme() {
+          window.toggleTheme = function() {
               const themeSwitch = document.getElementById('themeSwitch');
               
               if (themeSwitch.checked) {
@@ -1007,9 +1095,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   document.body.classList.remove('theme-light');
                   localStorage.setItem('kanbanTheme', 'dark');
               }
-          }
+          };
 
-          async function changeBackground(input, espacoId) {
+          window.changeBackground = async function(input, espacoId) {
               if (input.files && input.files[0]) {
                   const file = input.files[0];
                   
@@ -1035,17 +1123,17 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       mostrarToast('erro', 'Erro de Rede', 'Não foi possível enviar a imagem.');
                   }
               }
-          }
+          };
 
-          function aplicarWallpaper(url) {
+          window.aplicarWallpaper = function(url) {
               const contentDiv = document.querySelector('.content');
               if(contentDiv && url) {
                   contentDiv.style.backgroundImage = \`url('\${url}')\`;
                   document.body.classList.add('has-wallpaper');
               }
-          }
+          };
 
-          async function clearBackground(espacoId) {
+          window.clearBackground = async function(espacoId) {
               try {
                   const formData = new URLSearchParams();
                   formData.append('clear', '1');
@@ -1062,9 +1150,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } catch (err) {
                   mostrarToast('erro', 'Erro', 'Falha ao remover o papel de parede.');
               }
-          }
+          };
 
-          async function togglePercasWorkspace(ativo) {
+          window.togglePercasWorkspace = async function(ativo) {
               try {
                   const urlParams = new URLSearchParams(window.location.search);
                   const espaco_id = urlParams.get('espaco_id');
@@ -1088,10 +1176,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } catch(e) {
                   mostrarToast('erro', 'Conexão', 'Falha na rede ao atualizar a funcionalidade de percas.');
               }
-          }
+          };
 
-          // EXCLUSÃO AUTOMÁTICA
-          function toggleDiasExclusao(colId, isChecked) {
+          // EXCLUSÃO AUTOMÁTICA GERAL (MODAL GLOBAL)
+          window.toggleDiasExclusao = function(colId, isChecked) {
               const input = document.getElementById('input_col_' + colId);
               if (input) {
                   if (isChecked) {
@@ -1103,9 +1191,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       input.value = ''; // Limpa para submeter desativado
                   }
               }
-          }
+          };
 
-          async function salvarExclusaoAutomatica(event, form) {
+          window.salvarExclusaoAutomatica = async function(event, form) {
               event.preventDefault();
               
               // Habilita inputs temporariamente e seta zero nos desabilitados/vazios para apagar a regra no DB
@@ -1135,7 +1223,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } catch(e) {
                   mostrarToast('erro', 'Conexão', 'Falha na rede ao salvar as configurações.');
               }
-          }
+          };
 
           window.inserirCheckboxTarefa = function() {
               const html = \`<div><input type="checkbox" style="margin-right: 6px; cursor: pointer;"> Tarefa...</div>\`;
@@ -1146,7 +1234,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           // GESTÃO DE ETIQUETAS E TRANSFERÊNCIA DE COLUNA
           // ==========================================
           
-          function moverCardPeloSelect(novaColunaId) {
+          window.moverCardPeloSelect = function(novaColunaId) {
               if (!cardAbertoId) return;
               const selectColuna = document.getElementById('modalCardColunaSelect');
               const oldColunaId = selectColuna.dataset.originalCol;
@@ -1171,20 +1259,20 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               selectColuna.dataset.originalCol = novaColunaId;
               mostrarToast('sucesso', 'Movido!', \`Card movido para \${novaColuna.titulo}.\`);
-          }
+          };
 
-          function abrirModalEtiquetas() {
+          window.abrirModalEtiquetas = function() {
               renderizarListaEtiquetas();
               modalGerenciarEtiquetasObj.show();
-          }
+          };
 
-          function selecionarCorEtiqueta(element, cor) {
+          window.selecionarCorEtiqueta = function(element, cor) {
               document.getElementById('inputCorEtiqueta').value = cor;
               document.querySelectorAll('#paletaCoresEtiqueta .color-square').forEach(el => el.classList.remove('active'));
               element.classList.add('active');
-          }
+          };
 
-          function renderizarListaEtiquetas() {
+          window.renderizarListaEtiquetas = function() {
               const container = document.getElementById('listaEtiquetasExistentes');
               if (etiquetasDados.length === 0) {
                   container.innerHTML = '<div class="text-white-50 text-center small p-2">Nenhuma etiqueta criada.</div>';
@@ -1199,9 +1287,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <button class="btn btn-sm text-danger p-0 m-0" onclick="deletarEtiqueta(\${e.id})"><i class="fa-solid fa-xmark"></i></button>
                   </div>
               \`).join('');
-          }
+          };
 
-          function salvarNovaEtiqueta() {
+          window.salvarNovaEtiqueta = function() {
               const nome = document.getElementById('inputNomeEtiqueta').value.trim();
               const cor = document.getElementById('inputCorEtiqueta').value;
               const urlParams = new URLSearchParams(window.location.search);
@@ -1213,18 +1301,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   // A view não é atualizada instantaneamente no local, espera o retorno do WebSocket para evitar duplicação
                   mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
-          }
+          };
 
-          function deletarEtiqueta(id) {
+          window.deletarEtiqueta = function(id) {
               socket.emit('deletar_etiqueta', id);
               etiquetasDados = etiquetasDados.filter(e => e.id != id);
               renderizarListaEtiquetas();
               renderizarDropdownEtiquetasModal();
               renderizarKanban(); 
               mostrarToast('sucesso', 'Removido', 'Etiqueta eliminada.');
-          }
+          };
 
-          function renderizarDropdownEtiquetasModal() {
+          window.renderizarDropdownEtiquetasModal = function() {
               const list = document.getElementById('dropdownEtiquetasLista');
               if (!list) return;
               if (etiquetasDados.length === 0) {
@@ -1240,9 +1328,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       </label>
                   </li>
               \`).join('');
-          }
+          };
 
-          function atualizarEtiquetasVisualCardModal() {
+          window.atualizarEtiquetasVisualCardModal = function() {
               const selecionados = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
               const visual = document.getElementById('modalCardEtiquetasVisual');
               const placeholder = document.getElementById('modalCardEtiquetasSelecionadas');
@@ -1266,17 +1354,17 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                     </span>
                   \`;
               }).join('');
-          }
+          };
 
-          function triggerEtiquetasChange() {
+          window.triggerEtiquetasChange = function() {
               atualizarEtiquetasVisualCardModal();
               salvarTextosModal();
-          }
+          };
 
           // ==========================================
           // BARRA DE PESQUISA (LIVE SEARCH)
           // ==========================================
-          function pesquisarCardsKanban(termo) {
+          window.pesquisarCardsKanban = function(termo) {
               const resultsContainer = document.getElementById('searchResultsKanban');
               const clearBtn = document.getElementById('clearSearchBtn');
               
@@ -1335,9 +1423,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   resultsContainer.innerHTML = '<div class="p-2 text-white-50 small text-center">Nenhum card encontrado.</div>';
               }
               resultsContainer.classList.remove('d-none');
-          }
+          };
 
-          function limparPesquisaKanban() {
+          window.limparPesquisaKanban = function() {
               const input = document.getElementById('searchInputKanban');
               const clearBtn = document.getElementById('clearSearchBtn');
               const resultsContainer = document.getElementById('searchResultsKanban');
@@ -1345,7 +1433,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (input) input.value = '';
               if (clearBtn) clearBtn.style.display = 'none';
               if (resultsContainer) resultsContainer.classList.add('d-none');
-          }
+          };
 
           document.addEventListener('click', (e) => {
               const searchContainer = document.getElementById('searchResultsKanban');
@@ -1357,7 +1445,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           // ==========================================
           // ARRASTAR O QUADRO E SCROLL HORIZONTAL
           // ==========================================
-          function iniciarArrastoMouse() {
+          window.iniciarArrastoMouse = function() {
               const kanbanBoard = document.getElementById('kanbanBoard');
               let isDraggingBoard = false, startX, scrollLeft;
 
@@ -1376,9 +1464,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const x = e.pageX - kanbanBoard.offsetLeft;
                   kanbanBoard.scrollLeft = scrollLeft - ((x - startX) * 1.5);
               });
-          }
+          };
 
-          function autoLinkify(element) {
+          window.autoLinkify = function(element) {
               const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
               const nodesToReplace = [];
               let node;
@@ -1416,9 +1504,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   });
                   n.parentNode.replaceChild(fragment, n);
               });
-          }
+          };
 
-          function gerarSkeletonKanban() {
+          window.gerarSkeletonKanban = function() {
               let html = '';
               for(let i=0; i<4; i++) {
                   html += \`<div class="kanban-column bg-custom-darker shadow-none p-0" style="border-right: 1px solid rgba(255,255,255,0.1); border-radius: 0;">
@@ -1430,17 +1518,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   </div>\`;
               }
               return html;
-          }
-          function mostrarSkeletonGlobais() {
+          };
+
+          window.mostrarSkeletonGlobais = function() {
               const board = document.getElementById('kanbanBoard');
               if (board && !board.classList.contains('skeleton-active')) { board.innerHTML = gerarSkeletonKanban(); board.classList.add('skeleton-active'); }
-          }
-          function ocultarSkeletonGlobais() {
+          };
+
+          window.ocultarSkeletonGlobais = function() {
               const board = document.getElementById('kanbanBoard');
               if (board) board.classList.remove('skeleton-active');
-          }
+          };
 
-          function mostrarToast(tipo, titulo, mensagem) {
+          window.mostrarToast = function(tipo, titulo, mensagem) {
               const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
               if (toastEl) {
                   document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
@@ -1457,9 +1547,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
                   toast.show();
               }
-          }
+          };
 
-          function formatarDataCompleta(dataStr) {
+          window.formatarDataCompleta = function(dataStr) {
               if (!dataStr) return '';
               const data = new Date(dataStr);
               if (isNaN(data)) return '';
@@ -1467,9 +1557,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const mes = String(data.getMonth() + 1).padStart(2, '0');
               const ano = data.getFullYear();
               return dia + '/' + mes + '/' + ano;
-          }
+          };
 
-          function calcularBadgeDiasRestantes(prazoStr, isConcluido) {
+          window.calcularBadgeDiasRestantes = function(prazoStr, isConcluido) {
               if (isConcluido) {
                   return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2" style="font-size:0.7rem;"><i class="fa-solid fa-check me-1"></i>Concluído</span>';
               }
@@ -1486,24 +1576,24 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (diffDays === 0) return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 px-2" style="font-size:0.7rem;">Hoje</span>';
               const txt = diffDays === 1 ? '1 dia' : diffDays + ' dias';
               return '<span class="badge bg-custom-dark border-custom text-accent px-2 fw-normal" style="font-size:0.65rem;">Vence em ' + txt + '</span>';
-          }
+          };
 
-          function selecionarCorNovaColuna(element, cor) {
+          window.selecionarCorNovaColuna = function(element, cor) {
               document.getElementById('inputCorColuna').value = cor;
               document.querySelectorAll('#paletaCoresNovaColuna .color-square').forEach(el => el.classList.remove('active'));
               element.classList.add('active');
-          }
+          };
 
-          function abrirImagemGrande(url, event) {
+          window.abrirImagemGrande = function(url, event) {
               if(event) event.stopPropagation();
               document.getElementById('imgPreviewGrande').src = url;
               modalVerImagemObj.show();
-          }
+          };
 
           // ==========================================
           // RENDERIZAÇÃO DO KANBAN BOARD E DOS ROWS DINÂMICOS
           // ==========================================
-          function adicionarLinhaPerca(tipo, dados = {}) {
+          window.adicionarLinhaPerca = function(tipo, dados = {}) {
               const container = document.getElementById('containerPercas' + tipo);
               if (!container) return;
 
@@ -1550,9 +1640,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if(dados.chapa) div.querySelector('.perca-chapa').value = dados.chapa;
 
               container.appendChild(div);
-          }
+          };
 
-          function renderizarKanban() {
+          window.renderizarKanban = function() {
               const board = document.getElementById('kanbanBoard');
               board.innerHTML = ''; 
 
@@ -1592,19 +1682,36 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           <button class="btn btn-sm p-0 border-0 dropdown-toggle hide-caret" type="button" data-bs-toggle="dropdown">
                               <div class="rounded shadow-sm" style="width: 18px; height: 18px; background-color: \${corColuna}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);"></div>
                           </button>
-                          <div class="dropdown-menu dropdown-menu-dark p-2" style="min-width: 140px; background-color: #2a2a2a; border-color: rgba(255,255,255,0.1);">
-                              <div class="d-flex flex-wrap gap-2 justify-content-center">
-                                  \${paletaBase.map(c => \`<div class="color-square" style="background-color: \${c};" onclick="atualizarCorColuna(\${col.id}, '\${c}')"></div>\`).join('')}
+                          <div class="dropdown-menu dropdown-menu-dark p-2 shadow-lg border-custom" style="background-color: #2a2a2a; z-index: 1060;">
+                              <div style="display: grid; grid-template-columns: repeat(3, 26px); gap: 6px; justify-content: center;">
+                                  \${paletaBase.map(c => \`<div class="color-square" style="background-color: \${c}; margin: 0;" onclick="atualizarCorColuna(\${col.id}, '\${c}')"></div>\`).join('')}
                               </div>
                           </div>
                       </div>\`;
+
+                  const dropdownConfigColuna = \`
+                      <div class="dropdown d-inline-block ms-auto">
+                          <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Configurações da Coluna">
+                              <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
+                          </button>
+                          <div class="dropdown-menu dropdown-menu-dark p-3 shadow-lg border-custom" style="min-width: 240px; background-color: #2a2a2a; z-index: 1060;">
+                              <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Limpeza Manual</h6>
+                              <p class="text-white-50 mb-2" style="font-size: 0.7rem;">Excluir cards com mais de X dias:</p>
+                              <div class="input-group input-group-sm">
+                                  <input type="number" id="input_limpeza_col_\${col.id}" class="form-control bg-custom-darker border-custom text-white" placeholder="Ex: 10" min="0">
+                                  <button class="btn btn-danger fw-bold" type="button" onclick="limparCardsColuna('\${col.id}')">Excluir</button>
+                              </div>
+                          </div>
+                      </div>
+                  \`;
 
                   colDiv.innerHTML = \`
                       <div class="kanban-header" style="background-color: \${bgHeader}; border-top: 4px solid \${corColuna};">
                           <div class="d-flex align-items-center gap-2 w-100">
                               \${dropdownCores}
-                              <span class="text-truncate flex-grow-1 column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>
-                              <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" onclick="criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
+                              <span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>
+                              \${dropdownConfigColuna}
+                              <button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
                               <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>
                           </div>
                       </div>
@@ -1651,9 +1758,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                         },
                   });
               });
-          }
+          };
 
-          function aplicarCorColunaVisualmente(colunaId, cor) {
+          window.aplicarCorColunaVisualmente = function(colunaId, cor) {
               const colIndex = colunasDados.findIndex(c => c.id == colunaId);
               if (colIndex > -1) colunasDados[colIndex].cor = cor;
               
@@ -1669,15 +1776,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       card.style.borderLeftColor = cor;
                   });
               }
-          }
+          };
 
-          function atualizarCorColuna(colunaId, novaCor) {
+          window.atualizarCorColuna = function(colunaId, novaCor) {
               aplicarCorColunaVisualmente(colunaId, novaCor); 
               socket.emit('atualizar_cor_coluna', { colunaId: colunaId, cor: novaCor }); 
               mostrarToast('sucesso', 'Cores', 'A cor da coluna foi guardada!');
-          }
+          };
 
-          function gerarHTMLAnexo(anexo) {
+          window.gerarHTMLAnexo = function(anexo) {
               const isImage = anexo.tipo && anexo.tipo.includes('image');
               const path = '/uploads/' + anexo.nome_arquivo;
               if (isImage) {
@@ -1685,9 +1792,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } else {
                   return '<div class="anexo-doc-mini shadow-sm" style="pointer-events: none;" title="' + (anexo.nome_original || '') + '"><i class="fa-solid fa-file-pdf"></i></div>';
               }
-          }
+          };
 
-          function gerarHTMLCard(card, corColuna) {
+          window.gerarHTMLCard = function(card, corColuna) {
               const isConcluido = card.concluido ? 'card-completed' : '';
               const isAlta = card.prioridade === 'alta' ? 'card-prioridade-alta' : '';
               
@@ -1745,12 +1852,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       </div>
                   </div>
               </div>\`;
-          }
+          };
 
           // ==========================================
           // MODAL DE DETALHES DO CARD E ANEXOS
           // ==========================================
-          async function abrirModalCard(cardId) {
+          window.abrirModalCard = async function(cardId) {
               let cardData = null;
               let colunaNome = "";
 
@@ -1887,19 +1994,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               modalCardDetalhesObj.show();
-          }
+          };
 
-          function fecharModalCard() {
+          window.fecharModalCard = function() {
               cardAbertoId = null;
-          }
+          };
 
-          function colarTextoPuro(e) {
+          window.colarTextoPuro = function(e) {
               e.preventDefault();
               const text = (e.originalEvent || e).clipboardData.getData('text/plain');
               document.execCommand('insertText', false, text);
-          }
+          };
 
-          function atualizarStatusModal() {
+          window.atualizarStatusModal = function() {
               const checkbox = document.getElementById('modalCardStatus');
               const prioridadeSelect = document.getElementById('modalCardPrioridade');
               
@@ -1908,9 +2015,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
               
               salvarTextosModal();
-          }
+          };
 
-          function salvarTextosModal() {
+          window.salvarTextosModal = function() {
               if (!cardAbertoId) return;
               
               const titulo = document.getElementById('modalCardTitulo').innerText.trim();
@@ -2010,31 +2117,31 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               });
               
               mostrarToast('sucesso', 'Atualizado!', 'Card atualizado com sucesso.');
-          }
+          };
 
-          function acionarUploadModal() {
+          window.acionarUploadModal = function() {
               if(!cardAbertoId) return;
               uploadCardAtualId = cardAbertoId;
               const fileInput = document.getElementById('globalFileInput');
               fileInput.value = ''; 
               fileInput.click();    
-          }
+          };
 
-          function confirmarDeletarCardModal() {
+          window.confirmarDeletarCardModal = function() {
               if(!cardAbertoId) return;
               document.getElementById('deleteCardId').value = cardAbertoId;
               modalCardDetalhesObj.hide();
               modalDeletarCardObj.show();
-          }
+          };
 
-          function confirmarDeletarAnexoModal(anexoId, cardId, event) {
+          window.confirmarDeletarAnexoModal = function(anexoId, cardId, event) {
               if(event) event.stopPropagation();
               document.getElementById('deleteAnexoId').value = anexoId;
               document.getElementById('deleteAnexoCardId').value = cardId;
               modalDeletarAnexoObj.show();
-          }
+          };
 
-          async function executarDeletarAnexo() {
+          window.executarDeletarAnexo = async function() {
               const anexoId = document.getElementById('deleteAnexoId').value;
               const cardId = document.getElementById('deleteAnexoCardId').value;
               modalDeletarAnexoObj.hide();
@@ -2060,12 +2167,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } catch(e) {
                   mostrarToast('erro', 'Falha na Rede', 'Verifique a sua internet.');
               }
-          }
+          };
 
           // ==========================================
           // AÇÕES COLUNAS E CARDS (CRUD)
           // ==========================================
-          function salvarNovaColuna() {
+          window.salvarNovaColuna = function() {
               const titulo = document.getElementById('inputTituloColuna').value.trim();
               const cor = document.getElementById('inputCorColuna').value;
               const urlParams = new URLSearchParams(window.location.search);
@@ -2079,9 +2186,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } else {
                   mostrarToast('erro', 'Atenção', 'Título vazio ou falha na identificação do espaço.');
               }
-          }
+          };
 
-          function salvarTituloColuna(colunaId, el) {
+          window.salvarTituloColuna = function(colunaId, el) {
               const novoTitulo = el.innerText.trim();
               if (novoTitulo) {
                   const colIndex = colunasDados.findIndex(c => c.id == colunaId);
@@ -2098,9 +2205,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (colIndex > -1) el.innerText = colunasDados[colIndex].titulo;
                   mostrarToast('erro', 'Aviso', 'O título da coluna não pode ser vazio.');
               }
-          }
+          };
 
-          function aplicarCorColunaVisualmente(colunaId, cor) {
+          window.aplicarCorColunaVisualmente = function(colunaId, cor) {
               const colIndex = colunasDados.findIndex(c => c.id == colunaId);
               if (colIndex > -1) colunasDados[colIndex].cor = cor;
               
@@ -2116,46 +2223,46 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       card.style.borderLeftColor = cor;
                   });
               }
-          }
+          };
 
-          function atualizarCorColuna(colunaId, novaCor) {
+          window.atualizarCorColuna = function(colunaId, novaCor) {
               aplicarCorColunaVisualmente(colunaId, novaCor); 
               socket.emit('atualizar_cor_coluna', { colunaId: colunaId, cor: novaCor }); 
               mostrarToast('sucesso', 'Cores', 'A cor da coluna foi guardada!');
-          }
+          };
 
-          function criarCardRapido(colunaId) { 
+          window.criarCardRapido = function(colunaId) { 
               socket.emit('novo_card', { colunaId: colunaId, titulo: 'Clique para editar', descricao: '', usuario: NOME_USUARIO }); 
               mostrarToast('sucesso', 'Criado!', 'Novo card inserido na coluna.');
-          }
+          };
 
-          function confirmarDeletarCard(cardId) {
+          window.confirmarDeletarCard = function(cardId) {
               document.getElementById('deleteCardId').value = cardId;
               modalDeletarCardObj.show();
-          }
-          function executarDeletarCard() {
+          };
+          window.executarDeletarCard = function() {
               const id = document.getElementById('deleteCardId').value;
               socket.emit('deletar_card', id);
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
               if (cardAbertoId == id) { cardAbertoId = null; }
-          }
+          };
 
-          function confirmarDeletarColuna(colunaId) {
+          window.confirmarDeletarColuna = function(colunaId) {
               document.getElementById('deleteColunaId').value = colunaId;
               modalDeletarColunaObj.show();
-          }
-          function executarDeletarColuna() {
+          };
+          window.executarDeletarColuna = function() {
               const id = document.getElementById('deleteColunaId').value;
               socket.emit('deletar_coluna', id); 
               modalDeletarColunaObj.hide();
               mostrarToast('sucesso', 'Removido!', 'A coluna e os cards foram apagados.');
-          }
+          };
 
           // ==========================================
           // UPLOAD AJAX EM BACKGROUND (SILENCIOSO)
           // ==========================================
-          async function handleUploadDireto(input) {
+          window.handleUploadDireto = async function(input) {
               if(!uploadCardAtualId || input.files.length === 0) return;
 
               const formData = new FormData();
@@ -2189,7 +2296,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               } catch (error) {
                   mostrarToast('erro', 'Falha na Rede', 'Verifique a sua ligação à internet.');
               }
-          }
+          };
 
           // ==========================================
           // WEBSOCKETS (TEMPO REAL)

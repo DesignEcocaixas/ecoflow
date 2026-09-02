@@ -7,14 +7,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   const menuHTML = menuLateral(user, "/espacos-trabalho");
   const termosHTML = termosComponent(usuario); 
 
-  // Paleta de cores oficial (Expandida para dar mais opções às colunas e etiquetas)
+  // Paleta de cores oficial
   const paletaCores = [
       '#08c068', '#0d6efd', '#dc3545', '#ffc107', '#6f42c1', '#fd7e14', '#20c997', '#6c757d',
       '#e83e8c', '#0dcaf0', '#198754', '#d63384', '#6610f2', '#ff8c00', '#00ced1', '#ff1493',
       '#4682b4', '#cd5c5c', '#8a2be2', '#32cd32', '#ff6347', '#40e0d0', '#da70d6', '#8b4513'
   ];
 
-  // Função para escapar o JSON de forma segura num atributo HTML
   const escapeHtmlAttr = (str) => {
       return String(str)
           .replace(/&/g, '&amp;')
@@ -25,8 +24,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   };
   const colunasJsonStr = escapeHtmlAttr(JSON.stringify(colunas));
   const etiquetasJsonStr = escapeHtmlAttr(JSON.stringify(espacoAtual.etiquetas || []));
+  
+  const optionsOperadoresHtml = (colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('');
 
-  // Modal para avisar da exclusão amanhã
   const modalAvisoHtml = avisosExclusao.length > 0 ? `
   <div class="modal fade" id="modalAvisoExclusao" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
@@ -49,7 +49,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
-  // Novo Modal: Exclusão Automática (Configuração Avançada com Switch)
   const modalExclusaoAutomaticaHtml = `
   <div class="modal fade" id="modalExclusaoAutomatica" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
@@ -75,7 +74,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
                                   </label>
                               </div>
-                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                              <span class="badge bg-custom-dark border-custom text-muted flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
                           </div>
                           <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
                               <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
@@ -108,14 +107,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <style>
-          /* Scrollbars Globais */
           ::-webkit-scrollbar { width: 6px; height: 6px; }
           ::-webkit-scrollbar-track { background: transparent; }
           ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
           ::-webkit-scrollbar-thumb:hover { background: rgba(8, 192, 104, 0.7); }
           html, body, .content, .kanban-cards-container, .modal-body, .offcanvas-body { scrollbar-width: thin; scrollbar-color: rgba(8, 192, 104, 0.3) transparent; }
 
-          /* TEMA ESCURO GLOBAL */
           :root {
               --bg-color: #151515;
               --surface-color: #1f1f1f;
@@ -138,12 +135,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .btn-primary { background-color: var(--verde-ecoflow); border-color: var(--verde-ecoflow); color: #1f1f1f; }
           .btn-primary:hover { background-color: var(--verde-hover) !important; border-color: var(--verde-hover) !important; color: #1f1f1f !important; }
 
-          /* Modais ERP */
           .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: background-color 0.3s ease, border-color 0.3s ease; }
           .modal-header-dark { background-color: #151515; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
           .modal-footer-dark { background-color: #151515; border-top: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
 
-          /* KANBAN BOARD */
           .kanban-wrapper { flex-grow: 1; overflow: hidden; position: relative; margin-top: 10px; }
           .kanban-board { 
               display: flex; gap: 0px; align-items: flex-start; height: 100%; 
@@ -167,7 +162,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               box-shadow: none; 
               transition: background-color 0.3s ease, border-color 0.3s ease;
               cursor: default;
-              margin-right: 5px;
+              margin-right: 4px;
           }
           .kanban-header {
               padding: 8px 12px;
@@ -184,7 +179,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 5px;
+              padding: 10px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;
@@ -503,7 +498,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: rgba(0,0,0,0.4) !important;
           }
 
-          /* BACKGROUND WALLPAPER LOGIC */
           body.has-wallpaper .content {
               background-size: cover;
               background-position: center;
@@ -568,7 +562,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
-                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
@@ -590,6 +583,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
                                   <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Automática
                               </button>
+                          </li>
+                          <li class="px-3 py-2 border-bottom border-custom">
+                              <a href="/kanban/relatorio?espaco_id=${espacoAtual.id}" target="_blank" class="btn btn-sm btn-outline-success w-100 fw-bold border-custom text-success d-flex align-items-center justify-content-center gap-2">
+                                  <i class="fa-solid fa-file-csv"></i> Baixar Relatório
+                              </a>
                           </li>
                           <li class="px-3 py-3">
                               <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
@@ -729,45 +727,22 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                 </div>
 
                               <div id="modalCardPercasContainer" style="display: ${espacoAtual.percas_ativo ? 'block' : 'none'};">
-                                  <h6 class="text-white-50 fw-bold mb-2 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="fa-solid fa-scissors me-1"></i> Controle de Percas</h6>
-                                  <div class="row g-2 mb-3">
-                                      <div class="col-md-4">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Percas Pintura</label>
-                                          <input type="number" id="modalCardPercasPintura" class="form-control form-control-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()" placeholder="Qtd">
+                                  <h6 class="text-white-50 fw-bold mb-3 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="fa-solid fa-scissors me-1"></i> Controle de Percas</h6>
+                                  
+                                  <div class="mb-3">
+                                      <div class="d-flex justify-content-between align-items-center mb-2">
+                                          <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Pintura</span>
+                                          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
-                                      <div class="col-md-4">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 1</label>
-                                          <select id="modalCardOpPintura" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
-                                              <option value="">Selecione...</option>
-                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
-                                          </select>
-                                      </div>
-                                      <div class="col-md-4">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 2</label>
-                                          <select id="modalCardOpPintura2" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
-                                              <option value="">Selecione...</option>
-                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
-                                          </select>
-                                      </div>
+                                      <div id="containerPercasPintura" class="d-flex flex-column"></div>
+                                  </div>
 
-                                      <div class="col-md-4 mt-2">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Percas Corte</label>
-                                          <input type="number" id="modalCardPercasCorte" class="form-control form-control-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()" placeholder="Qtd">
+                                  <div class="mb-3">
+                                      <div class="d-flex justify-content-between align-items-center mb-2">
+                                          <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Corte</span>
+                                          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
                                       </div>
-                                      <div class="col-md-4 mt-2">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 1</label>
-                                          <select id="modalCardOpCorte" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
-                                              <option value="">Selecione...</option>
-                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
-                                          </select>
-                                      </div>
-                                      <div class="col-md-4 mt-2">
-                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 2</label>
-                                          <select id="modalCardOpCorte2" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
-                                              <option value="">Selecione...</option>
-                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
-                                          </select>
-                                      </div>
+                                      <div id="containerPercasCorte" class="d-flex flex-column"></div>
                                   </div>
                               </div>
 
@@ -947,6 +922,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           const paletaBase = ${JSON.stringify(paletaCores)};
           let modalNovaColunaObj, modalVerImagemObj, modalDeletarCardObj, modalDeletarColunaObj, modalCardDetalhesObj, modalDeletarAnexoObj, modalGerenciarEtiquetasObj;
           let cardAbertoId = null;
+
+          const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
 
           function escapeHtml(text) {
               const div = document.createElement('div');
@@ -1233,7 +1210,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (nome) {
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
-                  
+                  // A view não é atualizada instantaneamente no local, espera o retorno do WebSocket para evitar duplicação
                   mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
           }
@@ -1524,8 +1501,57 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
 
           // ==========================================
-          // RENDERIZAÇÃO DO KANBAN BOARD
+          // RENDERIZAÇÃO DO KANBAN BOARD E DOS ROWS DINÂMICOS
           // ==========================================
+          function adicionarLinhaPerca(tipo, dados = {}) {
+              const container = document.getElementById('containerPercas' + tipo);
+              if (!container) return;
+
+              const div = document.createElement('div');
+              div.className = 'row g-2 align-items-end perca-row p-0 mb-3 position-relative';
+              
+              div.innerHTML = \`
+                  <div class="col-12 col-md-3">
+                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Operador 1</label>
+                      <select class="form-select form-select-sm bg-custom-darker border-custom text-white perca-op1" onchange="salvarTextosModal()">
+                          <option value="">Selecione...</option>
+                          \${optionsOperadoresHtml}
+                      </select>
+                  </div>
+                  <div class="col-12 col-md-3">
+                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Operador 2</label>
+                      <select class="form-select form-select-sm bg-custom-darker border-custom text-white perca-op2" onchange="salvarTextosModal()">
+                          <option value="">Selecione...</option>
+                          \${optionsOperadoresHtml}
+                      </select>
+                  </div>
+                  <div class="col-4 col-md-2">
+                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Qtd</label>
+                      <input type="number" class="form-control form-control-sm bg-custom-darker border-custom text-white perca-qtd" onchange="salvarTextosModal()" min="1" placeholder="0">
+                  </div>
+                  <div class="col-4 col-md-2">
+                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Material</label>
+                      <select class="form-select form-select-sm bg-custom-darker border-custom text-white perca-material" onchange="salvarTextosModal()">
+                          <option value="Pardo">Pardo</option>
+                          <option value="Branco">Branco</option>
+                      </select>
+                  </div>
+                  <div class="col-4 col-md-2 flex-grow-1 pe-4">
+                      <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Chapa</label>
+                      <input type="text" class="form-control form-control-sm bg-custom-darker border-custom text-white perca-chapa" onchange="salvarTextosModal()" placeholder="Ref">
+                  </div>
+                  <button type="button" class="btn btn-sm btn-danger position-absolute shadow-sm" style="width: 22px; height: 22px; top: 18px; right: 0; border-radius: 50%; padding: 0; z-index: 10; font-size: 0.65rem;" onclick="this.closest('.perca-row').remove(); salvarTextosModal();" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+              \`;
+
+              if(dados.op1) div.querySelector('.perca-op1').value = dados.op1;
+              if(dados.op2) div.querySelector('.perca-op2').value = dados.op2;
+              if(dados.qtd) div.querySelector('.perca-qtd').value = dados.qtd;
+              if(dados.material) div.querySelector('.perca-material').value = dados.material;
+              if(dados.chapa) div.querySelector('.perca-chapa').value = dados.chapa;
+
+              container.appendChild(div);
+          }
+
           function renderizarKanban() {
               const board = document.getElementById('kanbanBoard');
               board.innerHTML = ''; 
@@ -1779,25 +1805,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   selectPrioridade.value = cardData.prioridade || 'normal';
               }
 
-              // Percas Mapping
-              const percasPinturaInput = document.getElementById('modalCardPercasPintura');
-              if(percasPinturaInput && cardData.percas_pintura !== undefined) percasPinturaInput.value = cardData.percas_pintura || '';
-              
-              const opPinturaSelect = document.getElementById('modalCardOpPintura');
-              if(opPinturaSelect && cardData.op_pintura_id !== undefined) opPinturaSelect.value = cardData.op_pintura_id || '';
-              
-              const opPinturaSelect2 = document.getElementById('modalCardOpPintura2');
-              if(opPinturaSelect2 && cardData.op_pintura_2_id !== undefined) opPinturaSelect2.value = cardData.op_pintura_2_id || '';
-              
-              const percasCorteInput = document.getElementById('modalCardPercasCorte');
-              if(percasCorteInput && cardData.percas_corte !== undefined) percasCorteInput.value = cardData.percas_corte || '';
-              
-              const opCorteSelect = document.getElementById('modalCardOpCorte');
-              if(opCorteSelect && cardData.op_corte_id !== undefined) opCorteSelect.value = cardData.op_corte_id || '';
-
-              const opCorteSelect2 = document.getElementById('modalCardOpCorte2');
-              if(opCorteSelect2 && cardData.op_corte_2_id !== undefined) opCorteSelect2.value = cardData.op_corte_2_id || '';
-
               renderizarDropdownEtiquetasModal();
               const tagsDoCard = cardData.etiquetas || [];
               const tagIds = tagsDoCard.map(t => typeof t === 'object' ? t.id : t);
@@ -1805,6 +1812,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   cb.checked = tagIds.includes(parseInt(cb.value));
               });
               atualizarEtiquetasVisualCardModal();
+
+              // Limpar containers de percas e repovoar caso hajam percas salvas
+              const containerPintura = document.getElementById('containerPercasPintura');
+              const containerCorte = document.getElementById('containerPercasCorte');
+              if(containerPintura) containerPintura.innerHTML = '';
+              if(containerCorte) containerCorte.innerHTML = '';
+
+              let pp = []; try { pp = typeof cardData.percas_pintura === 'string' ? JSON.parse(cardData.percas_pintura) : (cardData.percas_pintura || []); } catch(e){}
+              let pc = []; try { pc = typeof cardData.percas_corte === 'string' ? JSON.parse(cardData.percas_corte) : (cardData.percas_corte || []); } catch(e){}
+
+              (pp || []).forEach(p => adicionarLinhaPerca('Pintura', p));
+              (pc || []).forEach(p => adicionarLinhaPerca('Corte', p));
 
               const cAnexos = document.getElementById('modalCardAnexos');
               if (cardData.anexos && cardData.anexos.length > 0) {
@@ -1907,14 +1926,28 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prioridadeElement = document.getElementById('modalCardPrioridade');
               const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
 
-              const percasPintura = document.getElementById('modalCardPercasPintura') ? document.getElementById('modalCardPercasPintura').value : null;
-              const opPinturaId = document.getElementById('modalCardOpPintura') ? document.getElementById('modalCardOpPintura').value : null;
-              const opPintura2Id = document.getElementById('modalCardOpPintura2') ? document.getElementById('modalCardOpPintura2').value : null;
-              const percasCorte = document.getElementById('modalCardPercasCorte') ? document.getElementById('modalCardPercasCorte').value : null;
-              const opCorteId = document.getElementById('modalCardOpCorte') ? document.getElementById('modalCardOpCorte').value : null;
-              const opCorte2Id = document.getElementById('modalCardOpCorte2') ? document.getElementById('modalCardOpCorte2').value : null;
-
               const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
+
+              // Extrair as informações dinâmicas de percas da tela e gerar os arrays Json
+              const extrairPercas = (containerId) => {
+                  const container = document.getElementById(containerId);
+                  if(!container) return [];
+                  const rows = container.querySelectorAll('.perca-row');
+                  const data = [];
+                  rows.forEach(row => {
+                      data.push({
+                          op1: row.querySelector('.perca-op1').value,
+                          op2: row.querySelector('.perca-op2').value,
+                          qtd: row.querySelector('.perca-qtd').value,
+                          material: row.querySelector('.perca-material').value,
+                          chapa: row.querySelector('.perca-chapa').value
+                      });
+                  });
+                  return data;
+              };
+
+              const newPercasP = JSON.stringify(extrairPercas('containerPercasPintura'));
+              const newPercasC = JSON.stringify(extrairPercas('containerPercasCorte'));
 
               if (document.getElementById('modalCardPrazoBadge')) {
                   document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazo, concluido);
@@ -1942,18 +1975,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const oldTagIds = oldTags.map(t => typeof t === 'object' ? t.id : t).sort().join(',');
                   const newTagIds = tagIds.sort().join(',');
 
-                  const oldPercasP = (cardOriginal.percas_pintura || '') + '';
-                  const newPercasP = (percasPintura || '') + '';
-                  const oldOpP = (cardOriginal.op_pintura_id || '') + '';
-                  const newOpP = (opPinturaId || '') + '';
-                  const oldOpP2 = (cardOriginal.op_pintura_2_id || '') + '';
-                  const newOpP2 = (opPintura2Id || '') + '';
-                  const oldPercasC = (cardOriginal.percas_corte || '') + '';
-                  const newPercasC = (percasCorte || '') + '';
-                  const oldOpC = (cardOriginal.op_corte_id || '') + '';
-                  const newOpC = (opCorteId || '') + '';
-                  const oldOpC2 = (cardOriginal.op_corte_2_id || '') + '';
-                  const newOpC2 = (opCorte2Id || '') + '';
+                  const strObj = (obj) => {
+                      if (!obj) return '[]';
+                      return typeof obj === 'string' ? obj : JSON.stringify(obj);
+                  };
+
+                  const oldPercasP = strObj(cardOriginal.percas_pintura);
+                  const oldPercasC = strObj(cardOriginal.percas_corte);
 
                   if (titulo === oldTitulo &&
                       novaDescNormalizada === oldDesc &&
@@ -1962,11 +1990,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       prioridade === oldPrioridade &&
                       newTagIds === oldTagIds &&
                       oldPercasP === newPercasP &&
-                      oldOpP === newOpP &&
-                      oldOpP2 === newOpP2 &&
-                      oldPercasC === newPercasC &&
-                      oldOpC === newOpC &&
-                      oldOpC2 === newOpC2) {
+                      oldPercasC === newPercasC) {
                       return; 
                   }
               }
@@ -1980,12 +2004,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   prazo: prazo, 
                   prioridade: prioridade,
                   etiquetas: tagIds,
-                  percas_pintura: percasPintura,
-                  op_pintura_id: opPinturaId,
-                  op_pintura_2_id: opPintura2Id,
-                  percas_corte: percasCorte,
-                  op_corte_id: opCorteId,
-                  op_corte_2_id: opCorte2Id,
+                  percas_pintura: newPercasP,
+                  percas_corte: newPercasC,
                   usuario: NOME_USUARIO 
               });
               
@@ -2250,11 +2270,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       c.prioridade = dados.prioridade;
                       if (dados.etiquetas !== undefined) c.etiquetas = dados.etiquetas;
                       if (dados.percas_pintura !== undefined) c.percas_pintura = dados.percas_pintura;
-                      if (dados.op_pintura_id !== undefined) c.op_pintura_id = dados.op_pintura_id;
-                      if (dados.op_pintura_2_id !== undefined) c.op_pintura_2_id = dados.op_pintura_2_id;
                       if (dados.percas_corte !== undefined) c.percas_corte = dados.percas_corte;
-                      if (dados.op_corte_id !== undefined) c.op_corte_id = dados.op_corte_id;
-                      if (dados.op_corte_2_id !== undefined) c.op_corte_2_id = dados.op_corte_2_id;
                       break;
                   }
               }
@@ -2279,23 +2295,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       prioridadeSelect.value = dados.prioridade;
                   }
 
-                  const percasPinturaInput = document.getElementById('modalCardPercasPintura');
-                  if(percasPinturaInput && dados.percas_pintura !== undefined) percasPinturaInput.value = dados.percas_pintura || '';
-                  
-                  const opPinturaSelect = document.getElementById('modalCardOpPintura');
-                  if(opPinturaSelect && dados.op_pintura_id !== undefined) opPinturaSelect.value = dados.op_pintura_id || '';
-                  
-                  const opPinturaSelect2 = document.getElementById('modalCardOpPintura2');
-                  if(opPinturaSelect2 && dados.op_pintura_2_id !== undefined) opPinturaSelect2.value = dados.op_pintura_2_id || '';
-                  
-                  const percasCorteInput = document.getElementById('modalCardPercasCorte');
-                  if(percasCorteInput && dados.percas_corte !== undefined) percasCorteInput.value = dados.percas_corte || '';
-                  
-                  const opCorteSelect = document.getElementById('modalCardOpCorte');
-                  if(opCorteSelect && dados.op_corte_id !== undefined) opCorteSelect.value = dados.op_corte_id || '';
+                  // Apenas atualiza a listagem se for enviado explicitamente pela rede
+                  if (dados.percas_pintura !== undefined || dados.percas_corte !== undefined) {
+                      const containerPintura = document.getElementById('containerPercasPintura');
+                      const containerCorte = document.getElementById('containerPercasCorte');
+                      if(containerPintura) containerPintura.innerHTML = '';
+                      if(containerCorte) containerCorte.innerHTML = '';
 
-                  const opCorteSelect2 = document.getElementById('modalCardOpCorte2');
-                  if(opCorteSelect2 && dados.op_corte_2_id !== undefined) opCorteSelect2.value = dados.op_corte_2_id || '';
+                      let pp = []; try { pp = typeof dados.percas_pintura === 'string' ? JSON.parse(dados.percas_pintura) : (dados.percas_pintura || []); } catch(e){}
+                      let pc = []; try { pc = typeof dados.percas_corte === 'string' ? JSON.parse(dados.percas_corte) : (dados.percas_corte || []); } catch(e){}
+
+                      (pp || []).forEach(p => adicionarLinhaPerca('Pintura', p));
+                      (pc || []).forEach(p => adicionarLinhaPerca('Corte', p));
+                  }
                   
                   if (dados.etiquetas !== undefined) {
                       const tagIds = dados.etiquetas.map(t => typeof t === 'object' ? t.id : t);

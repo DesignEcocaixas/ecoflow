@@ -347,14 +347,16 @@ io.on("connection", (socket) => {
 
     // EDITAR CARD KANBAN (ÚNICO E MULTI-DADOS)
     socket.on("atualizar_card", (dados) => {
-        // Atualiza todos os campos base, incluindo prazo e prioridade
-        const query = "UPDATE kanban_cards SET titulo = ?, descricao = ?, concluido = ?, prazo = ?, prioridade = ? WHERE id = ?";
+        // Atualiza todos os campos base, incluindo prazo, prioridade e as novas listas de percas
+        const query = "UPDATE kanban_cards SET titulo = ?, descricao = ?, concluido = ?, prazo = ?, prioridade = ?, percas_pintura = ?, percas_corte = ? WHERE id = ?";
         const valores = [
             dados.titulo,
             dados.descricao,
             dados.concluido,
             dados.prazo || null,
             dados.prioridade || 'normal', // Usa 'normal' como padrão se vier vazio
+            dados.percas_pintura || null, // Array JSON com as linhas de percas de pintura
+            dados.percas_corte || null,   // Array JSON com as linhas de percas de corte
             dados.id
         ];
 

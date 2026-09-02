@@ -65,24 +65,24 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const hasRule = c.dias_exclusao && c.dias_exclusao > 0;
                       const numCards = c.cards ? c.cards.length : 0;
                       return `
-                      <div class="p-2 border border-custom rounded bg-custom-darker d-flex flex-column gap-2 shadow-sm">
-                          <div class="d-flex align-items-center justify-content-between overflow-hidden w-100">
-                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                                  <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="chk_col_${c.id}" ${hasRule ? 'checked' : ''} onchange="toggleDiasExclusao('${c.id}', this.checked)" style="width: 32px; height: 16px;">
-                                  <label class="form-check-label d-flex align-items-center gap-2 m-0 cursor-pointer" for="chk_col_${c.id}">
-                                      <div class="rounded shadow-sm flex-shrink-0" style="width: 14px; height: 14px; background-color: ${c.cor || '#08c068'}; mt-1"></div>
-                                      <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
-                                  </label>
-                              </div>
-                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
-                          </div>
-                          <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
-                              <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
-                              <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
-                              <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
-                          </div>
-                      </div>
-                      `;
+                        <div class="p-2 border border-custom rounded bg-custom-darker d-flex flex-column gap-2 shadow-sm">
+                            <div class="d-flex align-items-center justify-content-between overflow-hidden w-100">
+                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2" style="padding-left: 0;">
+                                    <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="chk_col_${c.id}" ${hasRule ? 'checked' : ''} onchange="toggleDiasExclusao('${c.id}', this.checked)" style="width: 32px; height: 16px;">
+                                    <label class="form-check-label d-flex align-items-center gap-2 m-0 cursor-pointer" for="chk_col_${c.id}">
+                                        <div class="rounded shadow-sm flex-shrink-0" style="width: 14px; height: 14px; background-color: ${c.cor || '#08c068'}; mt-1"></div>
+                                        <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
+                                    </label>
+                                </div>
+                                <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                            </div>
+                            <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
+                                <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                                <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
+                                <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
+                            </div>
+                        </div>
+                        `;
                   }).join('')}
                   </div>
                   ${colunas.length === 0 ? '<p class="text-white-50 small mb-0 text-center">Nenhuma coluna criada no painel.</p>' : ''}
@@ -179,7 +179,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 10px;
+              padding: 5px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;

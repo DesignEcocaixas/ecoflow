@@ -74,7 +74,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
                                   </label>
                               </div>
-                              <span class="badge bg-custom-dark border-custom text-muted flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
                           </div>
                           <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
                               <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>

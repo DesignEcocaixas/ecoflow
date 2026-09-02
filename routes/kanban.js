@@ -24,109 +24,171 @@ router.get("/kanban", isLogged, (req, res) => {
         if (err || espacosResult.length === 0) return res.redirect("/espacos-trabalho");
         const espacoAtual = espacosResult[0];
 
-        // 1. Busca as etiquetas deste espaço
-        db.query("SELECT * FROM kanban_etiquetas WHERE espaco_id = ?", [espaco_id], (err, etiquetas) => {
-            espacoAtual.etiquetas = etiquetas || [];
+        // Busca os colaboradores para popular os selects de "Operador" na View
+        db.query("SELECT id, nome, tipo_usuario, foto FROM usuarios", (errUsu, colaboradoresResult) => {
+            const listaColaboradores = colaboradoresResult || [];
 
-            // 2. Busca as colunas
-            db.query("SELECT * FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [espaco_id], (err, colunas) => {
-                if (err) return res.status(500).send("Erro ao carregar colunas.");
+            // 1. Busca as etiquetas deste espaço
+            db.query("SELECT * FROM kanban_etiquetas WHERE espaco_id = ?", [espaco_id], (err, etiquetas) => {
+                espacoAtual.etiquetas = etiquetas || [];
 
-                if (colunas.length === 0) {
-                    return res.send(kanbanView(req.session.user, [], espacoAtual));
-                }
+                // 2. Busca as colunas
+                db.query("SELECT * FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [espaco_id], (err, colunas) => {
+                    if (err) return res.status(500).send("Erro ao carregar colunas.");
 
-                const idsColunas = colunas.map(c => c.id);
-
-                // 3. Busca os cards
-                db.query("SELECT * FROM kanban_cards WHERE coluna_id IN (?) ORDER BY ordem ASC", [idsColunas], (errCards, cards) => {
-                    if (errCards) return res.status(500).send("Erro ao carregar cards.");
-
-                    const idsCards = cards.map(c => c.id);
-                    if (idsCards.length === 0) {
-                        colunas.forEach(col => col.cards = []);
-                        return res.send(kanbanView(req.session.user, colunas, espacoAtual));
+                    if (colunas.length === 0) {
+                        return res.send(kanbanView(req.session.user, [], espacoAtual, [], listaColaboradores));
                     }
 
-                    // 4. Busca os anexos e as relações de etiquetas simultaneamente
-                    db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
-                        db.query("SELECT * FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsCards], (errEtiquetasCards, relacoes) => {
+                    const idsColunas = colunas.map(c => c.id);
 
-                            const anexosGerais = anexos || [];
-                            const relacoesGerais = relacoes || [];
+                    // 3. Busca os cards
+                    db.query("SELECT * FROM kanban_cards WHERE coluna_id IN (?) ORDER BY ordem ASC", [idsColunas], (errCards, cards) => {
+                        if (errCards) return res.status(500).send("Erro ao carregar cards.");
 
-                            cards.forEach(card => {
-                                // Mapeia anexos
-                                card.anexos = anexosGerais.filter(a => a.card_id === card.id);
+                        const idsCards = cards.map(c => c.id);
+                        if (idsCards.length === 0) {
+                            colunas.forEach(col => col.cards = []);
+                            return res.send(kanbanView(req.session.user, colunas, espacoAtual, [], listaColaboradores));
+                        }
 
-                                // Mapeia as etiquetas cruzando os IDs da tabela de relação com os dados reais
-                                const idsEtiquetasDesteCard = relacoesGerais.filter(r => r.card_id === card.id).map(r => r.etiqueta_id);
-                                card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
-                            });
+                        // 4. Busca os anexos e as relações de etiquetas simultaneamente
+                        db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
+                            db.query("SELECT * FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsCards], (errEtiquetasCards, relacoes) => {
 
-                            // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO > 30 DIAS)
-                            const now = new Date();
-                            const cardsParaDeletar = [];
-                            const avisosExclusao = [];
+                                const anexosGerais = anexos || [];
+                                const relacoesGerais = relacoes || [];
 
-                            // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS JÁ ORDENANDO POR PRAZO E FILTRANDO OS ANTIGOS
-                            colunas.forEach(col => {
-                                let cardsDaColuna = cards.filter(c => c.coluna_id === col.id);
+                                cards.forEach(card => {
+                                    // Mapeia anexos
+                                    card.anexos = anexosGerais.filter(a => a.card_id === card.id);
 
-                                // Interceptação caso a coluna seja a "Faturado e Entregue"
-                                if (col.titulo.trim().toLowerCase() === 'faturado e entregue') {
-                                    cardsDaColuna = cardsDaColuna.filter(card => {
-                                        const dataCriacao = new Date(card.criado_em);
-                                        const diffTime = Math.abs(now - dataCriacao);
-                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                        
-                                        if (diffDays >= 30) {
-                                            cardsParaDeletar.push(card.id);
-                                            return false; // Remove da renderização visual
-                                        } else if (diffDays === 29) {
-                                            avisosExclusao.push(card.titulo || 'Sem Título');
-                                        }
-                                        return true; // Mantém o card
-                                    });
-                                }
+                                    // Mapeia as etiquetas cruzando os IDs da tabela de relação com os dados reais
+                                    const idsEtiquetasDesteCard = relacoesGerais.filter(r => r.card_id === card.id).map(r => r.etiqueta_id);
+                                    card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
+                                });
 
-                                col.cards = cardsDaColuna.sort((a, b) => {
-                                    // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
-                                    if (!a.prazo && b.prazo) return 1;  
-                                    if (a.prazo && !b.prazo) return -1; 
-                                    if (!a.prazo && !b.prazo) return 0; 
+                                // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO DINÂMICA)
+                                const now = new Date();
+                                const cardsParaDeletar = [];
+                                const avisosExclusao = [];
 
-                                    // 2. Ordenação por data: Menor prazo (mais próximo/urgente) no topo (ASC)
-                                    const dataA = new Date(a.prazo);
-                                    const dataB = new Date(b.prazo);
+                                // ATUALIZAÇÃO: DISTRIBUI OS CARDS NAS COLUNAS E FILTRA OS VENCIDOS
+                                colunas.forEach(col => {
+                                    let cardsDaColuna = cards.filter(c => c.coluna_id === col.id);
 
-                                    if (dataA.getTime() !== dataB.getTime()) {
-                                        return dataA - dataB;
+                                    // Se a coluna tiver uma regra de exclusão definida
+                                    if (col.dias_exclusao && col.dias_exclusao > 0) {
+                                        cardsDaColuna = cardsDaColuna.filter(card => {
+                                            const dataCriacao = new Date(card.criado_em);
+                                            const diffTime = Math.abs(now - dataCriacao);
+                                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                            
+                                            if (diffDays >= col.dias_exclusao) {
+                                                cardsParaDeletar.push(card.id);
+                                                return false; // Remove da renderização visual
+                                            } else if (diffDays === (col.dias_exclusao - 1)) {
+                                                avisosExclusao.push(`${card.titulo || 'Sem Título'} (Coluna: ${col.titulo})`);
+                                            }
+                                            return true; // Mantém o card
+                                        });
                                     }
 
-                                    // 3. CRITÉRIO DE DESEMPATE
-                                    if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
-                                    if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+                                    col.cards = cardsDaColuna.sort((a, b) => {
+                                        // 1. Tratamento para cartões sem prazo (vão para o fim da coluna)
+                                        if (!a.prazo && b.prazo) return 1;  
+                                        if (a.prazo && !b.prazo) return -1; 
+                                        if (!a.prazo && !b.prazo) return 0; 
 
-                                    return 0; 
+                                        // 2. Ordenação por data: Menor prazo no topo (ASC)
+                                        const dataA = new Date(a.prazo);
+                                        const dataB = new Date(b.prazo);
+
+                                        if (dataA.getTime() !== dataB.getTime()) {
+                                            return dataA - dataB;
+                                        }
+
+                                        // 3. CRITÉRIO DE DESEMPATE
+                                        if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
+                                        if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+
+                                        return 0; 
+                                    });
                                 });
+
+                                // Executa a deleção em background caso hajam cards vencidos
+                                if (cardsParaDeletar.length > 0) {
+                                    db.query("DELETE FROM kanban_cards WHERE id IN (?)", [cardsParaDeletar], () => {});
+                                    db.query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                                    db.query("DELETE FROM kanban_historico WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                                    db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [cardsParaDeletar], () => {});
+                                }
+
+                                // Passa os avisos formatados e os colaboradores para a View
+                                res.send(kanbanView(req.session.user, colunas, espacoAtual, avisosExclusao, listaColaboradores));
                             });
-
-                            // Executa a deleção em background caso hajam cards vencidos
-                            if (cardsParaDeletar.length > 0) {
-                                db.query("DELETE FROM kanban_cards WHERE id IN (?)", [cardsParaDeletar], () => {});
-                                db.query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [cardsParaDeletar], () => {});
-                                db.query("DELETE FROM kanban_historico WHERE card_id IN (?)", [cardsParaDeletar], () => {});
-                                db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [cardsParaDeletar], () => {});
-                            }
-
-                            // Passa os avisos para a View
-                            res.send(kanbanView(req.session.user, colunas, espacoAtual, avisosExclusao));
                         });
                     });
                 });
             });
         });
+    });
+});
+
+// ATUALIZAR REGRAS DE EXCLUSÃO AUTOMÁTICA
+router.post("/kanban/colunas/exclusao-automatica", isLogged, async (req, res) => {
+    try {
+        const data = req.body;
+        const promises = [];
+        
+        for (const key in data) {
+            if (key.startsWith('col_')) {
+                const colId = key.replace('col_', '');
+                const dias = parseInt(data[key]) > 0 ? parseInt(data[key]) : null;
+                promises.push(db.promise().query("UPDATE kanban_colunas SET dias_exclusao = ? WHERE id = ?", [dias, colId]));
+            }
+        }
+        
+        await Promise.all(promises);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Erro ao atualizar regras de exclusão:", error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// ATUALIZAR STATUS DE PERCAS DO WORKSPACE
+router.post("/espacos-trabalho/percas/:id", isLogged, (req, res) => {
+    const espacoId = req.params.id;
+    const percasAtivo = req.body.percas_ativo === '1' ? 1 : 0;
+
+    db.query("UPDATE espacos_trabalho SET percas_ativo = ? WHERE id = ?", [percasAtivo, espacoId], (err) => {
+        if (err) {
+            console.error("Erro ao atualizar status de percas:", err);
+            return res.status(500).json({ success: false });
+        }
+        res.json({ success: true });
+    });
+});
+
+// UPLOAD DE WALLPAPER DO ESPAÇO
+router.post("/espacos-trabalho/wallpaper/:id", isLogged, uploadKanban.single("wallpaper"), (req, res) => {
+    const espacoId = req.params.id;
+    
+    if (req.body.clear === '1') {
+        db.query("UPDATE espacos_trabalho SET wallpaper = NULL WHERE id = ?", [espacoId], (err) => {
+            if(err) return res.status(500).json({ success: false });
+            res.json({ success: true, cleared: true });
+        });
+        return;
+    }
+
+    if (!req.file) return res.status(400).json({ success: false, message: "Nenhum arquivo enviado." });
+    const filePath = "kanban/" + req.file.filename;
+
+    db.query("UPDATE espacos_trabalho SET wallpaper = ? WHERE id = ?", [filePath, espacoId], (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, path: '/uploads/' + filePath });
     });
 });
 

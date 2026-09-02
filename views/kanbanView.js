@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
-function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban", etiquetas: [] }, avisosExclusao = []) {
+function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban", etiquetas: [] }, avisosExclusao = [], colaboradores = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
   const termosHTML = termosComponent(usuario); 
@@ -36,9 +36,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4 bg-custom-dark text-white">
-                  <p style="font-size: 0.9rem;">Os seguintes cards estão na coluna <strong class="text-warning">Faturado e Entregue</strong> há 29 dias e serão permanentemente excluídos do sistema amanhã:</p>
+                  <p style="font-size: 0.9rem;">Os seguintes cards atingiram o limite de tempo configurado e <strong class="text-warning">serão excluídos amanhã</strong>:</p>
                   <ul class="text-white-50 small mb-0">
-                      ${avisosExclusao.map(titulo => `<li>${escapeHtmlAttr(titulo)}</li>`).join('')}
+                      ${avisosExclusao.map(aviso => `<li>${escapeHtmlAttr(aviso)}</li>`).join('')}
                   </ul>
               </div>
               <div class="modal-footer bg-custom-darker border-custom">
@@ -48,6 +48,54 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
   </div>
   ` : '';
+
+  // Novo Modal: Exclusão Automática (Configuração Avançada com Switch)
+  const modalExclusaoAutomaticaHtml = `
+  <div class="modal fade" id="modalExclusaoAutomatica" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
+          <form id="formExclusaoAutomatica" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoAutomatica(event, this)">
+              <div class="modal-header modal-header-dark border-custom">
+                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Exclusão Automática</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-3 bg-custom-dark">
+                  <p class="text-white-50 mb-3 text-center" style="font-size: 0.8rem; line-height: 1.4;">Ative e defina a quantidade de dias para os cards serem excluídos de cada coluna.</p>
+                  
+                  <div class="d-flex flex-column gap-2">
+                  ${colunas.map(c => {
+                      const hasRule = c.dias_exclusao && c.dias_exclusao > 0;
+                      const numCards = c.cards ? c.cards.length : 0;
+                      return `
+                      <div class="p-2 border border-custom rounded bg-custom-darker d-flex flex-column gap-2 shadow-sm">
+                          <div class="d-flex align-items-center justify-content-between overflow-hidden w-100">
+                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                  <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="chk_col_${c.id}" ${hasRule ? 'checked' : ''} onchange="toggleDiasExclusao('${c.id}', this.checked)" style="width: 32px; height: 16px;">
+                                  <label class="form-check-label d-flex align-items-center gap-2 m-0 cursor-pointer" for="chk_col_${c.id}">
+                                      <div class="rounded shadow-sm flex-shrink-0" style="width: 14px; height: 14px; background-color: ${c.cor || '#08c068'}; mt-1"></div>
+                                      <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
+                                  </label>
+                              </div>
+                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                          </div>
+                          <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
+                              <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                              <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
+                              <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
+                          </div>
+                      </div>
+                      `;
+                  }).join('')}
+                  </div>
+                  ${colunas.length === 0 ? '<p class="text-white-50 small mb-0 text-center">Nenhuma coluna criada no painel.</p>' : ''}
+              </div>
+              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar Regras</button>
+              </div>
+          </form>
+      </div>
+  </div>
+  `;
 
   return `
   <!DOCTYPE html>
@@ -109,41 +157,39 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .kanban-column {
               background-color: #222;
               border: none;
-              border-right: 1px solid rgba(255,255,255,0.1); /* Divisória fina e opaca */
-              border-radius: 0px; /* Bordas retas */
+              border-right: 1px solid rgba(255,255,255,0.1);
+              border-radius: 0px;
               width: 305px;
               min-width: 305px;
               max-height: calc(100vh - 140px);
               display: flex;
               flex-direction: column;
-              box-shadow: none; /* Sombra removida para colar as colunas */
+              box-shadow: none; 
               transition: background-color 0.3s ease, border-color 0.3s ease;
               cursor: default;
-              margin-right: 4px;
+              margin-right: 5px;
           }
           .kanban-header {
-              padding: 8px 12px; /* Padding reduzido conforme solicitado */
+              padding: 8px 12px;
               font-weight: 600;
               background-color: #1f1f1f;
               border-bottom: 1px solid rgba(255,255,255,0.05);
-              border-radius: 0px; /* Bordas retas */
+              border-radius: 0px;
               color: white;
               transition: background-color 0.3s ease, border-top-color 0.3s ease;
           }
           
-          /* EDIÇÃO DO TÍTULO DA COLUNA */
           .column-title-inline { transition: background 0.2s; border-radius: 4px; padding: 2px 4px; margin-left: -4px; outline: none; cursor: text; }
           .column-title-inline:focus { background-color: rgba(255,255,255,0.1); }
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 10px;
+              padding: 5px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;
           }
 
-          /* Paleta de Cores */
           .color-square {
               width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
               box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
@@ -154,11 +200,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .color-square.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--verde-ecoflow); transform: scale(1.1); }
           .dropdown-toggle.hide-caret::after { display: none; } 
 
-          /* CARDS */
           .kanban-card {
               background-color: #2a2a2a;
               border: 1px solid rgba(255,255,255,0.08);
-              border-radius: 0px; /* Bordas retas */
+              border-radius: 0px;
               padding: 12px;
               margin-bottom: 12px;
               cursor: pointer;
@@ -174,7 +219,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .card-completed { opacity: 0.6; }
           .card-completed .card-title-board { text-decoration: line-through; color: rgba(255,255,255,0.5); }
 
-          /* EFEITO PRIORIDADE ALTA (PISCAR LEVEMENTE VERMELHO) */
           @keyframes pulseRed {
               0% { border-color: rgba(255,255,255,0.08); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
               50% { border-color: rgba(220,53,69,0.5); box-shadow: 0 0 10px rgba(220,53,69,0.3); background-color: rgba(220,53,69,0.05); }
@@ -184,7 +228,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               animation: pulseRed 2s infinite ease-in-out;
           }
           
-          /* Prévia de Descrição HTML Limitada */
           .preview-html {
               display: -webkit-box;
               -webkit-line-clamp: 3;
@@ -198,7 +241,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .preview-html ul { padding-left: 18px; margin-bottom: 0; }
           .preview-html a { color: var(--verde-ecoflow) !important; text-decoration: underline !important; pointer-events: auto; position: relative; z-index: 10; }
 
-          /* MODAL DETALHES DO CARD (SPLIT SCREEN) */
           .card-title-modal { font-size: 1.25rem; font-weight: 700; outline: none; border-radius: 4px; padding: 4px; transition: background 0.2s; width: 100%; border: 1px solid transparent; }
           .card-title-modal:focus { background-color: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
           .card-title-modal[contenteditable]:empty::before { content: "Título da Tarefa..."; color: rgba(255,255,255,0.3); }
@@ -227,7 +269,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .inline-date-picker:hover, .inline-date-picker:focus { border-color: var(--verde-ecoflow); color: #fff; }
           .inline-date-picker::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
 
-          /* LINHA DO TEMPO (HISTÓRICO COM FOTO) */
           .history-timeline { border-left: 2px solid rgba(255,255,255,0.1); margin-left: 12px; padding-left: 24px; position: relative; }
           .history-item { position: relative; margin-bottom: 20px; font-size: 0.75rem; color: rgba(255,255,255,0.7); min-height: 28px; }
           .history-avatar {
@@ -251,11 +292,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
           .history-time { font-size: 0.65rem; color: rgba(255,255,255,0.4); display: block; margin-top: 2px; }
 
-          /* ANEXOS */
           .anexo-cover { width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); transition: opacity 0.2s; margin-bottom: 6px; }
           .anexo-doc-mini { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 1.2rem; transition: background 0.2s; margin-bottom: 6px; }
           
-          /* TOASTS E SKELETON */
           .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); background-color: #2a2a2a !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.08) !important; }
           .toast.showing, .toast.show { transform: translateX(0); }
           .toast-timer { height: 4px; background: var(--verde-ecoflow); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
@@ -270,15 +309,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
           @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-          /* RESPONSIVIDADE (MOBILE) */
           @media (max-width: 767.98px) {
               body { flex-direction: column; } 
               .sidebar { display: none; } 
               .content { width: 100%; padding: 12px; }
               .kanban-board { padding-bottom: 5px; gap: 0px; }
               .kanban-column { min-width: 85vw !important; width: 85vw !important; }
-              
-              /* Ajustes Modal Mobile */
               .responsive-modal-row { flex-direction: column; height: auto !important; display: flex; }
               .responsive-modal-col { height: auto !important; overflow-y: visible !important; border-right: none !important; }
               #modal-left-col { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
@@ -286,7 +322,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               .modal-body { overflow-y: auto; }
           }
 
-          /* Inputs e Selects Base */
           .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #ffffff !important; font-size: 0.8rem; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
           .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #ffffff !important; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
           .form-control::placeholder { color: rgba(255, 255, 255, 0.4) !important; opacity: 1; }
@@ -294,18 +329,16 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           /* ==================================================================
              OVERRIDE DE CORES PARA O TEMA CLARO 
-             Proteção estrita da sidebar e offcanvas 
           ================================================================== */
           body.theme-light {
-              --bg-color: #e4e7ea; /* Cinza bem claro para o background principal */
+              --bg-color: #e4e7ea;
           }
           body.theme-light .content {
               background-color: var(--bg-color) !important;
           }
           
-          /* KANBAN BOARD E ESTRUTURA GERAL */
           body.theme-light .kanban-column {
-              background-color: #f4f5f7 !important; /* Cinza claro diferente para as colunas */
+              background-color: #f4f5f7 !important;
               border-right: 1px solid #dcdcdc !important; 
           }
           body.theme-light .kanban-header {
@@ -319,9 +352,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: #666 !important;
           }
           
-          /* KANBAN CARDS */
           body.theme-light .kanban-card {
-              background-color: #ffffff !important; /* Branco para destacar do cinza */
+              background-color: #ffffff !important;
               color: #333 !important;
               border-top: 1px solid #dcdcdc !important;
               border-right: 1px solid #dcdcdc !important;
@@ -331,7 +363,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: #f1f3f5 !important;
           }
 
-          /* ISOLAMENTO DA BARRA DE PESQUISA (Sempre Escura em qualquer tema) */
           body.theme-light .kanban-search-bar,
           body.theme-light .kanban-search-bar .form-control,
           body.theme-light .kanban-search-bar .input-group-text,
@@ -364,7 +395,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: #2a2a2a !important;
           }
 
-          /* GARANTE TEXTO ESCURO NA CONTENT E MODAL (Protege Sidebar e Barra Pesquisa) */
           body.theme-light .content:not(.kanban-search-bar) .text-white, 
           body.theme-light .modal .text-white {
               color: #333 !important;
@@ -377,7 +407,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: #666 !important;
           }
 
-          /* MODAIS GERAIS (TEMA CLARO) */
           body.theme-light .modal-content.erp-modal {
               background-color: #ffffff !important;
               border: 1px solid #ccc !important;
@@ -392,12 +421,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               border-top: 1px solid #dcdcdc !important;
           }
           
-          /* Filtro para ícones e botões que devem ficar escuros no modo claro */
           body.theme-light .modal .btn-close-white {
               filter: invert(1) grayscale(100%) brightness(10%); 
           }
 
-          /* FUNDOS E BORDAS UTILITÁRIAS */
           body.theme-light .content .bg-custom-dark, 
           body.theme-light .modal .bg-custom-dark {
               background-color: #f1f3f5 !important;
@@ -412,7 +439,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               border-color: #dcdcdc !important;
           }
 
-          /* INPUTS, SELECTS E DROPDOWNS */
           body.theme-light .form-control, 
           body.theme-light .form-select, 
           body.theme-light .input-group-text {
@@ -443,7 +469,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: rgba(0,0,0,0.05) !important;
           }
 
-          /* CAIXA DE TEXTO (DESCRIÇÃO E HISTÓRICO) */
           body.theme-light .history-item strong {
               color: #333 !important;
           }
@@ -543,7 +568,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
-                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND) -->
+                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
@@ -555,10 +580,24 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                   <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="themeSwitch" style="font-size: 0.85rem; padding-top: 2px;">Modo Claro</label>
                               </div>
                           </li>
+                          <li class="px-3 py-2 border-bottom border-custom">
+                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                  <input class="form-check-input cursor-pointer m-0" type="checkbox" id="percasSwitch" onchange="togglePercasWorkspace(this.checked)" ${espacoAtual.percas_ativo ? 'checked' : ''} style="width: 32px; height: 16px;">
+                                  <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas</label>
+                              </div>
+                          </li>
+                          <li class="px-3 py-2 border-bottom border-custom">
+                              <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Automática
+                              </button>
+                          </li>
                           <li class="px-3 py-3">
                               <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
-                              <input class="form-control form-control-sm bg-custom-darker border-custom text-white mb-2" type="file" id="bgUpload" accept="image/*" onchange="changeBackground(this)">
-                              <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground()" style="font-size: 0.75rem;">Remover Fundo</button>
+                              <div class="d-flex flex-column gap-2">
+                                  <input class="d-none" type="file" id="bgUpload" accept="image/*" onchange="changeBackground(this, ${espacoAtual.id})">
+                                  <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white" onclick="document.getElementById('bgUpload').click()"><i class="fa-solid fa-upload me-1"></i> Escolher Fundo</button>
+                                  <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground(${espacoAtual.id})" style="font-size: 0.75rem;"><i class="fa-solid fa-trash me-1"></i> Remover Fundo</button>
+                              </div>
                           </li>
                       </ul>
                   </div>
@@ -578,6 +617,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
 
       ${modalAvisoHtml}
+      ${modalExclusaoAutomaticaHtml}
 
       <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
           <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -657,7 +697,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                 </div>
                             </div>
 
-                              <div class="mb-4">
+                              <div class="mb-2">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="text-white-50 fw-bold mb-0" style="font-size: 0.75rem;">
@@ -688,7 +728,50 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                     </div>
                                 </div>
 
-                              <div class="mb-4">
+                              <div id="modalCardPercasContainer" style="display: ${espacoAtual.percas_ativo ? 'block' : 'none'};">
+                                  <h6 class="text-white-50 fw-bold mb-2 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="fa-solid fa-scissors me-1"></i> Controle de Percas</h6>
+                                  <div class="row g-2 mb-3">
+                                      <div class="col-md-4">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Percas Pintura</label>
+                                          <input type="number" id="modalCardPercasPintura" class="form-control form-control-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()" placeholder="Qtd">
+                                      </div>
+                                      <div class="col-md-4">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 1</label>
+                                          <select id="modalCardOpPintura" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
+                                              <option value="">Selecione...</option>
+                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
+                                          </select>
+                                      </div>
+                                      <div class="col-md-4">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 2</label>
+                                          <select id="modalCardOpPintura2" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
+                                              <option value="">Selecione...</option>
+                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
+                                          </select>
+                                      </div>
+
+                                      <div class="col-md-4 mt-2">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Percas Corte</label>
+                                          <input type="number" id="modalCardPercasCorte" class="form-control form-control-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()" placeholder="Qtd">
+                                      </div>
+                                      <div class="col-md-4 mt-2">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 1</label>
+                                          <select id="modalCardOpCorte" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
+                                              <option value="">Selecione...</option>
+                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
+                                          </select>
+                                      </div>
+                                      <div class="col-md-4 mt-2">
+                                          <label class="text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Operador 2</label>
+                                          <select id="modalCardOpCorte2" class="form-select form-select-sm bg-custom-darker border-custom text-white" onchange="salvarTextosModal()">
+                                              <option value="">Selecione...</option>
+                                              ${(colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('')}
+                                          </select>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <div class="mb-4 mt-3">
                                   <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-align-left me-1"></i> Descrição</label>
                                   <div class="card-desc-container">
                                       <div class="rich-text-toolbar shadow-sm">
@@ -886,10 +969,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if(themeSwitch) themeSwitch.checked = true;
               }
 
-              const savedBg = localStorage.getItem('kanbanWallpaper');
-              if (savedBg) {
-                  aplicarWallpaper(savedBg);
-              }
+              ${espacoAtual.wallpaper ? `aplicarWallpaper('/uploads/${espacoAtual.wallpaper}');` : ''}
 
               // Disparo do Modal de Limpeza (Se Houver)
               ${avisosExclusao.length > 0 ? `
@@ -952,47 +1032,131 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
           }
 
-          function changeBackground(input) {
+          async function changeBackground(input, espacoId) {
               if (input.files && input.files[0]) {
                   const file = input.files[0];
                   
-                  if(file.size > 2 * 1024 * 1024) {
-                      mostrarToast('erro', 'Aviso', 'A imagem é muito grande. Escolha uma imagem de até 2MB para salvar.');
+                  if(file.size > 5 * 1024 * 1024) {
+                      mostrarToast('erro', 'Aviso', 'A imagem é muito grande. Escolha uma imagem de até 5MB.');
                       input.value = '';
                       return;
                   }
 
-                  const reader = new FileReader();
-                  reader.onload = function(e) {
-                      const base64Img = e.target.result;
-                      aplicarWallpaper(base64Img);
-                      try {
-                          localStorage.setItem('kanbanWallpaper', base64Img);
-                      } catch (err) {
-                          console.warn("Imagem muito grande para salvar no localStorage.");
-                          mostrarToast('erro', 'Aviso', 'Falha ao salvar a imagem no navegador (limite de memória). A imagem aparecerá agora, mas sumirá ao recarregar a página.');
+                  const formData = new FormData();
+                  formData.append('wallpaper', file);
+
+                  try {
+                      const response = await fetch('/espacos-trabalho/wallpaper/' + espacoId, { method: 'POST', body: formData });
+                      const data = await response.json();
+                      if (data.success) {
+                          aplicarWallpaper(data.path);
+                          mostrarToast('sucesso', 'Fundo Atualizado', 'O papel de parede foi salvo com sucesso.');
+                      } else {
+                          mostrarToast('erro', 'Erro', 'Falha ao salvar a imagem no servidor.');
                       }
+                  } catch (err) {
+                      mostrarToast('erro', 'Erro de Rede', 'Não foi possível enviar a imagem.');
                   }
-                  reader.readAsDataURL(file);
               }
           }
 
-          function aplicarWallpaper(base64Img) {
+          function aplicarWallpaper(url) {
               const contentDiv = document.querySelector('.content');
-              if(contentDiv) {
-                  contentDiv.style.backgroundImage = \`url('\${base64Img}')\`;
+              if(contentDiv && url) {
+                  contentDiv.style.backgroundImage = \`url('\${url}')\`;
                   document.body.classList.add('has-wallpaper');
               }
           }
 
-          function clearBackground() {
-              const contentDiv = document.querySelector('.content');
-              if(contentDiv) {
-                  contentDiv.style.backgroundImage = '';
-                  document.body.classList.remove('has-wallpaper');
-                  localStorage.removeItem('kanbanWallpaper');
-                  document.getElementById('bgUpload').value = '';
-                  mostrarToast('sucesso', 'Concluído', 'Papel de parede removido.');
+          async function clearBackground(espacoId) {
+              try {
+                  const formData = new URLSearchParams();
+                  formData.append('clear', '1');
+                  const response = await fetch('/espacos-trabalho/wallpaper/' + espacoId, { method: 'POST', body: formData });
+                  const data = await response.json();
+                  if (data.success) {
+                      const contentDiv = document.querySelector('.content');
+                      if(contentDiv) {
+                          contentDiv.style.backgroundImage = '';
+                          document.body.classList.remove('has-wallpaper');
+                      }
+                      mostrarToast('sucesso', 'Concluído', 'Papel de parede removido.');
+                  }
+              } catch (err) {
+                  mostrarToast('erro', 'Erro', 'Falha ao remover o papel de parede.');
+              }
+          }
+
+          async function togglePercasWorkspace(ativo) {
+              try {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const espaco_id = urlParams.get('espaco_id');
+                  if(!espaco_id) return;
+
+                  const formData = new URLSearchParams();
+                  formData.append('percas_ativo', ativo ? '1' : '0');
+                  
+                  const response = await fetch('/espacos-trabalho/percas/' + espaco_id, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: formData.toString()
+                  });
+
+                  if (response.ok) {
+                      mostrarToast('sucesso', 'Sucesso!', 'Controle de percas ' + (ativo ? 'ativado' : 'desativado') + '.');
+                      setTimeout(() => window.location.reload(), 1000);
+                  } else {
+                      mostrarToast('erro', 'Erro', 'Falha ao atualizar configuração.');
+                  }
+              } catch(e) {
+                  mostrarToast('erro', 'Conexão', 'Falha na rede ao atualizar a funcionalidade de percas.');
+              }
+          }
+
+          // EXCLUSÃO AUTOMÁTICA
+          function toggleDiasExclusao(colId, isChecked) {
+              const input = document.getElementById('input_col_' + colId);
+              if (input) {
+                  if (isChecked) {
+                      input.disabled = false;
+                      if (!input.value) input.value = 30; // Sugestão padrão
+                      input.focus();
+                  } else {
+                      input.disabled = true;
+                      input.value = ''; // Limpa para submeter desativado
+                  }
+              }
+          }
+
+          async function salvarExclusaoAutomatica(event, form) {
+              event.preventDefault();
+              
+              // Habilita inputs temporariamente e seta zero nos desabilitados/vazios para apagar a regra no DB
+              const inputs = form.querySelectorAll('input[type="number"]');
+              inputs.forEach(i => {
+                  if (i.disabled || !i.value) {
+                      i.disabled = false;
+                      i.value = 0; 
+                  }
+              });
+
+              try {
+                  const formData = new URLSearchParams(new FormData(form));
+                  const response = await fetch('/kanban/colunas/exclusao-automatica', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: formData.toString()
+                  });
+                  
+                  if (response.ok) {
+                      mostrarToast('sucesso', 'Sucesso!', 'Regras de exclusão atualizadas.');
+                      bootstrap.Modal.getInstance(document.getElementById('modalExclusaoAutomatica')).hide();
+                      setTimeout(() => window.location.reload(), 1000);
+                  } else {
+                      mostrarToast('erro', 'Erro', 'Falha ao salvar regras de exclusão.');
+                  }
+              } catch(e) {
+                  mostrarToast('erro', 'Conexão', 'Falha na rede ao salvar as configurações.');
               }
           }
 
@@ -1070,12 +1234,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
                   
-                  // Atualização local para fluidez
-                  const tempId = Date.now();
-                  etiquetasDados.push({ id: tempId, nome, cor });
-                  renderizarListaEtiquetas();
-                  renderizarDropdownEtiquetasModal(); 
-                  mostrarToast('sucesso', 'Etiqueta Criada', 'Etiqueta adicionada à equipa.');
+                  mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
           }
 
@@ -1620,6 +1779,25 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   selectPrioridade.value = cardData.prioridade || 'normal';
               }
 
+              // Percas Mapping
+              const percasPinturaInput = document.getElementById('modalCardPercasPintura');
+              if(percasPinturaInput && cardData.percas_pintura !== undefined) percasPinturaInput.value = cardData.percas_pintura || '';
+              
+              const opPinturaSelect = document.getElementById('modalCardOpPintura');
+              if(opPinturaSelect && cardData.op_pintura_id !== undefined) opPinturaSelect.value = cardData.op_pintura_id || '';
+              
+              const opPinturaSelect2 = document.getElementById('modalCardOpPintura2');
+              if(opPinturaSelect2 && cardData.op_pintura_2_id !== undefined) opPinturaSelect2.value = cardData.op_pintura_2_id || '';
+              
+              const percasCorteInput = document.getElementById('modalCardPercasCorte');
+              if(percasCorteInput && cardData.percas_corte !== undefined) percasCorteInput.value = cardData.percas_corte || '';
+              
+              const opCorteSelect = document.getElementById('modalCardOpCorte');
+              if(opCorteSelect && cardData.op_corte_id !== undefined) opCorteSelect.value = cardData.op_corte_id || '';
+
+              const opCorteSelect2 = document.getElementById('modalCardOpCorte2');
+              if(opCorteSelect2 && cardData.op_corte_2_id !== undefined) opCorteSelect2.value = cardData.op_corte_2_id || '';
+
               renderizarDropdownEtiquetasModal();
               const tagsDoCard = cardData.etiquetas || [];
               const tagIds = tagsDoCard.map(t => typeof t === 'object' ? t.id : t);
@@ -1729,6 +1907,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prioridadeElement = document.getElementById('modalCardPrioridade');
               const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
 
+              const percasPintura = document.getElementById('modalCardPercasPintura') ? document.getElementById('modalCardPercasPintura').value : null;
+              const opPinturaId = document.getElementById('modalCardOpPintura') ? document.getElementById('modalCardOpPintura').value : null;
+              const opPintura2Id = document.getElementById('modalCardOpPintura2') ? document.getElementById('modalCardOpPintura2').value : null;
+              const percasCorte = document.getElementById('modalCardPercasCorte') ? document.getElementById('modalCardPercasCorte').value : null;
+              const opCorteId = document.getElementById('modalCardOpCorte') ? document.getElementById('modalCardOpCorte').value : null;
+              const opCorte2Id = document.getElementById('modalCardOpCorte2') ? document.getElementById('modalCardOpCorte2').value : null;
+
               const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
 
               if (document.getElementById('modalCardPrazoBadge')) {
@@ -1757,12 +1942,31 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const oldTagIds = oldTags.map(t => typeof t === 'object' ? t.id : t).sort().join(',');
                   const newTagIds = tagIds.sort().join(',');
 
+                  const oldPercasP = (cardOriginal.percas_pintura || '') + '';
+                  const newPercasP = (percasPintura || '') + '';
+                  const oldOpP = (cardOriginal.op_pintura_id || '') + '';
+                  const newOpP = (opPinturaId || '') + '';
+                  const oldOpP2 = (cardOriginal.op_pintura_2_id || '') + '';
+                  const newOpP2 = (opPintura2Id || '') + '';
+                  const oldPercasC = (cardOriginal.percas_corte || '') + '';
+                  const newPercasC = (percasCorte || '') + '';
+                  const oldOpC = (cardOriginal.op_corte_id || '') + '';
+                  const newOpC = (opCorteId || '') + '';
+                  const oldOpC2 = (cardOriginal.op_corte_2_id || '') + '';
+                  const newOpC2 = (opCorte2Id || '') + '';
+
                   if (titulo === oldTitulo &&
                       novaDescNormalizada === oldDesc &&
                       concluido === oldConcluido &&
                       prazo === oldPrazo &&
                       prioridade === oldPrioridade &&
-                      newTagIds === oldTagIds) {
+                      newTagIds === oldTagIds &&
+                      oldPercasP === newPercasP &&
+                      oldOpP === newOpP &&
+                      oldOpP2 === newOpP2 &&
+                      oldPercasC === newPercasC &&
+                      oldOpC === newOpC &&
+                      oldOpC2 === newOpC2) {
                       return; 
                   }
               }
@@ -1776,6 +1980,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   prazo: prazo, 
                   prioridade: prioridade,
                   etiquetas: tagIds,
+                  percas_pintura: percasPintura,
+                  op_pintura_id: opPinturaId,
+                  op_pintura_2_id: opPintura2Id,
+                  percas_corte: percasCorte,
+                  op_corte_id: opCorteId,
+                  op_corte_2_id: opCorte2Id,
                   usuario: NOME_USUARIO 
               });
               
@@ -1868,6 +2078,30 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (colIndex > -1) el.innerText = colunasDados[colIndex].titulo;
                   mostrarToast('erro', 'Aviso', 'O título da coluna não pode ser vazio.');
               }
+          }
+
+          function aplicarCorColunaVisualmente(colunaId, cor) {
+              const colIndex = colunasDados.findIndex(c => c.id == colunaId);
+              if (colIndex > -1) colunasDados[colIndex].cor = cor;
+              
+              const colDiv = document.querySelector('.kanban-column[data-id="' + colunaId + '"]');
+              if(colDiv) {
+                  const header = colDiv.querySelector('.kanban-header');
+                  if(header) { header.style.borderTopColor = cor; header.style.backgroundColor = hexToRgba(cor, 0.15); }
+                  const dropdownSquare = colDiv.querySelector('.dropdown-toggle > div');
+                  if(dropdownSquare) dropdownSquare.style.backgroundColor = cor;
+                  
+                  const cardsNaColuna = colDiv.querySelectorAll('.kanban-card');
+                  cardsNaColuna.forEach(card => {
+                      card.style.borderLeftColor = cor;
+                  });
+              }
+          }
+
+          function atualizarCorColuna(colunaId, novaCor) {
+              aplicarCorColunaVisualmente(colunaId, novaCor); 
+              socket.emit('atualizar_cor_coluna', { colunaId: colunaId, cor: novaCor }); 
+              mostrarToast('sucesso', 'Cores', 'A cor da coluna foi guardada!');
           }
 
           function criarCardRapido(colunaId) { 
@@ -2015,6 +2249,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       c.prazo = dados.prazo;
                       c.prioridade = dados.prioridade;
                       if (dados.etiquetas !== undefined) c.etiquetas = dados.etiquetas;
+                      if (dados.percas_pintura !== undefined) c.percas_pintura = dados.percas_pintura;
+                      if (dados.op_pintura_id !== undefined) c.op_pintura_id = dados.op_pintura_id;
+                      if (dados.op_pintura_2_id !== undefined) c.op_pintura_2_id = dados.op_pintura_2_id;
+                      if (dados.percas_corte !== undefined) c.percas_corte = dados.percas_corte;
+                      if (dados.op_corte_id !== undefined) c.op_corte_id = dados.op_corte_id;
+                      if (dados.op_corte_2_id !== undefined) c.op_corte_2_id = dados.op_corte_2_id;
                       break;
                   }
               }
@@ -2038,6 +2278,24 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (prioridadeSelect && dados.prioridade) {
                       prioridadeSelect.value = dados.prioridade;
                   }
+
+                  const percasPinturaInput = document.getElementById('modalCardPercasPintura');
+                  if(percasPinturaInput && dados.percas_pintura !== undefined) percasPinturaInput.value = dados.percas_pintura || '';
+                  
+                  const opPinturaSelect = document.getElementById('modalCardOpPintura');
+                  if(opPinturaSelect && dados.op_pintura_id !== undefined) opPinturaSelect.value = dados.op_pintura_id || '';
+                  
+                  const opPinturaSelect2 = document.getElementById('modalCardOpPintura2');
+                  if(opPinturaSelect2 && dados.op_pintura_2_id !== undefined) opPinturaSelect2.value = dados.op_pintura_2_id || '';
+                  
+                  const percasCorteInput = document.getElementById('modalCardPercasCorte');
+                  if(percasCorteInput && dados.percas_corte !== undefined) percasCorteInput.value = dados.percas_corte || '';
+                  
+                  const opCorteSelect = document.getElementById('modalCardOpCorte');
+                  if(opCorteSelect && dados.op_corte_id !== undefined) opCorteSelect.value = dados.op_corte_id || '';
+
+                  const opCorteSelect2 = document.getElementById('modalCardOpCorte2');
+                  if(opCorteSelect2 && dados.op_corte_2_id !== undefined) opCorteSelect2.value = dados.op_corte_2_id || '';
                   
                   if (dados.etiquetas !== undefined) {
                       const tagIds = dados.etiquetas.map(t => typeof t === 'object' ? t.id : t);

@@ -127,17 +127,40 @@ router.get("/kanban", isLogged, (req, res) => {
     });
 });
 
-// BAIXAR RELATÓRIO DO KANBAN
-router.get("/kanban/relatorio", isLogged, async (req, res) => {
+// BAIXAR RELATÓRIO DO KANBAN DE FORMA DINÂMICA
+router.post("/kanban/relatorio", isLogged, async (req, res) => {
     const espaco_id = req.query.espaco_id;
     if (!espaco_id) return res.status(400).send("Espaço não informado.");
 
-    try {
-        const [colunas] = await db.promise().query("SELECT id, titulo FROM kanban_colunas WHERE espaco_id = ?", [espaco_id]);
-        if (colunas.length === 0) return res.send("Nenhuma coluna encontrada para gerar relatório.");
-        const idsColunas = colunas.map(c => c.id);
+    const camposSelecionados = req.body.campos || [];
+    const colunasSelecionadas = req.body.colunas_selecionadas || [];
+    const dataInicio = req.body.data_inicio;
+    const dataFim = req.body.data_fim;
+    
+    if (!camposSelecionados || camposSelecionados.length === 0) {
+        return res.status(400).send("Nenhum campo selecionado para o relatório.");
+    }
 
-        const [cards] = await db.promise().query("SELECT * FROM kanban_cards WHERE coluna_id IN (?)", [idsColunas]);
+    try {
+        const [todasColunas] = await db.promise().query("SELECT id, titulo FROM kanban_colunas WHERE espaco_id = ?", [espaco_id]);
+        if (todasColunas.length === 0) return res.send("Nenhuma coluna encontrada para gerar relatório.");
+
+        const colIdsFiltro = Array.isArray(colunasSelecionadas) ? colunasSelecionadas : [colunasSelecionadas];
+        const idsValidos = colIdsFiltro.length > 0 ? colIdsFiltro : todasColunas.map(c => c.id);
+
+        let sqlCards = "SELECT * FROM kanban_cards WHERE coluna_id IN (?)";
+        const queryParams = [idsValidos];
+
+        if (dataInicio) {
+            sqlCards += " AND DATE(criado_em) >= ?";
+            queryParams.push(dataInicio);
+        }
+        if (dataFim) {
+            sqlCards += " AND DATE(criado_em) <= ?";
+            queryParams.push(dataFim);
+        }
+
+        const [cards] = await db.promise().query(sqlCards, queryParams);
 
         const [relacoesTags] = await db.promise().query(`
             SELECT ce.card_id, e.nome 
@@ -151,44 +174,82 @@ router.get("/kanban/relatorio", isLogged, async (req, res) => {
         usuarios.forEach(u => userMap[u.id] = u.nome);
 
         const colMap = {};
-        colunas.forEach(c => colMap[c.id] = c.titulo);
+        todasColunas.forEach(c => colMap[c.id] = c.titulo);
 
-        // Uso do ponto e vírgula como delimitador para o Excel entender as colunas no formato PT-BR
-        let csv = "Título;Prioridade;Prazo;Coluna Atual;Descrição;Etiquetas;Percas Pintura;Percas Corte\n";
+        const titulosHeaders = {
+            titulo: 'Título',
+            prioridade: 'Prioridade',
+            prazo: 'Prazo',
+            coluna: 'Coluna Atual',
+            descricao: 'Descrição',
+            etiquetas: 'Etiquetas',
+            percas_pintura: 'Percas Pintura (Detalhado)',
+            total_percas_pintura: 'Total Percas Pintura',
+            percas_corte: 'Percas Corte (Detalhado)',
+            total_percas_corte: 'Total Percas Corte'
+        };
+
+        let csv = camposSelecionados.map(campo => titulosHeaders[campo]).join(';') + '\n';
 
         cards.forEach(c => {
-            const titulo = `"${(c.titulo || '').replace(/"/g, '""')}"`;
-            const prioridade = `"${c.prioridade || 'normal'}"`;
-            const prazo = `"${c.prazo ? new Date(c.prazo).toLocaleDateString('pt-BR') : ''}"`;
-            const coluna = `"${colMap[c.coluna_id] || ''}"`;
-            const descLimpa = (c.descricao || '').replace(/<[^>]*>?/gm, '').replace(/"/g, '""').replace(/\n/g, ' ');
-            const descricao = `"${descLimpa}"`;
-            const tags = relacoesTags.filter(r => r.card_id === c.id).map(r => r.nome).join(', ');
-            const etiquetas = `"${tags}"`;
+            let linhaArray = [];
 
-            const formatPercas = (jsonStr) => {
-                try {
-                    const arr = JSON.parse(jsonStr);
-                    if (!Array.isArray(arr) || arr.length === 0) return '';
-                    return arr.map(p => {
-                        const op1 = userMap[p.op1] || '';
-                        const op2 = userMap[p.op2] || '';
-                        let text = `Qtd: ${p.qtd} | Mat: ${p.material} | Chapa: ${p.chapa}`;
-                        if (op1) text += ` | Op1: ${op1}`;
-                        if (op2) text += ` | Op2: ${op2}`;
-                        return text;
-                    }).join(' /// ');
-                } catch(e) { return ''; }
-            };
+            camposSelecionados.forEach(campo => {
+                if (campo === 'titulo') {
+                    linhaArray.push(`"${(c.titulo || '').replace(/"/g, '""')}"`);
+                } 
+                else if (campo === 'prioridade') {
+                    linhaArray.push(`"${c.prioridade || 'normal'}"`);
+                }
+                else if (campo === 'prazo') {
+                    linhaArray.push(`"${c.prazo ? new Date(c.prazo).toLocaleDateString('pt-BR') : ''}"`);
+                }
+                else if (campo === 'coluna') {
+                    linhaArray.push(`"${colMap[c.coluna_id] || ''}"`);
+                }
+                else if (campo === 'descricao') {
+                    const descLimpa = (c.descricao || '').replace(/<[^>]*>?/gm, '').replace(/"/g, '""').replace(/\n/g, ' ');
+                    linhaArray.push(`"${descLimpa}"`);
+                }
+                else if (campo === 'etiquetas') {
+                    const tags = relacoesTags.filter(r => r.card_id === c.id).map(r => r.nome).join(', ');
+                    linhaArray.push(`"${tags}"`);
+                }
+                else if (campo === 'percas_pintura' || campo === 'percas_corte') {
+                    const formatPercas = (jsonStr) => {
+                        try {
+                            const arr = JSON.parse(jsonStr);
+                            if (!Array.isArray(arr) || arr.length === 0) return '';
+                            return arr.map(p => {
+                                const op1 = userMap[p.op1] || '';
+                                const op2 = userMap[p.op2] || '';
+                                let text = `Qtd: ${p.qtd} | Mat: ${p.material} | Chapa: ${p.chapa}`;
+                                if (op1) text += ` | Op1: ${op1}`;
+                                if (op2) text += ` | Op2: ${op2}`;
+                                return text;
+                            }).join(' /// ');
+                        } catch(e) { return ''; }
+                    };
+                    const valorStr = campo === 'percas_pintura' ? formatPercas(c.percas_pintura) : formatPercas(c.percas_corte);
+                    linhaArray.push(`"${valorStr}"`);
+                }
+                else if (campo === 'total_percas_pintura' || campo === 'total_percas_corte') {
+                    const somarPercas = (jsonStr) => {
+                        try {
+                            const arr = JSON.parse(jsonStr);
+                            if (!Array.isArray(arr) || arr.length === 0) return '0';
+                            return arr.reduce((acc, p) => acc + (parseInt(p.qtd) || 0), 0).toString();
+                        } catch(e) { return '0'; }
+                    };
+                    const valorTotal = campo === 'total_percas_pintura' ? somarPercas(c.percas_pintura) : somarPercas(c.percas_corte);
+                    linhaArray.push(`"${valorTotal}"`);
+                }
+            });
 
-            const percasPintura = `"${formatPercas(c.percas_pintura)}"`;
-            const percasCorte = `"${formatPercas(c.percas_corte)}"`;
-
-            csv += `${titulo};${prioridade};${prazo};${coluna};${descricao};${etiquetas};${percasPintura};${percasCorte}\n`;
+            csv += linhaArray.join(';') + '\n';
         });
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        // Mantida a extensão original .csv para abrir corretamente de forma nativa no Excel
         res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.csv"`);
         res.send('\uFEFF' + csv);
 

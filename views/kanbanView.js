@@ -49,6 +49,83 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
+  // Novo Modal: Exportação Dinâmica do Relatório (Com filtros de data e colunas)
+  const modalExportacaoRelatorioHtml = `
+  <div class="modal fade" id="modalExportacaoRelatorio" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+          <form id="formExportacao" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" action="/kanban/relatorio?espaco_id=${espacoAtual.id}" method="POST">
+              <div class="modal-header modal-header-dark border-custom">
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-download text-success me-2"></i> Exportar Relatório</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark text-white" style="max-height: 70vh; overflow-y: auto;">
+                  
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar-days me-1"></i> 1. Período de Criação (Opcional)</h6>
+                  <div class="row g-2 mb-4">
+                      <div class="col-6">
+                          <label class="form-label text-white-50 mb-1" style="font-size: 0.7rem;">De:</label>
+                          <input type="date" name="data_inicio" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-sm" style="color-scheme: dark;">
+                      </div>
+                      <div class="col-6">
+                          <label class="form-label text-white-50 mb-1" style="font-size: 0.7rem;">Para:</label>
+                          <input type="date" name="data_fim" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-sm" style="color-scheme: dark;">
+                      </div>
+                  </div>
+
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-table-columns me-1"></i> 2. Colunas a Exportar</h6>
+                  <div class="d-flex flex-column gap-1 mb-4">
+                      ${colunas.length > 0 ? colunas.map(c => `
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="colunas_selecionadas[]" value="${c.id}" checked>
+                          <div class="rounded flex-shrink-0 me-2 shadow-sm" style="width: 12px; height: 12px; background-color: ${c.cor || '#08c068'};"></div>
+                          <span style="font-size: 0.8rem;" class="text-truncate fw-medium">${escapeHtmlAttr(c.titulo)}</span>
+                      </label>
+                      `).join('') : '<span class="text-white-50 small">Nenhuma coluna disponível</span>'}
+                  </div>
+
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-list-check me-1"></i> 3. Informações do Card</h6>
+                  <div class="d-flex flex-column gap-1">
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="titulo" checked> <span style="font-size: 0.8rem;">Título do Card</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="prioridade" checked> <span style="font-size: 0.8rem;">Prioridade</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="prazo" checked> <span style="font-size: 0.8rem;">Prazo de Conclusão</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="coluna" checked> <span style="font-size: 0.8rem;">Coluna Atual</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="descricao" checked> <span style="font-size: 0.8rem;">Descrição</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="etiquetas" checked> <span style="font-size: 0.8rem;">Etiquetas</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom" ${!espacoAtual.percas_ativo ? 'style="display:none;"' : ''}>
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="percas_pintura" checked> <span style="font-size: 0.8rem;">Percas Pintura (Detalhado)</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom" ${!espacoAtual.percas_ativo ? 'style="display:none;"' : ''}>
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="total_percas_pintura" checked> <span style="font-size: 0.8rem;" class="text-accent fw-bold">Total Percas Pintura</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom" ${!espacoAtual.percas_ativo ? 'style="display:none;"' : ''}>
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="percas_corte" checked> <span style="font-size: 0.8rem;">Percas Corte (Detalhado)</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom" ${!espacoAtual.percas_ativo ? 'style="display:none;"' : ''}>
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="total_percas_corte" checked> <span style="font-size: 0.8rem;" class="text-accent fw-bold">Total Percas Corte</span>
+                      </label>
+                  </div>
+              </div>
+              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar Ficheiro</button>
+              </div>
+          </form>
+      </div>
+  </div>
+  `;
+
   // Novo Modal: Configuração individual de exclusão de uma coluna
   const modalExclusaoColunaHtml = `
   <div class="modal fade" id="modalExclusaoColuna" tabindex="-1">
@@ -592,9 +669,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
-                              <a href="/kanban/relatorio?espaco_id=${espacoAtual.id}" target="_blank" class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2">
+                              <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
                                   <i class="fa-solid fa-file-excel"></i> Baixar Relatório
-                              </a>
+                              </button>
                           </li>
                           <li class="px-3 py-3">
                               <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
@@ -623,6 +700,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       ${modalAvisoHtml}
       ${modalExclusaoAutomaticaHtml}
+      ${modalExportacaoRelatorioHtml}
       ${modalExclusaoColunaHtml}
 
       <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
@@ -957,19 +1035,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               if (confirm(\`Deseja realmente excluir todos os cards desta coluna com \${dias} ou mais dias de criação? Esta ação não pode ser desfeita.\`)) {
-                  try {
-                      const formData = new URLSearchParams();
-                      formData.append('dias', dias);
-                      const response = await fetch(\`/kanban/colunas/\${colId}/limpar\`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                          body: formData.toString()
-                      });
-                      
-                      const data = await response.json();
-                      if (response.ok && data.success) {
+                  fetch(\`/kanban/colunas/\${colId}/limpar\`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: new URLSearchParams({ dias: dias }).toString()
+                  })
+                  .then(res => res.json())
+                  .then(data => {
+                      if (data.success) {
                           mostrarToast('sucesso', 'Limpeza Concluída', \`\${data.deletados || 0} cards antigos foram excluídos.\`);
-                          
                           if (data.ids && data.ids.length > 0) {
                               data.ids.forEach(id => {
                                   for (const col of colunasDados) {
@@ -983,11 +1057,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       } else {
                           mostrarToast('erro', 'Erro', 'Falha ao realizar a limpeza da coluna.');
                       }
-                  } catch (e) {
-                      mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.');
-                  }
+                  })
+                  .catch(() => mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.'));
               }
-          };
+          }
 
           window.limparCardsVencidosColuna = function(colId) {
               const coluna = colunasDados.find(c => c.id == colId);
@@ -1025,15 +1098,28 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   renderizarKanban();
                   mostrarToast('sucesso', 'Limpeza Concluída', \`\${cardsVencidos.length} cards vencidos foram excluídos.\`);
               }
-          };
+          }
 
+          window.lastFeedbackTime = window.lastFeedbackTime || {};
           window.playUIFeedback = function(type) {
               try {
+                  const nowTime = Date.now();
+                  if (window.lastFeedbackTime[type] && (nowTime - window.lastFeedbackTime[type] < 100)) {
+                      return; // Evita sobreposição de som ao apagar vários cards
+                  }
+                  window.lastFeedbackTime[type] = nowTime;
+
                   if (type === 'check') {
                       new Audio('/audio/star.mp3').play().catch(e => console.log('Áudio star.mp3 não tocou:', e));
                       return;
                   } else if (type === 'move') {
                       new Audio('/audio/paper.mp3').play().catch(e => console.log('Áudio paper.mp3 não tocou:', e));
+                      return;
+                  } else if (type === 'create') {
+                      new Audio('/audio/pop.mp3').play().catch(e => console.log('Áudio pop.mp3 não tocou:', e));
+                      return;
+                  } else if (type === 'delete') {
+                      new Audio('/audio/trash.mp3').play().catch(e => console.log('Áudio trash.mp3 não tocou:', e));
                       return;
                   }
 
@@ -1048,16 +1134,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   osc.connect(gain);
                   gain.connect(window.audioCtx.destination);
                   
-                  const now = window.audioCtx.currentTime;
-                  
                   if (type === 'uncheck') {
                       osc.type = 'sine';
-                      osc.frequency.setValueAtTime(1000, now);
-                      osc.frequency.exponentialRampToValueAtTime(500, now + 0.1);
-                      gain.gain.setValueAtTime(0.2, now);
-                      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                      osc.start(now);
-                      osc.stop(now + 0.1);
+                      osc.frequency.setValueAtTime(1000, window.audioCtx.currentTime);
+                      osc.frequency.exponentialRampToValueAtTime(500, window.audioCtx.currentTime + 0.1);
+                      gain.gain.setValueAtTime(0.2, window.audioCtx.currentTime);
+                      gain.gain.exponentialRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.1);
+                      osc.start(window.audioCtx.currentTime);
+                      osc.stop(window.audioCtx.currentTime + 0.1);
                   }
               } catch (e) {
                   console.log('Áudio não suportado ou bloqueado', e);
@@ -1757,7 +1841,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               \${dropdownCores}
                               <span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>
                               \${dropdownConfigColuna}
-                              <button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
+                              <button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.playUIFeedback && window.playUIFeedback('create'); criarCardRapido(\${col.id});" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
                               <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>
                           </div>
                       </div>
@@ -2200,6 +2284,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               try {
                   const response = await fetch('/kanban/anexos/' + anexoId, { method: 'DELETE' });
                   if(response.ok) {
+                      window.playUIFeedback && window.playUIFeedback('delete');
                       mostrarToast('sucesso', 'Excluído!', 'O anexo foi removido.');
                       
                       for (const col of colunasDados) {
@@ -2230,6 +2315,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const espaco_id = urlParams.get('espaco_id');
 
               if(titulo && espaco_id) {
+                  window.playUIFeedback && window.playUIFeedback('create');
                   socket.emit('nova_coluna', { titulo, cor, espaco_id });
                   document.getElementById('inputTituloColuna').value = '';
                   modalNovaColunaObj.hide();
@@ -2293,6 +2379,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
           window.executarDeletarCard = function() {
               const id = document.getElementById('deleteCardId').value;
+              window.playUIFeedback && window.playUIFeedback('delete');
               socket.emit('deletar_card', id);
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
@@ -2305,6 +2392,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
           window.executarDeletarColuna = function() {
               const id = document.getElementById('deleteColunaId').value;
+              window.playUIFeedback && window.playUIFeedback('delete');
               socket.emit('deletar_coluna', id); 
               modalDeletarColunaObj.hide();
               mostrarToast('sucesso', 'Removido!', 'A coluna e os cards foram apagados.');
@@ -2366,12 +2454,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('coluna_criada', (coluna) => {
+              window.playUIFeedback && window.playUIFeedback('create');
               coluna.cards = [];
               colunasDados.push(coluna);
               renderizarKanban();
           });
 
           socket.on('coluna_deletada', (colunaId) => {
+              window.playUIFeedback && window.playUIFeedback('delete');
               colunasDados = colunasDados.filter(c => c.id != colunaId);
               renderizarKanban();
           });
@@ -2389,6 +2479,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_criado', (card) => {
+              window.playUIFeedback && window.playUIFeedback('create');
               const colIndex = colunasDados.findIndex(c => c.id == card.coluna_id);
               if(colIndex > -1) colunasDados[colIndex].cards.push(card);
               renderizarKanban();
@@ -2498,6 +2589,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_deletado', (cardId) => {
+              window.playUIFeedback && window.playUIFeedback('delete');
               for (const col of colunasDados) {
                   col.cards = col.cards.filter(c => c.id != cardId);
               }

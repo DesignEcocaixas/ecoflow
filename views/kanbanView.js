@@ -49,7 +49,35 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
-  // Modal: Exclusão Automática Geral
+  // Novo Modal: Configuração individual de exclusão de uma coluna
+  const modalExclusaoColunaHtml = `
+  <div class="modal fade" id="modalExclusaoColuna" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
+          <form id="formExclusaoColuna" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoColunaUnica(event, this)">
+              <div class="modal-header modal-header-dark border-custom">
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Limpeza Manual</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark text-center">
+                  <input type="hidden" id="configExclusaoColId" name="colId">
+                  <p class="text-white-50 mb-3" style="font-size: 0.8rem; line-height: 1.4;">Excluir os cards desta coluna a partir de quantos dias de criação?</p>
+                  
+                  <div class="input-group input-group-sm shadow-sm mx-auto" style="width: 140px;">
+                      <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                      <input type="number" id="configExclusaoColDias" name="dias" class="form-control bg-custom-darker border-custom text-white fw-bold text-center" min="1" placeholder="Ex: 10">
+                      <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
+                  </div>
+              </div>
+              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
+              </div>
+          </form>
+      </div>
+  </div>
+  `;
+
+  // Modal de Exclusão Automática (Background Geral)
   const modalExclusaoAutomaticaHtml = `
   <div class="modal fade" id="modalExclusaoAutomatica" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
@@ -189,7 +217,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 5px;
+              padding: 10px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;
@@ -516,7 +544,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       <div class="content">
           <!-- Z-index 1050 adicionado à ROW para garantir que o dropdown de Configurações abra sobre as colunas -->
-          <div class="row align-items-center w-100 g-3 m-0 position-relative" style="z-index: 1050;">
+          <div class="row align-items-center w-100 g-3 m-0 position-relative" id="kanban-top-header" style="z-index: 1050;">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
                   <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
@@ -540,6 +568,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
+                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
@@ -559,7 +588,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão automática
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Autom. Geral
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
@@ -594,6 +623,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       ${modalAvisoHtml}
       ${modalExclusaoAutomaticaHtml}
+      ${modalExclusaoColunaHtml}
 
       <div class="modal fade" id="modalGerenciarEtiquetas" tabindex="-1">
           <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -916,7 +946,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
 
           // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL EVITANDO ERROS DE REFERENCE
-          function limparCardsColuna(colId) {
+          window.limparCardsColuna = async function(colId) {
               const input = document.getElementById('input_limpeza_col_' + colId);
               if (!input) return;
               const dias = parseInt(input.value);
@@ -927,15 +957,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               if (confirm(\`Deseja realmente excluir todos os cards desta coluna com \${dias} ou mais dias de criação? Esta ação não pode ser desfeita.\`)) {
-                  fetch(\`/kanban/colunas/\${colId}/limpar\`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                      body: new URLSearchParams({ dias: dias }).toString()
-                  })
-                  .then(res => res.json())
-                  .then(data => {
-                      if (data.success) {
+                  try {
+                      const formData = new URLSearchParams();
+                      formData.append('dias', dias);
+                      const response = await fetch(\`/kanban/colunas/\${colId}/limpar\`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                          body: formData.toString()
+                      });
+                      
+                      const data = await response.json();
+                      if (response.ok && data.success) {
                           mostrarToast('sucesso', 'Limpeza Concluída', \`\${data.deletados || 0} cards antigos foram excluídos.\`);
+                          
                           if (data.ids && data.ids.length > 0) {
                               data.ids.forEach(id => {
                                   for (const col of colunasDados) {
@@ -949,12 +983,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       } else {
                           mostrarToast('erro', 'Erro', 'Falha ao realizar a limpeza da coluna.');
                       }
-                  })
-                  .catch(() => mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.'));
+                  } catch (e) {
+                      mostrarToast('erro', 'Conexão', 'Falha na rede ao tentar limpar a coluna.');
+                  }
               }
-          }
+          };
 
-          function limparCardsVencidosColuna(colId) {
+          window.limparCardsVencidosColuna = function(colId) {
               const coluna = colunasDados.find(c => c.id == colId);
               if (!coluna || !coluna.cards) return;
 
@@ -990,7 +1025,44 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   renderizarKanban();
                   mostrarToast('sucesso', 'Limpeza Concluída', \`\${cardsVencidos.length} cards vencidos foram excluídos.\`);
               }
-          }
+          };
+
+          window.playUIFeedback = function(type) {
+              try {
+                  if (type === 'check') {
+                      new Audio('/audio/star.mp3').play().catch(e => console.log('Áudio star.mp3 não tocou:', e));
+                      return;
+                  } else if (type === 'move') {
+                      new Audio('/audio/paper.mp3').play().catch(e => console.log('Áudio paper.mp3 não tocou:', e));
+                      return;
+                  }
+
+                  // Fallback para 'uncheck' via sintetizador Web Audio API
+                  if (!window.audioCtx) {
+                      window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                  }
+                  if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+                  
+                  const osc = window.audioCtx.createOscillator();
+                  const gain = window.audioCtx.createGain();
+                  osc.connect(gain);
+                  gain.connect(window.audioCtx.destination);
+                  
+                  const now = window.audioCtx.currentTime;
+                  
+                  if (type === 'uncheck') {
+                      osc.type = 'sine';
+                      osc.frequency.setValueAtTime(1000, now);
+                      osc.frequency.exponentialRampToValueAtTime(500, now + 0.1);
+                      gain.gain.setValueAtTime(0.2, now);
+                      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                      osc.start(now);
+                      osc.stop(now + 0.1);
+                  }
+              } catch (e) {
+                  console.log('Áudio não suportado ou bloqueado', e);
+              }
+          };
 
           document.addEventListener('DOMContentLoaded', () => {
               // INICIALIZAÇÃO TEMA E WALLPAPER E MODAL DE AVISO
@@ -1208,6 +1280,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const oldColunaId = selectColuna.dataset.originalCol;
               
               if (oldColunaId == novaColunaId) return; 
+              
+              window.playUIFeedback && window.playUIFeedback('move');
               
               const novaColuna = colunasDados.find(c => c.id == novaColunaId);
               if (!novaColuna) return;
@@ -1707,6 +1781,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             const toList = evt.to;
                             
                             if(evt.from !== toList || evt.oldIndex !== evt.newIndex) {
+                                window.playUIFeedback && window.playUIFeedback('move');
                                 const novaColuna = toList.closest('.kanban-column');
                                 const novaColunaId = novaColuna.dataset.id;
                                 
@@ -1984,6 +2059,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               if (checkbox && checkbox.checked && prioridadeSelect && prioridadeSelect.value === 'alta') {
                   prioridadeSelect.value = 'normal';
+              }
+              
+              if (checkbox) {
+                  window.playUIFeedback && window.playUIFeedback(checkbox.checked ? 'check' : 'uncheck');
               }
               
               salvarTextosModal();
@@ -2316,6 +2395,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_movido', (dados) => {
+              // Som de movimento apenas se não foi você quem moveu
+              if (dados.usuario && dados.usuario !== NOME_USUARIO) {
+                  window.playUIFeedback && window.playUIFeedback('move');
+              }
+              
               let movedCard = null;
               for (const col of colunasDados) {
                   const idx = col.cards.findIndex(c => c.id == dados.cardId);
@@ -2339,9 +2423,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_atualizado', (dados) => {
+              let isStatusChange = false;
+              let isConcluidoStatus = false;
+              
               for (const col of colunasDados) {
                   const c = col.cards.find(c => c.id == dados.id);
                   if (c) {
+                      // Verifica se o estado de concluído mudou
+                      if (c.concluido !== dados.concluido) {
+                          isStatusChange = true;
+                          isConcluidoStatus = dados.concluido;
+                      }
+
                       c.titulo = dados.titulo;
                       c.descricao = dados.descricao;
                       c.concluido = dados.concluido;
@@ -2352,6 +2445,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       if (dados.percas_corte !== undefined) c.percas_corte = dados.percas_corte;
                       break;
                   }
+              }
+              
+              // Som de "check" e "uncheck" apenas se não foi você quem fez a ação
+              if (isStatusChange && dados.usuario && dados.usuario !== NOME_USUARIO) {
+                  window.playUIFeedback && window.playUIFeedback(isConcluidoStatus ? 'check' : 'uncheck');
               }
               
               if (cardAbertoId == dados.id) {

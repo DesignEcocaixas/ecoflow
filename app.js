@@ -390,11 +390,16 @@ io.on("connection", (socket) => {
         });
     });
 
-    //APAGAR CARD
-    socket.on("deletar_card", (cardId) => {
+    // APAGAR CARD
+    socket.on("deletar_card", (dados) => {
+        // Extrai o ID quer venha como objeto ou como número simples
+        const cardId = typeof dados === 'object' ? dados.id : dados;
+        const usuario = typeof dados === 'object' && dados.usuario ? dados.usuario : 'Um colega';
+
         db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
             if (err) return console.error(err);
-            io.emit("card_deletado", cardId);
+            // Emite de volta o ID e o Nome de quem apagou
+            io.emit("card_deletado", { id: cardId, usuario: usuario });
         });
     });
 

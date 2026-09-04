@@ -294,7 +294,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .column-title-inline[contenteditable]:empty::before { content: "Título..."; color: rgba(255,255,255,0.3); }
 
           .kanban-cards-container {
-              padding: 5px;
+              padding: 10px;
               flex-grow: 1;
               overflow-y: auto;
               min-height: 100px;
@@ -1019,6 +1019,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.lastNotificationTime = 0;
           window.lastNotificationMsg = "";
           window.ordemColunas = window.ordemColunas || {};
+          window.lastFeedbackTime = window.lastFeedbackTime || {};
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
 
@@ -1078,7 +1079,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       col.cards = col.cards.filter(c => c.id != id);
                                   }
                                   if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                                  socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
+                                  socket.emit('deletar_card', id);
                               });
                               renderizarKanban();
                           }
@@ -1122,7 +1123,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const id = card.id;
                       coluna.cards = coluna.cards.filter(c => c.id != id);
                       if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                      socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
+                      socket.emit('deletar_card', id);
                   });
                   renderizarKanban();
                   mostrarToast('sucesso', 'Limpeza Concluída', cardsVencidos.length + ' cards vencidos foram excluídos.');
@@ -1131,6 +1132,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           window.playUIFeedback = function(type) {
               try {
+                  window.lastFeedbackTime = window.lastFeedbackTime || {};
                   const nowTime = Date.now();
                   if (window.lastFeedbackTime[type] && (nowTime - window.lastFeedbackTime[type] < 100)) {
                       return; 
@@ -1457,6 +1459,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (nome) {
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
+                  // A view não é atualizada instantaneamente no local, espera o retorno do WebSocket para evitar duplicação
                   mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
           };
@@ -2451,7 +2454,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const id = document.getElementById('deleteCardId').value;
               window.ultimoCardDeletadoPorMim = Date.now();
               window.playUIFeedback && window.playUIFeedback('delete');
-              socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
+              socket.emit('deletar_card', id);
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
               if (cardAbertoId == id) { cardAbertoId = null; }
@@ -2693,7 +2696,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_deletado', (payload) => {
-              const cardId = typeof payload === 'object' ? payload.cardId : payload;
+              const cardId = typeof payload === 'object' ? payload.id : payload;
               const usuarioAcao = typeof payload === 'object' && payload.usuario ? payload.usuario : 'Um colega';
 
               let deletedCardTitle = 'Uma tarefa';

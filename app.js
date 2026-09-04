@@ -211,7 +211,6 @@ app.use("/", qrGeneratorRoutes);
 const termosRoutes = require("./routes/termos");
 app.use(termosRoutes);
 
-// No seu app.js, adicione junto com as outras chamadas app.use:
 const enviosRoutes = require("./routes/envios");
 app.use("/", enviosRoutes);
 
@@ -278,7 +277,6 @@ io.on("connection", (socket) => {
     socket.on("atualizar_cor_coluna", (dados) => {
         db.query("UPDATE kanban_colunas SET cor = ? WHERE id = ?", [dados.cor, dados.colunaId], (err) => {
             if (err) return console.error(err);
-            // Avisa todos os usuários para pintarem a coluna
             io.emit("cor_coluna_atualizada", dados);
         });
     });
@@ -287,7 +285,6 @@ io.on("connection", (socket) => {
     socket.on("atualizar_titulo_coluna", (dados) => {
         db.query("UPDATE kanban_colunas SET titulo = ? WHERE id = ?", [dados.titulo, dados.colunaId], (err) => {
             if (err) return console.error(err);
-            // Avisa todos os usuários para atualizarem o título da coluna
             io.emit("titulo_coluna_atualizado", dados);
         });
     });
@@ -307,11 +304,16 @@ io.on("connection", (socket) => {
                 if (err) return console.error(err);
                 const newId = result.insertId;
 
-                // Grava no histórico
-                db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card Criado', ?)", [newId, dados.usuario || 'Sistema']);
+                const usuarioCriador = dados.usuario || 'Sistema';
+
+                db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card Criado', ?)", [newId, usuarioCriador]);
 
                 db.query("SELECT * FROM kanban_cards WHERE id = ?", [newId], (err, rows) => {
-                    io.emit("card_criado", rows[0]);
+                    if(rows && rows.length > 0) {
+                        const newCard = rows[0];
+                        newCard.usuario = usuarioCriador; 
+                        io.emit("card_criado", newCard);
+                    }
                 });
             });
     });
@@ -319,17 +321,14 @@ io.on("connection", (socket) => {
     // WEBSOCKET: MOVER E REORDENAR CARDS
     socket.on('mover_card', async (dados) => {
         try {
-            // 1. Atualiza a coluna do card movido
             await db.promise().query("UPDATE kanban_cards SET coluna_id = ? WHERE id = ?", [dados.novaColunaId, dados.cardId]);
 
-            // 2. Atualiza a ordem de TODOS os cards daquela coluna
             if (dados.novaOrdemArray && dados.novaOrdemArray.length > 0) {
                 for (let i = 0; i < dados.novaOrdemArray.length; i++) {
                     await db.promise().query("UPDATE kanban_cards SET ordem = ? WHERE id = ?", [i, dados.novaOrdemArray[i]]);
                 }
             }
 
-            // 3. Regista no histórico com o NOME EXATO da coluna
             const acaoTexto = dados.nomeColuna ? `Movido para ${dados.nomeColuna}` : 'Moveu ou reordenou o card';
 
             await db.promise().query(
@@ -337,7 +336,6 @@ io.on("connection", (socket) => {
                 [dados.cardId, acaoTexto, dados.usuario || 'Sistema']
             );
 
-            // Dispara a reordenação em tempo real para todos os outros ecrãs
             io.emit('card_movido', dados);
 
         } catch (error) {
@@ -347,43 +345,36 @@ io.on("connection", (socket) => {
 
     // EDITAR CARD KANBAN (ÚNICO E MULTI-DADOS)
     socket.on("atualizar_card", (dados) => {
-        // Atualiza todos os campos base, incluindo prazo, prioridade e as novas listas de percas
         const query = "UPDATE kanban_cards SET titulo = ?, descricao = ?, concluido = ?, prazo = ?, prioridade = ?, percas_pintura = ?, percas_corte = ? WHERE id = ?";
         const valores = [
             dados.titulo,
             dados.descricao,
             dados.concluido,
             dados.prazo || null,
-            dados.prioridade || 'normal', // Usa 'normal' como padrão se vier vazio
-            dados.percas_pintura || null, // Array JSON com as linhas de percas de pintura
-            dados.percas_corte || null,   // Array JSON com as linhas de percas de corte
+            dados.prioridade || 'normal', 
+            dados.percas_pintura || null, 
+            dados.percas_corte || null,   
             dados.id
         ];
 
         db.query(query, valores, (err) => {
             if (err) return console.error("Erro ao atualizar card:", err);
 
-            // Se as etiquetas foram enviadas no evento, atualiza as relações no banco de dados
             if (dados.etiquetas !== undefined) {
-                // Limpa as etiquetas antigas vinculadas a este card
                 db.query("DELETE FROM kanban_cards_etiquetas WHERE card_id = ?", [dados.id], () => {
-                    // Insere as novas etiquetas
                     if (dados.etiquetas.length > 0) {
                         const values = dados.etiquetas.map(tagId => [dados.id, tagId]);
                         db.query("INSERT INTO kanban_cards_etiquetas (card_id, etiqueta_id) VALUES ?", [values], () => {
                             io.emit("card_atualizado", dados);
                         });
                     } else {
-                        // Nenhuma etiqueta nova para inserir
                         io.emit("card_atualizado", dados);
                     }
                 });
             } else {
-                // Atualiza sem mexer nas etiquetas
                 io.emit("card_atualizado", dados);
             }
 
-            // Gera o histórico de quem alterou o card
             const acao = dados.concluido ? "Marcado como Concluído" : "Informações atualizadas";
             db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, ?)",
                 [dados.id, acao, dados.usuario || 'Sistema']);
@@ -392,13 +383,11 @@ io.on("connection", (socket) => {
 
     // APAGAR CARD
     socket.on("deletar_card", (dados) => {
-        // Extrai o ID quer venha como objeto ou como número simples
         const cardId = typeof dados === 'object' ? dados.id : dados;
         const usuario = typeof dados === 'object' && dados.usuario ? dados.usuario : 'Um colega';
 
         db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
             if (err) return console.error(err);
-            // Emite de volta o ID e o Nome de quem apagou
             io.emit("card_deletado", { id: cardId, usuario: usuario });
         });
     });
@@ -417,6 +406,6 @@ app.get("/ping-sessao", (req, res) => {
 });
 
 
-app.use(notFoundHandler);     // Captura qualquer rota não existente (404)
+app.use(notFoundHandler);     
 app.use(globalErrorHandler);
 server.listen(PORT, '0.0.0.0', () => console.log("Servidor rodando na porta " + PORT));

@@ -1929,6 +1929,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             const toList = evt.to;
                             
                             if(evt.from !== toList || evt.oldIndex !== evt.newIndex) {
+                                window.playUIFeedback('move');
                                 window.ultimoCardMovidoPorMim = Date.now();
                                 
                                 const novaColuna = toList.closest('.kanban-column');
@@ -2213,7 +2214,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
               
               if (checkbox) {
-                  window.playUIFeedback && window.playUIFeedback(checkbox.checked ? 'check' : 'uncheck');
+                  window.playUIFeedback(checkbox.checked ? 'check' : 'uncheck');
               }
               
               window.ultimoCardAtualizadoPorMim = Date.now();
@@ -2354,7 +2355,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               try {
                   const response = await fetch('/kanban/anexos/' + anexoId, { method: 'DELETE' });
                   if(response.ok) {
-                      window.playUIFeedback && window.playUIFeedback('delete');
+                      window.playUIFeedback('delete');
                       mostrarToast('sucesso', 'Excluído!', 'O anexo foi removido.');
                       
                       for (const col of colunasDados) {
@@ -2386,7 +2387,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               if(titulo && espaco_id) {
                   window.ultimaColunaCriadaPorMim = Date.now();
-                  window.playUIFeedback && window.playUIFeedback('create');
+                  window.playUIFeedback('create');
                   socket.emit('nova_coluna', { titulo, cor, espaco_id });
                   document.getElementById('inputTituloColuna').value = '';
                   modalNovaColunaObj.hide();
@@ -2441,7 +2442,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           window.criarCardRapido = function(colunaId) { 
               window.ultimoCardCriadoPorMim = Date.now();
-              window.playUIFeedback && window.playUIFeedback('create');
+              window.playUIFeedback('create');
               socket.emit('novo_card', { colunaId: colunaId, titulo: 'Clique para editar', descricao: '', usuario: NOME_USUARIO }); 
               mostrarToast('sucesso', 'Criado!', 'Novo card inserido na coluna.');
           };
@@ -2453,8 +2454,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.executarDeletarCard = function() {
               const id = document.getElementById('deleteCardId').value;
               window.ultimoCardDeletadoPorMim = Date.now();
-              window.playUIFeedback && window.playUIFeedback('delete');
-              socket.emit('deletar_card', id);
+              window.playUIFeedback('delete');
+              socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
               if (cardAbertoId == id) { cardAbertoId = null; }
@@ -2467,7 +2468,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.executarDeletarColuna = function() {
               const id = document.getElementById('deleteColunaId').value;
               window.ultimaColunaDeletadaPorMim = Date.now();
-              window.playUIFeedback && window.playUIFeedback('delete');
+              window.playUIFeedback('delete');
               socket.emit('deletar_coluna', id); 
               modalDeletarColunaObj.hide();
               mostrarToast('sucesso', 'Removido!', 'A coluna e os cards foram apagados.');
@@ -2530,7 +2531,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           socket.on('coluna_criada', (coluna) => {
               if (Date.now() - (window.ultimaColunaCriadaPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('create');
+                  window.playUIFeedback('create');
               }
               coluna.cards = [];
               colunasDados.push(coluna);
@@ -2539,7 +2540,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           socket.on('coluna_deletada', (colunaId) => {
               if (Date.now() - (window.ultimaColunaDeletadaPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('delete');
+                  window.playUIFeedback('delete');
               }
               colunasDados = colunasDados.filter(c => c.id != colunaId);
               renderizarKanban();
@@ -2562,7 +2563,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const colNome = colTarget ? colTarget.titulo : '';
 
               if (Date.now() - (window.ultimoCardCriadoPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('popup');
+                  window.playUIFeedback('popup');
                   let userTxt = card.usuario ? card.usuario : 'Um colega';
                   window.dispararNotificacaoGlobal('sucesso', 'Novo Card', userTxt + ' adicionou a tarefa "' + (card.titulo || 'Sem Título') + '" na coluna "' + colNome + '".');
               }
@@ -2594,7 +2595,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               if (Date.now() - (window.ultimoCardMovidoPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('move');
+                  window.playUIFeedback('move');
                   if (movedCard && dados.usuario && dados.usuario !== NOME_USUARIO) {
                       window.dispararNotificacaoGlobal('info', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para "' + dados.nomeColuna + '".');
                   }
@@ -2644,7 +2645,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
               
               if (isStatusChange && (Date.now() - (window.ultimoCardAtualizadoPorMim || 0) > 2000)) {
-                  window.playUIFeedback && window.playUIFeedback(isConcluidoStatus ? 'check' : 'uncheck');
+                  window.playUIFeedback(isConcluidoStatus ? 'check' : 'uncheck');
                   
                   const statusTxt = isConcluidoStatus ? 'concluiu' : 'desmarcou';
                   const userTxt = dados.usuario ? dados.usuario : 'Um colega';
@@ -2712,7 +2713,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               if (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('delete');
+                  window.playUIFeedback('delete');
                   window.dispararNotificacaoGlobal('info', 'Card Excluído', usuarioAcao + ' excluiu o card "' + deletedCardTitle + '" da coluna "' + deletedColName + '".');
               }
 

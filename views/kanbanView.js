@@ -650,7 +650,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 220px; z-index: 1060;">
+                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
                           <li class="px-3 py-2 border-bottom border-custom">
                               <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                                   <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
@@ -665,7 +665,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Autom. Geral
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">

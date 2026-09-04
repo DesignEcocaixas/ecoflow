@@ -16,8 +16,12 @@ const espacosDeTrabalhoView = require("../views/espacosDeTrabalhoView");
 router.get("/espacos-trabalho", isLogged, (req, res) => {
     db.query("SELECT * FROM espacos_trabalho ORDER BY id DESC", (err, espacos) => {
         if (err) return res.status(500).send("Erro ao carregar espaços de trabalho");
-        // O bloqueio agora é visual, então mandamos todos os espaços para a View
-        res.send(espacosDeTrabalhoView(req.session.user, espacos));
+        
+        // Busca os usuários para poder listar individualmente dentro do dropdown de permissões
+        db.query("SELECT id, nome, tipo_usuario FROM usuarios", (errU, usuarios) => {
+            const listaUsuarios = errU ? [] : usuarios;
+            res.send(espacosDeTrabalhoView(req.session.user, espacos, listaUsuarios));
+        });
     });
 });
 

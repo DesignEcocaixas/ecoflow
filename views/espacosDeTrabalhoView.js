@@ -2,7 +2,7 @@
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
-function espacosDeTrabalhoView(usuario, espacos = []) {
+function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
   const termosHTML = termosComponent(usuario); 
@@ -28,31 +28,60 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
     // Tratamento das permissões atuais
     const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : roles.map(r => r.id);
 
-    // Validação de acesso do utilizador logado
+    // Validação de acesso do utilizador logado (considerando acesso individual usr_ID)
     const userRole = user.tipo_usuario || 'admin';
     const isOwnerOrAdmin = userRole === 'admin' || 
                            (e.criador && e.criador === user.nome) || 
                            (e.criado_por && e.criado_por === user.nome) || 
                            (e.usuario_id && e.usuario_id == user.id);
                            
-    const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole);
+    const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
 
     const permissoesHtml = roles.map(r => {
         let isChecked = permAtuais.includes(r.id) ? 'checked' : '';
         let isDisabled = '';
         
-        // Admin sempre tem acesso E o utilizador não pode remover o próprio acesso
         if (r.id === 'admin' || r.id === userRole) {
             isChecked = 'checked';
             isDisabled = 'disabled';
         }
 
+        // Filtra os usuários que pertencem a esta hierarquia
+        const roleUsers = usuarios.filter(u => u.tipo_usuario === r.id);
+        let usersHtml = '';
+
+        if (roleUsers.length > 0) {
+            usersHtml = `
+            <div class="collapse mt-2 mb-1 ps-3 ms-1 border-start border-secondary" id="collapse_${e.id}_${r.id}">
+                ${roleUsers.map(u => {
+                    const userKey = 'usr_' + u.id;
+                    // O usuário terá acesso se a sua chave específica estiver salva, ou se a hierarquia global dele estiver ativa
+                    let isUserChecked = permAtuais.includes(userKey) || permAtuais.includes(r.id) ? 'checked' : '';
+                    let isUserDisabled = (r.id === 'admin' || u.id === user.id) ? 'disabled' : '';
+
+                    return `
+                    <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                        <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${userKey}" onchange="salvarPermissaoEspaco('${e.id}', '${userKey}', this.checked)" ${isUserChecked} ${isUserDisabled} style="width: 24px; height: 12px;">
+                        <label class="form-check-label text-muted cursor-pointer m-0 text-truncate" for="perm_${e.id}_${userKey}" style="font-size: 0.75rem; max-width: 130px;" title="${u.nome}">${u.nome}</label>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
         return `
         <li class="px-2 py-1" onclick="event.stopPropagation();">
-            <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${r.id}" onchange="salvarPermissaoEspaco('${e.id}', '${r.id}', this.checked)" ${isChecked} ${isDisabled} style="width: 28px; height: 14px;">
-                <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="perm_${e.id}_${r.id}" style="font-size: 0.8rem;">${r.label}</label>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                    <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${r.id}" onchange="salvarPermissaoEspaco('${e.id}', '${r.id}', this.checked)" ${isChecked} ${isDisabled} style="width: 28px; height: 14px;">
+                    <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="perm_${e.id}_${r.id}" style="font-size: 0.8rem;">${r.label}</label>
+                </div>
+                ${roleUsers.length > 0 ? `
+                <button class="btn btn-sm text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${e.id}_${r.id}" aria-expanded="false" onclick="event.stopPropagation();">
+                    <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                </button>
+                ` : ''}
             </div>
+            ${usersHtml}
         </li>`;
     }).join('');
 
@@ -63,9 +92,9 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
             <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
                 <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 200px; z-index: 1060; border-radius: 8px;">
+            <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 240px; max-height: 350px; overflow-y: auto; z-index: 1060; border-radius: 8px;">
                 <li class="px-2 pb-2 border-bottom border-custom mb-2">
-                    <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade</span>
+                    <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade e Usuários</span>
                 </li>
                 ${permissoesHtml}
             </ul>
@@ -99,8 +128,6 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
                 <p class="text-muted mb-3 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
                 
                 <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
-                    
-                    <!-- MENU DE PERMISSÕES DROPDOWN (Apenas Admin/Criador) -->
                     <div>
                         ${dropdownPermissoes}
                     </div>
@@ -128,7 +155,7 @@ function espacosDeTrabalhoView(usuario, espacos = []) {
   `;
 
   // =========================================================================
-  // GERAÇÃO DOS MODAIS DE EDIÇÃO
+  // GERAÇÃO DOS MODAIS DE EDIÇÃO (Permanece Intacto)
   // =========================================================================
   const modaisEdicao = espacos.map(e => {
       const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;

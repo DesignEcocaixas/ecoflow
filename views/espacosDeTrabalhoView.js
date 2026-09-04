@@ -38,12 +38,14 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
     const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
 
     const permissoesHtml = roles.map(r => {
-        let isChecked = permAtuais.includes(r.id) ? 'checked' : '';
+        let isRoleChecked = permAtuais.includes(r.id);
+        let isChecked = isRoleChecked ? 'checked' : '';
         let isDisabled = '';
         
         if (r.id === 'admin' || r.id === userRole) {
             isChecked = 'checked';
             isDisabled = 'disabled';
+            isRoleChecked = true;
         }
 
         // Filtra os usuários que pertencem a esta hierarquia
@@ -55,13 +57,25 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
             <div class="collapse mt-2 mb-1 ps-3 ms-1 border-start border-secondary" id="collapse_${e.id}_${r.id}">
                 ${roleUsers.map(u => {
                     const userKey = 'usr_' + u.id;
-                    // O usuário terá acesso se a sua chave específica estiver salva, ou se a hierarquia global dele estiver ativa
-                    let isUserChecked = permAtuais.includes(userKey) || permAtuais.includes(r.id) ? 'checked' : '';
-                    let isUserDisabled = (r.id === 'admin' || u.id === user.id) ? 'disabled' : '';
+                    
+                    // Estado explícito salvo no banco
+                    let hasExplicitAccess = permAtuais.includes(userKey); 
+                    // Marca se tiver acesso direto OU se herdar do cargo
+                    let isUserChecked = hasExplicitAccess || isRoleChecked ? 'checked' : '';
+                    
+                    // Trava o switch do usuário se o cargo dele estiver liberado geral, 
+                    // obrigando o Admin a desmarcar o cargo para controlar individualmente
+                    let isUserDisabled = (r.id === 'admin' || u.id === user.id || isRoleChecked) ? 'disabled' : '';
 
                     return `
                     <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
-                        <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${userKey}" onchange="salvarPermissaoEspaco('${e.id}', '${userKey}', this.checked)" ${isUserChecked} ${isUserDisabled} style="width: 24px; height: 12px;">
+                        <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm user-cb-${e.id}-${r.id}" 
+                            type="checkbox" 
+                            id="perm_${e.id}_${userKey}" 
+                            data-explicit="${hasExplicitAccess}"
+                            onchange="salvarPermissaoEspaco('${e.id}', '${userKey}', this.checked)" 
+                            ${isUserChecked} ${isUserDisabled} 
+                            style="width: 24px; height: 12px;">
                         <label class="form-check-label text-muted cursor-pointer m-0 text-truncate" for="perm_${e.id}_${userKey}" style="font-size: 0.75rem; max-width: 130px;" title="${u.nome}">${u.nome}</label>
                     </div>`;
                 }).join('')}
@@ -453,12 +467,34 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
 
               if(response.ok) {
                   mostrarToast('sucesso', 'Acesso Atualizado', 'A visibilidade do workspace foi alterada.');
+                  
+                  // Atualização Dinâmica da Interface
+                  if (!papel.startsWith('usr_')) {
+                      // Se o clique foi no Cargo, afeta todos os usuários do grupo visualmente
+                      const userCheckboxes = document.querySelectorAll('.user-cb-' + espacoId + '-' + papel);
+                      userCheckboxes.forEach(cb => {
+                          if (isChecked) {
+                              cb.checked = true;
+                              cb.disabled = true; // Herda o acesso total do cargo
+                          } else {
+                              cb.disabled = false;
+                              cb.checked = cb.getAttribute('data-explicit') === 'true'; // Retorna pro acesso individual salvo
+                          }
+                      });
+                  } else {
+                      // Se o clique foi num Usuário, salva o estado individual dele no atributo de dados
+                      const cb = document.getElementById('perm_' + espacoId + '_' + papel);
+                      if(cb) {
+                          cb.setAttribute('data-explicit', isChecked ? 'true' : 'false');
+                      }
+                  }
+
               } else {
                   throw new Error('Erro na resposta do servidor');
               }
           } catch (e) {
-              console.warn("Backend não processou a requisição. Visibilidade foi modificada visualmente na interface.");
-              mostrarToast('sucesso', 'Acesso Atualizado', 'Visibilidade ajustada localmente na interface.');
+              console.warn("Falha de conexão.");
+              mostrarToast('erro', 'Erro de Servidor', 'Falha ao salvar permissões. Verifique a conexão.');
           }
       }
 

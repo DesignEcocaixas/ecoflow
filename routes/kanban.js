@@ -16,6 +16,7 @@ const kanbanView = require("../views/kanbanView");
 //LISTAR COLUNAS/CARDS E ETIQUETAS
 router.get("/kanban", isLogged, (req, res) => {
     const espaco_id = req.query.espaco_id;
+    const user = req.session.user; // Obtém o usuário logado
 
     if (!espaco_id) {
         return res.redirect("/espacos-trabalho");
@@ -24,6 +25,31 @@ router.get("/kanban", isLogged, (req, res) => {
     db.query("SELECT * FROM espacos_trabalho WHERE id = ?", [espaco_id], (err, espacosResult) => {
         if (err || espacosResult.length === 0) return res.redirect("/espacos-trabalho");
         const espacoAtual = espacosResult[0];
+
+        // =====================================================================
+        // 🚨 VERIFICAÇÃO DE SEGURANÇA (BLOQUEIO POR URL)
+        // =====================================================================
+        const userRole = user.tipo_usuario || 'admin';
+        
+        let permAtuais = ['admin','financeiro','motorista','design','logistica','producao','comercial'];
+        if (espacoAtual.permissoes) {
+            permAtuais = typeof espacoAtual.permissoes === 'string' ? espacoAtual.permissoes.split(',') : espacoAtual.permissoes;
+        }
+
+        const isOwnerOrAdmin = userRole === 'admin' || 
+                               (espacoAtual.criador && espacoAtual.criador === user.nome) || 
+                               (espacoAtual.criado_por && espacoAtual.criado_por === user.nome) || 
+                               (espacoAtual.usuario_id && espacoAtual.usuario_id == user.id);
+
+        const hasAccess = isOwnerOrAdmin || 
+                          permAtuais.includes(userRole) || 
+                          permAtuais.includes('usr_' + user.id);
+
+        if (!hasAccess) {
+            // Expulsa o usuário caso ele tente forçar o ID pela barra de pesquisa
+            return res.redirect("/espacos-trabalho?erro=acesso_negado");
+        }
+        // =====================================================================
 
         // Busca os colaboradores para popular os selects de "Operador" na View
         db.query("SELECT id, nome, tipo_usuario, foto FROM usuarios", (errUsu, colaboradoresResult) => {

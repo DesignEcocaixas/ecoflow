@@ -424,7 +424,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               .sidebar { display: none; } 
               .content { width: 100%; padding: 12px; }
               .kanban-board { padding-bottom: 5px; gap: 0px; }
-              .kanban-column { min-width: 75vw !important; width: 75vw !important; }
+              .kanban-column { min-width: 50vw !important; width: 50vw !important; }
               .responsive-modal-row { flex-direction: column; height: auto !important; display: flex; }
               .responsive-modal-col { height: auto !important; overflow-y: visible !important; border-right: none !important; }
               #modal-left-col { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }

@@ -424,7 +424,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               .sidebar { display: none; } 
               .content { width: 100%; padding: 12px; }
               .kanban-board { padding-bottom: 5px; gap: 0px; }
-              .kanban-column { min-width: 50vw !important; width: 50vw !important; }
+              .kanban-column { min-width: 75vw !important; width: 75vw !important; }
               .responsive-modal-row { flex-direction: column; height: auto !important; display: flex; }
               .responsive-modal-col { height: auto !important; overflow-y: visible !important; border-right: none !important; }
               #modal-left-col { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
@@ -645,11 +645,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
+                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
+                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 220px; z-index: 1060;">
                           <li class="px-3 py-2 border-bottom border-custom">
                               <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                                   <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
@@ -664,7 +665,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Autom. Geral
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
@@ -1016,6 +1017,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.ultimaColunaCriadaPorMim = 0;
           window.ultimaColunaDeletadaPorMim = 0;
           window.lastNotificationTime = 0;
+          window.lastNotificationMsg = "";
           window.ordemColunas = window.ordemColunas || {};
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
@@ -1033,8 +1035,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           window.dispararNotificacaoGlobal = function(tipo, titulo, msg) {
               const now = Date.now();
-              if (now - window.lastNotificationTime < 1000) return; // Anti-spam 
+              if (msg === window.lastNotificationMsg && now - window.lastNotificationTime < 2000) return; 
               window.lastNotificationTime = now;
+              window.lastNotificationMsg = msg;
               
               mostrarToast(tipo, titulo, msg);
               if ("Notification" in window && Notification.permission === "granted") {
@@ -1075,7 +1078,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       col.cards = col.cards.filter(c => c.id != id);
                                   }
                                   if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                                  socket.emit('deletar_card', id);
+                                  socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
                               });
                               renderizarKanban();
                           }
@@ -1119,14 +1122,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const id = card.id;
                       coluna.cards = coluna.cards.filter(c => c.id != id);
                       if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                      socket.emit('deletar_card', id);
+                      socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
                   });
                   renderizarKanban();
                   mostrarToast('sucesso', 'Limpeza Concluída', cardsVencidos.length + ' cards vencidos foram excluídos.');
               }
           }
 
-          window.lastFeedbackTime = window.lastFeedbackTime || {};
           window.playUIFeedback = function(type) {
               try {
                   const nowTime = Date.now();
@@ -1455,7 +1457,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (nome) {
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
-                  // A view não é atualizada instantaneamente no local, espera o retorno do WebSocket para evitar duplicação
                   mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
           };
@@ -2450,7 +2451,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const id = document.getElementById('deleteCardId').value;
               window.ultimoCardDeletadoPorMim = Date.now();
               window.playUIFeedback && window.playUIFeedback('delete');
-              socket.emit('deletar_card', id);
+              socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
               if (cardAbertoId == id) { cardAbertoId = null; }
@@ -2566,7 +2567,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if(colTarget) colTarget.cards.push(card);
               renderizarKanban();
 
-              // Rolar ecren para a nova tarefa se foi o próprio usuário que criou
+              // Rolar ecrã para a nova tarefa se foi o próprio usuário que criou
               if (Date.now() - (window.ultimoCardCriadoPorMim || 0) <= 2000) {
                   setTimeout(function() {
                       const cardEl = document.querySelector('.kanban-card[data-id="' + card.id + '"]');
@@ -2592,7 +2593,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (Date.now() - (window.ultimoCardMovidoPorMim || 0) > 2000) {
                   window.playUIFeedback && window.playUIFeedback('move');
                   if (movedCard && dados.usuario && dados.usuario !== NOME_USUARIO) {
-                      window.dispararNotificacaoGlobal('info', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para a coluna "' + dados.nomeColuna + '".');
+                      window.dispararNotificacaoGlobal('info', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para "' + dados.nomeColuna + '".');
                   }
               }
               
@@ -2616,10 +2617,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           socket.on('card_atualizado', (dados) => {
               let isStatusChange = false;
               let isConcluidoStatus = false;
+              let cardOriginalTitle = 'Uma tarefa';
               
               for (const col of colunasDados) {
                   const c = col.cards.find(c => c.id == dados.id);
                   if (c) {
+                      cardOriginalTitle = c.titulo || 'Sem Título';
                       if (c.concluido !== dados.concluido) {
                           isStatusChange = true;
                           isConcluidoStatus = dados.concluido;
@@ -2639,6 +2642,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               if (isStatusChange && (Date.now() - (window.ultimoCardAtualizadoPorMim || 0) > 2000)) {
                   window.playUIFeedback && window.playUIFeedback(isConcluidoStatus ? 'check' : 'uncheck');
+                  
+                  const statusTxt = isConcluidoStatus ? 'concluiu' : 'desmarcou';
+                  const userTxt = dados.usuario ? dados.usuario : 'Um colega';
+                  window.dispararNotificacaoGlobal('info', 'Status Atualizado', userTxt + ' ' + statusTxt + ' a tarefa "' + cardOriginalTitle + '".');
               }
               
               if (cardAbertoId == dados.id) {
@@ -2685,7 +2692,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               renderizarKanban();
           });
 
-          socket.on('card_deletado', (cardId) => {
+          socket.on('card_deletado', (payload) => {
+              const cardId = typeof payload === 'object' ? payload.cardId : payload;
+              const usuarioAcao = typeof payload === 'object' && payload.usuario ? payload.usuario : 'Um colega';
+
               let deletedCardTitle = 'Uma tarefa';
               let deletedColName = 'uma coluna';
 
@@ -2700,7 +2710,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               if (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000) {
                   window.playUIFeedback && window.playUIFeedback('delete');
-                  window.dispararNotificacaoGlobal('info', 'Card Removido', 'O card "' + deletedCardTitle + '" foi excluído da coluna "' + deletedColName + '".');
+                  window.dispararNotificacaoGlobal('info', 'Card Excluído', usuarioAcao + ' excluiu o card "' + deletedCardTitle + '" da coluna "' + deletedColName + '".');
               }
 
               for (const col of colunasDados) {

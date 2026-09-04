@@ -424,7 +424,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               .sidebar { display: none; } 
               .content { width: 100%; padding: 12px; }
               .kanban-board { padding-bottom: 5px; gap: 0px; }
-              .kanban-column { min-width: 85vw !important; width: 85vw !important; }
+              .kanban-column { min-width: 50vw !important; width: 50vw !important; }
               .responsive-modal-row { flex-direction: column; height: auto !important; display: flex; }
               .responsive-modal-col { height: auto !important; overflow-y: visible !important; border-right: none !important; }
               #modal-left-col { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
@@ -649,7 +649,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
                           <i class="fa-solid fa-gear"></i>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 220px; z-index: 1060;">
+                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
                           <li class="px-3 py-2 border-bottom border-custom">
                               <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                                   <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
@@ -664,7 +664,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
                               <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão Autom. Geral
+                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
                               </button>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">
@@ -1016,6 +1016,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.ultimaColunaCriadaPorMim = 0;
           window.ultimaColunaDeletadaPorMim = 0;
           window.lastNotificationTime = 0;
+          window.ordemColunas = window.ordemColunas || {};
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
 
@@ -1039,6 +1040,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if ("Notification" in window && Notification.permission === "granted") {
                   new Notification(titulo, { body: msg, icon: '/img/favicon.ico' });
               }
+          };
+
+          window.ordenarColuna = function(colId, tipo) {
+              window.ordemColunas[colId] = tipo;
+              window.renderizarKanban();
           };
 
           // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL EVITANDO ERROS DE REFERENCE
@@ -1549,9 +1555,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           const isImage = anexo.tipo && anexo.tipo.includes('image');
                           const path = '/uploads/' + anexo.nome_arquivo;
                           if (isImage) {
-                              anexoPreview = '<img src="' + path + '" class="rounded ms-2 border border-custom" style="width: 32px; height: 32px; object-fit: cover;">';
+                              anexoPreview = \`<img src="\${path}" class="rounded ms-2 border border-custom" style="width: 32px; height: 32px; object-fit: cover;">\`;
                           } else {
-                              anexoPreview = '<div class="rounded ms-2 d-flex align-items-center justify-content-center bg-custom-dark border border-custom text-white-50" style="width: 32px; height: 32px;"><i class="fa-solid fa-file-pdf"></i></div>';
+                              anexoPreview = \`<div class="rounded ms-2 d-flex align-items-center justify-content-center bg-custom-dark border border-custom text-white-50" style="width: 32px; height: 32px;"><i class="fa-solid fa-file-pdf"></i></div>\`;
                           }
                       }
 
@@ -1803,24 +1809,47 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   let cardsHTML = '';
                   if (col.cards && col.cards.length > 0) {
+                      const tipoOrdem = window.ordemColunas[col.id] || 'default';
+                      
                       let cardsOrdenados = [...col.cards].sort((a, b) => {
-                        if (!a.prazo && b.prazo) return 1;  
-                        if (a.prazo && !b.prazo) return -1; 
-
-                        if (a.prazo && b.prazo) {
-                            const dataA = new Date(a.prazo);
-                            const dataB = new Date(b.prazo);
-                            
-                            if (dataA.getTime() !== dataB.getTime()) {
-                                return dataA - dataB;
-                            }
-                        }
-
-                        if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
-                        if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
-
-                        return 0; 
-                    });
+                          if (tipoOrdem === 'criacao_asc') {
+                              const dataA = a.criado_em ? new Date(a.criado_em).getTime() : 0;
+                              const dataB = b.criado_em ? new Date(b.criado_em).getTime() : 0;
+                              return dataA - dataB;
+                          } else if (tipoOrdem === 'criacao_desc') {
+                              const dataA = a.criado_em ? new Date(a.criado_em).getTime() : 0;
+                              const dataB = b.criado_em ? new Date(b.criado_em).getTime() : 0;
+                              return dataB - dataA;
+                          } else if (tipoOrdem === 'prazo_asc') {
+                              if (!a.prazo && b.prazo) return 1;  
+                              if (a.prazo && !b.prazo) return -1; 
+                              if (!a.prazo && !b.prazo) return 0;
+                              return new Date(a.prazo).getTime() - new Date(b.prazo).getTime();
+                          } else if (tipoOrdem === 'prazo_desc') {
+                              if (!a.prazo && b.prazo) return 1;  
+                              if (a.prazo && !b.prazo) return -1; 
+                              if (!a.prazo && !b.prazo) return 0;
+                              return new Date(b.prazo).getTime() - new Date(a.prazo).getTime();
+                          } else {
+                              // Ordenação Padrão (Prazo > Prioridade)
+                              if (!a.prazo && b.prazo) return 1;  
+                              if (a.prazo && !b.prazo) return -1; 
+      
+                              if (a.prazo && b.prazo) {
+                                  const dataA = new Date(a.prazo);
+                                  const dataB = new Date(b.prazo);
+                                  
+                                  if (dataA.getTime() !== dataB.getTime()) {
+                                      return dataA - dataB;
+                                  }
+                              }
+      
+                              if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
+                              if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+      
+                              return 0; 
+                          }
+                      });
                       cardsOrdenados.forEach(card => { cardsHTML += gerarHTMLCard(card, corColuna); });
                   }
 
@@ -1842,7 +1871,17 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-3 shadow-lg border-custom" style="min-width: 240px; background-color: #2a2a2a; z-index: 1060;">
-                              <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Limpeza Manual</h6>
+                              
+                              <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Ordenar Tarefas</h6>
+                              <select class="form-select form-select-sm bg-custom-darker border-custom text-white mb-3 shadow-sm" onchange="window.ordenarColuna('\${col.id}', this.value)">
+                                  <option value="default" \${window.ordemColunas[col.id] === 'default' || !window.ordemColunas[col.id] ? 'selected' : ''}>Padrão (Prazo e Prioridade)</option>
+                                  <option value="criacao_asc" \${window.ordemColunas[col.id] === 'criacao_asc' ? 'selected' : ''}>Criação (Mais Antigos)</option>
+                                  <option value="criacao_desc" \${window.ordemColunas[col.id] === 'criacao_desc' ? 'selected' : ''}>Criação (Mais Recentes)</option>
+                                  <option value="prazo_asc" \${window.ordemColunas[col.id] === 'prazo_asc' ? 'selected' : ''}>Prazo (Crescente)</option>
+                                  <option value="prazo_desc" \${window.ordemColunas[col.id] === 'prazo_desc' ? 'selected' : ''}>Prazo (Decrescente)</option>
+                              </select>
+                              
+                              <h6 class="text-white fw-bold mb-2 mt-3" style="font-size: 0.8rem;">Limpeza Manual</h6>
                               <p class="text-white-50 mb-2" style="font-size: 0.7rem;">Excluir cards com mais de X dias:</p>
                               <div class="input-group input-group-sm mb-3">
                                   <input type="number" id="input_limpeza_col_\${col.id}" class="form-control bg-custom-darker border-custom text-white" placeholder="Ex: 10" min="0">
@@ -1886,7 +1925,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                             const toList = evt.to;
                             
                             if(evt.from !== toList || evt.oldIndex !== evt.newIndex) {
-                                window.playUIFeedback && window.playUIFeedback('move');
                                 window.ultimoCardMovidoPorMim = Date.now();
                                 
                                 const novaColuna = toList.closest('.kanban-column');
@@ -2516,27 +2554,48 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_criado', (card) => {
+              const colTarget = colunasDados.find(c => c.id == card.coluna_id);
+              const colNome = colTarget ? colTarget.titulo : '';
+
               if (Date.now() - (window.ultimoCardCriadoPorMim || 0) > 2000) {
                   window.playUIFeedback && window.playUIFeedback('popup');
                   let userTxt = card.usuario ? card.usuario : 'Um colega';
-                  window.dispararNotificacaoGlobal('sucesso', 'Novo Card', userTxt + ' adicionou uma tarefa no painel.');
+                  window.dispararNotificacaoGlobal('sucesso', 'Novo Card', userTxt + ' adicionou a tarefa "' + (card.titulo || 'Sem Título') + '" na coluna "' + colNome + '".');
               }
 
-              const colIndex = colunasDados.findIndex(c => c.id == card.coluna_id);
-              if(colIndex > -1) colunasDados[colIndex].cards.push(card);
+              if(colTarget) colTarget.cards.push(card);
               renderizarKanban();
+
+              // Rolar ecren para a nova tarefa se foi o próprio usuário que criou
+              if (Date.now() - (window.ultimoCardCriadoPorMim || 0) <= 2000) {
+                  setTimeout(function() {
+                      const cardEl = document.querySelector('.kanban-card[data-id="' + card.id + '"]');
+                      if (cardEl) {
+                          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                  }, 150);
+              }
           });
 
           socket.on('card_movido', (dados) => {
-              if (Date.now() - (window.ultimoCardMovidoPorMim || 0) > 2000) {
-                  window.playUIFeedback && window.playUIFeedback('move');
-              }
-              
               let movedCard = null;
+              let oldColName = "";
               for (const col of colunasDados) {
                   const idx = col.cards.findIndex(c => c.id == dados.cardId);
-                  if (idx > -1) { movedCard = col.cards.splice(idx, 1)[0]; break; }
+                  if (idx > -1) { 
+                      movedCard = col.cards.splice(idx, 1)[0]; 
+                      oldColName = col.titulo;
+                      break; 
+                  }
               }
+
+              if (Date.now() - (window.ultimoCardMovidoPorMim || 0) > 2000) {
+                  window.playUIFeedback && window.playUIFeedback('move');
+                  if (movedCard && dados.usuario && dados.usuario !== NOME_USUARIO) {
+                      window.dispararNotificacaoGlobal('info', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para a coluna "' + dados.nomeColuna + '".');
+                  }
+              }
+              
               if (movedCard) {
                   movedCard.coluna_id = dados.novaColunaId;
                   const newCol = colunasDados.find(c => c.id == dados.novaColunaId);
@@ -2627,9 +2686,21 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_deletado', (cardId) => {
+              let deletedCardTitle = 'Uma tarefa';
+              let deletedColName = 'uma coluna';
+
+              for (const col of colunasDados) {
+                  const c = col.cards.find(x => x.id == cardId);
+                  if (c) { 
+                      deletedCardTitle = c.titulo || 'Sem Título'; 
+                      deletedColName = col.titulo || '';
+                      break; 
+                  }
+              }
+
               if (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000) {
                   window.playUIFeedback && window.playUIFeedback('delete');
-                  window.dispararNotificacaoGlobal('info', 'Card Removido', 'Uma tarefa foi removida do painel.');
+                  window.dispararNotificacaoGlobal('info', 'Card Removido', 'O card "' + deletedCardTitle + '" foi excluído da coluna "' + deletedColName + '".');
               }
 
               for (const col of colunasDados) {

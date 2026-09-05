@@ -6,6 +6,37 @@ function cadastroView(usuario, usuarios = []) {
   const termosHTML = termosComponent(usuario);
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
 
+  const allModules = [
+      { id: 'producao', label: 'Produção' },
+      { id: 'veiculos', label: 'Veículos' },
+      { id: 'checklist', label: 'Checklist' },
+      { id: 'rotas', label: 'Rotas' },
+      { id: 'caderno', label: 'Caderno de Entregas' },
+      { id: 'envios', label: 'Envios WhatsApp' },
+      { id: 'workspaces', label: 'Workspaces' },
+      { id: 'clientes', label: 'Clientes' },
+      { id: 'downloads', label: 'Downloads' },
+      { id: 'precos', label: 'Tabela de Preços' },
+      { id: 'chapas', label: 'Chapas' },
+      { id: 'entradas_saidas', label: 'Entradas/Saídas' },
+      { id: 'diaristas', label: 'Diaristas' },
+      { id: 'pagamentos', label: 'Pagamentos' },
+      { id: 'propostas', label: 'Propostas' },
+      { id: 'gabaritos', label: 'Gabaritos' },
+      { id: 'qr_codes', label: 'QR Codes' }
+  ];
+
+  // Mapeamento dos módulos padrões que cada cargo já possui de fábrica
+  const defaultModulesByRole = {
+      'admin': allModules.map(m => m.id),
+      'logistica': ['producao', 'veiculos', 'checklist', 'rotas', 'caderno', 'envios', 'workspaces', 'clientes', 'downloads'],
+      'motorista': ['checklist', 'rotas'],
+      'financeiro': ['precos', 'chapas', 'entradas_saidas', 'producao', 'caderno', 'envios', 'diaristas', 'pagamentos', 'workspaces', 'clientes', 'downloads'],
+      'design': ['propostas', 'gabaritos', 'workspaces', 'qr_codes', 'downloads'],
+      'producao': ['chapas', 'workspaces'],
+      'comercial': ['precos', 'chapas', 'workspaces']
+  };
+
   // =========================================================================
   // CÁLCULO E CONSTRUÇÃO DO TOOLTIP DOS TERMOS ACEITOS
   // =========================================================================
@@ -64,6 +95,11 @@ function cadastroView(usuario, usuarios = []) {
 
             const cpfFormatado = applyMaskCPF(u.cpf);
             const telefoneFormatado = applyMaskPhone(u.telefone);
+            
+            // Mescla os módulos explícitos salvos no banco com os módulos nativos do cargo
+            const modulosBanco = u.modulos ? u.modulos.split(',').map(s => s.trim()) : [];
+            const modulosPadrao = defaultModulesByRole[u.tipo_usuario] || [];
+            const modulosUsuario = Array.from(new Set([...modulosBanco, ...modulosPadrao]));
 
             // Armazena atributos de busca para a filtragem dinâmica em tempo real do frontend
             const dadosBusca = `${u.nome.toLowerCase()} | ${(u.email || '').toLowerCase()} | ${(telefoneFormatado || '').toLowerCase()}`;
@@ -92,13 +128,13 @@ function cadastroView(usuario, usuarios = []) {
                       <hr class="text-muted border-custom opacity-50 mb-4">
 
                       <div class="row g-3 bg-custom-dark p-3 rounded border-custom shadow-sm">
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nome Completo</label>
                           <input type="text" name="nome" class="form-control form-control-sm shadow-sm" value="${u.nome}" required autocomplete="off">
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Tipo de Perfil</label>
-                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this)" required>
+                          <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this, true)" required>
                             <optgroup label="Acesso ao Sistema">
                                 <option value="admin" ${u.tipo_usuario === "admin" ? "selected" : ""}>Administrador</option>
                                 <option value="motorista" ${u.tipo_usuario === "motorista" ? "selected" : ""}>Motorista Padrão</option>
@@ -120,6 +156,17 @@ function cadastroView(usuario, usuarios = []) {
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">E-mail</label>
                           <input type="email" name="email" class="form-control form-control-sm shadow-sm" value="${u.email || ''}" ${emailRequired} autocomplete="new-password">
                         </div>
+                        
+                        <div class="col-12 login-field" style="${loginStyle}">
+                          <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Senha Atual</label>
+                          <div class="input-group input-group-sm shadow-sm">
+                            <input type="password" id="senhaAtualEdit${u.id}" class="form-control border-end-0 text-white-50" value="${u.senha || ''}" readonly style="background-color: #1a1a1a;">
+                            <button class="btn btn-outline-secondary border-custom bg-custom-darker border-start-0" type="button" onclick="togglePassword('senhaAtualEdit${u.id}', this)">
+                              <i class="fa-solid fa-eye text-muted"></i>
+                            </button>
+                          </div>
+                        </div>
+
                         <div class="col-12 col-md-6 login-field" style="${loginStyle}">
                           <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nova Senha</label>
                           <div class="input-group input-group-sm shadow-sm">
@@ -137,6 +184,23 @@ function cadastroView(usuario, usuarios = []) {
                               <i class="fa-solid fa-eye text-muted"></i>
                             </button>
                           </div>
+                        </div>
+
+                        <div class="col-12 login-field modulos-field mt-4" style="${loginStyle}">
+                           <h6 class="fw-bold text-muted mb-3 border-bottom border-custom pb-2" style="font-size:0.8rem;"><i class="fa-solid fa-shield-halved text-accent me-1"></i> Controle de Módulos (Acessos)</h6>
+                           <div class="row g-2">
+                             ${allModules.map(mod => {
+                                 const isChecked = modulosUsuario.includes(mod.id) ? 'checked' : '';
+                                 return `
+                                 <div class="col-6">
+                                    <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                        <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" name="modulos" value="${mod.id}" id="mod_${u.id}_${mod.id}" ${isChecked} style="width: 28px; height: 14px;">
+                                        <label class="form-check-label text-white cursor-pointer m-0 text-truncate" for="mod_${u.id}_${mod.id}" style="font-size: 0.75rem;">${mod.label}</label>
+                                    </div>
+                                 </div>
+                                 `;
+                             }).join('')}
+                           </div>
                         </div>
 
                         <div class="col-12 col-md-6 no-login-field" style="${noLoginStyle}">
@@ -160,7 +224,7 @@ function cadastroView(usuario, usuarios = []) {
                     </div>
                     <div class="modal-footer border-0 bg-custom-darker d-flex flex-nowrap pt-3">
                       <button type="button" class="btn btn-sm btn-outline-secondary text-white w-100" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
                     </div>
                   </form>
                 </div>
@@ -486,14 +550,14 @@ function cadastroView(usuario, usuarios = []) {
                   <input type="file" name="foto" id="uploadFotoNovo" class="d-none" accept="image/*" onchange="previewImage(this, 'previewFotoNovo')">
               </div>
 
-              <div class="col-12">
+              <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nome Completo</label>
                 <input type="text" name="nome" class="form-control form-control-sm shadow-sm" required placeholder="Ex: João da Silva" autocomplete="off">
               </div>
               
-              <div class="col-12">
+              <div class="col-12 col-md-6">
                 <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Perfil / Tipo de Cadastro</label>
-                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this)" required>
+                <select name="tipo_usuario" class="form-select form-select-sm shadow-sm text-white" onchange="toggleRoleFields(this, true)" required>
                   <optgroup label="Acesso ao Sistema">
                       <option value="admin">Administrador</option>
                       <option value="financeiro">Financeiro</option>
@@ -532,6 +596,22 @@ function cadastroView(usuario, usuarios = []) {
                     <i class="fa-solid fa-eye text-muted"></i>
                   </button>
                 </div>
+              </div>
+
+              <div class="col-12 login-field modulos-field mt-4">
+                 <h6 class="fw-bold text-muted mb-3 border-bottom border-custom pb-2" style="font-size:0.8rem;"><i class="fa-solid fa-shield-halved text-accent me-1"></i> Controle de Módulos (Acessos)</h6>
+                 <div class="row g-2">
+                   ${allModules.map(mod => {
+                       return `
+                       <div class="col-6">
+                          <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                              <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" name="modulos" value="${mod.id}" id="mod_novo_${mod.id}" style="width: 28px; height: 14px;">
+                              <label class="form-check-label text-white cursor-pointer m-0 text-truncate" for="mod_novo_${mod.id}" style="font-size: 0.75rem;">${mod.label}</label>
+                          </div>
+                       </div>
+                       `;
+                   }).join('')}
+                 </div>
               </div>
 
               <div class="col-12 col-md-6 no-login-field" style="display: none;">
@@ -598,6 +678,19 @@ function cadastroView(usuario, usuarios = []) {
     <script src="./script/checkLogin.js"></script>
 
     <script>
+        // =======================================================================
+        // MÓDULOS DE PERFIL (Para controle via JS no formulário de inclusão/edição)
+        // =======================================================================
+        const defaultModulesMap = {
+            'admin': ${JSON.stringify(allModules.map(m => m.id))},
+            'logistica': ['producao', 'veiculos', 'checklist', 'rotas', 'caderno', 'envios', 'workspaces', 'clientes', 'downloads'],
+            'motorista': ['checklist', 'rotas'],
+            'financeiro': ['precos', 'chapas', 'entradas_saidas', 'producao', 'caderno', 'envios', 'diaristas', 'pagamentos', 'workspaces', 'clientes', 'downloads'],
+            'design': ['propostas', 'gabaritos', 'workspaces', 'qr_codes', 'downloads'],
+            'producao': ['chapas', 'workspaces'],
+            'comercial': ['precos', 'chapas', 'workspaces']
+        };
+
         // =======================================================================
         // INICIALIZAÇÃO DE TOOLTIPS NATIVOS DO BOOTSTRAP
         // =======================================================================
@@ -772,7 +865,7 @@ function cadastroView(usuario, usuarios = []) {
             return v;
         }
 
-        function toggleRoleFields(selectEl) {
+        function toggleRoleFields(selectEl, isUserInteraction = false) {
             const form = selectEl.closest('form');
             const isNoLogin = ['motorista_avulso', 'ajudante', 'diarista'].includes(selectEl.value);
             
@@ -800,11 +893,20 @@ function cadastroView(usuario, usuarios = []) {
                     if (confirmaInput) confirmaInput.setAttribute('required', 'true');
                 }
             }
+            
+            // Auto-marcação de módulos baseado na escolha do perfil se houver interação do Admin
+            if (isUserInteraction) {
+                const role = selectEl.value;
+                const defMods = defaultModulesMap[role] || [];
+                form.querySelectorAll('input[name="modulos"]').forEach(chk => {
+                    chk.checked = defMods.includes(chk.value);
+                });
+            }
         }
 
         function initRoleToggles() {
             document.querySelectorAll('select[name="tipo_usuario"]').forEach(select => {
-                toggleRoleFields(select);
+                toggleRoleFields(select, false);
             });
         }
         window.addEventListener('load', initRoleToggles);

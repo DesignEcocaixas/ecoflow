@@ -298,6 +298,7 @@ io.on("connection", (socket) => {
     });
 
     //CRIAR CARD
+    //CRIAR CARD
     socket.on("novo_card", (dados) => {
         db.query("INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem) VALUES (?, ?, ?, 999)",
             [dados.colunaId, dados.titulo, dados.descricao], (err, result) => {
@@ -307,6 +308,9 @@ io.on("connection", (socket) => {
                 const usuarioCriador = dados.usuario || 'Sistema';
 
                 db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Card Criado', ?)", [newId, usuarioCriador]);
+                
+                // Lança para o Menu Lateral
+                db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioCriador} criou o card: "${dados.titulo}"`]);
 
                 db.query("SELECT * FROM kanban_cards WHERE id = ?", [newId], (err, rows) => {
                     if(rows && rows.length > 0) {
@@ -335,6 +339,11 @@ io.on("connection", (socket) => {
                 "INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, ?)",
                 [dados.cardId, acaoTexto, dados.usuario || 'Sistema']
             );
+            
+            // Notifica apenas se houver mudança de coluna (evita spam na reordenação visual)
+            if (dados.nomeColuna) {
+                await db.promise().query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${dados.usuario || 'Sistema'} moveu um card para a coluna "${dados.nomeColuna}"`]);
+            }
 
             io.emit('card_movido', dados);
 
@@ -378,6 +387,9 @@ io.on("connection", (socket) => {
             const acao = dados.concluido ? "Marcado como Concluído" : "Informações atualizadas";
             db.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, ?)",
                 [dados.id, acao, dados.usuario || 'Sistema']);
+                
+            // Lança para o Menu Lateral
+            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${dados.usuario || 'Sistema'} atualizou o card: "${dados.titulo}"`]);
         });
     });
 
@@ -388,6 +400,10 @@ io.on("connection", (socket) => {
 
         db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
             if (err) return console.error(err);
+            
+            // Lança para o Menu Lateral
+            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuario} excluiu um card do Kanban`]);
+            
             io.emit("card_deletado", { id: cardId, usuario: usuario });
         });
     });

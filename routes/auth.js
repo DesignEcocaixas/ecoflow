@@ -43,7 +43,13 @@ router.post("/login", (req, res) => {
                 nome: user.nome,
                 tipo_usuario: user.tipo_usuario,
                 foto: user.foto,
-                termos_aceitos: user.termos_aceitos
+                termos_aceitos: user.termos_aceitos,
+                email: user.email,
+                cpf: user.cpf,
+                telefone: user.telefone,
+                pix: user.pix,
+                banco: user.banco,
+                modulos: user.modulos // <--- ADICIONE ESTA LINHA AQUI
             };
 
             return res.redirect("/home");

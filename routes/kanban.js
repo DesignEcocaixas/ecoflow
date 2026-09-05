@@ -16,7 +16,7 @@ const kanbanView = require("../views/kanbanView");
 //LISTAR COLUNAS/CARDS E ETIQUETAS
 router.get("/kanban", isLogged, (req, res) => {
     const espaco_id = req.query.espaco_id;
-    const user = req.session.user; // Obtém o usuário logado
+    const user = req.session.user;
 
     if (!espaco_id) {
         return res.redirect("/espacos-trabalho");
@@ -27,7 +27,7 @@ router.get("/kanban", isLogged, (req, res) => {
         const espacoAtual = espacosResult[0];
 
         // =====================================================================
-        // 🚨 VERIFICAÇÃO DE SEGURANÇA (BLOQUEIO POR URL)
+        // VERIFICAÇÃO DE SEGURANÇA (BLOQUEIO POR URL)
         // =====================================================================
         const userRole = user.tipo_usuario || 'admin';
         
@@ -46,20 +46,15 @@ router.get("/kanban", isLogged, (req, res) => {
                           permAtuais.includes('usr_' + user.id);
 
         if (!hasAccess) {
-            // Expulsa o usuário caso ele tente forçar o ID pela barra de pesquisa
             return res.redirect("/espacos-trabalho?erro=acesso_negado");
         }
-        // =====================================================================
 
-        // Busca os colaboradores para popular os selects de "Operador" na View
         db.query("SELECT id, nome, tipo_usuario, foto FROM usuarios", (errUsu, colaboradoresResult) => {
             const listaColaboradores = colaboradoresResult || [];
 
-            // 1. Busca as etiquetas deste espaço
             db.query("SELECT * FROM kanban_etiquetas WHERE espaco_id = ?", [espaco_id], (err, etiquetas) => {
                 espacoAtual.etiquetas = etiquetas || [];
 
-                // 2. Busca as colunas
                 db.query("SELECT * FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [espaco_id], (err, colunas) => {
                     if (err) return res.status(500).send("Erro ao carregar colunas.");
 
@@ -69,7 +64,6 @@ router.get("/kanban", isLogged, (req, res) => {
 
                     const idsColunas = colunas.map(c => c.id);
 
-                    // 3. Busca os cards
                     db.query("SELECT * FROM kanban_cards WHERE coluna_id IN (?) ORDER BY ordem ASC", [idsColunas], (errCards, cards) => {
                         if (errCards) return res.status(500).send("Erro ao carregar cards.");
 
@@ -79,7 +73,6 @@ router.get("/kanban", isLogged, (req, res) => {
                             return res.send(kanbanView(req.session.user, colunas, espacoAtual, [], listaColaboradores));
                         }
 
-                        // 4. Busca os anexos e as relações de etiquetas simultaneamente
                         db.query("SELECT * FROM kanban_anexos WHERE card_id IN (?)", [idsCards], (errAnexos, anexos) => {
                             db.query("SELECT * FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsCards], (errEtiquetasCards, relacoes) => {
 
@@ -92,7 +85,6 @@ router.get("/kanban", isLogged, (req, res) => {
                                     card.etiquetas = espacoAtual.etiquetas.filter(e => idsEtiquetasDesteCard.includes(e.id));
                                 });
 
-                                // LÓGICA DE LIMPEZA E AVISOS (EXCLUSÃO DINÂMICA AUTOMÁTICA)
                                 const now = new Date();
                                 const cardsParaDeletar = [];
                                 const avisosExclusao = [];
@@ -100,7 +92,6 @@ router.get("/kanban", isLogged, (req, res) => {
                                 colunas.forEach(col => {
                                     let cardsDaColuna = cards.filter(c => c.coluna_id === col.id);
 
-                                    // Se a coluna tiver uma regra de exclusão definida
                                     if (col.dias_exclusao && col.dias_exclusao > 0) {
                                         cardsDaColuna = cardsDaColuna.filter(card => {
                                             const dataCriacao = new Date(card.criado_em);
@@ -307,7 +298,6 @@ router.post("/kanban/colunas/:id/limpar", isLogged, async (req, res) => {
             await db.promise().query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsDeletar]);
         }
 
-        // DEVOLVE OS IDS APAGADOS PARA ATUALIZAR O FRONT-END SEM RECARREGAR
         res.json({ success: true, deletados: cards.length, ids: idsDeletar });
     } catch (error) {
         console.error("Erro ao limpar cards manualmente:", error);
@@ -419,6 +409,11 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
             console.error("Erro ao salvar anexos:", err);
             return res.status(500).send("Erro ao guardar anexo.");
         }
+        
+        // Dispara a Notificação de Anexo
+        const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
+        db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} adicionou novo(s) anexo(s) em um card do Kanban`]);
+
         res.json({ success: true, message: "Anexos salvos com sucesso!" });
     });
 });
@@ -439,6 +434,11 @@ router.delete("/kanban/anexos/:id", isLogged, (req, res) => {
 
         db.query("DELETE FROM kanban_anexos WHERE id = ?", [anexoId], (deleteErr) => {
             if (deleteErr) return res.status(500).send("Erro ao excluir registro do banco");
+            
+            // Dispara a Notificação de Exclusão
+            const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
+            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} removeu um anexo de um card do Kanban`]);
+            
             res.json({ success: true });
         });
     });

@@ -1,10 +1,10 @@
 // views/controlePagamentosView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
 function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], cadernos = [], filtros = {}, paginacao = {}, taxas = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario); 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
@@ -1234,7 +1234,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                           };
                       }
                       colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                      colaboradoresPagamentos[mot.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valMot));
+                      colaboradoresPagamentos[mot.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valMot));
                       colaboradoresPagamentos[mot.nome].total += valMot;
                   }
               }
@@ -1252,38 +1252,41 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                       };
                   }
                   colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                  colaboradoresPagamentos[aju.nome].registros.push("> " + c.data_formatada + " - R$ " + fmtM(valAju));
+                  colaboradoresPagamentos[aju.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valAju));
                   colaboradoresPagamentos[aju.nome].total += valAju;
               }
           });
 
-          // Usar array em vez de concatenação pesada com "\\n" evita corrupção de caracteres
+          // Uso de array limpo com marcadores amigáveis à URL
           const linhasMsg = [];
-          linhasMsg.push("Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow");
+          linhasMsg.push("*Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow*");
           linhasMsg.push("");
 
           Object.keys(colaboradoresPagamentos).forEach(nome => {
               const d = colaboradoresPagamentos[nome];
               
-              linhasMsg.push("[ " + d.tipo + ": " + nome + " ]");
-              d.rotas.forEach(r => linhasMsg.push(r));
+              linhasMsg.push("📌 *[" + d.tipo + ": " + nome + "]*");
+              d.rotas.forEach(r => linhasMsg.push("• " + r));
               linhasMsg.push("");
               
-              linhasMsg.push("Resumo de Registros:");
-              d.registros.forEach(r => linhasMsg.push(r));
+              linhasMsg.push("*Resumo de Registros:*");
+              d.registros.forEach(r => {
+                  let regLimpo = r.replace('>', '-');
+                  linhasMsg.push("• " + regLimpo);
+              });
               
-              linhasMsg.push("Dados Bancários:");
-              linhasMsg.push("> PIX: " + (d.pix || "Não cadastrado"));
-              linhasMsg.push("> Banco: " + (d.banco || "Não cadastrado"));
-              linhasMsg.push("> CPF: " + (d.cpf || "Não cadastrado"));
-              linhasMsg.push("> TOTAL A PAGAR: R$ " + fmtM(d.total));
+              linhasMsg.push("*Dados Bancários:*");
+              linhasMsg.push("PIX: " + (d.pix || "Não cadastrado"));
+              linhasMsg.push("Banco: " + (d.banco || "Não cadastrado"));
+              linhasMsg.push("CPF: " + (d.cpf || "Não cadastrado"));
+              linhasMsg.push("*TOTAL A PAGAR: R$ " + fmtM(d.total) + "*");
               
               linhasMsg.push("");
-              linhasMsg.push("--------------------------------------------------------");
+              linhasMsg.push("----------------------------------------");
               linhasMsg.push("");
           });
 
-          // Join nativo é seguro em qualquer navegador ou ambiente
+          // Aqui está a correção: uso de \\n para injetar o caracter de escape na string final gerada
           const msgFinal = encodeURIComponent(linhasMsg.join("\\n"));
           const url = "https://wa.me/" + NUMERO_WPP + "?text=" + msgFinal;
           

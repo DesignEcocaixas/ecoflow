@@ -660,7 +660,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           <li class="px-3 py-2 border-bottom border-custom">
                               <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                                   <input class="form-check-input cursor-pointer m-0" type="checkbox" id="percasSwitch" onchange="togglePercasWorkspace(this.checked)" ${espacoAtual.percas_ativo ? 'checked' : ''} style="width: 32px; height: 16px;">
-                                  <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas</label>
+                                  <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas(Produção)</label>
                               </div>
                           </li>
                           <li class="px-3 py-2 border-bottom border-custom">

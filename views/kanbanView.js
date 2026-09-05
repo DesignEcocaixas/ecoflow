@@ -1040,6 +1040,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               window.lastNotificationTime = now;
               window.lastNotificationMsg = msg;
               
+              // Se não for um erro literal ou exclusão (deleção tem vermelho explícito ou 'info' customizado), forçamos 'sucesso' para que o balão suba verde e agradável.
+              if (tipo === 'info' && titulo !== 'Card Excluído') {
+                  tipo = 'sucesso';
+              }
+              
               mostrarToast(tipo, titulo, msg);
               if ("Notification" in window && Notification.permission === "granted") {
                   new Notification(titulo, { body: msg, icon: '/img/favicon.ico' });
@@ -1051,7 +1056,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               window.renderizarKanban();
           };
 
-          // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL EVITANDO ERROS DE REFERENCE
           window.limparCardsColuna = async function(colId) {
               const input = document.getElementById('input_limpeza_col_' + colId);
               if (!input) return;
@@ -1178,7 +1182,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
 
           document.addEventListener('DOMContentLoaded', () => {
-              // INICIALIZAÇÃO TEMA E WALLPAPER E MODAL DE AVISO
               const savedTheme = localStorage.getItem('kanbanTheme');
               const themeSwitch = document.getElementById('themeSwitch');
               
@@ -1193,7 +1196,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   Notification.requestPermission();
               }
 
-              // Disparo do Modal de Limpeza (Se Houver)
               ${avisosExclusao.length > 0 ? `
               setTimeout(() => {
                   const m = new bootstrap.Modal(document.getElementById('modalAvisoExclusao'));
@@ -1216,7 +1218,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   iniciarArrastoMouse();
               }, 150);
 
-              // Lógica Global de Checkboxes na Descrição
               const descEl = document.getElementById('modalCardDescricao');
               if (descEl) {
                   descEl.addEventListener('change', function(e) {
@@ -1335,17 +1336,16 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
           };
 
-          // EXCLUSÃO AUTOMÁTICA GERAL (MODAL GLOBAL)
           window.toggleDiasExclusao = function(colId, isChecked) {
               const input = document.getElementById('input_col_' + colId);
               if (input) {
                   if (isChecked) {
                       input.disabled = false;
-                      if (!input.value) input.value = 30; // Sugestão padrão
+                      if (!input.value) input.value = 30; 
                       input.focus();
                   } else {
                       input.disabled = true;
-                      input.value = ''; // Limpa para submeter desativado
+                      input.value = ''; 
                   }
               }
           };
@@ -1353,7 +1353,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.salvarExclusaoAutomatica = async function(event, form) {
               event.preventDefault();
               
-              // Habilita inputs temporariamente e seta zero nos desabilitados/vazios para apagar a regra no DB
               const inputs = form.querySelectorAll('input[type="number"]');
               inputs.forEach(i => {
                   if (i.disabled || !i.value) {
@@ -1459,7 +1458,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (nome) {
                   socket.emit('nova_etiqueta', { nome, cor, espaco_id });
                   document.getElementById('inputNomeEtiqueta').value = '';
-                  // A view não é atualizada instantaneamente no local, espera o retorno do WebSocket para evitar duplicação
                   mostrarToast('sucesso', 'A Guardar', 'A etiqueta está a ser processada.');
               }
           };
@@ -2597,7 +2595,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (Date.now() - (window.ultimoCardMovidoPorMim || 0) > 2000) {
                   window.playUIFeedback('move');
                   if (movedCard && dados.usuario && dados.usuario !== NOME_USUARIO) {
-                      window.dispararNotificacaoGlobal('info', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para "' + dados.nomeColuna + '".');
+                      window.dispararNotificacaoGlobal('sucesso', 'Card Movido', dados.usuario + ' moveu o card "' + (movedCard.titulo || 'Sem Título') + '" para "' + dados.nomeColuna + '".');
                   }
               }
               
@@ -2649,7 +2647,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   const statusTxt = isConcluidoStatus ? 'concluiu' : 'desmarcou';
                   const userTxt = dados.usuario ? dados.usuario : 'Um colega';
-                  window.dispararNotificacaoGlobal('info', 'Status Atualizado', userTxt + ' ' + statusTxt + ' a tarefa "' + cardOriginalTitle + '".');
+                  window.dispararNotificacaoGlobal('sucesso', 'Status Atualizado', userTxt + ' ' + statusTxt + ' a tarefa "' + cardOriginalTitle + '".');
               }
               
               if (cardAbertoId == dados.id) {
@@ -2714,7 +2712,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               if (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000) {
                   window.playUIFeedback('delete');
-                  window.dispararNotificacaoGlobal('info', 'Card Excluído', usuarioAcao + ' excluiu o card "' + deletedCardTitle + '" da coluna "' + deletedColName + '".');
+                  // Exclusão é a única ação que deve manter a notificação vermelha (info convertida para erro)
+                  window.dispararNotificacaoGlobal('erro', 'Card Excluído', usuarioAcao + ' excluiu o card "' + deletedCardTitle + '" da coluna "' + deletedColName + '".');
               }
 
               for (const col of colunasDados) {

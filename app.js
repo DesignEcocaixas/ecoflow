@@ -340,9 +340,12 @@ io.on("connection", (socket) => {
                 [dados.cardId, acaoTexto, dados.usuario || 'Sistema']
             );
             
-            // Notifica apenas se houver mudança de coluna (evita spam na reordenação visual)
+            // Notifica com o título do card
             if (dados.nomeColuna) {
-                await db.promise().query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${dados.usuario || 'Sistema'} moveu um card para a coluna "${dados.nomeColuna}"`]);
+                const [cardData] = await db.promise().query("SELECT titulo FROM kanban_cards WHERE id = ?", [dados.cardId]);
+                const tituloCard = cardData.length > 0 ? cardData[0].titulo : "um card";
+                
+                await db.promise().query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${dados.usuario || 'Sistema'} moveu o card "${tituloCard}" para a coluna "${dados.nomeColuna}"`]);
             }
 
             io.emit('card_movido', dados);
@@ -398,13 +401,18 @@ io.on("connection", (socket) => {
         const cardId = typeof dados === 'object' ? dados.id : dados;
         const usuario = typeof dados === 'object' && dados.usuario ? dados.usuario : 'Um colega';
 
-        db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
-            if (err) return console.error(err);
-            
-            // Lança para o Menu Lateral
-            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuario} excluiu um card do Kanban`]);
-            
-            io.emit("card_deletado", { id: cardId, usuario: usuario });
+        // Busca o título antes de excluir o registro do banco
+        db.query("SELECT titulo FROM kanban_cards WHERE id = ?", [cardId], (errSel, results) => {
+            const tituloCard = (results && results.length > 0) ? results[0].titulo : "um card";
+
+            db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
+                if (err) return console.error(err);
+                
+                // Lança a notificação com o título recuperado
+                db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuario} excluiu o card "${tituloCard}"`]);
+                
+                io.emit("card_deletado", { id: cardId, usuario: usuario });
+            });
         });
     });
 

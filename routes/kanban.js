@@ -410,9 +410,12 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
             return res.status(500).send("Erro ao guardar anexo.");
         }
         
-        // Dispara a Notificação de Anexo
-        const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
-        db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} adicionou novo(s) anexo(s) em um card do Kanban`]);
+        // Dispara a Notificação de Anexo com o Título
+        db.query("SELECT titulo FROM kanban_cards WHERE id = ?", [cardId], (errSel, rows) => {
+            const tituloCard = (rows && rows.length > 0) ? rows[0].titulo : "um card";
+            const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
+            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} anexou arquivo(s) no card "${tituloCard}"`]);
+        });
 
         res.json({ success: true, message: "Anexos salvos com sucesso!" });
     });
@@ -422,10 +425,11 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
 router.delete("/kanban/anexos/:id", isLogged, (req, res) => {
     const anexoId = req.params.id;
 
-    db.query("SELECT * FROM kanban_anexos WHERE id = ?", [anexoId], (err, results) => {
+    db.query("SELECT card_id, nome_arquivo FROM kanban_anexos WHERE id = ?", [anexoId], (err, results) => {
         if (err || results.length === 0) return res.status(404).send("Anexo não encontrado");
 
         const anexo = results[0];
+        const cardId = anexo.card_id;
         const filePath = path.join(__dirname, "uploads", anexo.nome_arquivo);
 
         if (fs.existsSync(filePath)) {
@@ -435,9 +439,12 @@ router.delete("/kanban/anexos/:id", isLogged, (req, res) => {
         db.query("DELETE FROM kanban_anexos WHERE id = ?", [anexoId], (deleteErr) => {
             if (deleteErr) return res.status(500).send("Erro ao excluir registro do banco");
             
-            // Dispara a Notificação de Exclusão
-            const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
-            db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} removeu um anexo de um card do Kanban`]);
+            // Dispara a Notificação de Exclusão com o Título
+            db.query("SELECT titulo FROM kanban_cards WHERE id = ?", [cardId], (errSel, rows) => {
+                const tituloCard = (rows && rows.length > 0) ? rows[0].titulo : "um card";
+                const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
+                db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} removeu um anexo do card "${tituloCard}"`]);
+            });
             
             res.json({ success: true });
         });

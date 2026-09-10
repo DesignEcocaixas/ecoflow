@@ -109,7 +109,8 @@ client.initialize().catch(err => {
     console.error('[WHATSAPP] 🔥 Erro fatal ao inicializar o Puppeteer:', err.message);
 });
 
-const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente') => {
+// FUNÇÃO DE ENVIO REESCRITA COM RETRY E RESPIRAÇÃO (PREVENÇÃO DE DETACHED FRAME)
+const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
         return false;
@@ -123,6 +124,11 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente') => {
             numeroLimpo = '55' + numeroLimpo;
         }
 
+        // 🛡️ Delay de Respiração do Puppeteer:
+        // Aguarda entre 1 e 2 segundos aleatórios para o DOM do WhatsApp Web estabilizar
+        // antes de iniciar a busca pelo ID do contato.
+        await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 1000) + 1000));
+
         const numberId = await client.getNumberId(numeroLimpo);
         
         let chatId;
@@ -132,11 +138,25 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente') => {
             chatId = numeroLimpo + "@c.us";
         }
 
+        // 🛡️ Segundo tempo de respiração antes de injetar o texto no input invisível
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         await client.sendMessage(chatId, mensagem);
         // ✨ Aqui alteramos para enviar o Nome do Cliente e o Número original para o log do Front ler
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return true;
     } catch (error) {
+        // 🛡️ Mecanismo de Retry em caso de Detached Frame
+        if (error.message && error.message.includes('detached Frame') && tentativa < 3) {
+            registrarLogTerminal(`⚠️ Frame instável detectado para ${nomeCliente}. Recarregando DOM... (Tentativa ${tentativa + 1}/3)`);
+            
+            // Aguarda 3 segundos inteiros antes de tentar de novo para o WhatsApp Web terminar suas animações/redesenhos
+            await new Promise(resolve => setTimeout(resolve, 3000)); 
+            
+            // Tenta enviar de novo aumentando o contador
+            return await enviarMensagem(numero, mensagem, nomeCliente, tentativa + 1);
+        }
+
         // ✨ Garantir que o erro também contenha a nova formatação
         registrarLogTerminal(`❌ Erro crítico ao enviar para: ${nomeCliente} | ${numero} - ${error.message}`);
         return false;

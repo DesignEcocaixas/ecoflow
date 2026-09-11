@@ -386,7 +386,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                         </div>
                         <div class="col-6">
                             <label class="text-white-50 small fw-bold mb-1">Contato</label>
-                            <input type="text" id="modalLogContatoInput" class="form-control form-control-sm bg-custom-darker border-custom text-white fw-medium shadow-sm" style="font-size: 0.85rem;" readonly>
+                            <input type="text" id="modalLogContatoInput" class="form-control form-control-sm bg-custom-darker border-custom text-white fw-medium shadow-sm" style="font-size: 0.85rem;" oninput="maskCelular(this)" maxlength="15" readonly>
                         </div>
                         <div class="col-6">
                             <label class="text-white-50 small fw-bold mb-1">Data e Horário</label>
@@ -557,7 +557,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       }
 
       // ==========================================
-      // LÓGICA DE SONS UI/UX
+      // LÓGICA DE SONS UI/UX E MÁSCARAS
       // ==========================================
       window.playUIFeedback = function(type) {
           try {
@@ -578,6 +578,14 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               console.log('Áudio não suportado', e);
           }
       };
+
+      function maskCelular(i) {
+          let v = i.value.replace(/\\D/g, '');
+          if (v.length > 11) v = v.substring(0, 11);
+          v = v.replace(/^(\\d{2})(\\d)/g, "($1) $2");
+          v = v.replace(/(\\d)(\\d{4})$/, "$1-$2");
+          i.value = v;
+      }
 
       // ==========================================
       // CONTROLE INTELIGENTE DO BOTÃO DE DISPARO
@@ -736,7 +744,19 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               document.getElementById('modalLogCliente').innerText = (log.cliente || '-').toUpperCase();
               
               const inputContato = document.getElementById('modalLogContatoInput');
-              inputContato.value = log.contato || '-';
+              
+              // Remove DDI e aplica máscara se for formato padrão
+              let numContato = log.contato || '';
+              let apenasNumeros = numContato.replace(/\\D/g, '');
+              if (apenasNumeros.startsWith('55') && apenasNumeros.length >= 12) {
+                  apenasNumeros = apenasNumeros.substring(2);
+              }
+              if (apenasNumeros) {
+                  inputContato.value = apenasNumeros;
+                  maskCelular(inputContato);
+              } else {
+                  inputContato.value = '-';
+              }
               
               let dataFmt = '-';
               if (log.data_envio) {
@@ -766,7 +786,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   btnReenviar.classList.remove('d-none');
               }
               
-              document.getElementById('modalLogMensagem').innerText = log.mensagem || 'Informação legada não registrada no banco de dados.';
+              document.getElementById('modalLogMensagem').innerText = log.mensagem || 'O texto exato da mensagem não foi registrado para este envio antigo.';
               
               const modalDetalhes = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
               modalDetalhes.show();

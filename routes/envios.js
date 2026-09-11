@@ -62,14 +62,24 @@ router.get("/envios-whatsapp", async (req, res) => {
 });
 
 // 2. ENDPOINT DE MONITORAMENTO (POLLING DO MODAL) - ATUALIZADO
-router.get("/api/whatsapp/status-monitor", (req, res) => {
+router.get("/api/whatsapp/status-monitor", async (req, res) => {
     if (!req.session.user) return res.status(401).json({ erro: "Não autorizado" });
     
     // Pega o snapshot atual de logs e qr code
     const dadosMonitor = whatsappService.obterDadosMonitor();
-    
-    // Força o status 'isReady' a bater rigorosamente com a verificação oficial do cliente
     dadosMonitor.isReady = whatsappService.verificarReady();
+    
+    try {
+        // Puxa as últimas 15 mensagens do banco para renderizar a tabela com perfeição e sem falhas
+        const [dbLogs] = await db.promise().query(`
+            SELECT * FROM whatsapp_logs_envio 
+            ORDER BY data_envio DESC LIMIT 15
+        `);
+        dadosMonitor.dbLogs = dbLogs;
+    } catch (err) {
+        console.error("Erro ao buscar logs para o monitor:", err);
+        dadosMonitor.dbLogs = [];
+    }
     
     return res.json(dadosMonitor);
 });
@@ -84,18 +94,14 @@ router.post("/api/whatsapp/desconectar", async (req, res) => {
         if (targetClient) {
             console.log("[WHATSAPP PAINEL] 🔌 Desconectando sessão via painel administrativo...");
             
-            // 1. Força a limpeza das variáveis globais e estados na memória do Node imediatamente
             whatsappService.forcarResetEstadoManual();
 
-            // 2. Executa o logout no WhatsApp Web
             await targetClient.logout().catch(() => {
                 console.log("[WHATSAPP PAINEL] Aviso: Sessão já estava inativa ou sem autenticação.");
             });
             
-            // 3. Aguarda 2.5 segundos para o Puppeteer matar os subprocessos do Chrome/Chromium
             await new Promise(resolve => setTimeout(resolve, 2500));
             
-            // 4. Inicializa o cliente do WhatsApp do zero para gerar um novo QR Code limpo
             console.log("[WHATSAPP PAINEL] ⚙️ Reinicializando Puppeteer para capturar novo QR Code...");
             targetClient.initialize().catch(errInit => {
                 console.error(`[WHATSAPP PAINEL] ❌ Erro ao inicializar após logout: ${errInit.message}`);
@@ -118,12 +124,10 @@ router.post("/api/whatsapp/hard-reset", async (req, res) => {
     try {
         console.log("[WHATSAPP PAINEL] ⚠️ HARD RESET INICIADO! Destruindo cliente e apagando cache...");
         
-        // 1. Destrói o cliente atual para liberar os arquivos bloqueados pelo navegador
         if (whatsappService.client) {
             await whatsappService.client.destroy().catch(() => console.log("Cliente já estava inativo."));
         }
         
-        // 2. Apaga a pasta .wwebjs_auth e .wwebjs_cache
         const authPath = path.join(process.cwd(), '.wwebjs_auth');
         const cachePath = path.join(process.cwd(), '.wwebjs_cache');
         
@@ -136,10 +140,8 @@ router.post("/api/whatsapp/hard-reset", async (req, res) => {
             console.log("[WHATSAPP PAINEL] 🗑️ Pasta .wwebjs_cache apagada com sucesso.");
         }
 
-        // 3. Responde ao frontend antes de reiniciar (para o painel não dar erro de timeout)
         res.status(200).json({ success: true, message: "Hard Reset concluído. O PM2 reiniciará o serviço." });
 
-        // 4. Força o encerramento do processo do Node. O PM2 na VPS detectará a queda e reiniciará o app instantaneamente, de forma limpa.
         setTimeout(() => {
             console.log("♻️ Reiniciando o processo via PM2...");
             process.exit(1); 
@@ -160,11 +162,9 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
         return res.status(400).send("Nenhum manifesto selecionado.");
     }
 
-    // Processamento assíncrono em background
     (async () => {
         for (let cadernoId of ids) {
             try {
-                // 1. ADICIONADO: ch.contato_secundario na consulta SQL
                 const [itens] = await db.promise().query(`
                     SELECT i.local_entrega, i.itens_pedido, i.quantidade, i.valor_aberto, ch.contato, ch.contato_secundario 
                     FROM caderno_entregas_itens i
@@ -176,7 +176,6 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
                 for (let i = 0; i < itens.length; i++) {
                     const cliente = itens[i];
                     
-                    // Verifica quais contatos o cliente possui e os adiciona a uma lista
                     const contatosValidos = [];
                     if (cliente.contato && cliente.contato.trim() !== '') {
                         contatosValidos.push(cliente.contato.trim());
@@ -185,13 +184,11 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
                         contatosValidos.push(cliente.contato_secundario.trim());
                     }
 
-                    // Se não tiver nenhum número cadastrado, pula para o próximo cliente
                     if (contatosValidos.length === 0) {
                         console.log(`[WHATSAPP] ⚠️ Nenhum contato encontrado para: ${cliente.local_entrega}. Pulando...`);
                         continue;
                     }
 
-                    // Formata a lista de itens
                     let listaItensFormatada = '';
                     const itensTexto = cliente.itens_pedido || '';
                     if (itensTexto.trim() !== '' && itensTexto.trim() !== '-') {
@@ -207,23 +204,29 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
 
                     const mensagem = `Olá, *${(cliente.local_entrega || '').toUpperCase()}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *${i + 1}ª parada*.\n\n*📋 Relação de Itens:*\n${listaItensFormatada}\n*🔢 Quantidade Total:* ${cliente.quantidade || '-'}\n\n*💰 Valor a Receber:* R$ ${valorFmt}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
 
-                    // 2. ADICIONADO: Loop para enviar a mensagem para cada contato cadastrado
                     for (let numero of contatosValidos) {
-                        // Enviamos o local_entrega como nomeCliente para formatar bonito no painel
-                        const disparou = await whatsappService.enviarMensagem(numero, mensagem, cliente.local_entrega);
+                        
+                        let disparou = false;
+                        let msgErro = null;
 
-                        // Registra o envio (ou falha) individualmente no banco de dados
+                        try {
+                            disparou = await whatsappService.enviarMensagem(numero, mensagem, cliente.local_entrega);
+                            if (!disparou) msgErro = "Falha silenciosa ou serviço indisponível.";
+                        } catch (errDisparo) {
+                            disparou = false;
+                            msgErro = errDisparo.message || "Erro desconhecido ao disparar.";
+                        }
+
+                        // INSERE A MENSAGEM NO BANCO DE DADOS
                         await db.promise().query(`
-                            INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso) 
-                            VALUES (?, ?, ?, ?)
-                        `, [cadernoId, cliente.local_entrega, numero, disparou ? 1 : 0]);
+                            INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso, erro, mensagem) 
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        `, [cadernoId, cliente.local_entrega, numero, disparou ? 1 : 0, msgErro, mensagem]);
 
-                        // Aguarda 2,5s entre mensagens para o WhatsApp não bloquear como spam
                         await new Promise(resolve => setTimeout(resolve, 2500));
                     }
                 }
 
-                // Automação: Marca o caderno automaticamente como enviado (whatsapp_ativo = 0) ao finalizar
                 await db.promise().query(
                     "UPDATE caderno_entregas SET whatsapp_ativo = 0 WHERE id = ?",
                     [cadernoId]
@@ -264,6 +267,108 @@ router.post("/api/cadernos/atualizar-status-envio", async (req, res) => {
     } catch (error) {
         console.error("[ERRO SQL ATUALIZAR STATUS ENVIO CADERNO]:", error);
         return res.status(500).json({ success: false, error: "Erro ao atualizar o banco de dados." });
+    }
+});
+
+// 6. REENVIAR MENSAGEM COM ERRO COM NOVO CONTATO
+router.post("/api/whatsapp/reenviar", async (req, res) => {
+    if (!req.session.user) return res.sendStatus(401);
+
+    const { log_id, novo_numero } = req.body;
+
+    if (!log_id || !novo_numero) {
+        return res.status(400).json({ success: false, error: "Dados incompletos para o reenvio." });
+    }
+
+    try {
+        const [logs] = await db.promise().query("SELECT * FROM whatsapp_logs_envio WHERE id = ?", [log_id]);
+        if (logs.length === 0) return res.status(404).json({ success: false, error: "Registro original não encontrado." });
+
+        const logOriginal = logs[0];
+
+        let disparou = false;
+        let msgErro = null;
+
+        try {
+            disparou = await whatsappService.enviarMensagem(novo_numero, logOriginal.mensagem, logOriginal.cliente);
+            if (!disparou) msgErro = "Falha silenciosa ou serviço indisponível.";
+        } catch (errDisparo) {
+            disparou = false;
+            msgErro = errDisparo.message || "Erro desconhecido ao disparar.";
+        }
+
+        await db.promise().query(`
+            INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso, erro, mensagem) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [logOriginal.caderno_id, logOriginal.cliente, novo_numero, disparou ? 1 : 0, msgErro, logOriginal.mensagem]);
+
+        if (disparou) {
+            return res.status(200).json({ success: true, message: "Mensagem reenviada com sucesso!" });
+        } else {
+            return res.status(400).json({ success: false, error: msgErro });
+        }
+
+    } catch (error) {
+        console.error("[ERRO REENVIO WHATSAPP]:", error);
+        return res.status(500).json({ success: false, error: "Erro interno no servidor." });
+    }
+});
+
+// 7. NOVO ENDPOINT: BUSCAR DETALHES DO CADERNO (PARA O MODAL) COM O VEÍCULO INCLUSO
+router.get("/api/cadernos/:id/detalhes", async (req, res) => {
+    if (!req.session.user) return res.status(401).json({ success: false, erro: "Não autorizado" });
+    
+    const cadernoId = req.params.id;
+
+    try {
+        const [cadernos] = await db.promise().query(`
+            SELECT c.*, 
+                   um.foto as motorista_foto, 
+                   ua.foto as ajudante_foto 
+            FROM caderno_entregas c
+            LEFT JOIN usuarios um ON c.motorista = um.nome
+            LEFT JOIN usuarios ua ON c.ajudante = ua.nome
+            WHERE c.id = ?
+        `, [cadernoId]);
+
+        if (cadernos.length === 0) {
+            return res.status(404).json({ success: false, erro: "Manifesto não encontrado." });
+        }
+
+        const caderno = cadernos[0];
+
+        // Buscar detalhes visuais do veículo
+        if (caderno.veiculo_id) {
+            try {
+                const [veic] = await db.promise().query("SELECT modelo, foto FROM veiculos WHERE id = ?", [caderno.veiculo_id]);
+                if(veic.length > 0) {
+                    caderno.veiculo_modelo = veic[0].modelo;
+                    caderno.veiculo_foto = veic[0].foto;
+                }
+            } catch(e) {
+                try {
+                    const [veic2] = await db.promise().query("SELECT modelo, foto FROM frota_veiculos WHERE id = ?", [caderno.veiculo_id]);
+                    if(veic2.length > 0) {
+                        caderno.veiculo_modelo = veic2[0].modelo;
+                        caderno.veiculo_foto = veic2[0].foto;
+                    }
+                } catch(e2) {
+                    console.log("Erro ao buscar veiculo", e2);
+                }
+            }
+        }
+
+        const [itens] = await db.promise().query(`
+            SELECT local_entrega, itens_pedido, quantidade, valor_aberto 
+            FROM caderno_entregas_itens 
+            WHERE caderno_id = ? 
+            ORDER BY id ASC
+        `, [cadernoId]);
+
+        res.json({ success: true, caderno, itens });
+    } catch (error) {
+        console.error("Erro ao buscar detalhes do caderno:", error);
+        res.status(500).json({ success: false, erro: "Erro interno do servidor." });
     }
 });
 

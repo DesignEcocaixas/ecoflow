@@ -23,6 +23,11 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     }
   };
 
+  const escapeHtmlAttr = (str) => {
+      if (!str) return "";
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+
   const menuHTML = menuLateral(user, "/envios-whatsapp");
 
   // Lista de Cadernos com verificação de status vindo direto do Banco de Dados
@@ -34,8 +39,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     const btnIcone = isEnviado ? '<i class="fa-solid fa-check-double"></i>' : '<i class="fa-solid fa-check"></i>';
 
     return `
-    <tr class="align-middle table-hover-row fila-caderno" id="cadernoRow-${c.id}" style="font-size: 0.72rem; transition: all 0.3s ease; opacity: ${opacidade}; height: 45px;">
-      <td class="py-1 px-3" style="width: 30px;">
+    <tr class="align-middle table-hover-row fila-caderno cursor-pointer" id="cadernoRow-${c.id}" style="font-size: 0.72rem; transition: all 0.3s ease; opacity: ${opacidade}; height: 45px;" onclick="abrirModalCaderno(${c.id})">
+      <td class="py-1 px-3" style="width: 30px;" onclick="event.stopPropagation();">
         <input type="checkbox" name="cadernos_selecionados[]" value="${c.id}" class="form-check-input check-caderno border-secondary shadow-sm" ${isEnviado ? 'disabled' : ''}>
       </td>
       <td class="text-muted fw-medium py-1 px-2 c-data" style="${estiloRiscado}"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
@@ -47,7 +52,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
         </span>
       </td>
       <td class="text-end py-1 px-3" style="width: 50px;">
-        <button type="button" class="btn ${btnClasse}" style="font-size: 0.65rem; height: 24px;" onclick="marcarLinhaComoEnviada(${c.id}, this)" title="Marcar caderno como enviado">
+        <button type="button" class="btn ${btnClasse}" style="font-size: 0.65rem; height: 24px;" onclick="event.stopPropagation(); marcarLinhaComoEnviada(${c.id}, this)" title="Marcar/Desmarcar manifesto como enviado">
           ${btnIcone}
         </button>
       </td>
@@ -56,12 +61,28 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
   }).join("");
 
   const linhasLogs = logsEnvio.map(log => {
-    const statusBadge = log.sucesso 
-      ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>`
-      : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Falhou</span>`;
+    let statusBadge = '';
+    if (log.sucesso) {
+        statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>`;
+    } else {
+        const erroMsg = log.erro ? escapeHtmlAttr(log.erro) : "Erro de comunicação com o WhatsApp";
+        statusBadge = `
+            <div class="d-flex justify-content-end align-items-center gap-1">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;">Falhou</span>
+                <i class="fa-solid fa-circle-exclamation text-danger cursor-pointer" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="top" 
+                   data-bs-custom-class="custom-tooltip"
+                   title="${erroMsg}">
+                </i>
+            </div>
+        `;
+    }
     
+    const safeLog = escapeHtmlAttr(JSON.stringify(log));
+
     return `
-      <tr class="align-middle" style="font-size: 0.72rem; height: 45px;">
+      <tr class="align-middle cursor-pointer table-hover-row" style="font-size: 0.72rem; height: 45px;" onclick="abrirModalLog(this)" data-log="${safeLog}">
         <td class="text-muted py-1 px-2" style="font-size:0.68rem;">${fmtData(log.data_envio)}</td>
         <td class="text-white fw-medium py-1 px-2 text-truncate" style="max-width: 120px;">${(log.cliente || '').toUpperCase()}</td>
         <td class="text-muted py-1 px-2" style="font-size:0.68rem;">${log.contato || '-'}</td>
@@ -70,21 +91,46 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     `;
   }).join("");
 
-  const linksCadernosPages = (() => {
+  const buildPagination = (current, total, isCadernos) => {
+    if (total <= 1) return '';
     let html = '';
-    for (let i = 1; i <= totalPagesC; i++) {
-        html += `<li class="page-item ${i === pageC ? "active" : ""}"><a class="page-link" href="/envios-whatsapp?pageCadernos=${i}&pageLogs=${pageL}" onclick="navegarTabela(event, this.href)">${i}</a></li>`;
-    }
-    return html;
-  })();
+    const range = [];
+    const rangeWithDots = [];
+    const delta = 1;
+    let l;
 
-  const linksLogsPages = (() => {
-    let html = '';
-    for (let i = 1; i <= totalPagesL; i++) {
-        html += `<li class="page-item ${i === pageL ? "active" : ""}"><a class="page-link" href="/envios-whatsapp?pageCadernos=${pageC}&pageLogs=${i}" onclick="navegarTabela(event, this.href)">${i}</a></li>`;
+    for (let i = 1; i <= total; i++) {
+        if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    for (let i of rangeWithDots) {
+        if (i === '...') {
+            html += '<li class="page-item disabled"><span class="page-link border-custom bg-custom-darker text-muted">...</span></li>';
+        } else {
+            const activeClass = i === current ? "active" : "";
+            const href = isCadernos ? `/envios-whatsapp?pageCadernos=${i}&pageLogs=${pageL}` : `/envios-whatsapp?pageCadernos=${pageC}&pageLogs=${i}`;
+            html += `<li class="page-item ${activeClass}"><a class="page-link" href="${href}" onclick="navegarTabela(event, this.href)">${i}</a></li>`;
+        }
     }
     return html;
-  })();
+  };
+
+  const linksCadernosPages = buildPagination(pageC, totalPagesC, true);
+  const linksLogsPages = buildPagination(pageL, totalPagesL, false);
 
   return `
   <!DOCTYPE html>
@@ -123,8 +169,23 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; }
 
       .table { --bs-table-bg: transparent; --bs-table-color: #fff; --bs-table-hover-bg: rgba(255,255,255,0.04); color: #fff; margin-bottom: 0; }
-      .table thead Th { background-color: #222 !important; color: rgba(255,255,255,0.6) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; font-weight: 600; font-size: 0.75rem; height: 35px; }
       .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.04) !important; background-color: transparent !important; color: #fff !important; white-space: nowrap; }
+
+      .table-responsive { max-height: 490px; overflow-y: auto; }
+      .table thead th { 
+          position: sticky; 
+          top: 0; 
+          z-index: 5; 
+          background-color: #222 !important; 
+          color: rgba(255,255,255,0.6) !important; 
+          border-bottom: none !important; 
+          box-shadow: inset 0 -1px 0 rgba(255,255,255,0.1); 
+          font-weight: 600; 
+          font-size: 0.75rem; 
+          height: 35px; 
+      }
+
+      .table-hover-row:hover td { background-color: rgba(255,255,255,0.05) !important; }
 
       .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.7rem; }
       .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; font-weight: bold; }
@@ -144,10 +205,15 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       .toast-timer { height: 4px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
       
-      .custom-tooltip .tooltip-inner { background-color: #222222; color: #ffffff; border: 1px solid rgba(8, 192, 104, 0.3); font-size: 0.7rem; padding: 8px 12px; text-align: left; max-width: 240px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-      .custom-tooltip .style-arrow::before { border-top-color: #222222; }
+      @keyframes flashGreen {
+          0% { background-color: rgba(8, 192, 104, 0.3); }
+          100% { background-color: transparent; }
+      }
+      
+      .cursor-pointer { cursor: pointer; }
 
-      /* SKELETON LOADING CLASSES */
+      .form-control:focus { box-shadow: 0 0 0 0.15rem rgba(8,192,104,0.25); border-color: #08c068; background-color: #2a2a2a; color: white; }
+
       .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
       .skeleton-dark * { visibility: hidden !important; }
       .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
@@ -189,19 +255,16 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                 <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-truck-ramp-box text-accent me-2"></i> Disparar Mensagens Manuais</h6>
                 <i class="fa-regular fa-circle-question text-muted" 
                    style="cursor: help; font-size: 0.8rem;" 
-                   data-bs-toggle="tooltip" 
-                   data-bs-custom-class="custom-tooltip"
-                   data-bs-placement="top" 
                    title="Selecione os cadernos desejados e clique em disparar. O sistema enviará mensagens automáticas para o WhatsApp dos clientes contendo a relação dos itens, quantidade e o valor em aberto.">
                 </i>
               </div>
-              <button type="submit" id="btnDisparoManual" class="btn btn-sm btn-success fw-bold shadow-sm" ${cadernosPendentes.length === 0 ? 'disabled' : ''}>
+              <button type="submit" id="btnDisparoManual" class="btn btn-sm btn-success fw-bold shadow-sm" disabled>
                 <i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens
               </button>
             </div>
 
             <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom flex-grow-1 d-flex flex-column">
-              <table class="table table-sm align-middle mb-0 w-100 h-100">
+              <table class="table table-sm align-middle mb-0 w-100">
                 <thead>
                   <tr>
                     <th class="py-2 px-3" style="width: 30px;"><input type="checkbox" id="checkAllCadernos" class="form-check-input border-secondary shadow-sm" onchange="toggleSelectAllCadernos(this)"></th>
@@ -260,6 +323,72 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       </div>
     </div>
 
+    <!-- MODAL DETALHES DO LOG (MENSAGEM REAL COM OPÇÃO DE REENVIO) -->
+    <div class="modal fade" id="modalLogDetalhes" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                <div class="modal-header modal-header-dark border-custom">
+                    <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-circle-info text-accent me-2"></i> Detalhes do Disparo</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-custom-dark text-white">
+                    <input type="hidden" id="modalLogId">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="text-white-50 small fw-bold mb-1">Cliente</label>
+                            <div id="modalLogCliente" class="fw-medium" style="font-size: 0.9rem;"></div>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-white-50 small fw-bold mb-1">Contato</label>
+                            <input type="text" id="modalLogContatoInput" class="form-control form-control-sm bg-custom-darker border-custom text-white fw-medium shadow-sm" style="font-size: 0.85rem;" readonly>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-white-50 small fw-bold mb-1">Data e Horário</label>
+                            <div id="modalLogData" class="fw-medium" style="font-size: 0.9rem;"></div>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-white-50 small fw-bold mb-1">Status</label>
+                            <div id="modalLogStatus"></div>
+                        </div>
+                        <div class="col-12" id="modalLogErroContainer" style="display: none;">
+                            <label class="text-white-50 small fw-bold mb-1">Motivo da Falha</label>
+                            <div id="modalLogErro" class="text-danger small bg-custom-darker p-2 rounded border border-danger border-opacity-25"></div>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <label class="text-white-50 small fw-bold mb-1">Mensagem Enviada</label>
+                            <div id="modalLogMensagem" class="bg-custom-darker p-3 rounded border border-custom small text-white-50 shadow-sm" style="white-space: pre-wrap; font-family: monospace; line-height: 1.4;">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-dark border-custom d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-white fw-bold px-4" data-bs-dismiss="modal">Voltar</button>
+                    <button type="button" id="btnReenviarLog" class="btn btn-sm btn-primary fw-bold px-4 d-none" onclick="reenviarMensagemModal()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Reenviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALHES DO CADERNO (ROTEIRO) -->
+    <div class="modal fade" id="modalCadernoDetalhes" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                <div class="modal-header modal-header-dark border-custom">
+                    <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-route text-accent me-2"></i> Detalhes do Manifesto #<span id="detCadernoId"></span></h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-custom-dark text-white" id="detCadernoBody">
+                    <!-- Conteúdo será injetado via JS -->
+                </div>
+                <div class="modal-footer modal-footer-dark border-custom d-flex justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-white fw-bold px-4" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL QR CODE E TERMINAL -->
     <div class="modal fade" id="modalQrCode" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg">
@@ -324,15 +453,74 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       // ==========================================
-      // CONTROLES GLOBAIS DE SKELETON
+      // LÓGICA DE SONS UI/UX
       // ==========================================
+      window.playUIFeedback = function(type) {
+          try {
+              window.lastFeedbackTime = window.lastFeedbackTime || {};
+              const nowTime = Date.now();
+              if (window.lastFeedbackTime[type] && (nowTime - window.lastFeedbackTime[type] < 500)) return; 
+              window.lastFeedbackTime[type] = nowTime;
+
+              let audioSrc = '';
+              if (type === 'success') audioSrc = '/audio/star.mp3';
+              else if (type === 'error') audioSrc = '/audio/dong-ding.mp3';
+
+              if (audioSrc) {
+                  const audio = new Audio(audioSrc);
+                  audio.play().catch(e => console.log('Áudio bloqueado ou não suportado pelo navegador.', e));
+              }
+          } catch (e) {
+              console.log('Áudio não suportado', e);
+          }
+      };
+
+      // ==========================================
+      // CONTROLE INTELIGENTE DO BOTÃO DE DISPARO
+      // ==========================================
+      function atualizarBotaoDisparo() {
+          const selecionados = document.querySelectorAll('.check-caderno:checked:not(:disabled)').length;
+          const btn = document.getElementById('btnDisparoManual');
+          if (btn) {
+              if (selecionados > 0) {
+                  btn.disabled = false;
+                  btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens';
+              } else {
+                  btn.disabled = true;
+                  btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens';
+              }
+          }
+      }
+
+      document.addEventListener("change", function(e) {
+          if (e.target && e.target.classList.contains('check-caderno')) {
+              atualizarBotaoDisparo();
+          }
+      });
+
+      function toggleSelectAllCadernos(master) {
+          document.querySelectorAll('.check-caderno:not(:disabled)').forEach(cb => cb.checked = master.checked);
+          atualizarBotaoDisparo();
+      }
+
+      // ==========================================
+      // CONTROLES GLOBAIS DE SKELETON E ESCAPE
+      // ==========================================
+      function escapeHtmlAttr(str) {
+          if (!str) return "";
+          return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function formatarMoedaDetalhe(n) {
+          return Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
       function mostrarSkeletonGlobais() {
           if (document.querySelector('.skeleton-container')) return;
 
           const containers = document.querySelectorAll('.table-responsive:not(.skeleton-container)');
           
           containers.forEach((container, idx) => {
-              // Verifica se a tabela é a de logs pelo ID do Container principal que criamos
               const isLogs = container.closest('#logsContainer') !== null;
               
               let thead = '';
@@ -399,7 +587,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       });
 
       // ==========================================
-      // FUNCIONALIDADES ORIGINAIS DA VIEW
+      // FUNCIONALIDADES ORIGINAIS DA VIEW E MODAL
       // ==========================================
 
       document.addEventListener("DOMContentLoaded", function() {
@@ -407,11 +595,9 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           tooltipTriggerList.map(function (tooltipTriggerEl) {
               return new bootstrap.Tooltip(tooltipTriggerEl);
           });
+          // Força a validação inicial do botão ao carregar
+          atualizarBotaoDisparo();
       });
-
-      function toggleSelectAllCadernos(master) {
-          document.querySelectorAll('.check-caderno').forEach(cb => cb.checked = master.checked);
-      }
 
       function mostrarToast(tipo, titulo, message) {
           const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
@@ -434,9 +620,237 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           }
       }
 
+      // FUNÇÃO PARA ABRIR O MODAL DE DETALHES DO LOG
+      function abrirModalLog(el) {
+          try {
+              const logInfoStr = el.getAttribute('data-log');
+              if (!logInfoStr) return;
+              
+              const log = JSON.parse(logInfoStr);
+              
+              document.getElementById('modalLogId').value = log.id;
+              document.getElementById('modalLogCliente').innerText = (log.cliente || '-').toUpperCase();
+              
+              const inputContato = document.getElementById('modalLogContatoInput');
+              inputContato.value = log.contato || '-';
+              
+              let dataFmt = '-';
+              if (log.data_envio) {
+                  const dt = new Date(log.data_envio);
+                  dataFmt = dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+              }
+              document.getElementById('modalLogData').innerText = dataFmt;
+              
+              const btnReenviar = document.getElementById('btnReenviarLog');
+
+              if (log.sucesso) {
+                  document.getElementById('modalLogStatus').innerHTML = '<span class="badge bg-success text-white px-2 py-1"><i class="fa-solid fa-check-double me-1"></i> Enviado com sucesso</span>';
+                  document.getElementById('modalLogErroContainer').style.display = 'none';
+                  
+                  // Campo bloqueado e sem borda de destaque
+                  inputContato.setAttribute('readonly', 'true');
+                  inputContato.classList.remove('border-primary');
+                  btnReenviar.classList.add('d-none');
+              } else {
+                  document.getElementById('modalLogStatus').innerHTML = '<span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Falha no Envio</span>';
+                  document.getElementById('modalLogErroContainer').style.display = 'block';
+                  document.getElementById('modalLogErro').innerText = log.erro || 'Erro de comunicação com o WhatsApp';
+                  
+                  // Campo aberto para edição com borda de destaque verde
+                  inputContato.removeAttribute('readonly');
+                  inputContato.classList.add('border-primary');
+                  btnReenviar.classList.remove('d-none');
+              }
+              
+              document.getElementById('modalLogMensagem').innerText = log.mensagem || 'O texto exato da mensagem não foi registrado para este envio antigo.';
+              
+              const modalDetalhes = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
+              modalDetalhes.show();
+          } catch(e) {
+              console.error("Erro ao abrir modal de log:", e);
+          }
+      }
+
+      // FUNÇÃO PARA ABRIR O MODAL DE DETALHES DO CADERNO (ROTEIRO COMPLETO) COM API
+      async function abrirModalCaderno(id) {
+          const modalEl = document.getElementById('modalCadernoDetalhes');
+          const modal = new bootstrap.Modal(modalEl);
+          document.getElementById('detCadernoId').innerText = id;
+          const body = document.getElementById('detCadernoBody');
+          
+          // Tela de carregamento enquanto o AJAX puxa os dados do backend
+          body.innerHTML = '<div class="text-center py-5"><i class="fa-solid fa-circle-notch fa-spin fa-3x text-accent mb-3"></i><p class="text-white-50 small">Carregando detalhes do roteiro...</p></div>';
+          modal.show();
+
+          try {
+              const res = await fetch('/api/cadernos/' + id + '/detalhes');
+              const data = await res.json();
+              
+              if (res.ok && data.success) {
+                  const c = data.caderno;
+                  const itens = data.itens;
+
+                  // Função auxiliar para renderizar a foto de perfil ou um card inicial
+                  const getAvatarHtml = (nome, foto) => {
+                      if (!nome) return '';
+                      if (foto) {
+                          return \`<img src="/uploads/\${foto}" class="rounded shadow-sm border-custom bg-custom-darker" style="width: 38px; height: 38px; object-fit: cover; flex-shrink: 0;">\`;
+                      }
+                      return \`<div class="rounded shadow-sm d-flex align-items-center justify-content-center fw-bold text-dark bg-custom-darker border-custom" style="width: 38px; height: 38px; background-color: #08c068;">\${nome.charAt(0).toUpperCase()}</div>\`;
+                  };
+
+                  let veiculoHtml = '';
+                  if (c.veiculo_foto) {
+                      veiculoHtml = \`<img src="/uploads/\${c.veiculo_foto}" class="rounded shadow-sm border-custom bg-custom-darker" style="width: 38px; height: 38px; object-fit: cover; flex-shrink: 0;">\`;
+                  } else {
+                      veiculoHtml = \`<div class="rounded shadow-sm d-flex align-items-center justify-content-center fw-bold text-white-50 bg-custom-darker border-custom" style="width: 38px; height: 38px;"><i class="fa-solid fa-truck-fast"></i></div>\`;
+                  }
+
+                  let htmlEquipe = \`
+                      <div class="bg-custom-darker p-3 rounded shadow-sm border-custom mb-3" style="font-size: 0.8rem;">
+                          <div class="row">
+                              <div class="col-12 col-md-4 mb-2">
+                                  <span class="text-muted">Motorista:</span>
+                                  <div class="d-flex align-items-center gap-2 mt-1">
+                                      \${getAvatarHtml(c.motorista, c.motorista_foto)}
+                                      <strong class="text-white text-truncate">\${c.motorista || '-'}</strong>
+                                  </div>
+                              </div>
+                              <div class="col-12 col-md-4 mb-2">
+                                  <span class="text-muted">Ajudante:</span>
+                                  <div class="d-flex align-items-center gap-2 mt-1">
+                                      \${getAvatarHtml(c.ajudante, c.ajudante_foto)}
+                                      <strong class="text-white text-truncate">\${c.ajudante || '-'}</strong>
+                                  </div>
+                              </div>
+                              <div class="col-12 col-md-4">
+                                  <span class="text-muted">Veículo:</span>
+                                  <div class="d-flex align-items-center gap-2 mt-1">
+                                      \${veiculoHtml}
+                                      <strong class="text-white text-truncate">\${c.veiculo_modelo || 'Veículo não informado'}</strong>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  \`;
+
+                  let htmlItens = '<h6 class="fw-bold mb-3 mt-4 text-white" style="font-size: 0.8rem;">Locais de Entrega (' + itens.length + '):</h6>';
+
+                  if (itens.length === 0) {
+                      htmlItens += '<div class="text-center py-4 text-white-50 small">Nenhuma entrega registrada neste manifesto.</div>';
+                  } else {
+                      htmlItens += '<div class="d-flex flex-column gap-2">';
+                      let totalVolumes = 0;
+
+                      itens.forEach((e, idx) => {
+                          let descItens = '<span class="text-muted small mt-1 d-block">Itens não especificados</span>';
+                          if (e.itens_pedido && e.itens_pedido !== '-') {
+                              const listaLimpas = e.itens_pedido.split(',').filter(i => i.trim() !== '');
+                              if (listaLimpas.length > 0) {
+                                  descItens = '<ul class="mb-0 ps-3 mt-2 text-white-50" style="font-size: 0.8rem;">' + 
+                                              listaLimpas.map(item => \`<li class="mb-1">\${item.trim()}</li>\`).join('') + 
+                                              '</ul>';
+                              }
+                          }
+
+                          let qtdBadge = '-';
+                          if (e.quantidade) {
+                              const match = e.quantidade.toString().match(/\\d+/);
+                              if (match) {
+                                  totalVolumes += parseInt(match[0]);
+                              }
+                              qtdBadge = e.quantidade;
+                          }
+
+                          let badgeValor = '';
+                          if (e.valor_aberto && Number(e.valor_aberto) > 0) {
+                              badgeValor = \`
+                                  <div class="mt-1">
+                                      <i class="fa-solid fa-sack-dollar text-accent me-1"></i>
+                                      <strong class="text-accent">A Receber: R$ \${formatarMoedaDetalhe(e.valor_aberto)}</strong>
+                                  </div>
+                              \`;
+                          }
+
+                          htmlItens += \`
+                              <div class="d-flex justify-content-between align-items-center bg-custom-darker p-3 border-custom rounded-3 shadow-sm">
+                                  <div class="flex-grow-1 pe-3">
+                                      <span class="badge mb-1" style="background-color: #1f1f1f; border: 1px solid rgba(255,255,255,0.1); color: #fff;">\${idx + 1}</span>
+                                      <h6 class="fw-bold mb-1 text-white" style="font-size:0.85rem;">
+                                          \${(e.local_entrega || 'NÃO INFORMADO').toUpperCase()}
+                                      </h6>
+                                      \${descItens}
+                                      <div class="text-muted mb-2 mt-2" style="font-size:0.75rem;">
+                                          <div><i class="fa-solid fa-cubes me-1 opacity-75"></i> <strong class="text-white">Qtd Total:</strong> \${qtdBadge}</div>
+                                          \${badgeValor}
+                                      </div>
+                                  </div>
+                              </div>
+                          \`;
+                      });
+
+                      htmlItens += \`
+                          <div class="mt-2 p-3 bg-custom-darker border-custom rounded d-flex justify-content-between align-items-center shadow-sm">
+                              <span class="fw-bold text-white-50 text-uppercase" style="font-size: 0.8rem;">Total Geral do Roteiro</span>
+                              <span class="fs-5 fw-black text-accent">\${totalVolumes} <span class="fs-6 fw-normal text-white-50">volumes calculados</span></span>
+                          </div>
+                      \`;
+                      htmlItens += '</div>';
+                  }
+
+                  body.innerHTML = htmlEquipe + htmlItens;
+              } else {
+                  body.innerHTML = '<div class="text-center py-5 text-danger"><i class="fa-solid fa-circle-xmark fa-3x mb-3"></i><p class="small">Erro ao carregar detalhes do manifesto.</p></div>';
+              }
+          } catch (err) {
+              console.error(err);
+              body.innerHTML = '<div class="text-center py-5 text-danger"><i class="fa-solid fa-plug-circle-xmark fa-3x mb-3"></i><p class="small">Falha de conexão com o servidor.</p></div>';
+          }
+      }
+
+      // FUNÇÃO AJAX PARA REENVIAR A MENSAGEM DO MODAL
+      async function reenviarMensagemModal() {
+          const logId = document.getElementById('modalLogId').value;
+          const novoNumero = document.getElementById('modalLogContatoInput').value.trim();
+          const btn = document.getElementById('btnReenviarLog');
+
+          if (!novoNumero) {
+              mostrarToast('erro', 'Aviso', 'O número de contato não pode ser vazio.');
+              return;
+          }
+
+          const iconeOriginal = '<i class="fa-solid fa-paper-plane me-1"></i> Reenviar';
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Enviando...';
+
+          try {
+              const response = await fetch('/api/whatsapp/reenviar', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ log_id: logId, novo_numero: novoNumero })
+              });
+
+              const result = await response.json();
+
+              if (response.ok && result.success) {
+                  mostrarToast('sucesso', 'Sucesso!', result.message);
+                  const modal = bootstrap.Modal.getInstance(document.getElementById('modalLogDetalhes'));
+                  if(modal) modal.hide();
+                  // A tabela atrás será atualizada sozinha pelo polling piscando em verde!
+              } else {
+                  mostrarToast('erro', 'Falha no Reenvio', result.error || 'Ocorreu um problema ao reenviar a mensagem.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro de Conexão', 'Falha ao se comunicar com o servidor.');
+          } finally {
+              btn.disabled = false;
+              btn.innerHTML = iconeOriginal;
+          }
+      }
+
       async function navegarTabela(event, url) {
           event.preventDefault();
-          mostrarSkeletonGlobais(); // Aciona o Skeleton durante a navegação Ajax
+          mostrarSkeletonGlobais(); 
           try {
               const response = await fetch(url);
               if (response.ok) {
@@ -488,6 +902,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                       if(chk) { chk.checked = false; chk.disabled = true; }
                       
                       mostrarToast('sucesso', 'Concluído!', 'Manifesto #' + id + ' marcado como enviado no DB.');
+                      atualizarBotaoDisparo(); // Revalida botão pós-alteração de status
                   } else {
                       row.style.opacity = '1';
                       row.querySelectorAll('.c-data, .c-manifesto, .c-motorista').forEach(el => {
@@ -500,6 +915,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                       if(chk) { chk.disabled = false; }
                       
                       mostrarToast('sucesso', 'Restaurado!', 'Manifesto #' + id + ' voltou para pendente.');
+                      atualizarBotaoDisparo(); // Revalida botão pós-alteração de status
                   }
               } else {
                   mostrarToast('erro', 'Erro', 'Não foi possível salvar o status no servidor.');
@@ -551,15 +967,15 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       async function executarDisparoManual(e) {
           e.preventDefault();
           const btn = document.getElementById('btnDisparoManual');
-          const selecionados = Array.from(document.querySelectorAll('.check-caderno:checked')).map(cb => cb.value);
+          const selecionados = Array.from(document.querySelectorAll('.check-caderno:checked:not(:disabled)')).map(cb => cb.value);
 
           if (selecionados.length === 0) {
-              mostrarToast('erro', 'Aviso', 'Selecione ao menos um caderno para realizar o disparo.');
+              mostrarToast('erro', 'Aviso', 'Selecione ao menos um caderno válido para realizar o disparo.');
               return;
           }
 
           btn.disabled = true;
-          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Disparando...\`;
+          btn.innerHTML = \`<i class="fa-solid fa-spinner fa-spin me-1"></i> Enviando em background...\`;
 
           try {
               const response = await fetch('/caderno-entregas/disparar-manual', {
@@ -569,7 +985,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               });
 
               if (response.ok) {
-                  mostrarToast('sucesso', 'Sucesso!', 'Disparo em lote iniciado. Os cadernos serão riscados automaticamente ao finalizar.');
+                  mostrarToast('sucesso', 'Sucesso!', 'Disparo em lote iniciado. O acompanhamento pode ser feito nos logs em tempo real.');
                   
                   selecionados.forEach(id => {
                       const row = document.getElementById('cadernoRow-' + id);
@@ -591,24 +1007,21 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   }, 1000);
 
                   setTimeout(() => {
-                      btn.disabled = false;
-                      btn.innerHTML = \`<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens\`;
                       document.getElementById('checkAllCadernos').checked = false;
+                      atualizarBotaoDisparo(); // Revalida e mantém desativado até nova seleção
                   }, 2000);
 
               } else {
                   mostrarToast('erro', 'Falha no Servidor', 'Ocorreu um problema ao enviar o lote.');
-                  btn.disabled = false;
-                  btn.innerHTML = \`<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens\`;
+                  atualizarBotaoDisparo();
               }
           } catch (err) {
               mostrarToast('erro', 'Erro de Conexão', 'Verifique a rede.');
-              btn.disabled = false;
-              btn.innerHTML = \`<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens\`;
+              atualizarBotaoDisparo();
           }
       }
 
-      // FUNÇÃO DE MONITORAMENTO REFORMULADA COM APPEND COMPATÍVEL E TRATAMENTO DE SERIALIZED IDS
+      // FUNÇÃO DE MONITORAMENTO REFORMULADA (PUXANDO DO BANCO COM INJEÇÃO APPEND E ANIMAÇÃO SEGURA)
       async function carregarQrCodeInfo() {
           const areaQr = document.getElementById('areaImagemQr');
           const terminal = document.getElementById('terminalLogsBox');
@@ -616,7 +1029,6 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           
           const statusDot = document.getElementById('whatsappStatusDot');
           const statusText = document.getElementById('whatsappStatusText');
-          const btnDesconectar = document.getElementById('btnDesconectarBotManual');
           
           try {
               const res = await fetch('/api/whatsapp/status-monitor');
@@ -629,6 +1041,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
 
                   if (!window.estadoConexaoAnterior && dados.isReady) {
                       mostrarToast('sucesso', 'Conectado!', 'Robô do WhatsApp conectado com sucesso!');
+                      playUIFeedback('success');
                   }
                   
                   window.estadoConexaoAnterior = dados.isReady;
@@ -653,96 +1066,75 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                       }
                   }
 
-                  if (tabelaLogsBody && dados.logs && dados.logs.length > 0) {
-                      const logsEnvioMensagens = dados.logs.filter(l => l.includes('✅ Mensagem enviada') || l.includes('❌ Erro crítico') || l.includes('⚠️ WhatsApp ainda não está pronto'));
-                      
-                      // 🛡️ TRAVA PARA IMPEDIR LOGS DUPLICADOS NA ATUALIZAÇÃO DE PÁGINA (F5)
-                      let primeiraLeitura = false;
-                      if (!window.logsInjetadosNoFront) {
-                          window.logsInjetadosNoFront = [];
-                          primeiraLeitura = true;
+                  // Renderização Limpa com base no Banco de Dados
+                  if (tabelaLogsBody && dados.dbLogs) {
+                      if (typeof window.knownLogIds === 'undefined') {
+                          window.knownLogIds = dados.dbLogs.map(l => l.id);
                       }
 
-                      logsEnvioMensagens.forEach(log => {
-                          // Se já existe na memória, apenas ignora
-                          if (window.logsInjetadosNoFront.includes(log)) return;
-                          
-                          // Adiciona na memória para ser ignorado nas próximas passagens
-                          window.logsInjetadosNoFront.push(log);
+                      const newLogs = dados.dbLogs.filter(l => !window.knownLogIds.includes(l.id)).reverse();
 
-                          // Se for a primeira vez que a página carrega, encerra o bloco aqui 
-                          // para não duplicar, pois a rota original já injetou a tabela vinda do BD
-                          if (primeiraLeitura) return;
-
-                          const dataCompleta = new Date().toLocaleDateString('pt-BR');
-                          let horario = log.match(/\\[(.*?)\\]/)?.[1] || new Date().toLocaleTimeString('pt-BR');
-                          
-                          // 🕒 REMOVE OS SEGUNDOS (Transforma "19:16:06" em "19:16")
-                          if (horario && horario.split(':').length >= 3) {
-                              horario = horario.split(':').slice(0, 2).join(':');
+                      if (newLogs.length > 0) {
+                          const linhaVazia = tabelaLogsBody.querySelector('td.text-center');
+                          if (linhaVazia && linhaVazia.innerText.includes('Nenhuma mensagem')) {
+                              tabelaLogsBody.innerHTML = '';
                           }
 
-                          const isSucesso = log.includes('✅');
-                          
-                          let rawDestino = 'Disparo Manual';
-                          if (log.includes('para:')) {
-                              rawDestino = log.split('para:')[1].trim();
-                          } else if (log.includes('para ')) {
-                              rawDestino = log.split('para ')[1].trim();
-                          }
+                          let disparouSucesso = false;
+                          let disparouErro = false;
 
-                          let nomeExibicao = "DISPARO INSTANTÂNEO";
-                          let contatoExibicao = rawDestino;
+                          newLogs.forEach(log => {
+                              window.knownLogIds.push(log.id);
 
-                          // 🛡️ TRATAMENTO LENDO O PADRÃO "NOME | NUMERO"
-                          if (rawDestino.includes('|')) {
-                              const partes = rawDestino.split('|');
-                              nomeExibicao = partes[0] ? partes[0].trim() : "Cliente";
-                              
-                              const apenasNumero = partes[1] ? partes[1].trim() : "";
-                              
-                              if (apenasNumero.startsWith('55') && apenasNumero.length >= 12) {
-                                  const ddd = apenasNumero.slice(2, 4);
-                                  const p1 = apenasNumero.slice(4, 5);
-                                  const p2 = apenasNumero.slice(5, 9);
-                                  const p3 = apenasNumero.slice(9);
-                                  contatoExibicao = \`(\${ddd}) \${p1} \${p2}-\${p3}\`;
-                              } else {
-                                  contatoExibicao = apenasNumero;
+                              const dataStr = log.data_envio;
+                              let dataFormatada = "-";
+                              if (dataStr) {
+                                  const dt = new Date(dataStr);
+                                  dataFormatada = dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
                               }
-                          } else if (rawDestino.includes('@')) {
-                              const apenasNumero = rawDestino.split('@')[0];
-                              if (apenasNumero.startsWith('55') && apenasNumero.length >= 12) {
-                                  const ddd = apenasNumero.slice(2, 4);
-                                  const p1 = apenasNumero.slice(4, 5);
-                                  const p2 = apenasNumero.slice(5, 9);
-                                  const p3 = apenasNumero.slice(9);
-                                  contatoExibicao = \`(\${ddd}) \${p1} \${p2}-\${p3}\`;
+
+                              const clienteNome = (log.cliente || '').toUpperCase();
+                              const contatoNum = log.contato || '-';
+                              const isSucesso = log.sucesso;
+
+                              let statusBadge = '';
+                              if (isSucesso) {
+                                  disparouSucesso = true;
+                                  statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>';
                               } else {
-                                  contatoExibicao = apenasNumero;
+                                  disparouErro = true;
+                                  const erroMsg = log.erro ? escapeHtmlAttr(log.erro) : "Erro de comunicação com o WhatsApp";
+                                  statusBadge = '<div class="d-flex justify-content-end align-items-center gap-1"><span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;">Falhou</span><i class="fa-solid fa-circle-exclamation text-danger cursor-pointer" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="' + erroMsg + '"></i></div>';
                               }
+
+                              const safeLog = escapeHtmlAttr(JSON.stringify(log));
+                              
+                              const novaLinhaHTML = '<tr class="align-middle cursor-pointer table-hover-row" style="font-size: 0.72rem; height: 45px; animation: flashGreen 3s ease-out;" onclick="abrirModalLog(this)" data-log="' + safeLog + '">' +
+                                '<td class="text-muted py-1 px-2" style="font-size:0.68rem;">' + dataFormatada + '</td>' +
+                                '<td class="text-white fw-medium py-1 px-2 text-truncate" style="max-width: 120px;">' + clienteNome + '</td>' +
+                                '<td class="text-muted py-1 px-2" style="font-size:0.68rem;">' + contatoNum + '</td>' +
+                                '<td class="py-1 px-2 text-end">' + statusBadge + '</td>' +
+                              '</tr>';
+                              
+                              tabelaLogsBody.insertAdjacentHTML('afterbegin', novaLinhaHTML);
+                          });
+
+                          // Executa feedback sonoro do processamento
+                          if (disparouErro) {
+                              playUIFeedback('error');
+                          } else if (disparouSucesso) {
+                              playUIFeedback('success');
                           }
 
-                          const linhaVazia = tabelaLogsBody.querySelector('tr td.text-center');
-                          if (linhaVazia && linhaVazia.closest('tr')) {
-                              linhaVazia.closest('tr').remove();
+                          while (tabelaLogsBody.children.length > 15) {
+                              tabelaLogsBody.lastElementChild.remove();
                           }
-
-                          const statusBadge = isSucesso 
-                            ? \`<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>\`
-                            : \`<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Falhou</span>\`;
                           
-                          const novaLinhaHTML = \`
-                            <tr class="align-middle" style="font-size: 0.72rem; animation: fadeIn 0.3s ease; background-color: rgba(8, 192, 104, 0.04); height: 45px;">
-                              <td class="text-muted py-1 px-2" style="font-size:0.68rem;">\${dataCompleta} \${horario}</td>
-                              <td class="text-white fw-medium py-1 px-2 text-truncate" style="max-width: 120px;">\${nomeExibicao}</td>
-                              <td class="text-muted py-1 px-2" style="font-size:0.68rem;">\${contatoExibicao}</td>
-                              <td class="py-1 px-2 text-end">\${statusBadge}</td>
-                            </tr>
-                          \`;
-                          
-                          tabelaLogsBody.insertAdjacentHTML('afterbegin', novaLinhaHTML);
-                      });
+                          const tooltipTriggerList = [].slice.call(tabelaLogsBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                          tooltipTriggerList.map(function (tooltipTriggerEl) {
+                              return new bootstrap.Tooltip(tooltipTriggerEl);
+                          });
+                      }
                   }
 
                   if (terminal && dados.logs && dados.logs.length > 0) {
@@ -770,7 +1162,6 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
               if (res.ok) {
                   mostrarToast('sucesso', 'Hard Reset Iniciado!', 'O servidor está reiniciando. Aguarde alguns segundos...');
                   
-                  // Fica "pingando" o servidor de 2 em 2 segundos para saber quando o PM2 subiu o Node de volta
                   let tentativasReboot = 0;
                   const checkInstante = setInterval(async () => {
                       try {
@@ -783,12 +1174,10 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                               mostrarToast('sucesso', 'Servidor Online!', 'O robô foi reiniciado do zero. Aguarde o novo QR Code.');
                               carregarQrCodeInfo();
                           }
-                      } catch (e) {
-                          // Se der catch, significa que o Node ainda está reiniciando (offline)
-                      }
+                      } catch (e) {}
                       
                       tentativasReboot++;
-                      if (tentativasReboot > 20) { // Desiste de tentar atualizar o botão após 40s
+                      if (tentativasReboot > 20) { 
                           clearInterval(checkInstante);
                           btn.innerHTML = iconeOriginal;
                       }

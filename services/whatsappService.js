@@ -1,9 +1,12 @@
 // services/whatsappService.js
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcodeTerminal = require('qrcode-terminal'); // Renomeado para não conflitar com o pacote de imagem
-const QRCode = require('qrcode'); // Usa a lib de QR Code que você já tem instalada
+const qrcodeTerminal = require('qrcode-terminal');
+const QRCode = require('qrcode');
 
 console.log('[WHATSAPP] 🚀 Inicializando módulo do serviço...');
+
+// Aumento global de listeners para evitar memory leaks em loops de disparo do express
+require('events').EventEmitter.defaultMaxListeners = 20;
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -22,17 +25,14 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--single-process',
-            '--disable-extensions', // Evita o carregamento de extensões do Chrome que consomem memória
-            
-            // 🚀 FLAGS ADICIONADAS PARA IMPEDIR TRAVAS DE ARQUIVO (WINDOWS/ONEDRIVE) Sem corromper o cache dos chats
-            '--disable-features=FirstPartySets',         // Desativa o recurso que gera o arquivo first_party_sets.db
-            '--disable-features=PrivacySandboxSettings4', // Bloqueia journals de telemetria de privacidade
-            '--disable-gpu'                               // Desativa aceleração de hardware que pode reter processos no Windows
+            '--disable-extensions', 
+            '--disable-features=FirstPartySets',         
+            '--disable-features=PrivacySandboxSettings4', 
+            '--disable-gpu'                               
         ]
     }
 });
 
-// Estado expandido para o painel de monitoramento
 const whatsappEstado = {
     isReady: false,
     ultimoQrCode: null,
@@ -50,20 +50,16 @@ const registrarLogTerminal = (texto) => {
     }
 };
 
-// 1. LOG DE CARREGAMENTO INICIAL
 client.on('loading_screen', (percent, message) => {
     registrarLogTerminal(`⏳ Carregando: ${percent}% - ${message}`);
 });
 
-// 2. LOG DO QR CODE (ATUALIZADO COM A SUA LIB RECENTE)
 client.on('qr', async (qr) => {
-    // Mantém a exibição original no terminal do VSCode/PM2
     console.log('\n==================================================');
     console.log('🤖 SCANNEIE O QR CODE ABAIXO COM O WHATSAPP DA EMPRESA');
     console.log('==================================================\n');
     qrcodeTerminal.generate(qr, { small: true });
 
-    // Gera a versão DataURL (Base64) usando a biblioteca 'qrcode' instalada
     try {
         whatsappEstado.ultimoQrCode = await QRCode.toDataURL(qr);
     } catch (errQr) {
@@ -71,13 +67,11 @@ client.on('qr', async (qr) => {
     }
 });
 
-// 3. LOG DE AUTENTICAÇÃO SUCESSO
 client.on('authenticated', () => {
-    whatsappEstado.ultimoQrCode = null; // Limpa o QR anterior pois já logou
+    whatsappEstado.ultimoQrCode = null; 
     registrarLogTerminal('🔑 Autenticado com sucesso! Sincronizando e carregando conversas...');
 });
 
-// 4. LOG DE BOT PRONTO
 client.on('ready', () => {
     whatsappEstado.isReady = true; 
     whatsappEstado.ultimoQrCode = null;
@@ -92,11 +86,10 @@ client.on('auth_failure', msg => {
 
 client.on('disconnected', (reason) => {
     whatsappEstado.isReady = false;
-    whatsappEstado.ultimoQrCode = null; // Garante a limpeza do estado para gerar um novo
+    whatsappEstado.ultimoQrCode = null; 
     registrarLogTerminal(`❌ O WhatsApp foi desconectado pelo usuário ou dispositivo: ${reason}`);
 });
 
-// FUNÇÃO AUXILIAR EXPONDENDO LIMPEZA MANUAL DE SESSÃO SEM TRAVAR REFERÊNCIAS
 const forcarResetEstadoManual = () => {
     whatsappEstado.isReady = false;
     whatsappEstado.ultimoQrCode = null;
@@ -109,7 +102,7 @@ client.initialize().catch(err => {
     console.error('[WHATSAPP] 🔥 Erro fatal ao inicializar o Puppeteer:', err.message);
 });
 
-// FUNÇÃO DE ENVIO REESCRITA COM RETRY E RESPIRAÇÃO (PREVENÇÃO DE DETACHED FRAME)
+// FUNÇÃO DE ENVIO REESCRITA E BLINDADA CONTRA 'DETACHED FRAME'
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
@@ -124,10 +117,14 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             numeroLimpo = '55' + numeroLimpo;
         }
 
-        // 🛡️ Delay de Respiração do Puppeteer:
-        // Aguarda entre 1 e 2 segundos aleatórios para o DOM do WhatsApp Web estabilizar
-        // antes de iniciar a busca pelo ID do contato.
-        await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 1000) + 1000));
+        // 🛡️ Garante que a página do WWebJS não esteja ocupada recarregando a árvore do DOM
+        if (client.pupPage) {
+            await client.pupPage.waitForNetworkIdle({ idleTime: 500 }).catch(() => {});
+        }
+        
+        // Timeout dinâmico: na primeira tentativa espera pouco, nas re-tentativas aguarda mais para a tela estabilizar
+        const delayBase = tentativa === 1 ? 1500 : 3500;
+        await new Promise(resolve => setTimeout(resolve, delayBase));
 
         const numberId = await client.getNumberId(numeroLimpo);
         
@@ -138,32 +135,38 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             chatId = numeroLimpo + "@c.us";
         }
 
-        // 🛡️ Segundo tempo de respiração antes de injetar o texto no input invisível
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Antes de injetar o chat no WWebJS, respira rapidamente
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         await client.sendMessage(chatId, mensagem);
-        // ✨ Aqui alteramos para enviar o Nome do Cliente e o Número original para o log do Front ler
+        
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return true;
+        
     } catch (error) {
-        // 🛡️ Mecanismo de Retry em caso de Detached Frame
-        if (error.message && error.message.includes('detached Frame') && tentativa < 3) {
+        // 🛡️ Lógica Definitiva para Detached Frame
+        if (error.message && (error.message.includes('detached Frame') || error.message.includes('Execution context was destroyed')) && tentativa < 3) {
             registrarLogTerminal(`⚠️ Frame instável detectado para ${nomeCliente}. Recarregando DOM... (Tentativa ${tentativa + 1}/3)`);
             
-            // Aguarda 3 segundos inteiros antes de tentar de novo para o WhatsApp Web terminar suas animações/redesenhos
-            await new Promise(resolve => setTimeout(resolve, 3000)); 
+            try {
+                // Traz a página para foco e tenta injetar um evento vazio para "acordar" os frames do WhatsApp
+                if (client.pupPage) {
+                    await client.pupPage.bringToFront().catch(() => {});
+                    await client.pupPage.evaluate(() => window.dispatchEvent(new Event('resize'))).catch(() => {});
+                }
+            } catch(e) {}
             
-            // Tenta enviar de novo aumentando o contador
+            // Aguarda 4 segundos rigorosos para o WWebJS e o Puppeteer restaurarem as referências
+            await new Promise(resolve => setTimeout(resolve, 4000)); 
+            
             return await enviarMensagem(numero, mensagem, nomeCliente, tentativa + 1);
         }
 
-        // ✨ Garantir que o erro também contenha a nova formatação
         registrarLogTerminal(`❌ Erro crítico ao enviar para: ${nomeCliente} | ${numero} - ${error.message}`);
         return false;
     }
 };
 
-// BLINDAGEM DE ESTADO: Evita falso-negativo se o Puppeteer ocultar a referência pupPage temporariamente
 const verificarReady = () => {
     if (client && whatsappEstado.isReady) {
         return true;
@@ -171,15 +174,14 @@ const verificarReady = () => {
     return false;
 };
 
-// Novo método exposto para alimentar o endpoint /api/whatsapp/status-monitor
 const obterDadosMonitor = () => ({
-    isReady: verificarReady(), // Sempre chama a validação em tempo real para não reter cache
+    isReady: verificarReady(), 
     qrCodeBase64: whatsappEstado.ultimoQrCode,
     logs: whatsappEstado.logsTerminal
 });
 
 module.exports = { 
-    client, // Exportação mantida e visível para as rotas administrativas de re-boot
+    client, 
     enviarMensagem,
     verificarReady,
     obterDadosMonitor,

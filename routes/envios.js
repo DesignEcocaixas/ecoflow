@@ -162,6 +162,17 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
         return res.status(400).send("Nenhum manifesto selecionado.");
     }
 
+    const templatePath = path.join(process.cwd(), 'whatsapp_template.txt');
+    let baseTemplate = `Olá, *{{CLIENTE}}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *{{PARADA}}ª parada*.\n\n*📋 Relação de Itens:*\n{{ITENS}}\n*🔢 Quantidade Total:* {{QUANTIDADE}}\n\n*💰 Valor a Receber:* R$ {{VALOR}}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
+
+    try {
+        if (fs.existsSync(templatePath)) {
+            baseTemplate = fs.readFileSync(templatePath, 'utf8');
+        }
+    } catch (e) {
+        console.error("Erro ao ler template. Usando o padrão.", e);
+    }
+
     (async () => {
         for (let cadernoId of ids) {
             try {
@@ -202,15 +213,19 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
                     const valorNum = parseFloat(cliente.valor_aberto || 0);
                     const valorFmt = valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-                    const mensagem = `Olá, *${(cliente.local_entrega || '').toUpperCase()}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *${i + 1}ª parada*.\n\n*📋 Relação de Itens:*\n${listaItensFormatada}\n*🔢 Quantidade Total:* ${cliente.quantidade || '-'}\n\n*💰 Valor a Receber:* R$ ${valorFmt}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
+                    const mensagemFormatada = baseTemplate
+                        .replace(/\{\{CLIENTE\}\}/g, (cliente.local_entrega || '').toUpperCase())
+                        .replace(/\{\{PARADA\}\}/g, (i + 1))
+                        .replace(/\{\{ITENS\}\}/g, listaItensFormatada)
+                        .replace(/\{\{QUANTIDADE\}\}/g, cliente.quantidade || '-')
+                        .replace(/\{\{VALOR\}\}/g, valorFmt);
 
                     for (let numero of contatosValidos) {
-                        
                         let disparou = false;
                         let msgErro = null;
 
                         try {
-                            disparou = await whatsappService.enviarMensagem(numero, mensagem, cliente.local_entrega);
+                            disparou = await whatsappService.enviarMensagem(numero, mensagemFormatada, cliente.local_entrega);
                             if (!disparou) msgErro = "Falha silenciosa ou serviço indisponível.";
                         } catch (errDisparo) {
                             disparou = false;
@@ -221,7 +236,7 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
                         await db.promise().query(`
                             INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso, erro, mensagem) 
                             VALUES (?, ?, ?, ?, ?, ?)
-                        `, [cadernoId, cliente.local_entrega, numero, disparou ? 1 : 0, msgErro, mensagem]);
+                        `, [cadernoId, cliente.local_entrega, numero, disparou ? 1 : 0, msgErro, mensagemFormatada]);
 
                         await new Promise(resolve => setTimeout(resolve, 2500));
                     }
@@ -337,7 +352,6 @@ router.get("/api/cadernos/:id/detalhes", async (req, res) => {
 
         const caderno = cadernos[0];
 
-        // Buscar detalhes visuais do veículo
         if (caderno.veiculo_id) {
             try {
                 const [veic] = await db.promise().query("SELECT modelo, foto FROM veiculos WHERE id = ?", [caderno.veiculo_id]);
@@ -369,6 +383,41 @@ router.get("/api/cadernos/:id/detalhes", async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar detalhes do caderno:", error);
         res.status(500).json({ success: false, erro: "Erro interno do servidor." });
+    }
+});
+
+// 8. OBTER TEMPLATE DA MENSAGEM
+router.get("/api/whatsapp/template", (req, res) => {
+    if (!req.session.user) return res.status(401).json({ error: "Não autorizado" });
+    const templatePath = path.join(process.cwd(), 'whatsapp_template.txt');
+    
+    let template = `Olá, *{{CLIENTE}}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *{{PARADA}}ª parada*.\n\n*📋 Relação de Itens:*\n{{ITENS}}\n*🔢 Quantidade Total:* {{QUANTIDADE}}\n\n*💰 Valor a Receber:* R$ {{VALOR}}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
+    
+    try {
+        if (fs.existsSync(templatePath)) {
+            template = fs.readFileSync(templatePath, 'utf8');
+        }
+    } catch (e) {
+        console.error("Erro ao ler template.", e);
+    }
+    
+    res.json({ template });
+});
+
+// 9. SALVAR TEMPLATE DA MENSAGEM
+router.post("/api/whatsapp/template", (req, res) => {
+    if (!req.session.user) return res.status(401).json({ error: "Não autorizado" });
+    const { template } = req.body;
+    
+    if (!template) return res.status(400).json({ error: "O template não pode ser vazio." });
+
+    const templatePath = path.join(process.cwd(), 'whatsapp_template.txt');
+    try {
+        fs.writeFileSync(templatePath, template, 'utf8');
+        res.json({ success: true, message: "Base da mensagem atualizada com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao salvar template:", error);
+        res.status(500).json({ error: "Falha ao gravar arquivo no servidor." });
     }
 });
 

@@ -25,7 +25,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
 
   const escapeHtmlAttr = (str) => {
       if (!str) return "";
-      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   };
 
   const menuHTML = menuLateral(user, "/envios-whatsapp");
@@ -63,7 +63,17 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
   const linhasLogs = logsEnvio.map(log => {
     let statusBadge = '';
     if (log.sucesso) {
-        statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>`;
+        statusBadge = `
+            <div class="d-flex justify-content-end align-items-center gap-1">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;">Enviado</span>
+                <i class="fa-solid fa-circle-check text-success cursor-pointer" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="top" 
+                   data-bs-custom-class="custom-tooltip"
+                   title="Mensagem processada e enviada com sucesso">
+                </i>
+            </div>
+        `;
     } else {
         const erroMsg = log.erro ? escapeHtmlAttr(log.erro) : "Erro de comunicação com o WhatsApp";
         statusBadge = `
@@ -213,6 +223,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       .cursor-pointer { cursor: pointer; }
 
       .form-control:focus { box-shadow: 0 0 0 0.15rem rgba(8,192,104,0.25); border-color: #08c068; background-color: #2a2a2a; color: white; }
+      .user-select-all { user-select: all; }
 
       .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
       .skeleton-dark * { visibility: hidden !important; }
@@ -240,9 +251,14 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
             <span id="whatsappStatusDot" class="status-indicator ${whatsappStatus.isReady ? 'status-online' : 'status-offline'}"></span>
             <span id="whatsappStatusText" class="small fw-bold text-white">${whatsappStatus.isReady ? 'CONECTADO' : 'DESCONECTADO'}</span>
           </div>
-          <button class="btn btn-xs btn-outline-primary py-1 px-2 border-custom" style="font-size:0.7rem;" data-bs-toggle="modal" data-bs-target="#modalQrCode" onclick="carregarQrCodeInfo()">
-            <i class="fa-solid fa-qrcode me-1"></i> Conexões
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-xs btn-outline-warning py-1 px-2 border-custom" style="font-size:0.7rem;" data-bs-toggle="modal" data-bs-target="#modalTemplateMensagem" onclick="carregarTemplateMensagem()">
+              <i class="fa-solid fa-pen-to-square me-1"></i> Mensagem
+            </button>
+            <button class="btn btn-xs btn-outline-primary py-1 px-2 border-custom" style="font-size:0.7rem;" data-bs-toggle="modal" data-bs-target="#modalQrCode" onclick="carregarQrCodeInfo()">
+              <i class="fa-solid fa-qrcode me-1"></i> Conexões
+            </button>
+          </div>
         </div>
       </div>
 
@@ -321,6 +337,36 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
           ` : ""}
         </div>
       </div>
+    </div>
+
+    <!-- MODAL TEMPLATE DE MENSAGEM -->
+    <div class="modal fade" id="modalTemplateMensagem" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                <div class="modal-header modal-header-dark border-custom">
+                    <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> Editar Base da Mensagem</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-custom-dark text-white">
+                    <p class="text-white-50 small mb-3">Utilize as variáveis abaixo para que o sistema substitua automaticamente pelos dados do cliente em cada envio:</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-custom-darker border-custom text-accent px-2 py-1 user-select-all cursor-pointer" onclick="copiarVariavel('{{CLIENTE}}')" title="Clique para copiar">{{CLIENTE}}</span>
+                        <span class="badge bg-custom-darker border-custom text-accent px-2 py-1 user-select-all cursor-pointer" onclick="copiarVariavel('{{PARADA}}')" title="Clique para copiar">{{PARADA}}</span>
+                        <span class="badge bg-custom-darker border-custom text-accent px-2 py-1 user-select-all cursor-pointer" onclick="copiarVariavel('{{ITENS}}')" title="Clique para copiar">{{ITENS}}</span>
+                        <span class="badge bg-custom-darker border-custom text-accent px-2 py-1 user-select-all cursor-pointer" onclick="copiarVariavel('{{QUANTIDADE}}')" title="Clique para copiar">{{QUANTIDADE}}</span>
+                        <span class="badge bg-custom-darker border-custom text-accent px-2 py-1 user-select-all cursor-pointer" onclick="copiarVariavel('{{VALOR}}')" title="Clique para copiar">{{VALOR}}</span>
+                    </div>
+                    
+                    <textarea id="textoTemplateMensagem" class="form-control bg-custom-darker border-custom text-white shadow-sm" rows="12" style="font-size: 0.85rem; font-family: monospace; resize: none;"></textarea>
+                </div>
+                <div class="modal-footer modal-footer-dark border-custom d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-white fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnSalvarTemplate" class="btn btn-sm btn-warning fw-bold text-dark px-4" onclick="salvarTemplateMensagem()">
+                        <i class="fa-solid fa-save me-1"></i> Salvar Mensagem
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL DETALHES DO LOG (MENSAGEM REAL COM OPÇÃO DE REENVIO) -->
@@ -452,6 +498,64 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      // ==========================================
+      // LÓGICA DE TEMPLATE (BASE DA MENSAGEM)
+      // ==========================================
+      function copiarVariavel(texto) {
+          navigator.clipboard.writeText(texto);
+          mostrarToast('sucesso', 'Copiado!', 'Variável ' + texto + ' copiada para a área de transferência.');
+      }
+
+      async function carregarTemplateMensagem() {
+          const textarea = document.getElementById('textoTemplateMensagem');
+          textarea.value = "Carregando...";
+          try {
+              const res = await fetch('/api/whatsapp/template');
+              const data = await res.json();
+              textarea.value = data.template || '';
+          } catch (err) {
+              textarea.value = "Erro ao carregar o template.";
+              mostrarToast('erro', 'Falha', 'Não foi possível carregar a mensagem base.');
+          }
+      }
+
+      async function salvarTemplateMensagem() {
+          const btn = document.getElementById('btnSalvarTemplate');
+          const textarea = document.getElementById('textoTemplateMensagem');
+          const conteudo = textarea.value.trim();
+
+          if (!conteudo) {
+              mostrarToast('erro', 'Aviso', 'A mensagem não pode ficar vazia.');
+              return;
+          }
+
+          const iconeOriginal = '<i class="fa-solid fa-save me-1"></i> Salvar Mensagem';
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Salvando...';
+
+          try {
+              const response = await fetch('/api/whatsapp/template', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ template: conteudo })
+              });
+              const result = await response.json();
+              
+              if (response.ok && result.success) {
+                  mostrarToast('sucesso', 'Sucesso!', result.message);
+                  const modal = bootstrap.Modal.getInstance(document.getElementById('modalTemplateMensagem'));
+                  if (modal) modal.hide();
+              } else {
+                  mostrarToast('erro', 'Erro', result.error || 'Falha ao salvar template.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro de Conexão', 'Não foi possível conectar ao servidor.');
+          } finally {
+              btn.disabled = false;
+              btn.innerHTML = iconeOriginal;
+          }
+      }
+
       // ==========================================
       // LÓGICA DE SONS UI/UX
       // ==========================================
@@ -1100,7 +1204,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                               let statusBadge = '';
                               if (isSucesso) {
                                   disparouSucesso = true;
-                                  statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;"><i class="fa-solid fa-check-double me-1"></i> Enviado</span>';
+                                  statusBadge = '<div class="d-flex justify-content-end align-items-center gap-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.6rem;">Enviado</span><i class="fa-solid fa-circle-check text-success cursor-pointer" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="Mensagem processada e enviada com sucesso"></i></div>';
                               } else {
                                   disparouErro = true;
                                   const erroMsg = log.erro ? escapeHtmlAttr(log.erro) : "Erro de comunicação com o WhatsApp";

@@ -786,7 +786,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   btnReenviar.classList.remove('d-none');
               }
               
-              document.getElementById('modalLogMensagem').innerText = log.mensagem || 'O texto exato da mensagem não foi registrado para este envio antigo.';
+              document.getElementById('modalLogMensagem').innerText = log.mensagem || 'Informação legada não registrada no banco de dados.';
               
               const modalDetalhes = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
               modalDetalhes.show();

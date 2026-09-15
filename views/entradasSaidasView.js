@@ -1,10 +1,10 @@
 // views/entradasSaidasView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
 function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario); 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
@@ -24,19 +24,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
   const dataAtual = new Date();
   const mesAtualStr = meses[dataAtual.getMonth()] + ' de ' + dataAtual.getFullYear();
 
-  // =======================================================================
-  // VALORES EXATOS VINDO DO BACKEND (Sem limite de paginação)
-  // =======================================================================
   const totalEntradas = paginacao.totalEntradas || 0;
   const totalSaidas = paginacao.totalSaidas || 0;
   const totalCaixaCalc = paginacao.totalCaixa || 0;
 
-  // Se o caixa for menor que 0, trava em 0 na exibição
   const displayTotalCaixa = totalCaixaCalc < 0 ? 0 : totalCaixaCalc;
   const corTotal = displayTotalCaixa > 0 ? 'accent' : 'secondary';
   const sinalTotal = displayTotalCaixa > 0 ? '+' : '';
 
-  // GERAR AS LINHAS DA TABELA
   const linhasTabela = movimentacoes.map(m => {
     const isEntrada = m.tipo === 'entrada';
     const corClass = isEntrada ? 'success' : 'danger';
@@ -84,6 +79,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     const isEntrada = m.tipo === 'entrada';
     const corClass = isEntrada ? 'success' : 'danger';
     const sinal = isEntrada ? '+' : '-';
+    
+    const saldoAnt = Number(m.saldo_anterior) || 0;
+    const saldoNov = Number(m.saldo_novo) || 0;
 
     return `
     <div class="modal fade" id="detalheModal${m.id}" tabindex="-1">
@@ -94,30 +92,68 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
-            <div class="text-center mb-4">
-              <span class="badge bg-${corClass} bg-opacity-10 text-${corClass} border border-${corClass} border-opacity-50 mb-2 px-3 py-2" style="font-size:0.8rem; letter-spacing: 1px;">
-                MOVIMENTAÇÃO DE ${isEntrada ? 'ENTRADA' : 'SAÍDA'}
-              </span>
-              <h2 class="fw-bold text-${corClass}">${sinal} R$ ${fmtMoeda(m.valor)}</h2>
-              <p class="text-white-50 mb-0"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</p>
-            </div>
             
-            <div class="bg-custom-darker p-3 rounded-3 mb-3 border border-custom shadow-sm">
-              <h6 class="fw-bold text-white" style="font-size:0.85rem;">Descrição:</h6>
-              <p class="mb-2 text-white-50" style="font-size:0.85rem;">${m.descricao}</p>
-              
-              <h6 class="fw-bold mt-3 text-white" style="font-size:0.85rem;">Observações:</h6>
-              <p class="mb-0 text-white-50" style="font-size:0.8rem;">${m.observacao || "Nenhuma observação registada."}</p>
-              
-              <h6 class="fw-bold mt-3 text-white" style="font-size:0.85rem;">Registrado no sistema por:</h6>
-              <p class="mb-0 text-white-50" style="font-size:0.8rem;"><i class="fa-solid fa-desktop text-accent me-1"></i> ${m.responsavel || "Sistema"}</p>
+            <div class="row g-2 mb-3">
+                <!-- VALOR DA MOVIMENTAÇÃO E DATA -->
+                <div class="col-12 col-sm-5 d-flex flex-column">
+                    <div class="bg-custom-darker p-3 rounded-3 border border-custom shadow-sm h-100 d-flex flex-column justify-content-center align-items-center text-center">
+                        <span class="badge bg-${corClass} bg-opacity-10 text-${corClass} border border-${corClass} border-opacity-50 mb-2 px-2 py-1" style="font-size:0.7rem; letter-spacing: 1px;">
+                            ${isEntrada ? 'ENTRADA' : 'SAÍDA'}
+                        </span>
+                        <h4 class="fw-bold text-${corClass} mb-1">${sinal} R$ ${fmtMoeda(m.valor)}</h4>
+                        <p class="text-white-50 mb-0" style="font-size:0.75rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</p>
+                    </div>
+                </div>
+
+                <!-- HISTÓRICO DE SALDO -->
+                <div class="col-12 col-sm-7 d-flex flex-column">
+                    <div class="bg-custom-darker p-3 rounded-3 border border-custom shadow-sm h-100 d-flex flex-column justify-content-center">
+                        <h6 class="text-white-50 fw-bold mb-2 text-center border-bottom border-custom pb-2" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Rastreio de Saldo
+                        </h6>
+                        <div class="d-flex align-items-center justify-content-around px-1">
+                            <div class="text-center">
+                                <span class="d-block text-muted fw-bold mb-1" style="font-size: 0.6rem; text-transform: uppercase;">Anterior</span>
+                                <span class="badge bg-custom-dark border border-custom text-white-50 px-2 py-1 shadow-sm" style="font-size: 0.75rem;">
+                                    R$ ${fmtMoeda(saldoAnt)}
+                                </span>
+                            </div>
+                            <div class="text-center px-1">
+                                <i class="fa-solid fa-arrow-right-long text-${corClass}"></i>
+                            </div>
+                            <div class="text-center">
+                                <span class="d-block text-muted fw-bold mb-1" style="font-size: 0.6rem; text-transform: uppercase;">Novo</span>
+                                <span class="badge bg-${corClass} text-white px-2 py-1 shadow-sm" style="font-size: 0.75rem;">
+                                    R$ ${fmtMoeda(saldoNov)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <!-- DESCRIÇÃO, OBSERVAÇÕES E REGISTRO -->
+            <div class="bg-custom-darker p-3 rounded-3 mb-3 border border-custom shadow-sm d-flex flex-column gap-3">
+                <div>
+                    <h6 class="fw-bold text-white mb-1" style="font-size:0.8rem;">Descrição:</h6>
+                    <p class="mb-0 text-white-50" style="font-size:0.8rem; word-break: break-word;">${m.descricao}</p>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-white mb-1" style="font-size:0.8rem;">Observações:</h6>
+                    <p class="mb-0 text-white-50" style="font-size:0.75rem; word-break: break-word;">${m.observacao || "Nenhuma observação registada."}</p>
+                </div>
+                <div class="pt-2 border-top border-custom">
+                    <span class="fw-bold text-white" style="font-size:0.8rem;">Registrado por:</span>
+                    <span class="text-white-50 ms-1" style="font-size:0.75rem;"><i class="fa-solid fa-desktop text-accent mx-1"></i> ${m.responsavel || "Sistema"}</span>
+                </div>
+            </div>
+
+            <!-- ASSINATURA -->
             <div class="border border-custom rounded-3 p-3 text-center bg-custom-darker shadow-sm">
-              <h6 class="fw-bold text-white mb-2" style="font-size:0.85rem;">Assinatura de: ${m.nome_assinante || "Não informado"}</h6>
+              <h6 class="fw-bold text-white mb-2" style="font-size:0.8rem;">Assinatura de: ${m.nome_assinante || "Não informado"}</h6>
               ${m.assinatura_base64 
-                ? `<img src="${m.assinatura_base64}" alt="Assinatura" style="max-width: 100%; height: auto; max-height: 150px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; filter: invert(1) brightness(2);">` 
-                : `<div class="text-muted py-3" style="font-size:0.8rem;"><i class="fa-solid fa-signature fa-2x opacity-25 mb-2"></i><br>Nenhuma assinatura capturada.</div>`
+                ? `<img src="${m.assinatura_base64}" alt="Assinatura" style="max-width: 100%; height: auto; max-height: 110px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; filter: invert(1) brightness(2);">` 
+                : `<div class="text-muted py-2" style="font-size:0.75rem;"><i class="fa-solid fa-signature fa-2x opacity-25 mb-1"></i><br>Nenhuma assinatura capturada.</div>`
               }
             </div>
 
@@ -188,7 +224,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     </div>
   `}).join("");
 
-  // Montagem da query string para a paginação
   const qsParams = [];
   if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
   if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
@@ -238,7 +273,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
   const menuHTML = menuLateral(user, "/entradas-saidas");
 
-  // Modal para exibir perguntando se o usuário quer emitir o comprovante recém criado
   const modalImprimirComprovanteHtml = `
   <div class="modal fade" id="modalImprimirComprovante" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -511,21 +545,39 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     </div>
 
     <div class="modal fade" id="modalRelatorio" tabindex="-1">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <div class="modal-header modal-header-dark border-custom">
-            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório</h6>
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório Dinâmico</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
-            <div class="mb-3">
-              <label class="form-label text-white-50 fw-bold small mb-1">Ano Base</label>
-              <select id="relatorioAno" class="form-select form-select-sm shadow-sm"></select>
+            
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label text-white-50 fw-bold small mb-1">Ano Base</label>
+                <select id="relatorioAno" class="form-select form-select-sm shadow-sm"></select>
+              </div>
+              <div class="col-6">
+                <label class="form-label text-white-50 fw-bold small mb-1">Mês Base</label>
+                <select id="relatorioMes" class="form-select form-select-sm shadow-sm"></select>
+              </div>
             </div>
-            <div class="mb-4">
-              <label class="form-label text-white-50 fw-bold small mb-1">Mês Base</label>
-              <select id="relatorioMes" class="form-select form-select-sm shadow-sm"></select>
+
+            <div class="mb-4 pt-3 border-top border-custom">
+              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-table-columns text-accent me-1"></i> Selecione as Colunas</label>
+              <div class="row g-2">
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="data" id="chkData" checked><label class="form-check-label text-white-50 small" for="chkData">Data</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="tipo" id="chkTipo" checked><label class="form-check-label text-white-50 small" for="chkTipo">Tipo (Entrada/Saída)</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="valor" id="chkValor" checked><label class="form-check-label text-white-50 small" for="chkValor">Valor Movimentado</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="rastreio" id="chkRastreio" checked><label class="form-check-label text-white-50 small" for="chkRastreio">Rastreio (Saldos)</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="descricao" id="chkDesc" checked><label class="form-check-label text-white-50 small" for="chkDesc">Descrição</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="observacao" id="chkObs" checked><label class="form-check-label text-white-50 small" for="chkObs">Observações</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="assinante" id="chkAssinante" checked><label class="form-check-label text-white-50 small" for="chkAssinante">Assinante</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="responsavel" id="chkResp" checked><label class="form-check-label text-white-50 small" for="chkResp">Usuário do Sistema</label></div></div>
+              </div>
             </div>
+
             <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
           </div>
         </div>
@@ -725,7 +777,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       };
 
       window.aplicarVisibilidadeFinanceira = function() {
-          // Trata como oculto por padrão (se for null, !== 'false' retorna true)
           const isOculto = localStorage.getItem('ocultar_valores_financeiros') !== 'false';
           const icone = document.getElementById('iconeVisibilidade');
           if (icone) {
@@ -742,7 +793,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       };
 
       // =======================================================================
-      // CHECA URL POR COMPROVANTE NA CARGA INICIAL (Para envios sem AJAX)
+      // CHECA URL POR COMPROVANTE NA CARGA INICIAL
       // =======================================================================
       document.addEventListener("DOMContentLoaded", () => {
           aplicarVisibilidadeFinanceira();
@@ -777,18 +828,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               if (timerEl) {
                   timerEl.style.display = 'block';
                   timerEl.style.animation = 'none';
-                  timerEl.offsetHeight; // Força o reflow para a animação reiniciar
+                  timerEl.offsetHeight; 
                   timerEl.style.animation = 'shrinkToast 5s linear forwards';
               }
 
               const oldInstance = bootstrap.Toast.getInstance(toastEl);
               if (oldInstance) oldInstance.dispose();
 
-              const toast = new bootstrap.Toast(toastEl, {
-                  autohide: true,
-                  delay: 5000
-              });
-              
+              const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
               toast.show();
           }
       }
@@ -811,7 +858,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       // =======================================================================
-      // LÓGICA DO GRÁFICO (NOVO)
+      // LÓGICA DO GRÁFICO
       // =======================================================================
       let chartFluxo = null;
       let visaoGraficoAtual = 'dia'; 
@@ -1113,7 +1160,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       });
 
       // =======================================================================
-      // AJAX PARA FILTROS E PAGINAÇÃO (SEM RELOAD)
+      // AJAX PARA FILTROS E PAGINAÇÃO 
       // =======================================================================
       async function prepararBuscaSimples(event, form, titleMsg) {
           if (event) event.preventDefault();
@@ -1224,7 +1271,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const ctx = canvas.getContext('2d');
           ctx.scale(dpr, dpr);
           
-          ctx.strokeStyle = "#1f1f1f"; // Tinta preta no fundo claro
+          ctx.strokeStyle = "#1f1f1f"; 
           ctx.lineWidth = 1.2;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
@@ -1375,7 +1422,6 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                   
                   carregarFiltrosGrafico();
 
-                  // INTERCEPTA A RESPOSTA PARA ABRIR O MODAL DO PDF SE FOR UMA NOVA SAÍDA
                   const responseUrl = new URL(response.url);
                   if (responseUrl.searchParams.has('comprovanteSaida')) {
                       const saidaId = responseUrl.searchParams.get('comprovanteSaida');
@@ -1448,11 +1494,20 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const mes = document.getElementById('relatorioMes').value;
           const ano = document.getElementById('relatorioAno').value;
           
-          if(mes && ano) {
-              window.open(\`/exportar/movimentacoes?mes=\${mes}&ano=\${ano}\`, '_blank');
-          } else {
-              window.open('/exportar/movimentacoes', '_blank');
+          const colsMarcadas = Array.from(document.querySelectorAll('.chk-coluna:checked')).map(cb => cb.value).join(',');
+          
+          if (!colsMarcadas) {
+              mostrarToast('erro', 'Atenção', 'Selecione pelo menos uma coluna para exportar no relatório.');
+              return;
           }
+          
+          let url = \`/exportar/movimentacoes?cols=\${colsMarcadas}\`;
+          
+          if(mes && ano) {
+              url += \`&mes=\${mes}&ano=\${ano}\`;
+          }
+
+          window.open(url, '_blank');
 
           const modalRelatorio = bootstrap.Modal.getInstance(document.getElementById('modalRelatorio'));
           if (modalRelatorio) modalRelatorio.hide();

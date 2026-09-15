@@ -2,16 +2,14 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const axios = require("axios");
-const pdfkit = require("pdfkit"); // Para gerar o PDF com o QR Code
+const pdfkit = require("pdfkit"); 
 const fs = require("fs");
 const path = require("path");
 const ExcelJS = require("exceljs");
 const { uploadClientes } = require("../config/uploadConfig");
 
-// SERVIÇO DE WHATSAPP (NOVO)
 const { enviarMensagem } = require("../services/whatsappService");
 
-// A MÁGICA AQUI: Importando as funções do Google Maps do nosso Service
 const {
     obterLocalizacao,
     otimizarRotaGoogleAPI,
@@ -96,7 +94,6 @@ router.get("/clientes", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // Seleciona todos os clientes incluindo o novo campo contato_secundario
         const [clientesDB] = await db.promise().query("SELECT nome, contato, contato_secundario, cidade, coordenadas, link_endereco, logo, arte FROM clientes_historico ORDER BY nome ASC");
         res.send(require('../views/clientesView')(req.session.user, clientesDB || []));
     } catch (error) {
@@ -291,7 +288,7 @@ router.post("/caderno-entregas/excluir/:id", async (req, res) => {
 });
 
 // =========================================================================
-// 2. ROTA POST: CADASTRAR NOVO CLIENTE
+// ROTA POST: CADASTRAR NOVO CLIENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -353,7 +350,7 @@ router.post("/caderno-entregas/clientes/novo", uploadClientes.fields([{ name: 'l
 });
 
 // =========================================================================
-// 3. ROTA POST: EDITAR CLIENTE EXISTENTE
+// ROTA POST: EDITAR CLIENTE EXISTENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 'logo', maxCount: 1 }, { name: 'arte', maxCount: 1 }]), async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -413,7 +410,7 @@ router.post("/caderno-entregas/clientes/editar", uploadClientes.fields([{ name: 
 });
 
 // =========================================================================
-// 4. ROTA POST: EXCLUIR CLIENTE
+// ROTA POST: EXCLUIR CLIENTE
 // =========================================================================
 router.post("/caderno-entregas/clientes/excluir", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -445,60 +442,10 @@ router.post("/caderno-entregas/clientes/excluir", async (req, res) => {
     }
 });
 
-//RELATÓRIO COMPLETO DOS CLIENTES DO CADERNO
-router.get('/caderno-entregas/clientes/exportar-excel', async (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
-
-    try {
-        const [clientes] = await db.promise().query(`
-            SELECT nome, link_endereco, coordenadas, cidade
-            FROM clientes_historico 
-            ORDER BY nome ASC
-        `);
-
-        const ExcelJS = require('exceljs');
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Clientes');
-
-        sheet.columns = [
-            { header: 'NOME / PIZZARIA', key: 'nome', width: 40 },
-            { header: 'CIDADE', key: 'cidade', width: 20 },
-            { header: 'LINK DO MAPS', key: 'link_endereco', width: 50 },
-            { header: 'COORDENADAS', key: 'coordenadas', width: 25 }
-        ];
-
-        sheet.getRow(1).eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
-            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-
-        clientes.forEach(c => {
-            sheet.addRow({
-                nome: c.nome,
-                cidade: c.cidade || '-',
-                link_endereco: c.link_endereco,
-                coordenadas: c.coordenadas
-            });
-        });
-
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=relatorio_clientes.xlsx');
-
-        await workbook.xlsx.write(res);
-        return res.end();
-
-    } catch (error) {
-        console.error("[ERRO AO EXPORTAR CLIENTES]:", error);
-        res.status(500).send("Erro ao gerar o relatório.");
-    }
-});
-
 router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
     const { id } = req.params;
 
     try {
-        // 1. ADICIONADO: 'ch.contato_secundario' na busca
         const [itens] = await db.promise().query(`
             SELECT 
                 i.local_entrega, 
@@ -518,7 +465,6 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
             return res.status(404).send("Nenhuma rota encontrada para este caderno.");
         }
 
-        // Monta o link do Google Maps para o motorista
         const paradasUrl = itens.map(e => {
             if (e.coordenadas && e.coordenadas.trim() !== '') {
                 return encodeURIComponent(e.coordenadas.trim().replace(/\s/g, ''));
@@ -529,16 +475,13 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
         const baseDirUrl = "https://www" + ".google.com/maps/dir//";
         const urlMaps = baseDirUrl + paradasUrl;
 
-        // Dispara as mensagens no WhatsApp EM SEGUNDO PLANO
         (async () => {
             try {
-                // CONSULTA EM TEMPO REAL: Garante a leitura direta do banco
                 const [[configWhats]] = await db.promise().query(
                     "SELECT valor FROM configuracoes WHERE chave = 'whatsapp_avisos_ativo'"
                 );
                 const avisosAtivosNoBanco = configWhats ? configWhats.valor === 'true' : true;
 
-                // TRAVA DO BANCO DE DADOS
                 if (!avisosAtivosNoBanco) {
                     console.log(`[ROTA #${id}] 🛑 Disparos via WhatsApp cancelados: Funcionalidade desativada globalmente.`);
                     return;
@@ -564,7 +507,6 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
                 for (let i = 0; i < itens.length; i++) {
                     const cliente = itens[i];
 
-                    // 2. ADICIONADO: Verifica quais contatos o cliente possui
                     const contatosValidos = [];
                     if (cliente.contato && cliente.contato.trim() !== '') {
                         contatosValidos.push(cliente.contato.trim());
@@ -573,13 +515,11 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
                         contatosValidos.push(cliente.contato_secundario.trim());
                     }
 
-                    // Se não tiver nenhum número cadastrado, pula para o próximo cliente
                     if (contatosValidos.length === 0) {
                         console.log(`[ROTA #${id}] ⚠️ Nenhum contato encontrado para: ${cliente.local_entrega}. Pulando...`);
                         continue;
                     }
 
-                    // Organiza a lista de itens que vão nesta entrega
                     let listaItensFormatada = '';
                     const itensTexto = cliente.itens_pedido || '';
 
@@ -595,33 +535,26 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
                         listaItensFormatada = '-\n';
                     }
 
-                    // Formata o valor a receber
                     const valorNum = parseFloat(cliente.valor_aberto || 0);
                     const valorFmt = valorNum.toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     });
 
-                    // Monta a mensagem final com base no novo modelo da Eco Caixas
                     const mensagem = `Olá, *${(cliente.local_entrega || '').toUpperCase()}*! 👋\nAqui é o *Setor de Relacionamento* da Eco Caixas. 📦\nSeu pedido está na rota para entrega e, neste momento, está previsto para ser a nossa *${i + 1}ª parada*.\n\n*📋 Itens do pedido:*\n${listaItensFormatada}\n*🔢 Quantidade Total:* ${cliente.quantidade || '-'}\n\n*💰 Valor a Receber:* R$ ${valorFmt}\n\nEste é um aviso automático para que você acompanhe o andamento da entrega. Como toda operação logística, o roteiro poderá sofrer alterações por motivos operacionais, trânsito ou outras situações imprevistas.\nAgradecemos pela confiança e seguimos à disposição. Até breve!`;
 
-                    // 3. ADICIONADO: Loop para enviar a mensagem para cada contato cadastrado
                     for (let numero of contatosValidos) {
-                        // Enviamos o local_entrega como nomeCliente para log
                         const disparou = await whatsappService.enviarMensagem(numero, mensagem, cliente.local_entrega);
 
-                        // Registra o envio (ou falha) individualmente no banco de dados para os Logs do Painel
                         await db.promise().query(`
                             INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso) 
                             VALUES (?, ?, ?, ?)
                         `, [id, cliente.local_entrega, numero, disparou ? 1 : 0]);
 
-                        // Aguarda 2,5s entre mensagens para o WhatsApp não bloquear como spam
                         await new Promise(resolve => setTimeout(resolve, 2500));
                     }
                 }
                 
-                // 4. ADICIONADO: Automação que marca o caderno como enviado (whatsapp_ativo = 0)
                 await db.promise().query(
                     "UPDATE caderno_entregas SET whatsapp_ativo = 0 WHERE id = ?",
                     [id]
@@ -633,7 +566,6 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
             }
         })();
 
-        // Redireciona o motorista instantaneamente para a rota no Google Maps
         return res.redirect(urlMaps);
 
     } catch (error) {
@@ -643,24 +575,21 @@ router.get("/caderno-entregas/iniciar-rota/:id", async (req, res) => {
 });
 
 // =========================================================================
-// ROTA POST CORRIGIDA: SALVAR PREFERÊNCIA DO SWITCH DE WHATSAPP GLOBAL
+// ROTA POST: SALVAR PREFERÊNCIA DO SWITCH DE WHATSAPP GLOBAL
 // =========================================================================
 router.post("/caderno-entregas/config/whatsapp", async (req, res) => {
     if (!req.session.user) return res.sendStatus(401);
 
     const { ativo } = req.body;
 
-    // Tratamento rigoroso: se ativo for true, "true", 1 ou "1", vira 'true'. Caso contrário, 'false'.
     const statusTexto = (ativo === true || ativo === 'true' || ativo === 1 || ativo === '1') ? 'true' : 'false';
 
     try {
-        // Gravação direta na sua tabela oficial 'configuracoes'
         await db.promise().query(
             "INSERT INTO configuracoes (chave, valor) VALUES ('whatsapp_avisos_ativo', ?) ON DUPLICATE KEY UPDATE valor = ?",
             [statusTexto, statusTexto]
         );
 
-        // Sincroniza a sessão do usuário atual
         req.session.whatsappAtivo = (statusTexto === 'true');
 
         console.log(`[CONFIG GLOBAL WHATSAPP] ⚙️ Status atualizado para: ${statusTexto}`);
@@ -672,13 +601,16 @@ router.post("/caderno-entregas/config/whatsapp", async (req, res) => {
 });
 
 // =======================================================
-// EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS
+// EXPORTAR RELATÓRIO EXCEL COMPLETO DOS CADERNOS (DINÂMICO E AGRUPADO)
 // =======================================================
 router.get('/exportar/caderno-entregas', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        const { data_inicio, data_fim } = req.query;
+        const { data_inicio, data_fim, cols } = req.query;
+        
+        const requestedCols = cols ? cols.split(',') : ['id', 'data', 'motorista', 'ajudante', 'veiculo', 'qtd_entregas', 'clientes', 'qtd_itens'];
+        
         let where = [];
         let params = [];
 
@@ -689,7 +621,8 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
         const [dados] = await db.promise().query(`
             SELECT c.id, c.data_criacao, c.motorista, c.ajudante, v.modelo AS veiculo,
                    i.local_entrega, i.link_endereco, i.status AS item_status,
-                   i.itens_pedido, i.quantidade, i.valor_aberto
+                   i.itens_pedido, i.quantidade, i.valor_aberto,
+                   (SELECT COUNT(*) FROM caderno_entregas_itens WHERE caderno_id = c.id) as qtd_entregas
             FROM caderno_entregas c
             LEFT JOIN veiculos v ON c.veiculo_id = v.id
             LEFT JOIN caderno_entregas_itens i ON i.caderno_id = c.id
@@ -697,23 +630,50 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
             ORDER BY c.data_criacao ASC, c.id ASC
         `, params);
 
+        // MAP: Agrupa os múltiplos clientes num único registro do Caderno
+        const cadernosAgrupados = new Map();
+
+        dados.forEach(row => {
+            if (!cadernosAgrupados.has(row.id)) {
+                cadernosAgrupados.set(row.id, {
+                    id: row.id,
+                    data_criacao: row.data_criacao,
+                    motorista: row.motorista,
+                    ajudante: row.ajudante,
+                    veiculo: row.veiculo,
+                    qtd_entregas: row.qtd_entregas,
+                    clientes_str: [],
+                    soma_total_itens: 0
+                });
+            }
+
+            const c = cadernosAgrupados.get(row.id);
+            
+            if (row.local_entrega) {
+                const matchQtd = String(row.quantidade || '').match(/\d+/);
+                const qtdNum = matchQtd ? parseInt(matchQtd[0], 10) : 0;
+                
+                c.clientes_str.push(`${row.local_entrega} (${row.quantidade || 0})`);
+                c.soma_total_itens += qtdNum;
+            }
+        });
+
         const ExcelJS = require('exceljs');
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Caderno de Entregas');
 
-        sheet.columns = [
-            { header: 'ID CADERNO', key: 'id', width: 12 },
-            { header: 'DATA/HORA CRIAÇÃO', key: 'data_criacao', width: 22 },
-            { header: 'MOTORISTA', key: 'motorista', width: 25 },
-            { header: 'AJUDANTE', key: 'ajudante', width: 25 },
-            { header: 'VEÍCULO', key: 'veiculo', width: 20 },
-            { header: 'LOCAL / PIZZARIA', key: 'local_entrega', width: 30 },
-            { header: 'ITENS DO PEDIDO', key: 'itens_pedido', width: 35 },
-            { header: 'QTD', key: 'quantidade', width: 10 },
-            { header: 'VALOR EM ABERTO', key: 'valor_aberto', width: 20 },
-            { header: 'STATUS ENTREGA', key: 'item_status', width: 18 },
-            { header: 'LINK ENDEREÇO (MAPS)', key: 'link_endereco', width: 45 }
-        ];
+        // Configuração dinâmica das colunas
+        const columns = [];
+        if (requestedCols.includes('id')) columns.push({ header: 'ID CADERNO', key: 'id', width: 15 });
+        if (requestedCols.includes('data')) columns.push({ header: 'DATA E HORA (SAÍDA)', key: 'data_criacao', width: 22 });
+        if (requestedCols.includes('motorista')) columns.push({ header: 'MOTORISTA', key: 'motorista', width: 25 });
+        if (requestedCols.includes('ajudante')) columns.push({ header: 'AJUDANTE', key: 'ajudante', width: 25 });
+        if (requestedCols.includes('veiculo')) columns.push({ header: 'VEÍCULO', key: 'veiculo', width: 20 });
+        if (requestedCols.includes('qtd_entregas')) columns.push({ header: 'TOTAL DE PARADAS (ROTA)', key: 'qtd_entregas', width: 25 });
+        if (requestedCols.includes('clientes')) columns.push({ header: 'CLIENTES (QUANTIDADES)', key: 'clientes_info', width: 60 });
+        if (requestedCols.includes('qtd_itens')) columns.push({ header: 'SOMA TOTAL DE ITENS', key: 'soma_itens', width: 25 });
+
+        sheet.columns = columns;
 
         sheet.getRow(1).eachCell(cell => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
@@ -721,23 +681,18 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        dados.forEach(m => {
+        cadernosAgrupados.forEach(c => {
             sheet.addRow({
-                id: m.id,
-                data_criacao: new Date(m.data_criacao).toLocaleString('pt-BR'),
-                motorista: m.motorista,
-                ajudante: m.ajudante || '-',
-                veiculo: m.veiculo || '-',
-                local_entrega: m.local_entrega || 'Nenhum local atribuído',
-                itens_pedido: m.itens_pedido || '-',
-                quantidade: m.quantidade || '-',
-                valor_aberto: m.valor_aberto ? parseFloat(m.valor_aberto) : '',
-                item_status: m.item_status || '-',
-                link_endereco: m.link_endereco || '-'
+                id: c.id,
+                data_criacao: new Date(c.data_criacao).toLocaleString('pt-BR'),
+                motorista: c.motorista,
+                ajudante: c.ajudante || '-',
+                veiculo: c.veiculo || '-',
+                qtd_entregas: c.qtd_entregas || 0,
+                clientes_info: c.clientes_str.length > 0 ? c.clientes_str.join(', ') : 'Nenhum local atribuído',
+                soma_itens: c.soma_total_itens
             });
         });
-
-        sheet.getColumn('valor_aberto').numFmt = '"R$ " #,##0.00';
 
         sheet.eachRow(row => {
             row.eachCell(cell => {
@@ -747,7 +702,7 @@ router.get('/exportar/caderno-entregas', async (req, res) => {
 
         const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Caderno_Entregas_${dataHoje}.xlsx`);
+        res.setHeader('Content-Disposition', `attachment; filename=Relatorio_Cadernos_${dataHoje}.xlsx`);
 
         await workbook.xlsx.write(res);
         res.end();
@@ -790,12 +745,8 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
         const fs = require('fs');
         const path = require('path');
 
-        // =======================================================
-        // URL DE INTERCEPTAÇÃO: APONTA PARA O NOSSO BACKEND
-        // =======================================================
         let linkRotaCompleta = "#";
         if (itens.length > 0) {
-            //linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
             linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
         }
 
@@ -906,14 +857,8 @@ router.get("/caderno-entregas/pdf/:id", async (req, res) => {
 
         doc.font('Helvetica-Oblique').fontSize(8).fillColor('#888888').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, colLabelX, infoY);
 
-        // =======================================================
-        // CONSTRÓI O LINK DE INTERCEPTAÇÃO E GERA O QR CODE MESTRE
-        // =======================================================
         if (itens && itens.length > 0) {
             try {
-                //const linkRotaCompleta = `http://192.168.1.48:3000/caderno-entregas/iniciar-rota/${id}`;
-                const linkRotaCompleta = `https://ecoflow.seteumdev.com.br/caderno-entregas/iniciar-rota/${id}`;
-
                 const qrUrlGeral = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(linkRotaCompleta)}`;
                 const responseGeral = await axios.get(qrUrlGeral, { responseType: 'arraybuffer' });
                 const qrBufferGeral = Buffer.from(responseGeral.data, 'binary');

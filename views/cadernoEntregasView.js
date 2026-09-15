@@ -3,7 +3,6 @@ const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent");
 
 function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistorico = [], paginacao = {}, filtros = {}, catalogoItens = [], colaboradores = []) {
-  // Ajuste seguro para ler o usuário independente se foi passado o objeto req ou usuario direto
   const usuarioObj = (req && req.session) ? req.session.user : req;
   const termosHTML = termosComponent(usuarioObj);
   const user = usuarioObj || { nome: "Usuário", tipo_usuario: "admin" };
@@ -486,10 +485,9 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
 
-      /* Customização do balão do Tooltip (Bootstrap 5) */
     .custom-tooltip .tooltip-inner {
-        background-color: #1a1d20; /* Fundo escuro do seu painel */
-        border: 1px solid #198754; /* Cor da borda verde (ou substitua pela sua variável hexadecimal) */
+        background-color: #1a1d20; 
+        border: 1px solid #198754; 
         color: #ffffff;
         padding: 10px 14px;
         font-size: 0.8rem;
@@ -499,9 +497,8 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
 
-    /* Customização da setinha (Arrow) para acompanhar a cor do balão */
     .custom-tooltip .tooltip-arrow::before {
-        border-top-color: #198754 !important; /* Cor da borda para a seta superior */
+        border-top-color: #198754 !important; 
     }
       
       .btn-primary, .btn-success { background-color: #08c068; border-color: #08c068; color: #1f1f1f; }
@@ -626,9 +623,11 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                 </i>
             </div>
 
-            <a href="/caderno-entregas/clientes/exportar-excel" target="_blank" class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" title="Baixar Excel" onclick="mostrarToast('sucesso', 'Download Iniciado!', 'O seu relatório Excel está a ser gerado e descarregado.')">
+            <!-- BOTÃO ABRIR MODAL DE EXPORTAÇÃO -->
+            <button class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalRelatorioCadernos">
                 <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
-            </a>
+            </button>
+            
             <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
                 <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">Novo</span>
             </button>
@@ -659,6 +658,49 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       }
 
       ${paginacaoHtml}
+    </div>
+
+    <!-- MODAL RELATORIO DE CADERNOS -->
+    <div class="modal fade" id="modalRelatorioCadernos" tabindex="-1">
+      <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
+          <div class="modal-header modal-header-dark border-custom">
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório de Entregas</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4 bg-custom-dark">
+            
+            <div class="mb-3">
+              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-calendar-days text-accent me-1"></i> Período do Relatório</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label text-white-50 small mb-1" for="relatorioDataInicio">De:</label>
+                  <input type="date" id="relatorioDataInicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-white-50 small mb-1" for="relatorioDataFim">Até:</label>
+                  <input type="date" id="relatorioDataFim" class="form-control form-control-sm shadow-sm" value="${filtros.data_fim || ''}">
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4 pt-3 border-top border-custom">
+              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-table-columns text-accent me-1"></i> Selecione as Colunas Desejadas</label>
+              <div class="row g-2">
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="id" id="chkColId" checked><label class="form-check-label text-white-50 small" for="chkColId">ID do Caderno</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="data" id="chkColData" checked><label class="form-check-label text-white-50 small" for="chkColData">Data e Horário</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="motorista" id="chkColMot" checked><label class="form-check-label text-white-50 small" for="chkColMot">Motorista</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="ajudante" id="chkColAju" checked><label class="form-check-label text-white-50 small" for="chkColAju">Ajudante</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="veiculo" id="chkColVeiculo" checked><label class="form-check-label text-white-50 small" for="chkColVeiculo">Veículo</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="qtd_entregas" id="chkColQtdEntregas" checked><label class="form-check-label text-white-50 small" for="chkColQtdEntregas">Qtd Entregas (Rota)</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="clientes" id="chkColClientes" checked><label class="form-check-label text-white-50 small" for="chkColClientes">Clientes (Quantidades)</label></div></div>
+                 <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="qtd_itens" id="chkColQtdItens" checked><label class="form-check-label text-white-50 small" for="chkColQtdItens">Soma Total de Itens</label></div></div>
+              </div>
+            </div>
+            <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Planilha</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
@@ -904,6 +946,32 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       let clientNames = Object.keys(dictClientes);
       const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
       const listaColabDB = ${JSON.stringify(colaboradores || [])};
+
+      // ==========================================
+      // LÓGICA DE EXPORTAÇÃO EXCEL
+      // ==========================================
+      function baixarRelatorioCadernos() {
+          const colsMarcadas = Array.from(document.querySelectorAll('.chk-col-caderno:checked')).map(cb => cb.value).join(',');
+          
+          if (!colsMarcadas) {
+              mostrarToast('erro', 'Atenção', 'Selecione pelo menos uma coluna para exportar no relatório.');
+              return;
+          }
+          
+          const dataInicio = document.getElementById('relatorioDataInicio').value;
+          const dataFim = document.getElementById('relatorioDataFim').value;
+
+          let url = \`/exportar/caderno-entregas?cols=\${colsMarcadas}\`;
+          if (dataInicio) url += \`&data_inicio=\${dataInicio}\`;
+          if (dataFim) url += \`&data_fim=\${dataFim}\`;
+
+          window.open(url, '_blank');
+
+          const modalRelatorio = bootstrap.Modal.getInstance(document.getElementById('modalRelatorioCadernos'));
+          if (modalRelatorio) modalRelatorio.hide();
+          
+          mostrarToast('sucesso', 'Download Iniciado!', 'A sua planilha com as colunas selecionadas está sendo gerada.');
+      }
 
       // =======================================================================
       // ALTERNAR CONFIGURAÇÃO DE DISPARO DO WHATSAPP (VINCULADO AO ESCOPO GLOBAL)
@@ -1185,7 +1253,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       }
 
       function atualizarModaisDinamicos(doc) {
-          const staticModals = ['modalInstrucoes', 'migracaoModal', 'novoCadernoModal', 'modalImprimirNovo', 'modalProcessandoRota', 'sidebarMenu'];
+          const staticModals = ['modalInstrucoes', 'migracaoModal', 'novoCadernoModal', 'modalImprimirNovo', 'modalProcessandoRota', 'sidebarMenu', 'modalRelatorioCadernos'];
           document.querySelectorAll('.modal').forEach(m => {
               if (!staticModals.includes(m.id)) m.remove();
           });
@@ -1601,7 +1669,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                   const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
 
                   if (modalLoading) {
-                      modalLoading.hide();
+                          modalLoading.hide();
                   }
               }
 

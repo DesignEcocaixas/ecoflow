@@ -102,7 +102,7 @@ client.initialize().catch(err => {
     console.error('[WHATSAPP] 🔥 Erro fatal ao inicializar o Puppeteer:', err.message);
 });
 
-// FUNÇÃO DE ENVIO REESCRITA (BYPASS DIRETO NO CHAT_ID PARA EVITAR DETACHED FRAME)
+// FUNÇÃO DE ENVIO REESCRITA (RESOLVENDO O 9º DÍGITO COM BLINDAGEM DE RETRY)
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
@@ -117,32 +117,47 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             numeroLimpo = '55' + numeroLimpo;
         }
 
-        // 🛡️ O segredo contra o Detached Frame: Removi o getNumberId()
-        // Formatamos o ID nativo da API e atiramos a mensagem de forma invisível
-        const chatId = numeroLimpo + "@c.us";
-
-        // Um respiro sutil para o node processar a rede
+        // Timeout dinâmico: na primeira tentativa espera pouco, nas re-tentativas aguarda mais para a tela estabilizar
         const delayBase = tentativa === 1 ? 1500 : 3500;
         await new Promise(resolve => setTimeout(resolve, delayBase));
 
-        // Envia diretamente para o ChatId do contato
+        // 🛡️ REINSERINDO O getNumberId(): 
+        // No Brasil, devido à regra do 9º dígito, enviar para o @c.us diretamente causa "No LID for user".
+        // O getNumberId pergunta à base da Meta qual é o ID exato (com ou sem o 9) daquele contato.
+        let chatId;
+        const numberId = await client.getNumberId(numeroLimpo);
+        
+        if (numberId) {
+            chatId = numberId._serialized;
+        } else {
+            chatId = numeroLimpo + "@c.us";
+        }
+
+        // Antes de injetar o chat no WWebJS, respira rapidamente
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         await client.sendMessage(chatId, mensagem);
         
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return true;
         
     } catch (error) {
-        // Se der algum erro (como número bloqueado pelo WhatsApp), fazemos as 3 tentativas padrão
-        if (error.message && (error.message.includes('detached Frame') || error.message.includes('Execution context was destroyed')) && tentativa < 3) {
-            registrarLogTerminal(`⚠️ Frame instável detectado para ${nomeCliente}. Reorganizando contexto interno... (Tentativa ${tentativa + 1}/3)`);
+        // 🛡️ Lógica Definitiva para Detached Frame E No LID
+        if (error.message && (error.message.includes('detached Frame') || error.message.includes('Execution context was destroyed') || error.message.includes('LID')) && tentativa < 3) {
+            
+            const tipoErro = error.message.includes('LID') ? 'Sincronização de Contato' : 'Frame do Navegador';
+            registrarLogTerminal(`⚠️ Instabilidade (${tipoErro}) para ${nomeCliente}. Restaurando... (Tentativa ${tentativa + 1}/3)`);
             
             try {
+                // Traz a página para foco para acordar os frames
                 if (client.pupPage) {
                     await client.pupPage.bringToFront().catch(() => {});
                 }
             } catch(e) {}
             
+            // Aguarda 4 segundos rigorosos para o WWebJS e o Puppeteer restaurarem as referências
             await new Promise(resolve => setTimeout(resolve, 4000)); 
+            
             return await enviarMensagem(numero, mensagem, nomeCliente, tentativa + 1);
         }
 

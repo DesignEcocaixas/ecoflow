@@ -61,16 +61,14 @@ router.get("/envios-whatsapp", async (req, res) => {
     }
 });
 
-// 2. ENDPOINT DE MONITORAMENTO (POLLING DO MODAL) - ATUALIZADO
+// 2. ENDPOINT DE MONITORAMENTO (POLLING DO MODAL)
 router.get("/api/whatsapp/status-monitor", async (req, res) => {
     if (!req.session.user) return res.status(401).json({ erro: "Não autorizado" });
     
-    // Pega o snapshot atual de logs e qr code
     const dadosMonitor = whatsappService.obterDadosMonitor();
     dadosMonitor.isReady = whatsappService.verificarReady();
     
     try {
-        // Puxa as últimas 15 mensagens do banco para renderizar a tabela com perfeição e sem falhas
         const [dbLogs] = await db.promise().query(`
             SELECT * FROM whatsapp_logs_envio 
             ORDER BY data_envio DESC LIMIT 15
@@ -225,14 +223,16 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
                         let msgErro = null;
 
                         try {
-                            disparou = await whatsappService.enviarMensagem(numero, mensagemFormatada, cliente.local_entrega);
-                            if (!disparou) msgErro = "Falha silenciosa ou serviço indisponível.";
+                            // Captura a resposta inteligente (Objeto) do whatsappService
+                            const resultado = await whatsappService.enviarMensagem(numero, mensagemFormatada, cliente.local_entrega);
+                            disparou = resultado.success;
+                            if (!disparou) msgErro = resultado.error || "Serviço indisponível.";
                         } catch (errDisparo) {
                             disparou = false;
                             msgErro = errDisparo.message || "Erro desconhecido ao disparar.";
                         }
 
-                        // INSERE A MENSAGEM NO BANCO DE DADOS
+                        // INSERE A MENSAGEM DETALHADA NO BANCO DE DADOS
                         await db.promise().query(`
                             INSERT INTO whatsapp_logs_envio (caderno_id, cliente, contato, sucesso, erro, mensagem) 
                             VALUES (?, ?, ?, ?, ?, ?)
@@ -305,8 +305,10 @@ router.post("/api/whatsapp/reenviar", async (req, res) => {
         let msgErro = null;
 
         try {
-            disparou = await whatsappService.enviarMensagem(novo_numero, logOriginal.mensagem, logOriginal.cliente);
-            if (!disparou) msgErro = "Falha silenciosa ou serviço indisponível.";
+            // Captura a resposta inteligente (Objeto) do whatsappService
+            const resultado = await whatsappService.enviarMensagem(novo_numero, logOriginal.mensagem, logOriginal.cliente);
+            disparou = resultado.success;
+            if (!disparou) msgErro = resultado.error || "Serviço indisponível.";
         } catch (errDisparo) {
             disparou = false;
             msgErro = errDisparo.message || "Erro desconhecido ao disparar.";
@@ -329,7 +331,7 @@ router.post("/api/whatsapp/reenviar", async (req, res) => {
     }
 });
 
-// 7. NOVO ENDPOINT: BUSCAR DETALHES DO CADERNO (PARA O MODAL) COM O VEÍCULO INCLUSO
+// 7. NOVO ENDPOINT: BUSCAR DETALHES DO CADERNO (PARA O MODAL)
 router.get("/api/cadernos/:id/detalhes", async (req, res) => {
     if (!req.session.user) return res.status(401).json({ success: false, erro: "Não autorizado" });
     

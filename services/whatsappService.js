@@ -120,25 +120,25 @@ const gerarVersoesNumero = (numeroRaw) => {
         // Aplica regra de 9º dígito apenas para números móveis do Brasil (DDD 11 a 99)
         if (parseInt(ddd) >= 11 && parseInt(ddd) <= 99) {
             if (resto.length === 9 && resto[0] === '9') {
-                versao2 = '55' + ddd + resto.substring(1); // Ex: Transforma 5571999357602 em 557199357602 (Sem o 9 inicial)
+                versao2 = '55' + ddd + resto.substring(1); // Sem o 9 inicial
             } else if (resto.length === 8) {
-                versao2 = '55' + ddd + '9' + resto; // Ex: Transforma 557199357602 em 5571999357602 (Com o 9 inicial)
+                versao2 = '55' + ddd + '9' + resto; // Com o 9 inicial
             }
         }
     }
     
-    return [versao1, versao2].filter(Boolean); // Retorna array apenas com versões válidas
+    return [versao1, versao2].filter(Boolean); 
 };
 
-// FUNÇÃO DE ENVIO REESCRITA COM AVALIADOR DE DÍGITO
+// FUNÇÃO DE ENVIO COM RETORNO DE OBJETO PARA LOG DETALHADO NO BANCO DE DADOS
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
-        return false;
+        return { success: false, error: "Servidor do WhatsApp não está conectado." };
     }
 
     const versoesParaTentar = gerarVersoesNumero(numero);
-    if (versoesParaTentar.length === 0) return false;
+    if (versoesParaTentar.length === 0) return { success: false, error: "Número inválido ou em branco." };
 
     // Timeout de estabilização do navegador
     const delayBase = tentativa === 1 ? 1500 : 3500;
@@ -147,11 +147,9 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
     let disparou = false;
     let ultimoErro = null;
 
-    // Loop Inteligente: Testa o número com o 9 e sem o 9
     for (let numVer of versoesParaTentar) {
         try {
             let chatId;
-            // Valida na base da Meta para qual versão o WhatsApp do cliente foi registrado
             const numberId = await client.getNumberId(numVer);
             
             if (numberId) {
@@ -160,21 +158,18 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
                 chatId = numVer + "@c.us";
             }
 
-            // Respiro pro DOM do WhatsApp antes de enviar
             await new Promise(resolve => setTimeout(resolve, 800));
 
             await client.sendMessage(chatId, mensagem);
             
             disparou = true;
-            break; // Sai do for, enviou com sucesso!
+            break; 
             
         } catch (error) {
             ultimoErro = error;
-            // Se o erro for de "LID" (usuário inexistente), apenas pula e tenta a outra variação numérica
             if (error.message && error.message.includes('LID')) {
                 continue;
             } else {
-                // Se for outro erro de Puppeteer (Detached Frame), quebra o for para usar o retry externo
                 break;
             }
         }
@@ -182,9 +177,8 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
 
     if (disparou) {
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
-        return true;
+        return { success: true };
     } else {
-        // Trata os erros finais caso nenhuma variação de número tenha funcionado
         if (ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached Frame') || ultimoErro.message.includes('Execution context was destroyed')) && tentativa < 3) {
             registrarLogTerminal(`⚠️ Frame instável detectado para ${nomeCliente}. Reorganizando contexto interno... (Tentativa ${tentativa + 1}/3)`);
             try {
@@ -196,12 +190,14 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         }
 
         if (ultimoErro && ultimoErro.message && ultimoErro.message.includes('LID')) {
-            registrarLogTerminal(`❌ Número inválido/inexistente no WhatsApp: ${nomeCliente} | ${numero}`);
-            return false;
+            const erroPersonalizado = `Número inválido/inexistente no WhatsApp`;
+            registrarLogTerminal(`❌ ${erroPersonalizado}: ${nomeCliente} | ${numero}`);
+            return { success: false, error: erroPersonalizado };
         }
 
-        registrarLogTerminal(`❌ Erro crítico ao enviar para: ${nomeCliente} | ${numero} - ${ultimoErro ? ultimoErro.message : 'Erro Desconhecido'}`);
-        return false;
+        const erroGenerico = ultimoErro ? ultimoErro.message : 'Erro Desconhecido';
+        registrarLogTerminal(`❌ Erro crítico ao enviar para: ${nomeCliente} | ${numero} - ${erroGenerico}`);
+        return { success: false, error: erroGenerico };
     }
 };
 

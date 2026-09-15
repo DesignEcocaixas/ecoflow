@@ -417,17 +417,20 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           <div class="modal-body text-center p-5 pt-2 bg-custom-darker">
             <div class="mb-4">
                <div class="d-inline-flex align-items-center justify-content-center bg-custom-dark rounded-circle shadow-sm border-custom" style="width: 70px; height: 70px;">
-                   <i class="fa-solid fa-print fa-xl text-accent"></i>
+                   <i class="fa-solid fa-route fa-xl text-accent"></i>
                </div>
             </div>
             <h6 class="fw-bold text-white mb-3">Caderno Gerado com Sucesso</h6>
-            <p class="text-muted mb-4" style="font-size:0.8rem; line-height: 1.5;">A rota foi otimizada e salva no sistema. Deseja imprimir o manifesto de entregas agora?</p>
+            <p class="text-muted mb-4" style="font-size:0.8rem; line-height: 1.5;">A rota foi otimizada e salva no sistema.</p>
             <div class="d-flex flex-column gap-2 mt-2">
                <a href="#" target="_blank" id="btnImprimirNovoModal" class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalImprimirNovo')).hide();">
-                   <i class="fa-solid fa-print me-1"></i> Imprimir Manifesto
+                   <i class="fa-solid fa-print me-1"></i> Imprimir caderno
                </a>
+               <button type="button" id="btnDispararNovoModal" class="btn btn-sm btn-success fw-bold shadow-sm text-dark">
+                   <i class="fa-brands fa-whatsapp me-1"></i> Disparar Mensagens
+               </button>
                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white fw-bold" data-bs-dismiss="modal">
-                   Agora Não
+                   Fechar
                </button>
             </div>
           </div>
@@ -697,7 +700,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                  <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="qtd_itens" id="chkColQtdItens" checked><label class="form-check-label text-white-50 small" for="chkColQtdItens">Soma Total de Itens</label></div></div>
               </div>
             </div>
-            <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar relatório</button>
+            <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Planilha</button>
           </div>
         </div>
       </div>
@@ -974,7 +977,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       }
 
       // =======================================================================
-      // ALTERNAR CONFIGURAÇÃO DE DISPARO DO WHATSAPP (VINCULADO AO ESCOPO GLOBAL)
+      // ALTERNAR CONFIGURAÇÃO DE DISPARO DO WHATSAPP E DISPARO MANUAL 
       // =======================================================================
       window.alternarStatusWhatsapp = async function(ativo) {
           console.log(\`[WHATSAPP CONFIG] ⚙️ Função de envio automático foi \${ativo ? 'ATIVADA' : 'DESATIVADA'} pelo usuário.\`);
@@ -995,6 +998,32 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           }
       };
 
+      async function dispararMensagensNovoCaderno(id) {
+          const modalImp = bootstrap.Modal.getInstance(document.getElementById('modalImprimirNovo'));
+          if (modalImp) modalImp.hide();
+
+          mostrarToastCarregando('Iniciando disparo em lote...');
+
+          try {
+              const response = await fetch('/caderno-entregas/disparar-manual', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ids: [id] })
+              });
+
+              if (response.ok) {
+                  mostrarToast('sucesso', 'Mensagens Enviadas!', 'O processo de disparo foi iniciado no servidor.');
+              } else {
+                  mostrarToast('erro', 'Falha no Servidor', 'Ocorreu um problema ao disparar as mensagens.');
+              }
+          } catch (err) {
+              mostrarToast('erro', 'Erro de Conexão', 'Verifique a sua internet e tente novamente.');
+          }
+      }
+
+      // =======================================================================
+      // LÓGICA DE FORMULÁRIOS E UI
+      // =======================================================================
       function handleColabInput(event, inputEl, imgId) {
           const dropdown = inputEl.nextElementSibling;
           let val = inputEl.value;
@@ -1088,6 +1117,23 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           }
       }
 
+      function mostrarToastCarregando(mensagem) {
+          const successToastEl = document.getElementById('sucessoToast');
+          if(!successToastEl) return;
+          document.getElementById('sucessoTitulo').innerText = "A Processar";
+          document.getElementById('sucessoSub').innerText = mensagem;
+
+          successToastEl.setAttribute('data-bs-autohide', 'false');
+
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
+      }
+
       function gerarSkeletonTabela(quantidade = 5) {
           let html = '';
           for(let i=0; i<quantidade; i++) {
@@ -1174,6 +1220,12 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               if (btnImprimir) {
                   btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
               }
+              
+              const btnDisparar = document.getElementById('btnDispararNovoModal');
+              if (btnDisparar) {
+                  btnDisparar.setAttribute('onclick', \`dispararMensagensNovoCaderno(\${cadernoCriadoId})\`);
+              }
+
               const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
               modalImp.show();
 
@@ -1445,6 +1497,22 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           }
       }
 
+      function fecharModalCarregamentoSeguro() {
+          const loadingModalEl = document.getElementById('modalProcessandoRota');
+          if (loadingModalEl) {
+              const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+              if (modalLoading) {
+                  modalLoading.hide();
+              }
+              // Força a limpeza para evitar que a tela fique bloqueada pelo fundo cinza
+              setTimeout(() => {
+                  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                  document.body.classList.remove('modal-open');
+                  document.body.style = '';
+              }, 300);
+          }
+      }
+
       async function prepararSubmissaoSimples(event, form, titleMsg) {
           event.preventDefault();
 
@@ -1468,23 +1536,21 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           const isProcessamentoRota = form.action.includes('/caderno-entregas/novo') ||
                                      form.action.includes('/caderno-entregas/editar/');
 
-          const abrirModalProcessamento = () => {
-              if (!isProcessamentoRota) {
-                  mostrarSkeletonGlobais();
-                  return;
-              }
+          // Fechar modal atual caso esteja aberto
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modalAtual = bootstrap.Modal.getInstance(modalEl) ||
+                                 bootstrap.Modal.getOrCreateInstance(modalEl);
+              modalAtual.hide();
+          }
 
-              if (tituloModal) {
-                  tituloModal.innerText = "Otimizando Rota...";
-              }
+          // Delay rápido para evitar choque de animações do Bootstrap
+          await new Promise(resolve => setTimeout(resolve, 300));
 
-              if (subModal) {
-                  subModal.innerText = "Consultando inteligência geográfica do Google Maps...";
-              }
-
-              if (barraModal) {
-                  barraModal.style.width = '15%';
-              }
+          if (isProcessamentoRota) {
+              if (tituloModal) tituloModal.innerText = "Otimizando Rota...";
+              if (subModal) subModal.innerText = "Consultando inteligência geográfica do Google Maps...";
+              if (barraModal) barraModal.style.width = '15%';
 
               if (loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getOrCreateInstance(loadingModalEl);
@@ -1492,18 +1558,12 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               }
 
               let progresso = 15;
-
               intervalProgress = setInterval(() => {
                   if (progresso < 98) {
                       progresso += Math.floor(Math.random() * 8) + 2;
 
-                      if (progresso > 98) {
-                          progresso = 98;
-                      }
-
-                      if (barraModal) {
-                          barraModal.style.width = progresso + '%';
-                      }
+                      if (progresso > 98) progresso = 98;
+                      if (barraModal) barraModal.style.width = progresso + '%';
 
                       if (progresso > 30 && progresso < 60 && subModal) {
                           subModal.innerText = "Consultando Google Maps API...";
@@ -1518,21 +1578,8 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                       }
                   }
               }, 400);
-          };
-
-          const modalEl = form.closest('.modal');
-
-          if (modalEl) {
-              const modalAtual = bootstrap.Modal.getInstance(modalEl) ||
-                                 bootstrap.Modal.getOrCreateInstance(modalEl);
-
-              modalEl.addEventListener('hidden.bs.modal', () => {
-                  abrirModalProcessamento();
-              }, { once: true });
-
-              modalAtual.hide();
           } else {
-              abrirModalProcessamento();
+              mostrarSkeletonGlobais();
           }
 
           try {
@@ -1551,135 +1598,105 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                   body: formData.toString()
               });
 
-              if (intervalProgress) {
-                  clearInterval(intervalProgress);
-              }
+              if (intervalProgress) clearInterval(intervalProgress);
+              if (barraModal && isProcessamentoRota) barraModal.style.width = '100%';
+              if (subModal && isProcessamentoRota) subModal.innerText = "Finalizando processamento...";
+              if (isProcessamentoRota) await new Promise(resolve => setTimeout(resolve, 350));
 
-              if (barraModal && isProcessamentoRota) {
-                  barraModal.style.width = '100%';
-              }
+              const processarResposta = async () => {
+                  if (response.ok) {
+                      await new Promise(r => setTimeout(r, 200));
 
-              if (subModal && isProcessamentoRota) {
-                  subModal.innerText = "Finalizando processamento...";
-              }
+                      const freshResponse = await fetch(window.location.href);
+                      const html = await freshResponse.text();
 
-              if (isProcessamentoRota) {
-                  await new Promise(resolve => setTimeout(resolve, 350));
-              }
+                      const parser = new DOMParser();
+                      const doc = parser.parseFromString(html, 'text/html');
 
-              if (loadingModalEl) {
-                  const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+                      const oldContent = document.querySelector('.content');
+                      const newContent = doc.querySelector('.content');
 
-                  if (modalLoading) {
-                      modalLoading.hide();
-                  }
-              }
-
-              if (response.ok) {
-                  await new Promise(r => setTimeout(r, 600));
-
-                  const freshResponse = await fetch(window.location.href);
-                  const html = await freshResponse.text();
-
-                  const parser = new DOMParser();
-                  const doc = parser.parseFromString(html, 'text/html');
-
-                  const oldContent = document.querySelector('.content');
-                  const newContent = doc.querySelector('.content');
-
-                  if (oldContent && newContent) {
-                      oldContent.innerHTML = newContent.innerHTML;
-                  }
-
-                  atualizarModaisDinamicos(doc);
-
-                  form.reset();
-
-                  const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
-                  dynamicContainers.forEach(el => el.remove());
-
-                  const defaultImgMot = "https://ui-avatars.com/api/?name=Motorista&background=1f1f1f&color=08c068";
-                  const defaultImgAju = "https://ui-avatars.com/api/?name=Ajudante&background=222&color=6c757d";
-
-                  const fotoMotNovo = document.getElementById('fotoMotoristaNovo');
-                  const fotoAjuNovo = document.getElementById('fotoAjudanteNovo');
-
-                  if (fotoMotNovo) {
-                      fotoMotNovo.src = defaultImgMot;
-                  }
-
-                  if (fotoAjuNovo) {
-                      fotoAjuNovo.src = defaultImgAju;
-                  }
-
-                  const responseUrl = new URL(response.url);
-
-                  if (responseUrl.searchParams.has('cadernoCriado')) {
-                      const cadernoCriadoId = responseUrl.searchParams.get('cadernoCriado');
-
-                      mostrarToast(
-                          'sucesso',
-                          'Sucesso!',
-                          'Caderno criado e otimizado com sucesso.'
-                      );
-
-                      const btnImprimir = document.getElementById('btnImprimirNovoModal');
-
-                      if (btnImprimir) {
-                          btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
+                      if (oldContent && newContent) {
+                          oldContent.innerHTML = newContent.innerHTML;
                       }
 
-                      const modalImp = bootstrap.Modal.getOrCreateInstance(
-                          document.getElementById('modalImprimirNovo')
-                      );
+                      atualizarModaisDinamicos(doc);
+                      form.reset();
 
-                      modalImp.show();
+                      const dynamicContainers = form.querySelectorAll('.container-entregas-dinamico .entrega-item:not(:first-child)');
+                      dynamicContainers.forEach(el => el.remove());
+
+                      const defaultImgMot = "https://ui-avatars.com/api/?name=Motorista&background=1f1f1f&color=08c068";
+                      const defaultImgAju = "https://ui-avatars.com/api/?name=Ajudante&background=222&color=6c757d";
+
+                      const fotoMotNovo = document.getElementById('fotoMotoristaNovo');
+                      const fotoAjuNovo = document.getElementById('fotoAjudanteNovo');
+
+                      if (fotoMotNovo) fotoMotNovo.src = defaultImgMot;
+                      if (fotoAjuNovo) fotoAjuNovo.src = defaultImgAju;
+
+                      const responseUrl = new URL(response.url);
+
+                      if (responseUrl.searchParams.has('cadernoCriado')) {
+                          const cadernoCriadoId = responseUrl.searchParams.get('cadernoCriado');
+
+                          mostrarToast('sucesso', 'Sucesso!', 'Caderno criado e otimizado com sucesso.');
+
+                          const btnImprimir = document.getElementById('btnImprimirNovoModal');
+                          if (btnImprimir) {
+                              btnImprimir.href = "/caderno-entregas/pdf/" + cadernoCriadoId;
+                          }
+
+                          const btnDisparar = document.getElementById('btnDispararNovoModal');
+                          if (btnDisparar) {
+                              btnDisparar.setAttribute('onclick', \`dispararMensagensNovoCaderno(\${cadernoCriadoId})\`);
+                          }
+
+                          // Aguarda o processamento do DOM para exibir a sugestão
+                          setTimeout(() => {
+                              const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
+                              modalImp.show();
+                          }, 150);
+
+                      } else {
+                          mostrarToast('sucesso', 'Concluído!', titleMsg);
+                      }
+
                   } else {
-                      mostrarToast('sucesso', 'Concluído!', titleMsg);
+                      mostrarToast('erro', 'Erro', 'Não foi possível salvar os dados no servidor.');
                   }
+                  isSubmitting = false;
+              };
 
+              if (isProcessamentoRota && loadingModalEl) {
+                  const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
+                  if (modalLoading) {
+                      // Espera a animação de ocultar o carregamento terminar antes de processar
+                      loadingModalEl.addEventListener('hidden.bs.modal', function handler() {
+                          loadingModalEl.removeEventListener('hidden.bs.modal', handler);
+                          processarResposta();
+                      });
+                      modalLoading.hide();
+                  } else {
+                      processarResposta();
+                  }
               } else {
-                  if (intervalProgress) {
-                      clearInterval(intervalProgress);
-                  }
-
-                  if (loadingModalEl) {
-                      const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
-
-                      if (modalLoading) {
-                          modalLoading.hide();
-                      }
-                  }
-
-                  mostrarToast(
-                      'erro',
-                      'Erro',
-                      'Não foi possível salvar os dados no servidor.'
-                  );
+                  ocultarSkeletonGlobais();
+                  processarResposta();
               }
 
           } catch (err) {
               console.error(err);
-
-              if (intervalProgress) {
-                  clearInterval(intervalProgress);
-              }
+              if (intervalProgress) clearInterval(intervalProgress);
 
               if (loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
-
-                  if (modalLoading) {
-                          modalLoading.hide();
-                  }
+                  if (modalLoading) modalLoading.hide();
+              } else {
+                  ocultarSkeletonGlobais();
               }
 
-              mostrarToast(
-                  'erro',
-                  'Falha de Conexão',
-                  'Verifique a sua internet e tente novamente.'
-              );
-
-          } finally {
+              mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua internet e tente novamente.');
               isSubmitting = false;
           }
       }

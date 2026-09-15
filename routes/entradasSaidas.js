@@ -310,7 +310,7 @@ router.get('/movimentacoes/comprovante/:id', (req, res) => {
     });
 });
 
-//BUSCAR DADOS DE ENTRADAS E SAÍDAS POR PERÍODO
+//BUSCAR DADOS DE ENTRADAS E SAÍDAS POR PERÍODO (PARA O GRÁFICO)
 router.get('/api/movimentacoes/periodos', async (req, res) => {
     if (!req.session.user) return res.status(401).json([]);
     try {
@@ -331,18 +331,17 @@ router.get('/exportar/movimentacoes', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        const { mes, ano, cols } = req.query;
+        const { data_inicio, data_fim, cols } = req.query;
         
         // Pega as colunas escolhidas ou o padrão (todas marcadas)
         const requestedCols = cols ? cols.split(',') : ['data','tipo','valor','rastreio','descricao','observacao','assinante','responsavel'];
         
-        let whereClause = '';
+        let where = [];
         const queryParams = [];
 
-        if (mes && ano) {
-            whereClause = 'WHERE MONTH(data) = ? AND YEAR(data) = ?';
-            queryParams.push(mes, ano);
-        }
+        if (data_inicio) { where.push("DATE(data) >= ?"); queryParams.push(data_inicio); }
+        if (data_fim) { where.push("DATE(data) <= ?"); queryParams.push(data_fim); }
+        const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
 
         const [dados] = await db.promise().query(`
             SELECT data, tipo, valor, responsavel, nome_assinante, descricao, observacao, saldo_anterior, saldo_novo 
@@ -444,7 +443,7 @@ router.get('/exportar/movimentacoes', async (req, res) => {
         rowSaidas.getCell(2).font = { bold: true, color: { argb: 'FFDC3545' } };
         rowSaldo.getCell(2).font = { bold: true, color: { argb: saldoFinal >= 0 ? 'FF000000' : 'FFDC3545' } };
 
-        const compNome = (mes && ano) ? `${mes}_${ano}` : `Geral`;
+        const compNome = (data_inicio || data_fim) ? `${data_inicio || 'Inicio'}_ate_${data_fim || 'Fim'}` : `Geral`;
         const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

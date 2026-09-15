@@ -1,4 +1,3 @@
-// views/entradasSaidasView.js
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
@@ -468,7 +467,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                     <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
                         <i class="fa-solid fa-arrow-up me-1"></i> Retirada
                     </button>
-                    <button class="btn btn-outline-secondary border-custom text-white shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0 hover-verde" style="font-size: 0.75rem;" onclick="abrirModalRelatorio()" title="Exportar para Excel">
+                    <button class="btn btn-outline-secondary border-custom text-white shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0 hover-verde" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#modalRelatorio" title="Exportar para Excel">
                         <i class="fa-solid fa-file-excel me-1 text-accent"></i> Relatório
                     </button>
                 </div>
@@ -544,6 +543,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       ${paginacaoHtml}
     </div>
 
+    <!-- MODAL RELATORIO -->
     <div class="modal fade" id="modalRelatorio" tabindex="-1">
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
@@ -553,14 +553,17 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           </div>
           <div class="modal-body p-4 bg-custom-dark">
             
-            <div class="row mb-3">
-              <div class="col-6">
-                <label class="form-label text-white-50 fw-bold small mb-1">Ano Base</label>
-                <select id="relatorioAno" class="form-select form-select-sm shadow-sm"></select>
-              </div>
-              <div class="col-6">
-                <label class="form-label text-white-50 fw-bold small mb-1">Mês Base</label>
-                <select id="relatorioMes" class="form-select form-select-sm shadow-sm"></select>
+            <div class="mb-3">
+              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-calendar-days text-accent me-1"></i> Período do Relatório</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label text-white-50 small mb-1" for="relatorioDataInicio">De:</label>
+                  <input type="date" id="relatorioDataInicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-white-50 small mb-1" for="relatorioDataFim">Até:</label>
+                  <input type="date" id="relatorioDataFim" class="form-control form-control-sm shadow-sm" value="${filtros.data_fim || ''}">
+                </div>
               </div>
             </div>
 
@@ -1450,49 +1453,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       // ==========================================
       // LÓGICA DE EXPORTAÇÃO EXCEL
       // ==========================================
-      async function fetchSeguro(url, options = {}) {
-          const res = await fetch(url, options);
-          if (res.status === 401) {
-              window.location.href = '/login';
-              return null; 
-          }
-          return res;
-      }
-
-      let periodosMovCache = [];
-
-      async function abrirModalRelatorio() {
-          const anoSelect = document.getElementById('relatorioAno');
-          const mesSelect = document.getElementById('relatorioMes');
-          
-          try {
-              const res = await fetchSeguro('/api/movimentacoes/periodos');
-              if(!res) return;
-              periodosMovCache = await res.json();
-              
-              if (periodosMovCache.length === 0) {
-                  anoSelect.innerHTML = '<option value="">Sem dados</option>';
-                  mesSelect.innerHTML = '<option value="">Sem dados</option>';
-              } else {
-                  const anos = [...new Set(periodosMovCache.map(p => p.ano))];
-                  anoSelect.innerHTML = anos.map(a => \`<option value="\${a}">\${a}</option>\`).join('');
-                  
-                  anoSelect.onchange = () => {
-                      const anoAtual = parseInt(anoSelect.value);
-                      const meses = periodosMovCache.filter(p => p.ano === anoAtual).map(p => p.mes);
-                      const nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                      mesSelect.innerHTML = meses.map(m => \`<option value="\${m}">\${nomes[m-1]}</option>\`).join('');
-                  };
-                  anoSelect.onchange(); 
-              }
-          } catch(e) { console.error(e); }
-          
-          new bootstrap.Modal(document.getElementById('modalRelatorio')).show();
-      }
-
       function baixarRelatorioExcel() {
-          const mes = document.getElementById('relatorioMes').value;
-          const ano = document.getElementById('relatorioAno').value;
+          const dataInicio = document.getElementById('relatorioDataInicio').value;
+          const dataFim = document.getElementById('relatorioDataFim').value;
           
           const colsMarcadas = Array.from(document.querySelectorAll('.chk-coluna:checked')).map(cb => cb.value).join(',');
           
@@ -1503,9 +1466,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           
           let url = \`/exportar/movimentacoes?cols=\${colsMarcadas}\`;
           
-          if(mes && ano) {
-              url += \`&mes=\${mes}&ano=\${ano}\`;
-          }
+          if(dataInicio) url += \`&data_inicio=\${dataInicio}\`;
+          if(dataFim) url += \`&data_fim=\${dataFim}\`;
 
           window.open(url, '_blank');
 

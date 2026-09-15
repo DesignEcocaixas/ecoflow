@@ -548,7 +548,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <div class="modal-header modal-header-dark border-custom">
-            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório Dinâmico</h6>
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
@@ -581,7 +581,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               </div>
             </div>
 
-            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Baixar Planilha</button>
+            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar relatório</button>
           </div>
         </div>
       </div>

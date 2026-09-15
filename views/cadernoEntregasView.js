@@ -697,7 +697,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                  <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-col-caderno border-secondary" type="checkbox" value="qtd_itens" id="chkColQtdItens" checked><label class="form-check-label text-white-50 small" for="chkColQtdItens">Soma Total de Itens</label></div></div>
               </div>
             </div>
-            <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Planilha</button>
+            <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar relatório</button>
           </div>
         </div>
       </div>

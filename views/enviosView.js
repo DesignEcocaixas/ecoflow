@@ -915,8 +915,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
 
                       htmlItens += \`
                           <div class="mt-2 p-3 bg-custom-darker border-custom rounded d-flex justify-content-between align-items-center shadow-sm">
-                              <span class="fw-bold text-white-50 text-uppercase" style="font-size: 0.8rem;">Total Geral do Roteiro</span>
-                              <span class="fs-5 fw-black text-accent">\${totalVolumes} <span class="fs-6 fw-normal text-white-50">volumes calculados</span></span>
+                              <span class="fw-bold text-white-50 text-uppercase" style="font-size: 0.8rem;">Quantidade de caixas do roteiro</span>
+                              <span class="fs-5 fw-black text-accent">\${totalVolumes} <span class="fs-6 fw-normal text-white-50"></span></span>
                           </div>
                       \`;
                       htmlItens += '</div>';

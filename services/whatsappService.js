@@ -102,12 +102,11 @@ client.initialize().catch(err => {
     console.error('[WHATSAPP] 🔥 Erro fatal ao inicializar o Puppeteer:', err.message);
 });
 
-// FUNÇÃO AUXILIAR: GERA VERSÕES DO NÚMERO PARA LHE DAR COM O 9º DÍGITO
+// FUNÇÃO AUXILIAR: GERA VERSÕES DO NÚMERO (COM E SEM O 9º DÍGITO)
 const gerarVersoesNumero = (numeroRaw) => {
     let num = String(numeroRaw).replace(/\D/g, '');
     if (!num) return [];
     
-    // Adiciona DDI se faltar
     if (!num.startsWith('55') && num.length >= 10) num = '55' + num;
     
     let versao1 = num;
@@ -117,12 +116,11 @@ const gerarVersoesNumero = (numeroRaw) => {
         const ddd = num.substring(2, 4);
         const resto = num.substring(4);
         
-        // Aplica regra de 9º dígito apenas para números móveis do Brasil (DDD 11 a 99)
         if (parseInt(ddd) >= 11 && parseInt(ddd) <= 99) {
             if (resto.length === 9 && resto[0] === '9') {
-                versao2 = '55' + ddd + resto.substring(1); // Sem o 9 inicial
+                versao2 = '55' + ddd + resto.substring(1); 
             } else if (resto.length === 8) {
-                versao2 = '55' + ddd + '9' + resto; // Com o 9 inicial
+                versao2 = '55' + ddd + '9' + resto; 
             }
         }
     }
@@ -130,7 +128,7 @@ const gerarVersoesNumero = (numeroRaw) => {
     return [versao1, versao2].filter(Boolean); 
 };
 
-// FUNÇÃO DE ENVIO COM RETORNO DE OBJETO PARA LOG DETALHADO NO BANCO DE DADOS
+// FUNÇÃO DE ENVIO CEGO E DIRETO (SEM GETNUMBERID) PARA ZERAR TRAVAMENTOS
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
@@ -140,7 +138,6 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
     const versoesParaTentar = gerarVersoesNumero(numero);
     if (versoesParaTentar.length === 0) return { success: false, error: "Número inválido ou em branco." };
 
-    // Timeout de estabilização do navegador
     const delayBase = tentativa === 1 ? 1500 : 3500;
     await new Promise(resolve => setTimeout(resolve, delayBase));
 
@@ -149,16 +146,10 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
 
     for (let numVer of versoesParaTentar) {
         try {
-            let chatId;
-            const numberId = await client.getNumberId(numVer);
-            
-            if (numberId) {
-                chatId = numberId._serialized;
-            } else {
-                chatId = numVer + "@c.us";
-            }
+            // Removido o getNumberId! Dispara direto para o formato nativo.
+            const chatId = numVer + "@c.us";
 
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             await client.sendMessage(chatId, mensagem);
             
@@ -167,9 +158,11 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             
         } catch (error) {
             ultimoErro = error;
+            // Se o WhatsApp disser que o número não existe (No LID), pula para testar a segunda variação do 9º dígito
             if (error.message && error.message.includes('LID')) {
                 continue;
             } else {
+                // Se for instabilidade da API ou Detached Frame, quebra para tentar o Retry
                 break;
             }
         }
@@ -179,8 +172,9 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return { success: true };
     } else {
+        // Retry cravado para recuperar o Frame caso algo dê errado
         if (ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached Frame') || ultimoErro.message.includes('Execution context was destroyed')) && tentativa < 3) {
-            registrarLogTerminal(`⚠️ Frame instável detectado para ${nomeCliente}. Reorganizando contexto interno... (Tentativa ${tentativa + 1}/3)`);
+            registrarLogTerminal(`⚠️ Instabilidade na interface para ${nomeCliente}. Recuperando... (Tentativa ${tentativa + 1}/3)`);
             try {
                 if (client.pupPage) await client.pupPage.bringToFront().catch(() => {});
             } catch(e) {}
@@ -190,13 +184,13 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         }
 
         if (ultimoErro && ultimoErro.message && ultimoErro.message.includes('LID')) {
-            const erroPersonalizado = `Número inválido/inexistente no WhatsApp`;
+            const erroPersonalizado = `Número inválido ou sem WhatsApp`;
             registrarLogTerminal(`❌ ${erroPersonalizado}: ${nomeCliente} | ${numero}`);
             return { success: false, error: erroPersonalizado };
         }
 
         const erroGenerico = ultimoErro ? ultimoErro.message : 'Erro Desconhecido';
-        registrarLogTerminal(`❌ Erro crítico ao enviar para: ${nomeCliente} | ${numero} - ${erroGenerico}`);
+        registrarLogTerminal(`❌ Falha ao enviar para: ${nomeCliente} | ${numero} - ${erroGenerico}`);
         return { success: false, error: erroGenerico };
     }
 };

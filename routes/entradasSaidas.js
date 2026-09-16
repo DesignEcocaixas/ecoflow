@@ -6,6 +6,46 @@ const fs = require("fs");
 const pdfkit = require("pdfkit"); 
 const ExcelJS = require("exceljs"); 
 
+// =========================================================================
+// AUDITOR FINANCEIRO AUTOMÁTICO (CORREÇÃO DE SALDOS E PONTO FLUTUANTE)
+// =========================================================================
+async function atualizarRastreioSaldos() {
+    try {
+        // Puxa todos os registos em ordem cronológica exata
+        const [movimentos] = await db.promise().query("SELECT id, tipo, valor, saldo_anterior, saldo_novo FROM movimentacoes ORDER BY data ASC, id ASC");
+        
+        let saldoAtual = 0.00;
+        
+        for (let mov of movimentos) {
+            const valorMov = parseFloat(mov.valor) || 0;
+            
+            // Fixação cravada em 2 casas decimais para evitar os bugs de 15 centavos flutuantes
+            const saldoAnteriorCalculado = parseFloat(saldoAtual.toFixed(2));
+            
+            if (mov.tipo === 'entrada') {
+                saldoAtual += valorMov;
+            } else {
+                saldoAtual -= valorMov;
+            }
+            
+            const saldoNovoCalculado = parseFloat(saldoAtual.toFixed(2));
+            
+            const dbAnterior = parseFloat(mov.saldo_anterior) || 0;
+            const dbNovo = parseFloat(mov.saldo_novo) || 0;
+
+            // Se o saldo do banco estiver diferente da matemática exata, o sistema corrige a linha silenciosamente
+            if (dbAnterior !== saldoAnteriorCalculado || dbNovo !== saldoNovoCalculado) {
+                await db.promise().query(
+                    "UPDATE movimentacoes SET saldo_anterior = ?, saldo_novo = ? WHERE id = ?",
+                    [saldoAnteriorCalculado, saldoNovoCalculado, mov.id]
+                );
+            }
+        }
+    } catch (err) {
+        console.error("[Erro na Sincronização Inteligente de Saldos]", err);
+    }
+}
+
 //------------------------------------------------------------------------------ROTAS PARA ENTRADAS E SAÍDAS------------------------------------------------------------------------------
 //LISTAR ENTRADAS E SAÍDAS
 router.get("/entradas-saidas", (req, res) => {
@@ -98,24 +138,20 @@ router.get("/entradas-saidas", (req, res) => {
     });
 });
 
-//CADASTRAR ENTRADA/SAÍDA COM SNAPSHOT DE SALDO
+//CADASTRAR ENTRADA/SAÍDA
 router.post('/movimentacoes/novo', async (req, res) => {
     const { tipo, data, valor, descricao, observacao, assinatura_base64, nome_assinante } = req.body;
     const responsavel = req.session.user ? req.session.user.nome : "Sistema";
     const valorCalculo = parseFloat(valor) || 0;
 
     try {
-        const [saldoQuery] = await db.promise().query(`
-            SELECT COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE -valor END), 0) AS saldo_atual 
-            FROM movimentacoes
-        `);
-        const saldoAnterior = parseFloat(saldoQuery[0].saldo_atual);
-        const saldoNovo = tipo === 'entrada' ? saldoAnterior + valorCalculo : saldoAnterior - valorCalculo;
-
         await db.promise().query(`
             INSERT INTO movimentacoes (tipo, data, valor, descricao, observacao, assinatura_base64, responsavel, nome_assinante, saldo_anterior, saldo_novo)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [tipo, data, valorCalculo, descricao, observacao, assinatura_base64, responsavel, nome_assinante, saldoAnterior, saldoNovo]);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+        `, [tipo, data, valorCalculo, descricao, observacao, assinatura_base64, responsavel, nome_assinante]);
+
+        // Audit e Rebalanceamento Automático do Rastreio
+        await atualizarRastreioSaldos();
 
         res.redirect('/entradas-saidas');
     } catch (err) {
@@ -128,13 +164,17 @@ router.post('/movimentacoes/novo', async (req, res) => {
 router.post('/movimentacoes/editar/:id', async (req, res) => {
     const { id } = req.params;
     const { data, valor, descricao, observacao, nome_assinante } = req.body;
+    const valorCalculo = parseFloat(valor) || 0;
 
     try {
         await db.promise().query(`
             UPDATE movimentacoes 
             SET data = ?, valor = ?, descricao = ?, observacao = ?, nome_assinante = ?
             WHERE id = ?
-        `, [data, valor, descricao, observacao, nome_assinante, id]);
+        `, [data, valorCalculo, descricao, observacao, nome_assinante, id]);
+
+        // Audit e Rebalanceamento Automático do Rastreio
+        await atualizarRastreioSaldos();
 
         res.redirect('/entradas-saidas');
     } catch (err) {
@@ -144,7 +184,7 @@ router.post('/movimentacoes/editar/:id', async (req, res) => {
 });
 
 //EXCLUIR ENTRADA/SAÍDA
-router.post("/movimentacoes/excluir/:id", (req, res) => {
+router.post("/movimentacoes/excluir/:id", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     if (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro") {
@@ -153,13 +193,17 @@ router.post("/movimentacoes/excluir/:id", (req, res) => {
 
     const { id } = req.params;
 
-    db.query("DELETE FROM movimentacoes WHERE id = ?", [id], (err) => {
-        if (err) {
-            console.error("Erro ao excluir movimentação:", err);
-            return res.status(500).send("Erro ao excluir movimentação.");
-        }
+    try {
+        await db.promise().query("DELETE FROM movimentacoes WHERE id = ?", [id]);
+        
+        // Audit e Rebalanceamento Automático do Rastreio após apagar um salto
+        await atualizarRastreioSaldos();
+
         res.redirect("/entradas-saidas");
-    });
+    } catch (err) {
+        console.error("Erro ao excluir movimentação:", err);
+        res.status(500).send("Erro ao excluir movimentação.");
+    }
 });
 
 //API GRÁFICO ENTRADAS/SAÍDAS

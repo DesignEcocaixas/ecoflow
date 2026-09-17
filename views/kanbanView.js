@@ -645,6 +645,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
                   
+                  <!-- BOTÕES DE VISUALIZAÇÃO KANBAN / DATA (NOVO) -->
+                  <div class="btn-group shadow-sm border-custom rounded me-1" role="group">
+                      <input type="radio" class="btn-check" name="btnradio_view" id="view_kanban" autocomplete="off" checked onchange="window.mudarVisualizacao('default')">
+                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_kanban" title="Visualização Padrão (Kanban)"><i class="fa-solid fa-table-columns"></i></label>
+
+                      <input type="radio" class="btn-check" name="btnradio_view" id="view_weekday" autocomplete="off" onchange="window.mudarVisualizacao('weekday')">
+                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_weekday" title="Agrupar por Dia da Semana"><i class="fa-solid fa-calendar-week"></i></label>
+
+                      <input type="radio" class="btn-check" name="btnradio_view" id="view_month" autocomplete="off" onchange="window.mudarVisualizacao('month')">
+                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_month" title="Agrupar por Mês"><i class="fa-solid fa-calendar-days"></i></label>
+                  </div>
+
                   <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                   <div class="dropdown">
                       <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
@@ -687,7 +699,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Etiquetas">
                       <i class="fa-solid fa-tags me-1"></i> Etiquetas
                   </button>
-                  <button class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
+                  <button id="btnNovaColunaHeader" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
                       <i class="fa-solid fa-plus me-1"></i> Nova Coluna
                   </button>
               </div>
@@ -1021,6 +1033,31 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.ordemColunas = window.ordemColunas || {};
           window.lastFeedbackTime = window.lastFeedbackTime || {};
 
+          // Injetando a função de escapeHtmlAttr no frontend
+          window.escapeHtmlAttr = function(str) {
+              if (!str) return '';
+              return String(str)
+                  .replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;');
+          };
+          
+          // ==========================================
+          // ESTADO DA VISUALIZAÇÃO GLOBAL (KANBAN / DIA / MÊS)
+          // ==========================================
+          window.kanbanViewMode = 'default';
+
+          window.mudarVisualizacao = function(modo) {
+              window.kanbanViewMode = modo;
+              const btnNovaCol = document.getElementById('btnNovaColunaHeader');
+              if (btnNovaCol) {
+                  btnNovaCol.style.display = window.kanbanViewMode === 'default' ? 'inline-block' : 'none';
+              }
+              window.renderizarKanban();
+          };
+
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
 
           function escapeHtml(text) {
@@ -1040,7 +1077,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               window.lastNotificationTime = now;
               window.lastNotificationMsg = msg;
               
-              // Se não for um erro literal ou exclusão (deleção tem vermelho explícito ou 'info' customizado), forçamos 'sucesso' para que o balão suba verde e agradável.
               if (tipo === 'info' && titulo !== 'Card Excluído') {
                   tipo = 'sucesso';
               }
@@ -1727,10 +1763,20 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const diffTime = prazoDate - hoje;
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
               
-              if (diffDays < 0) return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2" style="font-size:0.7rem;">Vencido</span>';
-              if (diffDays === 0) return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 px-2" style="font-size:0.7rem;">Hoje</span>';
-              const txt = diffDays === 1 ? '1 dia' : diffDays + ' dias';
-              return '<span class="badge bg-custom-dark border-custom text-accent px-2 fw-normal" style="font-size:0.65rem;">Vence em ' + txt + '</span>';
+              const mesesAbr = ['Jan.','Fev.','Mar.','Abr.','Mai.','Jun.','Jul.','Ago.','Setem.','Out.','Nov.','Dez.'];
+              const dia = String(prazoDate.getDate()).padStart(2, '0');
+              const mesStr = mesesAbr[prazoDate.getMonth()];
+              const textoData = dia + ' de ' + mesStr;
+              
+              if (diffDays < 0) {
+                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>' + textoData + '</span>';
+              } else if (diffDays === 0) {
+                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-regular fa-clock me-1"></i>' + textoData + '</span>';
+              } else if (diffDays === 1) {
+                  return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-regular fa-clock me-1"></i>' + textoData + '</span>';
+              } else {
+                  return '<span class="badge bg-custom-dark border-custom text-accent px-2 fw-normal" style="font-size:0.65rem;"><i class="fa-regular fa-calendar me-1"></i>' + textoData + '</span>';
+              }
           };
 
           window.selecionarCorNovaColuna = function(element, cor) {
@@ -1744,6 +1790,107 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               document.getElementById('imgPreviewGrande').src = url;
               modalVerImagemObj.show();
           };
+
+          // ==========================================
+          // GERAÇÃO DE COLUNAS VIRTUAIS (NOVO)
+          // ==========================================
+          function getVirtualColsWeekday() {
+              const hoje = new Date();
+              hoje.setHours(0,0,0,0);
+              
+              const cols = [
+                  { id: 'v_atrasados', titulo: 'Atrasados (Vencidos)', cor: '#dc3545', cards: [], isVirtual: true },
+                  { id: 'v_seg', titulo: 'Segunda-feira', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_ter', titulo: 'Terça-feira', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_qua', titulo: 'Quarta-feira', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_qui', titulo: 'Quinta-feira', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_sex', titulo: 'Sexta-feira', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_sab', titulo: 'Sábado', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_dom', titulo: 'Domingo', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_semprazo', titulo: 'Sem Prazo Definido', cor: '#6c757d', cards: [], isVirtual: true }
+              ];
+
+              colunasDados.forEach(col => {
+                  if(col.cards) {
+                      col.cards.forEach(card => {
+                          const clonedCard = {...card, originalColor: col.cor || '#08c068', originalColName: col.titulo};
+                          if(!card.prazo) {
+                              cols.find(c => c.id === 'v_semprazo').cards.push(clonedCard);
+                              return;
+                          }
+                          const partes = String(card.prazo).slice(0, 10).split('-');
+                          if(partes.length !== 3) {
+                              cols.find(c => c.id === 'v_semprazo').cards.push(clonedCard);
+                              return;
+                          }
+                          const prazoDate = new Date(partes[0], partes[1] - 1, partes[2]);
+                          const diffTime = prazoDate - hoje;
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                          if(diffDays < 0 && !card.concluido) {
+                              cols.find(c => c.id === 'v_atrasados').cards.push(clonedCard);
+                          } else {
+                              const day = prazoDate.getDay();
+                              const mapDay = ['v_dom', 'v_seg', 'v_ter', 'v_qua', 'v_qui', 'v_sex', 'v_sab'];
+                              cols.find(c => c.id === mapDay[day]).cards.push(clonedCard);
+                          }
+                      });
+                  }
+              });
+              
+              return cols;
+          }
+
+          function getVirtualColsMonth() {
+              const hoje = new Date();
+              hoje.setHours(0,0,0,0);
+
+              const cols = [
+                  { id: 'v_atrasados', titulo: 'Atrasados (Vencidos)', cor: '#dc3545', cards: [], isVirtual: true },
+                  { id: 'v_0', titulo: 'Janeiro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_1', titulo: 'Fevereiro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_2', titulo: 'Março', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_3', titulo: 'Abril', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_4', titulo: 'Maio', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_5', titulo: 'Junho', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_6', titulo: 'Julho', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_7', titulo: 'Agosto', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_8', titulo: 'Setembro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_9', titulo: 'Outubro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_10', titulo: 'Novembro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_11', titulo: 'Dezembro', cor: '#08c068', cards: [], isVirtual: true },
+                  { id: 'v_semprazo', titulo: 'Sem Prazo Definido', cor: '#6c757d', cards: [], isVirtual: true }
+              ];
+
+              colunasDados.forEach(col => {
+                  if(col.cards) {
+                      col.cards.forEach(card => {
+                          const clonedCard = {...card, originalColor: col.cor || '#08c068', originalColName: col.titulo};
+                          if(!card.prazo) {
+                              cols.find(c => c.id === 'v_semprazo').cards.push(clonedCard);
+                              return;
+                          }
+                          const partes = String(card.prazo).slice(0, 10).split('-');
+                          if(partes.length !== 3) {
+                              cols.find(c => c.id === 'v_semprazo').cards.push(clonedCard);
+                              return;
+                          }
+                          const prazoDate = new Date(partes[0], partes[1] - 1, partes[2]);
+                          const diffTime = prazoDate - hoje;
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                          if(diffDays < 0 && !card.concluido) {
+                              cols.find(c => c.id === 'v_atrasados').cards.push(clonedCard);
+                          } else {
+                              const month = prazoDate.getMonth();
+                              cols.find(c => c.id === 'v_' + month).cards.push(clonedCard);
+                          }
+                      });
+                  }
+              });
+              
+              return cols.filter(c => c.cards.length > 0 || c.id === 'v_atrasados' || c.id === 'v_semprazo');
+          }
 
           // ==========================================
           // RENDERIZAÇÃO DO KANBAN BOARD E DOS ROWS DINÂMICOS
@@ -1801,7 +1948,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const board = document.getElementById('kanbanBoard');
               board.innerHTML = ''; 
 
-              colunasDados.forEach(col => {
+              let sourceColunas = colunasDados;
+              if (window.kanbanViewMode === 'weekday') {
+                  sourceColunas = getVirtualColsWeekday();
+              } else if (window.kanbanViewMode === 'month') {
+                  sourceColunas = getVirtualColsMonth();
+              }
+
+              sourceColunas.forEach(col => {
+                  const isVirtual = col.isVirtual;
                   const corColuna = col.cor || '#08c068';
                   const bgHeader = hexToRgba(corColuna, 0.15); 
                   
@@ -1833,7 +1988,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               if (!a.prazo && !b.prazo) return 0;
                               return new Date(b.prazo).getTime() - new Date(a.prazo).getTime();
                           } else {
-                              // Ordenação Padrão (Prazo > Prioridade)
                               if (!a.prazo && b.prazo) return 1;  
                               if (a.prazo && !b.prazo) return -1; 
       
@@ -1852,11 +2006,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               return 0; 
                           }
                       });
-                      cardsOrdenados.forEach(card => { cardsHTML += gerarHTMLCard(card, corColuna); });
+                      cardsOrdenados.forEach(card => { 
+                          const cardCor = isVirtual ? card.originalColor : corColuna;
+                          cardsHTML += gerarHTMLCard(card, cardCor, isVirtual); 
+                      });
                   }
 
-                  const dropdownCores = \`
-                      <div class="dropdown d-inline-block">
+                  const dropdownCores = isVirtual ? 
+                      \`<div class="rounded shadow-sm d-inline-block me-2" style="width: 18px; height: 18px; background-color: \${corColuna}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);"></div>\` : 
+                      \`<div class="dropdown d-inline-block">
                           <button class="btn btn-sm p-0 border-0 dropdown-toggle hide-caret" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}'>
                               <div class="rounded shadow-sm" style="width: 18px; height: 18px; background-color: \${corColuna}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);"></div>
                           </button>
@@ -1867,8 +2025,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </div>
                       </div>\`;
 
-                  const dropdownConfigColuna = \`
-                      <div class="dropdown d-inline-block ms-auto">
+                  const dropdownConfigColuna = isVirtual ? 
+                      '' : 
+                      \`<div class="dropdown d-inline-block ms-auto">
                           <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Configurações da Coluna" data-bs-popper-config='{"strategy":"fixed"}'>
                               <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
                           </button>
@@ -1894,17 +2053,24 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                   <i class="fa-solid fa-calendar-xmark"></i> Excluir Vencidos
                               </button>
                           </div>
-                      </div>
-                  \`;
+                      </div>\`;
+
+                  const titleEditable = isVirtual ? 
+                      \`<span class="text-truncate fw-bold me-2" style="padding: 2px 4px; font-size: 0.9rem;">\${col.titulo}</span>\` : 
+                      \`<span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>\`;
+                  
+                  const actionButtons = isVirtual ? 
+                      \`<span class="ms-auto badge bg-custom-dark border border-custom text-white-50">\${col.cards.length} cards</span>\` : 
+                      \`<button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
+                       <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="window.confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>\`;
 
                   colDiv.innerHTML = \`
-                      <div class="kanban-header" style="background-color: \${bgHeader}; border-top: 4px solid \${corColuna};">
-                          <div class="d-flex align-items-center gap-2 w-100">
+                      <div class="kanban-header d-flex align-items-center justify-content-between" style="background-color: \${bgHeader}; border-top: 4px solid \${corColuna};">
+                          <div class="d-flex align-items-center gap-2 w-100 overflow-hidden">
                               \${dropdownCores}
-                              <span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>
+                              \${titleEditable}
                               \${dropdownConfigColuna}
-                              <button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
-                              <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="window.confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>
+                              \${actionButtons}
                           </div>
                       </div>
                       <div class="kanban-cards-container" id="coluna-\${col.id}">
@@ -1914,7 +2080,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   board.appendChild(colDiv);
                   
                   new Sortable(document.getElementById('coluna-' + col.id), {
-                      group: 'kanban',
+                      disabled: isVirtual, 
+                      group: isVirtual ? 'none' : 'kanban',
                       animation: 150,
                       ghostClass: 'sortable-ghost',
                       filter: '[contenteditable="true"], input, button, a, select', 
@@ -1923,6 +2090,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       delayOnTouchOnly: true,
                       fallbackTolerance: 5,
                       onEnd: function (evt) {
+                            if (isVirtual) return; 
+
                             const itemEl = evt.item;
                             const toList = evt.to;
                             
@@ -1985,13 +2154,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const isImage = anexo.tipo && anexo.tipo.includes('image');
               const path = '/uploads/' + anexo.nome_arquivo;
               if (isImage) {
-                  return '<img src="' + path + '" class="anexo-cover shadow-sm" style="pointer-events: none;" draggable="false" title="' + (anexo.nome_original || '') + '">';
+                  return '<img src="' + path + '" class="anexo-cover shadow-sm" style="pointer-events: none;" draggable="false" title="' + window.escapeHtmlAttr(anexo.nome_original || '') + '">';
               } else {
-                  return '<div class="anexo-doc-mini shadow-sm" style="pointer-events: none;" title="' + (anexo.nome_original || '') + '"><i class="fa-solid fa-file-pdf"></i></div>';
+                  return '<div class="anexo-doc-mini shadow-sm" style="pointer-events: none;" title="' + window.escapeHtmlAttr(anexo.nome_original || '') + '"><i class="fa-solid fa-file-pdf"></i></div>';
               }
           };
 
-          window.gerarHTMLCard = function(card, corColuna) {
+          window.gerarHTMLCard = function(card, corColuna, isVirtual = false) {
               const isConcluido = card.concluido ? 'card-completed' : '';
               const isAlta = card.prioridade === 'alta' ? 'card-prioridade-alta' : '';
               
@@ -2000,6 +2169,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               
               let anexosCount = card.anexos && card.anexos.length > 0 ? card.anexos.length : 0;
               let hasDesc = card.descricao && card.descricao.length > 0;
+
+              let originBadge = '';
+              if (isVirtual) {
+                  originBadge = \`<span class="badge bg-custom-darker border border-custom ms-2 text-truncate" style="max-width: 90px; font-size: 0.6rem; color: \${corColuna};"><i class="fa-solid fa-table-columns me-1"></i>\${window.escapeHtmlAttr(card.originalColName)}</span>\`;
+              }
 
               let descPreview = '';
               if (hasDesc) {
@@ -2015,7 +2189,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   tagIds.forEach(id => {
                       const tag = etiquetasDados.find(e => e.id == id);
                       if (tag) {
-                          tagsHTML += \`<div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2);" title="\${escapeHtml(tag.nome)}"></div>\`;
+                          tagsHTML += \`<div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: \${tag.cor}; border: 1px solid rgba(255,255,255,0.2);" title="\${window.escapeHtmlAttr(tag.nome)}"></div>\`;
                       }
                   });
                   tagsHTML += '</div>';
@@ -2030,10 +2204,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               return \`
               <div class="kanban-card \${isConcluido} \${isAlta}" data-id="\${card.id}" style="border-left-color: \${corColuna};" onclick="abrirModalCard(\${card.id})">
                   <div class="d-flex justify-content-between align-items-start mb-1">
-                      <div class="card-title-board text-break fw-bold" style="font-size: 0.85rem;">
-                          \${card.titulo || 'Sem Título'}
+                      <div class="d-flex flex-wrap align-items-center w-100">
+                          <div class="card-title-board text-break fw-bold" style="font-size: 0.85rem;">
+                              \${card.titulo || 'Sem Título'}
+                          </div>
+                          \${originBadge}
                       </div>
-                      \${card.concluido ? '<i class="fa-solid fa-circle-check text-success ms-2"></i>' : ''}
+                      \${card.concluido ? '<i class="fa-solid fa-circle-check text-success ms-2 mt-1"></i>' : ''}
                   </div>
                   \${descPreview}
                   \${tagsHTML}
@@ -2117,7 +2294,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               });
               atualizarEtiquetasVisualCardModal();
 
-              // Limpar containers de percas e repovoar caso hajam percas salvas
               const containerPintura = document.getElementById('containerPercasPintura');
               const containerCorte = document.getElementById('containerPercasCorte');
               if(containerPintura) containerPintura.innerHTML = '';
@@ -2138,9 +2314,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const btnExcluirAnexo = \`<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 shadow" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;" onclick="confirmarDeletarAnexoModal(\${anexo.id}, \${cardId}, event)" title="Excluir Anexo"><i class="fa-solid fa-xmark"></i></button>\`;
 
                       if (isImage) {
-                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${anexo.nome_original || ''}">\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><span class="small text-white-50 mt-1 d-block text-truncate" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-regular fa-image me-1"></i> \${window.escapeHtmlAttr(anexo.nome_original || '')}</span>\${btnExcluirAnexo}</div>\`;
                       } else {
-                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2" style="height: auto; pointer-events: auto;" title="\${anexo.nome_original || ''}"><i class="fa-solid fa-file-pdf me-2 text-danger"></i><span class="text-truncate">\${anexo.nome_original || 'Documento'}</span></a>\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2" style="height: auto; pointer-events: auto;" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-solid fa-file-pdf me-2 text-danger"></i><span class="text-truncate">\${window.escapeHtmlAttr(anexo.nome_original || 'Documento')}</span></a>\${btnExcluirAnexo}</div>\`;
                       }
                   }).join('');
               } else {
@@ -2239,7 +2415,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
 
-              // Extrair as informações dinâmicas de percas da tela e gerar os arrays Json
               const extrairPercas = (containerId) => {
                   const container = document.getElementById(containerId);
                   if(!container) return [];
@@ -2412,30 +2587,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (colIndex > -1) el.innerText = colunasDados[colIndex].titulo;
                   mostrarToast('erro', 'Aviso', 'O título da coluna não pode ser vazio.');
               }
-          };
-
-          window.aplicarCorColunaVisualmente = function(colunaId, cor) {
-              const colIndex = colunasDados.findIndex(c => c.id == colunaId);
-              if (colIndex > -1) colunasDados[colIndex].cor = cor;
-              
-              const colDiv = document.querySelector('.kanban-column[data-id="' + colunaId + '"]');
-              if(colDiv) {
-                  const header = colDiv.querySelector('.kanban-header');
-                  if(header) { header.style.borderTopColor = cor; header.style.backgroundColor = hexToRgba(cor, 0.15); }
-                  const dropdownSquare = colDiv.querySelector('.dropdown-toggle > div');
-                  if(dropdownSquare) dropdownSquare.style.backgroundColor = cor;
-                  
-                  const cardsNaColuna = colDiv.querySelectorAll('.kanban-card');
-                  cardsNaColuna.forEach(card => {
-                      card.style.borderLeftColor = cor;
-                  });
-              }
-          };
-
-          window.atualizarCorColuna = function(colunaId, novaCor) {
-              aplicarCorColunaVisualmente(colunaId, novaCor); 
-              socket.emit('atualizar_cor_coluna', { colunaId: colunaId, cor: novaCor }); 
-              mostrarToast('sucesso', 'Cores', 'A cor da coluna foi guardada!');
           };
 
           window.criarCardRapido = function(colunaId) { 

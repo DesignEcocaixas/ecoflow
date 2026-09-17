@@ -26,9 +26,11 @@ const client = new Client({
             '--no-zygote',
             '--single-process',
             '--disable-extensions', 
-            '--disable-features=FirstPartySets',         
-            '--disable-features=PrivacySandboxSettings4', 
-            '--disable-gpu'                               
+            '--disable-features=FirstPartySets,PrivacySandboxSettings4', 
+            '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
         ]
     }
 });
@@ -128,7 +130,7 @@ const gerarVersoesNumero = (numeroRaw) => {
     return [versao1, versao2].filter(Boolean); 
 };
 
-// FUNÇÃO DE ENVIO CEGO E DIRETO (SEM GETNUMBERID) PARA ZERAR TRAVAMENTOS
+// FUNÇÃO DE ENVIO CEGO E DIRETO (SEM GETNUMBERID) PARA ZERAR TRAVAMENTOS COM REDUNDÂNCIA
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
@@ -138,7 +140,8 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
     const versoesParaTentar = gerarVersoesNumero(numero);
     if (versoesParaTentar.length === 0) return { success: false, error: "Número inválido ou em branco." };
 
-    const delayBase = tentativa === 1 ? 1500 : 3500;
+    // Delay mais longo caso o robô esteja tentando se recuperar de uma queda de Frame
+    const delayBase = tentativa === 1 ? 1500 : 4000;
     await new Promise(resolve => setTimeout(resolve, delayBase));
 
     let disparou = false;
@@ -146,10 +149,12 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
 
     for (let numVer of versoesParaTentar) {
         try {
-            // Removido o getNumberId! Dispara direto para o formato nativo.
             const chatId = numVer + "@c.us";
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Se for uma segunda tentativa, pinga a aba antes de enviar para garantir que ela está focada
+            if (tentativa > 1) {
+                await client.pupPage.evaluate(() => 1).catch(() => {});
+            }
 
             await client.sendMessage(chatId, mensagem);
             
@@ -158,11 +163,11 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             
         } catch (error) {
             ultimoErro = error;
-            // Se o WhatsApp disser que o número não existe (No LID), pula para testar a segunda variação do 9º dígito
-            if (error.message && error.message.includes('LID')) {
+            // Se o erro for a falta do nono dígito (No LID), pula pro próximo numVer do For()
+            if (error.message && (error.message.includes('LID') || error.message.includes('invalid number'))) {
                 continue;
             } else {
-                // Se for instabilidade da API ou Detached Frame, quebra para tentar o Retry
+                // Se for um erro crítico de DOM/Frame, força a saída para cair no Retry Block abaixo
                 break;
             }
         }
@@ -172,14 +177,15 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return { success: true };
     } else {
-        // Retry cravado para recuperar o Frame caso algo dê errado
-        if (ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached Frame') || ultimoErro.message.includes('Execution context was destroyed')) && tentativa < 3) {
-            registrarLogTerminal(`⚠️ Instabilidade na interface para ${nomeCliente}. Recuperando... (Tentativa ${tentativa + 1}/3)`);
+        const isDetached = ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached') || ultimoErro.message.includes('destroyed'));
+        
+        // Retry Block Inteligente: Recupera a tela caso o navegador a tenha suspendido
+        if (isDetached && tentativa < 3) {
+            registrarLogTerminal(`⚠️ Instabilidade no navegador (Detached Frame). Recuperando aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
             try {
                 if (client.pupPage) await client.pupPage.bringToFront().catch(() => {});
             } catch(e) {}
             
-            await new Promise(resolve => setTimeout(resolve, 4000)); 
             return await enviarMensagem(numero, mensagem, nomeCliente, tentativa + 1);
         }
 

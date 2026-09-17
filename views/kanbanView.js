@@ -15,6 +15,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   ];
 
   const escapeHtmlAttr = (str) => {
+      if (!str) return '';
       return String(str)
           .replace(/&/g, '&amp;')
           .replace(/"/g, '&quot;')
@@ -253,7 +254,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .modal-header-dark { background-color: #151515; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
           .modal-footer-dark { background-color: #151515; border-top: 1px solid rgba(255,255,255,0.05); transition: background-color 0.3s ease, border-color 0.3s ease; }
 
-          /* KANBAN BOARD */
+          /* KANBAN BOARD & SNAPPING */
           .kanban-wrapper { flex-grow: 1; overflow: hidden; position: relative; margin-top: 10px; z-index: 1; }
           .kanban-board { 
               display: flex; gap: 0px; align-items: flex-start; height: 100%; 
@@ -419,17 +420,35 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
           @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
+          /* RESPONSIVIDADE & SCROLL SNAP */
+          @media (max-width: 991.98px) {
+              .kanban-board {
+                  scroll-snap-type: x mandatory;
+                  scroll-behavior: smooth;
+                  scroll-padding-left: 14px;
+              }
+              .kanban-column {
+                  scroll-snap-align: start;
+              }
+          }
           @media (max-width: 767.98px) {
               body { flex-direction: column; } 
               .sidebar { display: none; } 
               .content { width: 100%; padding: 12px; }
-              .kanban-board { padding-bottom: 5px; gap: 0px; }
-              .kanban-column { min-width: 50vw !important; width: 50vw !important; }
+              .kanban-board { padding-bottom: 5px; gap: 0px; scroll-padding-left: 12px; }
+              
+              /* TABLET VIEW (421px até 768px) */
+              .kanban-column { min-width: 50vw !important; width: 50vw !important; max-width: 350px !important; margin-right: 12px !important; scroll-snap-align: center; }
+              
               .responsive-modal-row { flex-direction: column; height: auto !important; display: flex; }
               .responsive-modal-col { height: auto !important; overflow-y: visible !important; border-right: none !important; }
               #modal-left-col { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
               #modalCardDetalhes .modal-content { height: 95vh !important; }
               .modal-body { overflow-y: auto; }
+          }
+          @media (max-width: 420px) {
+              /* CELULAR VIEW (até 420px) */
+              .kanban-column { min-width: 88vw !important; width: 88vw !important; max-width: 100% !important; margin-right: 12px !important; scroll-snap-align: center; }
           }
 
           .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #ffffff !important; font-size: 0.8rem; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
@@ -439,7 +458,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           /* ==================================================================
              OVERRIDE DE CORES PARA O TEMA CLARO - RESTRITO A CARDS/COLUNAS/MODAIS 
-             Isso mantém todo o Header principal da View com o seu padrão escuro intacto
           ================================================================== */
           body.theme-light {
               --bg-color: #e4e7ea;
@@ -448,7 +466,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               background-color: var(--bg-color) !important;
           }
           
-          /* KANBAN BOARD E ESTRUTURA GERAL (Somente as colunas mudam) */
           body.theme-light .kanban-column {
               background-color: #f4f5f7 !important; 
               border-right: 1px solid #dcdcdc !important; 
@@ -465,7 +482,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: #666 !important;
           }
           
-          /* KANBAN CARDS */
           body.theme-light .kanban-card {
               background-color: #ffffff !important;
               color: #333 !important;
@@ -480,7 +496,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: #666 !important;
           }
 
-          /* TEMA CLARO - Caixa de Resultados de Pesquisa do Kanban (se aberta) */
           body.theme-light #searchResultsKanban.bg-custom-darker {
               background-color: #222222 !important;
               border-color: rgba(255,255,255,0.08) !important;
@@ -496,7 +511,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               color: rgba(255,255,255,0.5) !important;
           }
 
-          /* MODAIS GERAIS (TEMA CLARO) */
           body.theme-light .modal-content.erp-modal {
               background-color: #ffffff !important;
               border: 1px solid #ccc !important;
@@ -643,64 +657,72 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                 <div id="searchResultsKanban" class="position-absolute w-100 bg-custom-darker border border-custom rounded shadow-lg mt-1 d-none" style="max-height: 300px; overflow-y: auto; left: 0;"></div>
             </div>
 
-              <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center">
+              <div class="col-auto col-md-4 order-2 order-md-3 d-flex justify-content-end p-0 gap-2 align-items-center flex-wrap">
                   
-                  <!-- BOTÕES DE VISUALIZAÇÃO KANBAN / DATA (NOVO) -->
-                  <div class="btn-group shadow-sm border-custom rounded me-1" role="group">
-                      <input type="radio" class="btn-check" name="btnradio_view" id="view_kanban" autocomplete="off" checked onchange="window.mudarVisualizacao('default')">
-                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_kanban" title="Visualização Padrão (Kanban)"><i class="fa-solid fa-table-columns"></i></label>
+                  <!-- BOTÕES DE VISUALIZAÇÃO KANBAN / DATA E SELETOR DE MÊS -->
+                  <div class="d-flex align-items-center gap-2">
+                      <div class="btn-group shadow-sm border-custom rounded" role="group">
+                          <input type="radio" class="btn-check" name="btnradio_view" id="view_kanban" autocomplete="off" checked onchange="window.mudarVisualizacao('default')">
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_kanban" title="Visualização Padrão (Kanban)"><i class="fa-solid fa-table-columns"></i></label>
 
-                      <input type="radio" class="btn-check" name="btnradio_view" id="view_weekday" autocomplete="off" onchange="window.mudarVisualizacao('weekday')">
-                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_weekday" title="Agrupar por Dia da Semana"><i class="fa-solid fa-calendar-week"></i></label>
+                          <input type="radio" class="btn-check" name="btnradio_view" id="view_weekday" autocomplete="off" onchange="window.mudarVisualizacao('weekday')">
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_weekday" title="Agrupar por Dia da Semana"><i class="fa-solid fa-calendar-week"></i></label>
 
-                      <input type="radio" class="btn-check" name="btnradio_view" id="view_month" autocomplete="off" onchange="window.mudarVisualizacao('month')">
-                      <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_month" title="Agrupar por Mês"><i class="fa-solid fa-calendar-days"></i></label>
+                          <input type="radio" class="btn-check" name="btnradio_view" id="view_month" autocomplete="off" onchange="window.mudarVisualizacao('month')">
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_month" title="Agrupar por Mês"><i class="fa-solid fa-calendar-days"></i></label>
+                      </div>
+                      
+                      <!-- SELETOR DE MÊS (Aparece apenas na visualização por dia da semana) -->
+                      <input type="month" id="kanbanMonthPicker" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-sm" style="display: none; width: auto;" onchange="window.renderizarKanban()">
                   </div>
 
-                  <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
-                  <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
-                          <i class="fa-solid fa-gear"></i>
+                  <div class="d-flex align-items-center gap-1">
+                      <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" onclick="abrirModalEtiquetas()" title="Etiquetas">
+                          <i class="fa-solid fa-tags"></i> <span class="d-none d-md-inline ms-1">Etiquetas</span>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
-                          <li class="px-3 py-2 border-bottom border-custom">
-                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                                  <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
-                                  <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="themeSwitch" style="font-size: 0.85rem; padding-top: 2px;">Modo Claro</label>
-                              </div>
-                          </li>
-                          <li class="px-3 py-2 border-bottom border-custom">
-                              <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                                  <input class="form-check-input cursor-pointer m-0" type="checkbox" id="percasSwitch" onchange="togglePercasWorkspace(this.checked)" ${espacoAtual.percas_ativo ? 'checked' : ''} style="width: 32px; height: 16px;">
-                                  <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas(Produção)</label>
-                              </div>
-                          </li>
-                          <li class="px-3 py-2 border-bottom border-custom">
-                              <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                  <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
-                              </button>
-                          </li>
-                          <li class="px-3 py-2 border-bottom border-custom">
-                              <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
-                                  <i class="fa-solid fa-file-excel"></i> Baixar Relatório
-                              </button>
-                          </li>
-                          <li class="px-3 py-3">
-                              <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
-                              <div class="d-flex flex-column gap-2">
-                                  <input class="d-none" type="file" id="bgUpload" accept="image/*" onchange="changeBackground(this, ${espacoAtual.id})">
-                                  <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white" onclick="document.getElementById('bgUpload').click()"><i class="fa-solid fa-upload me-1"></i> Escolher Fundo</button>
-                                  <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground(${espacoAtual.id})" style="font-size: 0.75rem;"><i class="fa-solid fa-trash me-1"></i> Remover Fundo</button>
-                              </div>
-                          </li>
-                      </ul>
-                  </div>
 
-                  <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm" onclick="abrirModalEtiquetas()" title="Etiquetas">
-                      <i class="fa-solid fa-tags me-1"></i> Etiquetas
-                  </button>
-                  <button id="btnNovaColunaHeader" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
-                      <i class="fa-solid fa-plus me-1"></i> Nova Coluna
+                      <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
+                      <div class="dropdown">
+                          <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
+                              <i class="fa-solid fa-gear"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
+                              <li class="px-3 py-2 border-bottom border-custom">
+                                  <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                      <input class="form-check-input cursor-pointer m-0" type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="width: 32px; height: 16px;">
+                                      <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="themeSwitch" style="font-size: 0.85rem; padding-top: 2px;">Modo Claro</label>
+                                  </div>
+                              </li>
+                              <li class="px-3 py-2 border-bottom border-custom">
+                                  <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                      <input class="form-check-input cursor-pointer m-0" type="checkbox" id="percasSwitch" onchange="togglePercasWorkspace(this.checked)" ${espacoAtual.percas_ativo ? 'checked' : ''} style="width: 32px; height: 16px;">
+                                      <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas(Produção)</label>
+                                  </div>
+                              </li>
+                              <li class="px-3 py-2 border-bottom border-custom">
+                                  <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
+                                      <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
+                                  </button>
+                              </li>
+                              <li class="px-3 py-2 border-bottom border-custom">
+                                  <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
+                                      <i class="fa-solid fa-file-excel"></i> Baixar Relatório
+                                  </button>
+                              </li>
+                              <li class="px-3 py-3">
+                                  <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
+                                  <div class="d-flex flex-column gap-2">
+                                      <input class="d-none" type="file" id="bgUpload" accept="image/*" onchange="changeBackground(this, ${espacoAtual.id})">
+                                      <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white" onclick="document.getElementById('bgUpload').click()"><i class="fa-solid fa-upload me-1"></i> Escolher Fundo</button>
+                                      <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground(${espacoAtual.id})" style="font-size: 0.75rem;"><i class="fa-solid fa-trash me-1"></i> Remover Fundo</button>
+                                  </div>
+                              </li>
+                          </ul>
+                      </div>
+                  </div>
+                  
+                  <button id="btnNovaColunaHeader" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark px-2" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
+                      <i class="fa-solid fa-plus"></i> <span class="d-none d-md-inline ms-1">Nova Coluna</span>
                   </button>
               </div>
           </div>
@@ -1045,16 +1067,26 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
           
           // ==========================================
-          // ESTADO DA VISUALIZAÇÃO GLOBAL (KANBAN / DIA / MÊS)
+          // ESTADO DA VISUALIZAÇÃO GLOBAL (KANBAN / DIA / MÊS) E PERSISTÊNCIA
           // ==========================================
           window.kanbanViewMode = 'default';
 
           window.mudarVisualizacao = function(modo) {
               window.kanbanViewMode = modo;
+              
+              const viewModeKey = 'kanbanViewMode_${espacoAtual.id}_' + NOME_USUARIO;
+              localStorage.setItem(viewModeKey, modo);
+
               const btnNovaCol = document.getElementById('btnNovaColunaHeader');
               if (btnNovaCol) {
                   btnNovaCol.style.display = window.kanbanViewMode === 'default' ? 'inline-block' : 'none';
               }
+              
+              const monthPicker = document.getElementById('kanbanMonthPicker');
+              if (monthPicker) {
+                  monthPicker.style.display = window.kanbanViewMode === 'weekday' ? 'inline-block' : 'none';
+              }
+              
               window.renderizarKanban();
           };
 
@@ -1224,6 +1256,31 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (savedTheme === 'light') {
                   document.body.classList.add('theme-light');
                   if(themeSwitch) themeSwitch.checked = true;
+              }
+              
+              // Inicializar o seletor de mês com o mês/ano atual
+              const today = new Date();
+              const yyyy = today.getFullYear();
+              const mm = String(today.getMonth() + 1).padStart(2, '0');
+              const monthPicker = document.getElementById('kanbanMonthPicker');
+              if (monthPicker) {
+                  monthPicker.value = yyyy + '-' + mm;
+              }
+
+              // Recuperar visualização salva do usuário
+              const viewModeKey = 'kanbanViewMode_${espacoAtual.id}_' + NOME_USUARIO;
+              const savedViewMode = localStorage.getItem(viewModeKey);
+              if (savedViewMode) {
+                  window.kanbanViewMode = savedViewMode;
+                  
+                  if(savedViewMode === 'weekday') document.getElementById('view_weekday').checked = true;
+                  else if(savedViewMode === 'month') document.getElementById('view_month').checked = true;
+                  else document.getElementById('view_kanban').checked = true;
+
+                  const btnNovaCol = document.getElementById('btnNovaColunaHeader');
+                  if (btnNovaCol) btnNovaCol.style.display = savedViewMode === 'default' ? 'inline-block' : 'none';
+                  
+                  if (monthPicker) monthPicker.style.display = savedViewMode === 'weekday' ? 'inline-block' : 'none';
               }
 
               ${espacoAtual.wallpaper ? `aplicarWallpaper('/uploads/${espacoAtual.wallpaper}');` : ''}
@@ -1766,7 +1823,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const mesesAbr = ['Jan.','Fev.','Mar.','Abr.','Mai.','Jun.','Jul.','Ago.','Setem.','Out.','Nov.','Dez.'];
               const dia = String(prazoDate.getDate()).padStart(2, '0');
               const mesStr = mesesAbr[prazoDate.getMonth()];
-              const textoData = dia + ' de ' + mesStr;
+              const textoData = dia + ' de ' + mesStr + '.';
               
               if (diffDays < 0) {
                   return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>' + textoData + '</span>';
@@ -1797,6 +1854,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           function getVirtualColsWeekday() {
               const hoje = new Date();
               hoje.setHours(0,0,0,0);
+              
+              const monthPicker = document.getElementById('kanbanMonthPicker');
+              let selYear = hoje.getFullYear();
+              let selMonth = hoje.getMonth();
+              
+              if (monthPicker && monthPicker.value) {
+                  const parts = monthPicker.value.split('-');
+                  if (parts.length === 2) {
+                      selYear = parseInt(parts[0], 10);
+                      selMonth = parseInt(parts[1], 10) - 1; 
+                  }
+              }
               
               const cols = [
                   { id: 'v_atrasados', titulo: 'Atrasados (Vencidos)', cor: '#dc3545', cards: [], isVirtual: true },
@@ -1830,9 +1899,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           if(diffDays < 0 && !card.concluido) {
                               cols.find(c => c.id === 'v_atrasados').cards.push(clonedCard);
                           } else {
-                              const day = prazoDate.getDay();
-                              const mapDay = ['v_dom', 'v_seg', 'v_ter', 'v_qua', 'v_qui', 'v_sex', 'v_sab'];
-                              cols.find(c => c.id === mapDay[day]).cards.push(clonedCard);
+                              if (prazoDate.getMonth() === selMonth && prazoDate.getFullYear() === selYear) {
+                                  const day = prazoDate.getDay();
+                                  const mapDay = ['v_dom', 'v_seg', 'v_ter', 'v_qua', 'v_qui', 'v_sex', 'v_sab'];
+                                  cols.find(c => c.id === mapDay[day]).cards.push(clonedCard);
+                              }
                           }
                       });
                   }

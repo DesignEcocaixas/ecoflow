@@ -12,6 +12,16 @@ function chapasView(usuario, chapas = [], facas = []) {
       return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   };
 
+  const formataDataIso = (dt) => {
+      if (!dt) return '';
+      try {
+          const d = new Date(dt);
+          return d.toISOString().split('T')[0];
+      } catch (e) {
+          return '';
+      }
+  };
+
   // --- LÓGICA DE SAÚDE DO ESTOQUE ---
   let containerSaude = "";
   if (chapas.length > 0) {
@@ -186,8 +196,8 @@ function chapasView(usuario, chapas = [], facas = []) {
   // Modais de Edição e Deleção de Facas
   const modaisFacas = facas.map(f => {
     const isManutencao = f.em_manutencao;
-    const dataSaidaFormatada = f.data_saida ? String(f.data_saida).slice(0, 10) : '';
-    const dataEntradaFormatada = f.data_entrada ? String(f.data_entrada).slice(0, 10) : '';
+    const dataSaidaFormatada = formataDataIso(f.data_saida);
+    const dataEntradaFormatada = formataDataIso(f.data_entrada);
 
     return `
     <div class="modal fade" id="editarFacaModal${f.id}" tabindex="-1" data-bs-backdrop="static">
@@ -219,7 +229,7 @@ function chapasView(usuario, chapas = [], facas = []) {
 
               <div class="col-6">
                 <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Retirada por</label>
-                <input type="text" name="nome_retirou" value="${escapeHtmlAttr(f.nome_retirou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+                <input type="text" name="nome_retirou" value="${escapeHtmlAttr(f.nome_retirou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white placeholder-light" placeholder="Nome">
               </div>
 
               <div class="col-6">
@@ -229,25 +239,37 @@ function chapasView(usuario, chapas = [], facas = []) {
 
               <div class="col-6">
                 <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Entregue por</label>
-                <input type="text" name="nome_entregou" value="${escapeHtmlAttr(f.nome_entregou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+                <input type="text" name="nome_entregou" value="${escapeHtmlAttr(f.nome_entregou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white placeholder-light" placeholder="Nome">
               </div>
 
               <div class="col-12">
                 <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Descrição / Problema</label>
-                <textarea name="descricao" class="form-control form-control-sm shadow-sm text-white" rows="2" required>${escapeHtmlAttr(f.descricao || '')}</textarea>
+                <textarea name="descricao" class="form-control form-control-sm shadow-sm text-white placeholder-light" rows="2" required>${escapeHtmlAttr(f.descricao || '')}</textarea>
               </div>
 
               <div class="col-12">
-                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Nova Imagem (Substituir)</label>
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size:0.75rem;">Nova Imagem (Substituir)</label>
                 <input type="file" name="imagem_faca" class="form-control form-control-sm py-2 shadow-sm text-white" accept="image/*" onchange="previewImagemFaca(this, 'previewEditFaca${f.id}')">
                 <img id="previewEditFaca${f.id}" src="${f.imagem_faca ? '/uploads/' + f.imagem_faca : ''}" data-original="${f.imagem_faca ? '/uploads/' + f.imagem_faca : ''}" style="${f.imagem_faca ? 'display:block;' : 'display:none;'} width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">
               </div>
               
             </div>
           </div>
-          <div class="modal-footer border-custom bg-custom-darker d-flex flex-nowrap pt-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-warning w-100 w-sm-auto text-dark fw-bold shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          <div class="modal-footer border-custom bg-custom-darker pt-3">
+            <div class="d-flex gap-2 ms-auto">
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary text-white"
+                      style="width: 120px;"
+                      data-bs-dismiss="modal">
+                Cancelar
+              </button>
+
+              <button type="submit"
+                      class="btn btn-sm btn-warning text-dark fw-bold shadow-sm"
+                      style="width: 120px;">
+                <i class="fa-solid fa-save me-1"></i> Salvar
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -356,7 +378,7 @@ function chapasView(usuario, chapas = [], facas = []) {
             : '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50"><i class="fa-solid fa-check me-1"></i> Disponível</span>';
           
           return `
-          <div class="bg-custom-dark border border-custom p-3 rounded-3 shadow-sm mb-2 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 cursor-pointer transition-hover" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarFacaModal${f.id}')).show();" title="Clique para editar">
+          <div class="bg-custom-dark border border-custom p-3 rounded-3 shadow-sm mb-2 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 cursor-pointer" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarFacaModal${f.id}')).show();" title="Clique para editar">
               <div class="d-flex align-items-center gap-3 w-100 w-sm-auto">
                   ${f.imagem_faca ? `<img src="/uploads/${f.imagem_faca}" class="rounded shadow-sm cursor-pointer" style="width: 45px; height: 45px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);" onclick="event.stopPropagation(); abrirImagemGrande('/uploads/${f.imagem_faca}', event);">` : `<div class="rounded shadow-sm bg-custom-darker d-flex align-items-center justify-content-center text-white-50 border-custom" style="width: 45px; height: 45px;"><i class="fa-solid fa-image"></i></div>`}
                   <div class="flex-grow-1">

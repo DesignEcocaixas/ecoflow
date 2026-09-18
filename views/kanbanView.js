@@ -2131,7 +2131,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       \`<span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>\`;
                   
                   const actionButtons = isVirtual ? 
-                      \`<span class="ms-auto badge bg-custom-dark border border-custom text-white-50">\${col.cards.length} cards</span>\` : 
+                      \`<span class="ms-auto badge bg-custom-dark border border-custom text-white-50">\${col.cards.length} pedidos</span>\` : 
                       \`<button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
                        <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="window.confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>\`;
 

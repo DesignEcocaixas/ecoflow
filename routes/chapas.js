@@ -1,24 +1,140 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
+
+// Configuração para processar o Upload de Imagens das Facas
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const dir = "public/uploads/";
+        if (!fs.existsSync(dir)) { fs.mkdirSync(dir, { recursive: true }); }
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 // View e Bibliotecas
 const chapasView = require("../views/chapasView");
-const ExcelJS = require("exceljs"); // Necessário para a rota de exportação
+const ExcelJS = require("exceljs");
 
-//------------------------------------------------------------------------------ROTAS PARA CHAPAS------------------------------------------------------------------------------
-//LISTAR CHAPAS
-router.get("/chapas", (req, res) => {
+//------------------------------------------------------------------------------ROTAS PARA CHAPAS E FACAS------------------------------------------------------------------------------
+// LISTAR CHAPAS E FACAS
+router.get("/chapas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
     if (req.session.user.tipo_usuario === "motorista") return res.status(403).send("Acesso negado.");
 
-    db.query("SELECT * FROM chapas ORDER BY id DESC", (err, chapas) => {
-        if (err) {
-            console.error("Erro ao buscar chapas:", err);
-            return res.status(500).send("Erro interno");
+    try {
+        // Busca chapas
+        const [chapas] = await db.promise().query("SELECT * FROM chapas ORDER BY id DESC");
+        
+        let facas = [];
+        try {
+            // Busca facas (caso a tabela já exista)
+            const [resultFacas] = await db.promise().query("SELECT * FROM facas_manutencao ORDER BY id DESC");
+            facas = resultFacas;
+        } catch (errDb) {
+            console.log("[Aviso] A tabela facas_manutencao não existe ou está vazia.");
         }
-        res.send(chapasView(req.session.user, chapas));
-    });
+
+        res.send(chapasView(req.session.user, chapas, facas));
+    } catch (err) {
+        console.error("Erro ao buscar chapas e facas:", err);
+        res.status(500).send("Erro interno");
+    }
+});
+
+// CADASTRAR NOVA MANUTENÇÃO DE FACA
+router.post("/facas/manutencao", upload.single("imagem_faca"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { status, faca, data_saida, nome_retirou, descricao, data_entrada, nome_entregou } = req.body;
+    const imagem = req.file ? req.file.filename : null;
+    const isEmManutencao = status === 'em_manutencao' ? 1 : 0;
+
+    try {
+        // Garantia de criação da tabela caso seja a primeira vez que o módulo é executado
+        await db.promise().query(`
+            CREATE TABLE IF NOT EXISTS facas_manutencao (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                faca VARCHAR(255) NOT NULL,
+                imagem_faca VARCHAR(255),
+                data_saida DATE,
+                nome_retirou VARCHAR(255),
+                descricao TEXT,
+                data_entrada DATE,
+                nome_entregou VARCHAR(255),
+                em_manutencao BOOLEAN DEFAULT 1,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.promise().query(
+            `INSERT INTO facas_manutencao (faca, imagem_faca, data_saida, nome_retirou, descricao, data_entrada, nome_entregou, em_manutencao) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [faca, imagem, data_saida || null, nome_retirou, descricao, data_entrada || null, nome_entregou, isEmManutencao]
+        );
+
+        res.redirect("/chapas");
+    } catch (err) {
+        console.error("Erro ao cadastrar manutenção da faca:", err);
+        res.status(500).send("Erro interno ao salvar manutenção.");
+    }
+});
+
+// EDITAR MANUTENÇÃO DE FACA
+router.post("/facas/editar/:id", upload.single("imagem_faca"), async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { id } = req.params;
+    const { status, faca, data_saida, nome_retirou, descricao, data_entrada, nome_entregou } = req.body;
+    const isEmManutencao = status === 'em_manutencao' ? 1 : 0;
+
+    try {
+        if (req.file) {
+            const imagem = req.file.filename;
+            await db.promise().query(
+                `UPDATE facas_manutencao SET faca=?, imagem_faca=?, data_saida=?, nome_retirou=?, descricao=?, data_entrada=?, nome_entregou=?, em_manutencao=? WHERE id=?`,
+                [faca, imagem, data_saida || null, nome_retirou, descricao, data_entrada || null, nome_entregou, isEmManutencao, id]
+            );
+        } else {
+            await db.promise().query(
+                `UPDATE facas_manutencao SET faca=?, data_saida=?, nome_retirou=?, descricao=?, data_entrada=?, nome_entregou=?, em_manutencao=? WHERE id=?`,
+                [faca, data_saida || null, nome_retirou, descricao, data_entrada || null, nome_entregou, isEmManutencao, id]
+            );
+        }
+        res.redirect("/chapas");
+    } catch (err) {
+        console.error("Erro ao editar faca:", err);
+        res.status(500).send("Erro interno ao editar manutenção.");
+    }
+});
+
+// EXCLUIR MANUTENÇÃO DE FACA
+router.post("/facas/excluir/:id", async (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+
+    const { id } = req.params;
+
+    try {
+        const [rows] = await db.promise().query("SELECT imagem_faca FROM facas_manutencao WHERE id = ?", [id]);
+        if (rows.length > 0 && rows[0].imagem_faca) {
+            const filePath = path.join(__dirname, "..", "public", "uploads", rows[0].imagem_faca);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        await db.promise().query("DELETE FROM facas_manutencao WHERE id=?", [id]);
+        res.redirect("/chapas");
+    } catch (err) {
+        console.error("Erro ao excluir faca:", err);
+        res.status(500).send("Erro interno ao excluir manutenção.");
+    }
 });
 
 //CADASTRAR NOVA CHAPA

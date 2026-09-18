@@ -1,13 +1,18 @@
 // views/chapasView.js
 const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent");
 
-function chapasView(usuario, chapas = []) {
+function chapasView(usuario, chapas = [], facas = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario);
 
-  // --- LÓGICA DE SAÚDE DO ESTOQUE (COM CONTAINER RETRÁTIL E DEGRADÊ E ÍCONES ANIMADOS NO MODO ESCURO) ---
+  const escapeHtmlAttr = (str) => {
+      if (!str) return "";
+      return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+
+  // --- LÓGICA DE SAÚDE DO ESTOQUE ---
   let containerSaude = "";
   if (chapas.length > 0) {
     const chapasBaixoEstoque = chapas.filter(c => Number(c.quantidade) < 5000);
@@ -96,18 +101,18 @@ function chapasView(usuario, chapas = []) {
     }
   }
 
-  // --- GERADOR DE LINHAS DA TABELA (COMPACTA) ---
+  // --- GERADOR DE LINHAS DA TABELA CHAPAS (Ultra Compacta) ---
   const linhas = chapas.map(c => {
     const qtd = Number(c.quantidade) || 0;
 
     return `
-    <tr class="align-middle chapa-row table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${c.id}')).show();" title="Clique na linha para editar">
-      <td class="text-white py-2 px-3 text-nowrap">${c.material || "-"}</td>
-      <td class="text-white py-2 px-3 text-nowrap">${c.modelo || "-"}</td>
-      <td class="text-muted py-2 px-3 text-nowrap"><i class="fa-solid fa-truck-fast text-muted me-1 opacity-50" style="font-size: 0.75rem;"></i> ${c.fornecedor || "-"}</td>
-      <td class="text-muted py-2 px-3 text-nowrap">${c.medida || "-"}</td>
-      <td class="text-center py-2 px-3 ${qtd < 5000 ? 'text-danger fw-bold' : 'text-accent fw-medium'}">${qtd}</td>
-      <td class="text-end text-nowrap py-2 px-3">
+    <tr class="align-middle chapa-row table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${c.id}')).show();" title="Clique para editar">
+      <td class="text-white text-truncate px-2">${c.material || "-"}</td>
+      <td class="text-white text-truncate px-2">${c.modelo || "-"}</td>
+      <td class="text-muted text-truncate px-2"><i class="fa-solid fa-truck-fast opacity-50 me-1"></i> ${c.fornecedor || "-"}</td>
+      <td class="text-muted text-truncate px-2">${c.medida || "-"}</td>
+      <td class="text-center px-2 ${qtd < 5000 ? 'text-danger fw-bold' : 'text-accent fw-medium'}">${qtd}</td>
+      <td class="text-end px-2">
         <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger py-1 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#excluirModal${c.id}" title="Excluir" onclick="event.stopPropagation();">
           <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
         </button>
@@ -119,7 +124,7 @@ function chapasView(usuario, chapas = []) {
   const modais = chapas.map(c => `
     <div class="modal fade" id="editarModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/chapas/editar/${c.id}" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="showSuccessModal(event, this, 'Chapa Atualizada!')">
+        <form method="POST" action="/chapas/editar/${c.id}" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Chapa Atualizada!')">
           <div class="modal-header bg-custom-darker border-custom">
             <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Chapa</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -162,7 +167,7 @@ function chapasView(usuario, chapas = []) {
     <div class="modal fade" id="excluirModal${c.id}" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0 bg-custom-darker shadow-lg">
-          <form method="POST" action="/chapas/excluir/${c.id}">
+          <form method="POST" action="/chapas/excluir/${c.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Chapa Excluída!')">
             <div class="modal-body text-center p-4">
               <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
               <h6 class="mb-2 fw-bold text-white">Excluir Chapa?</h6>
@@ -178,6 +183,213 @@ function chapasView(usuario, chapas = []) {
     </div>
   `).join("");
 
+  // Modais de Edição e Deleção de Facas
+  const modaisFacas = facas.map(f => {
+    const isManutencao = f.em_manutencao;
+    const dataSaidaFormatada = f.data_saida ? String(f.data_saida).slice(0, 10) : '';
+    const dataEntradaFormatada = f.data_entrada ? String(f.data_entrada).slice(0, 10) : '';
+
+    return `
+    <div class="modal fade" id="editarFacaModal${f.id}" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form method="POST" action="/facas/editar/${f.id}" enctype="multipart/form-data" class="modal-content erp-modal border-0 shadow-lg bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Manutenção Atualizada!')">
+          <div class="modal-header bg-custom-darker border-custom">
+            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Manutenção</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-sm p-4 bg-custom-dark">
+            <div class="row g-3">
+              
+              <div class="col-12 border-bottom border-custom pb-3 mb-1">
+                <div class="form-check form-switch d-flex align-items-center gap-2">
+                  <input class="form-check-input" type="checkbox" role="switch" id="statusManutencaoFacaEdit${f.id}" name="status" value="em_manutencao" ${isManutencao ? 'checked' : ''} style="width: 40px; height: 20px; cursor: pointer;" onchange="document.getElementById('lblStatusFacaEdit${f.id}').innerText = this.checked ? 'Em Manutenção' : 'Disponível'; document.getElementById('lblStatusFacaEdit${f.id}').className = this.checked ? 'text-warning' : 'text-success';">
+                  <label class="form-check-label text-white fw-bold mb-0" for="statusManutencaoFacaEdit${f.id}" style="cursor: pointer; padding-top: 2px;">Status: <span class="${isManutencao ? 'text-warning' : 'text-success'}" id="lblStatusFacaEdit${f.id}">${isManutencao ? 'Em Manutenção' : 'Disponível'}</span></label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Faca / Equipamento</label>
+                <input type="text" name="faca" value="${escapeHtmlAttr(f.faca)}" class="form-control form-control-sm py-2 shadow-sm text-white" required>
+              </div>
+
+              <div class="col-6">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Data Saída</label>
+                <input type="date" name="data_saida" value="${dataSaidaFormatada}" class="form-control form-control-sm py-2 shadow-sm text-white" required>
+              </div>
+
+              <div class="col-6">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Retirada por</label>
+                <input type="text" name="nome_retirou" value="${escapeHtmlAttr(f.nome_retirou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+              </div>
+
+              <div class="col-6">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Data Retorno</label>
+                <input type="date" name="data_entrada" value="${dataEntradaFormatada}" class="form-control form-control-sm py-2 shadow-sm text-white">
+              </div>
+
+              <div class="col-6">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Entregue por</label>
+                <input type="text" name="nome_entregou" value="${escapeHtmlAttr(f.nome_entregou || '')}" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Descrição / Problema</label>
+                <textarea name="descricao" class="form-control form-control-sm shadow-sm text-white" rows="2" required>${escapeHtmlAttr(f.descricao || '')}</textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Nova Imagem (Substituir)</label>
+                <input type="file" name="imagem_faca" class="form-control form-control-sm py-2 shadow-sm text-white" accept="image/*" onchange="previewImagemFaca(this, 'previewEditFaca${f.id}')">
+                <img id="previewEditFaca${f.id}" src="${f.imagem_faca ? '/uploads/' + f.imagem_faca : ''}" data-original="${f.imagem_faca ? '/uploads/' + f.imagem_faca : ''}" style="${f.imagem_faca ? 'display:block;' : 'display:none;'} width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">
+              </div>
+              
+            </div>
+          </div>
+          <div class="modal-footer border-custom bg-custom-darker d-flex flex-nowrap pt-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-warning w-100 w-sm-auto text-dark fw-bold shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="excluirFacaModal${f.id}" tabindex="-1">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content erp-modal border-0 bg-custom-darker shadow-lg">
+          <form method="POST" action="/facas/excluir/${f.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Manutenção Excluída!')">
+            <div class="modal-body text-center p-4">
+              <i class="fa-solid fa-trash-can fa-3x text-danger mb-3"></i>
+              <h6 class="mb-2 fw-bold text-white">Excluir Registro?</h6>
+              <p class="text-muted mb-0" style="font-size:0.8rem;">Deseja remover o registro da faca <b class="text-white">${escapeHtmlAttr(f.faca)}</b>?</p>
+            </div>
+            <div class="modal-footer justify-content-center bg-custom-darker border-0 flex-nowrap pt-2 pb-3 px-3">
+              <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold shadow-sm">Sim, Excluir</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    `;
+  }).join("");
+
+  const modalManutencaoFacaHtml = `
+  <div class="modal fade" id="novaManutencaoFacaModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <form method="POST" action="/facas/manutencao" enctype="multipart/form-data" class="modal-content erp-modal border-0 shadow-lg bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Manutenção Registrada!')">
+        <div class="modal-header bg-custom-darker border-custom">
+          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-screwdriver-wrench me-2 text-warning"></i> Registrar Manutenção</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-sm p-4 bg-custom-dark">
+          <div class="row g-3">
+            
+            <div class="col-12 border-bottom border-custom pb-3 mb-1">
+              <div class="form-check form-switch d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="statusManutencaoFaca" name="status" value="em_manutencao" checked style="width: 40px; height: 20px; cursor: pointer;">
+                <label class="form-check-label text-white fw-bold mb-0" for="statusManutencaoFaca" style="cursor: pointer; padding-top: 2px;">Status: <span class="text-warning" id="lblStatusFaca">Em Manutenção</span></label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Faca / Equipamento</label>
+              <input type="text" name="faca" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Ex: Faca N20" required>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Data Saída</label>
+              <input type="date" name="data_saida" class="form-control form-control-sm py-2 shadow-sm text-white" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Retirada por</label>
+              <input type="text" name="nome_retirou" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Data Retorno</label>
+              <input type="date" name="data_entrada" class="form-control form-control-sm py-2 shadow-sm text-white">
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Entregue por</label>
+              <input type="text" name="nome_entregou" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Nome">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Descrição / Problema</label>
+              <textarea name="descricao" class="form-control form-control-sm shadow-sm text-white" rows="2" placeholder="Detalhes da manutenção..." required></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Imagem (Opcional)</label>
+              <input type="file" name="imagem_faca" class="form-control form-control-sm py-2 shadow-sm text-white" accept="image/*" onchange="previewImagemFaca(this, 'previewNovaFaca')">
+              <img id="previewNovaFaca" src="" style="display:none; width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer border-custom bg-custom-darker pt-3">
+          <div class="d-flex gap-2 ms-auto">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary text-white"
+                    style="width: 120px;"
+                    data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="submit"
+                    class="btn btn-sm btn-warning text-dark fw-bold shadow-sm"
+                    style="width: 120px;">
+              <i class="fa-solid fa-save me-1"></i> Registrar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  `;
+
+  const containerFacasBody = facas && facas.length > 0 
+      ? facas.map(f => {
+          const isManutencao = f.em_manutencao;
+          const statusBadge = isManutencao
+            ? '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50"><i class="fa-solid fa-screwdriver-wrench me-1"></i> Em Manutenção</span>'
+            : '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50"><i class="fa-solid fa-check me-1"></i> Disponível</span>';
+          
+          return `
+          <div class="bg-custom-dark border border-custom p-3 rounded-3 shadow-sm mb-2 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 cursor-pointer transition-hover" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editarFacaModal${f.id}')).show();" title="Clique para editar">
+              <div class="d-flex align-items-center gap-3 w-100 w-sm-auto">
+                  ${f.imagem_faca ? `<img src="/uploads/${f.imagem_faca}" class="rounded shadow-sm cursor-pointer" style="width: 45px; height: 45px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);" onclick="event.stopPropagation(); abrirImagemGrande('/uploads/${f.imagem_faca}', event);">` : `<div class="rounded shadow-sm bg-custom-darker d-flex align-items-center justify-content-center text-white-50 border-custom" style="width: 45px; height: 45px;"><i class="fa-solid fa-image"></i></div>`}
+                  <div class="flex-grow-1">
+                      <div class="d-flex align-items-center gap-2">
+                          <h6 class="text-white fw-bold mb-1" style="font-size: 0.85rem;">${escapeHtmlAttr(f.faca)}</h6>
+                      </div>
+                      <div class="text-muted" style="font-size: 0.7rem;">
+                          <i class="fa-solid fa-arrow-right-from-bracket text-danger me-1"></i> Saiu: ${f.data_saida ? new Date(f.data_saida).toLocaleDateString('pt-BR') : '-'} (${escapeHtmlAttr(f.nome_retirou || 'N/A')})
+                      </div>
+                      <div class="text-muted mt-1 text-truncate" style="font-size: 0.7rem; max-width: 250px;"><i class="fa-solid fa-align-left me-1"></i> ${escapeHtmlAttr(f.descricao || '')}</div>
+                  </div>
+              </div>
+              <div class="d-flex flex-row flex-sm-column align-items-center align-items-sm-end justify-content-between w-100 w-sm-auto mt-2 mt-sm-0 gap-2">
+                  <div class="d-flex flex-column align-items-start align-items-sm-end gap-1">
+                      ${statusBadge}
+                      ${!isManutencao && f.data_entrada ? `<div class="text-muted mt-1" style="font-size: 0.65rem;"><i class="fa-solid fa-arrow-right-to-bracket text-success me-1"></i> Voltou: ${new Date(f.data_entrada).toLocaleDateString('pt-BR')}</div>` : ''}
+                  </div>
+                  <div class="d-flex gap-1 ms-sm-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger py-1 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#excluirFacaModal${f.id}" title="Excluir" onclick="event.stopPropagation();">
+                        <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                      </button>
+                  </div>
+              </div>
+          </div>
+          `;
+      }).join("") 
+      : `
+        <div class="text-white-50 p-5 text-center flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+            <i class="fa-solid fa-toolbox fa-3x mb-3 opacity-25"></i>
+            <p class="mb-0" style="font-size: 0.85rem;">Nenhuma faca registada no módulo de manutenção no momento.</p>
+        </div>
+      `;
+
   const menuHTML = menuLateral(user, "/chapas");
 
   return `
@@ -186,7 +398,7 @@ function chapasView(usuario, chapas = []) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chapas | Ecoflow</title>
+    <title>Chapas e Facas | Ecoflow</title>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -207,6 +419,25 @@ function chapasView(usuario, chapas = []) {
           font-family: 'Segoe UI', sans-serif;
       }
 
+      /* PLACEHOLDERS GLOBAL */
+      ::-webkit-input-placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+      ::-moz-placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+      :-ms-input-placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+      ::-ms-input-placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+      ::placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+      .form-control::placeholder { color: rgba(255, 255, 255, 0.5) !important; opacity: 1 !important; }
+
+      body.theme-light ::-webkit-input-placeholder { color: #888888 !important; opacity: 1 !important; }
+      body.theme-light ::-moz-placeholder { color: #888888 !important; opacity: 1 !important; }
+      body.theme-light :-ms-input-placeholder { color: #888888 !important; opacity: 1 !important; }
+      body.theme-light ::-ms-input-placeholder { color: #888888 !important; opacity: 1 !important; }
+      body.theme-light ::placeholder { color: #888888 !important; opacity: 1 !important; }
+      body.theme-light .form-control::placeholder { color: #888888 !important; opacity: 1 !important; }
+
+      input[type="date"].form-control {
+        color-scheme: dark;
+      }
+
       /* Sidebar */
       .sidebar { width: 240px; background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05); color: white; padding: 20px; display: flex; flex-direction: column;}
       .sidebar a { display: block; padding: 10px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; transition: all 0.2s;}
@@ -217,7 +448,7 @@ function chapasView(usuario, chapas = []) {
       /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
-      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
+      .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
       /* Modificadores Bootstrap */
@@ -243,6 +474,12 @@ function chapasView(usuario, chapas = []) {
       
       .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
       .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+
+      /* Pagination */
+      .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+      .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; font-weight: bold; }
+      .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
+      .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); cursor: default; }
 
       /* ANIMAÇÕES DOS ÍCONES DE ALERTA & SUCESSO */
       @keyframes pulseIcon {
@@ -307,15 +544,18 @@ function chapasView(usuario, chapas = []) {
           color: #fff !important; 
       }
       
-      /* Hover forcado para as linhas da tabela */
+      /* Redução de Padding e Tamanhos da Tabela para Ajuste de Espaço */
+      .table-sm th, .table-sm td { padding: 4px 6px !important; }
+      .col-min-md { min-width: 90px; }
+      .col-min-sm { min-width: 70px; }
+      .col-filter { min-width: 70px; font-size: 0.75rem; padding: 2px 4px; }
+      
       .table-hover-row { transition: background-color 0.2s; }
       .table-hover-row:hover > td {
           background-color: rgba(255,255,255,0.06) !important;
       }
 
-      .col-min-md { min-width: 140px; }
-      .col-min-sm { min-width: 110px; }
-      .col-filter { min-width: 110px; font-size: 0.8rem;}
+      .cursor-pointer { cursor: pointer; }
 
       /* Modals */
       .erp-modal { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background-color: #2a2a2a; }
@@ -336,12 +576,29 @@ function chapasView(usuario, chapas = []) {
       .offcanvas { background-color: #1f1f1f !important; }
       .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
       .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
+
+      /* Skeleton Loading Dark */
+      .skeleton-dark { 
+        background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; 
+        background-size: 200% 100% !important; 
+        animation: skeleton-loading-view 1.5s infinite linear !important; 
+        border-color: transparent !important; 
+        box-shadow: none !important; 
+        pointer-events: none; 
+      }
+      .skeleton-dark * { visibility: hidden !important; }
+      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+      /* Toasts Animations */
+      .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; background-color: #2a2a2a !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.08) !important; }
+      .toast.showing, .toast.show { transform: translateX(0); }
+      .toast-timer { height: 4px; background: var(--verde-ecoflow); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
+      @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
+
     </style>
   </head>
   <body>
     
-    ${renderLoaderParticulas("Consultando estoque")}
-
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2">
         <img src="/img/logo-branca.png" alt="Logo da Empresa" class="img-fluid" style="max-width: 130px;">
@@ -366,85 +623,125 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
-    <div class="content">
+    <div class="content" id="mainContentWrapper">
       
+      <!-- HEADER ESTOQUE CHAPAS -->
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-layer-group text-muted me-2"></i>Estoque de Chapas</h5>
-              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.7rem;">Gestão de materiais e medidas</span>
+              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-layer-group text-muted me-2"></i>Estoque de Chapas e Facas</h5>
+              <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.7rem;">Gestão de materiais e manutenções</span>
             </div>
         </div>
       </div>
 
       ${containerSaude}
 
-      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom gap-3">
-        <div class="d-flex gap-2 flex-wrap w-100 w-sm-auto">
-          <button class="btn btn-sm btn-success shadow-sm btn-mobile-full text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#novaChapaModal">
-            <i class="fa-solid fa-plus me-1"></i> Cadastrar Nova Chapa
-          </button>
-          <button class="btn btn-sm btn-primary shadow-sm btn-mobile-full fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#calcChapaModal">
-            <i class="fa-solid fa-calculator me-1"></i> Calculadora
-          </button>
-          <a href="/exportar/chapas" target="_blank" class="btn btn-sm btn-outline-success shadow-sm btn-mobile-full fw-bold" title="Exportar para Excel">
-            <i class="fa-solid fa-file-excel me-1"></i> Relatório
-          </a>
-        </div>
-        <div class="text-start text-sm-end w-100 w-sm-auto border-top border-custom border-sm-0 pt-3 pt-sm-0">
-          <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total de Registos: <strong class="text-white" id="totalRegistos">${chapas.length}</strong></h6>
-        </div>
+      <!-- GRÁFICO DE ESTOQUE ATUAL -->
+      <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom mb-4" id="chartContainer" style="height: 280px; position: relative;">
+          <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-nowrap">
+              <h6 class="mb-0 fw-bold text-white text-nowrap" style="font-size:0.85rem;"><i class="fa-solid fa-chart-column text-accent me-2"></i> Estoque Atual por Chapa</h6>
+          </div>
+          <div class="flex-grow-1" style="position: relative; width: 100%; height: 210px;">
+              <canvas id="graficoEstoque"></canvas>
+          </div>
       </div>
 
-      <div class="erp-card border-custom">
-        <div class="table-responsive" style="min-height: 350px;">
-          <table class="table table-sm align-middle mb-0" id="tabelaChapas" style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0;">
-            <thead class="table-light">
-              <tr>
-                <th class="text-start col-min-md py-2 px-3 border-0">
-                  Material 
-                  <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Pardo ou branco"></i>
-                </th>
-                <th class="text-start col-min-md py-2 px-3 border-0">
-                  Modelo
-                  <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Modelo ou modelos de caixas que são feitos com a chapa"></i>
-                </th>
-                <th class="col-min-md py-2 px-3 border-0">
-                  Fornecedor
-                  <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Nome da empresa que distribui a chapa."></i>
-                </th>
-                <th class="col-min-sm py-2 px-3 border-0">
-                  Medida
-                  <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimensões (comprimento x largura) da chapa."></i>
-                </th>
-                <th class="text-center col-min-sm py-2 px-3 border-0">
-                  Qtd. Chapa
-                  <i class="fa-solid fa-circle-info text-muted ms-1 help-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Quantidade física atual existente em estoque."></i>
-                </th>
-                <th class="text-end py-2 px-3 border-0">Ações</th>
-              </tr>
-              <tr class="bg-custom-darker border-bottom border-custom">
-                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="0" placeholder="Pesquisar material..."></th>
-                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="1" placeholder="Pesquisar modelo..."></th>
-                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="2" placeholder="Pesquisar fornecedor..."></th>
-                <th class="py-1 px-3 border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="3" placeholder="Ex: 2000x1000..."></th>
-                <th class="py-1 px-3 border-0"><input type="number" class="form-control form-control-sm col-filter fw-normal text-center shadow-none" data-col="4" placeholder="Filtrar Qtd..."></th>
-                <th class="py-1 px-3 border-0"></th>
-              </tr>
-            </thead>
-            <tbody class="border-top-0">
-              ${linhas || "<tr><td colspan='6' class='text-center text-muted py-5'><i class='fa-solid fa-layer-group fa-2x mb-3 opacity-25'></i><br>Nenhuma chapa cadastrada no sistema.</td></tr>"}
-            </tbody>
-          </table>
-        </div>
+      <!-- ESTRUTURA GRID: CHAPAS (Esquerda) e FACAS (Direita) -->
+      <div class="row g-4 mb-5 align-items-stretch">
+          
+          <!-- COLUNA ESQUERDA: CHAPAS -->
+          <div class="col-12 col-xl-7 d-flex flex-column">
+              
+              <!-- HEADER AÇÕES CHAPAS -->
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-3 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom gap-3">
+                <div class="d-flex gap-2 flex-wrap w-100 w-sm-auto">
+                  <button class="btn btn-sm btn-success shadow-sm btn-mobile-full text-dark fw-bold px-2" data-bs-toggle="modal" data-bs-target="#novaChapaModal">
+                    <i class="fa-solid fa-plus me-1"></i> Nova Chapa
+                  </button>
+                  <button class="btn btn-sm btn-primary shadow-sm btn-mobile-full fw-bold text-dark px-2" data-bs-toggle="modal" data-bs-target="#calcChapaModal">
+                    <i class="fa-solid fa-calculator me-1"></i> Calculadora
+                  </button>
+                  <a href="/exportar/chapas" target="_blank" class="btn btn-sm btn-outline-success shadow-sm btn-mobile-full fw-bold px-2" title="Exportar para Excel">
+                    <i class="fa-solid fa-file-excel"></i>
+                  </a>
+                </div>
+                <div class="text-start text-sm-end w-100 w-sm-auto border-top border-custom border-sm-0 pt-3 pt-sm-0">
+                  <h6 class="mb-0 text-muted" style="font-size:0.8rem;">Total: <strong class="text-white" id="totalRegistos">${chapas.length}</strong></h6>
+                </div>
+              </div>
+
+              <!-- TABELA CHAPAS COM PAGINAÇÃO -->
+              <div class="erp-card border-custom flex-grow-1 d-flex flex-column" id="tabelaContainer">
+                <div class="table-responsive flex-grow-1" style="min-height: 350px;">
+                  <table class="table table-sm align-middle mb-0" id="tabelaChapas" style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0;">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-start col-min-md border-0">
+                          Material 
+                        </th>
+                        <th class="text-start col-min-md border-0">
+                          Modelo
+                        </th>
+                        <th class="col-min-md border-0">
+                          Fornecedor
+                        </th>
+                        <th class="col-min-sm border-0">
+                          Medida
+                        </th>
+                        <th class="text-center col-min-sm border-0">
+                          Qtd.
+                        </th>
+                        <th class="text-end border-0">Ações</th>
+                      </tr>
+                      <tr class="bg-custom-darker border-bottom border-custom">
+                        <th class="border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="0" placeholder="Pesquisar material..."></th>
+                        <th class="border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="1" placeholder="Pesquisar modelo..."></th>
+                        <th class="border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="2" placeholder="Pesquisar fornecedor..."></th>
+                        <th class="border-0"><input type="text" class="form-control form-control-sm col-filter fw-normal shadow-none" data-col="3" placeholder="Ex: 2000x1000..."></th>
+                        <th class="border-0"><input type="number" class="form-control form-control-sm col-filter fw-normal text-center shadow-none" data-col="4" placeholder="Filtrar Qtd..."></th>
+                        <th class="border-0"></th>
+                      </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                      ${linhas || "<tr><td colspan='6' class='text-center text-muted py-5'><i class='fa-solid fa-layer-group fa-2x mb-3 opacity-25'></i><br>Nenhuma chapa cadastrada.</td></tr>"}
+                    </tbody>
+                  </table>
+                </div>
+                <div id="paginationContainer" class="d-flex justify-content-center mt-3 mb-3 flex-shrink-0"></div>
+              </div>
+          </div>
+
+          <!-- COLUNA DIREITA: FACAS -->
+          <div class="col-12 col-xl-5 d-flex flex-column">
+              
+              <!-- HEADER AÇÕES FACAS -->
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-3 bg-custom-darker p-3 rounded-3 shadow-sm border border-custom gap-3">
+                  <div class="d-flex align-items-center">
+                      <i class="fa-solid fa-screwdriver-wrench text-warning me-2 fa-lg"></i>
+                      <h6 class="fw-bold text-white mb-0" style="font-size: 0.9rem;">Controle de Facas</h6>
+                  </div>
+                  <button class="btn btn-sm btn-warning fw-bold text-dark shadow-sm btn-mobile-full px-3" data-bs-toggle="modal" data-bs-target="#novaManutencaoFacaModal">
+                      <i class="fa-solid fa-plus me-1"></i> Nova Manutenção
+                  </button>
+              </div>
+
+              <!-- CONTAINER LISTA FACAS -->
+              <div class="erp-card border-custom flex-grow-1 d-flex flex-column p-3 bg-custom-dark" id="facasContainer" style="min-height: 350px;">
+                  ${containerFacasBody}
+              </div>
+
+          </div>
+
       </div>
 
     </div>
 
+    <!-- MODAL CADASTRAR CHAPA -->
     <div class="modal fade" id="novaChapaModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form method="POST" action="/chapas/novo" class="modal-content erp-modal border-0 shadow-lg bg-custom-darker" onsubmit="showSuccessModal(event, this, 'Chapa Cadastrada!')">
+        <form method="POST" action="/chapas/novo" class="modal-content erp-modal border-0 shadow-lg bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Chapa Cadastrada!')">
           <div class="modal-header bg-custom-darker border-custom">
             <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-layer-group me-2 text-success"></i> Cadastrar Nova Chapa</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -485,6 +782,7 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
+    <!-- MODAL CALCULADORA -->
     <div class="modal fade" id="calcChapaModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
@@ -533,6 +831,44 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
+    <!-- MODAIS DE FACAS -->
+    ${modalManutencaoFacaHtml}
+    ${modaisFacas}
+
+    ${modais}
+
+    <!-- TOASTS DE FEEDBACK -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+        <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                    <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white-50 mb-0" style="font-size:0.8rem; opacity: 0.9;" id="sucessoSub">A processar...</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0" id="sucessoTimer" style="display: none; height: 4px; background: #08c068;"></div>
+        </div>
+
+        <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
+                <div>
+                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                    <strong class="fs-6" id="erroTitulo">Erro!</strong>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body pt-1 pb-4 px-3 position-relative">
+                <p class="text-white-50 mb-0" style="font-size:0.8rem; opacity: 0.9;" id="erroSub">Ocorreu um erro ao processar.</p>
+            </div>
+            <div class="toast-timer position-absolute bottom-0 start-0 bg-danger" id="erroTimer" style="display: none; height: 4px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL FEEDBACK SUCESSO GERAL -->
     <div class="modal fade" id="sucessoChapaModal" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content erp-modal border-0 bg-custom-darker shadow-lg">
@@ -545,125 +881,513 @@ function chapasView(usuario, chapas = []) {
       </div>
     </div>
 
-    ${modais}
     ${termosHTML}
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
 
     <script>
-      // Função global para exibir modal animado e submeter form (usado em Novo e Editar)
       let isSubmitting = false;
+      let chartEstoque = null;
+      
+      const chapasDataForChart = ${JSON.stringify(chapas.map(c => ({
+          label: c.material + ' ' + c.modelo,
+          qtd: Number(c.quantidade) || 0
+      })))};
 
-      function showSuccessModal(event, formElement, titleMsg) {
-        if (isSubmitting) return; // Evita duplo envio acidental
-        
-        event.preventDefault(); // Segura o envio padrao para mostrar a animação
-        
-        // Esconde o modal de cadastro/edição que está aberto
-        const parentModalEl = formElement.closest('.modal');
-        if (parentModalEl) {
-            const parentModal = bootstrap.Modal.getInstance(parentModalEl) || bootstrap.Modal.getOrCreateInstance(parentModalEl);
-            parentModal.hide();
-        }
-        
-        // Configura título e mostra o modal de sucesso
-        document.getElementById('sucessoChapaTitulo').innerText = titleMsg;
-        const successModalEl = document.getElementById('sucessoChapaModal');
-        const successModal = bootstrap.Modal.getOrCreateInstance(successModalEl);
-        successModal.show();
-        
-        isSubmitting = true;
+      // =======================================================================
+      // FUNÇÃO DE PRÉ-VISUALIZAÇÃO DE IMAGEM DA FACA
+      // =======================================================================
+      window.previewImagemFaca = function(input, imgId) {
+          const img = document.getElementById(imgId);
+          if (input.files && input.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  img.src = e.target.result;
+                  img.style.display = 'block';
+              }
+              reader.readAsDataURL(input.files[0]);
+          } else {
+              if (img.getAttribute('data-original')) {
+                  img.src = img.getAttribute('data-original');
+                  img.style.display = 'block';
+              } else {
+                  img.src = '';
+                  img.style.display = 'none';
+              }
+          }
+      };
 
-        // Submete de fato o formulário após 1.5s
-        setTimeout(() => {
-            formElement.submit();
-        }, 1500);
+      // =======================================================================
+      // PLUGIN INLINE DO CHART.JS PARA LABELS EM CIMA DAS BARRAS
+      // =======================================================================
+      const pluginValoresGrafico = {
+          id: 'pluginValoresGrafico',
+          afterDatasetsDraw(chart, args, pluginOptions) {
+              const { ctx, data } = chart;
+              ctx.save();
+              data.datasets.forEach((dataset, i) => {
+                  const meta = chart.getDatasetMeta(i);
+                  if (!meta.hidden) {
+                      meta.data.forEach((element, index) => {
+                          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                          ctx.font = 'bold 11px sans-serif';
+                          ctx.textAlign = 'center';
+                          ctx.textBaseline = 'bottom';
+                          
+                          const valorStr = dataset.data[index].toLocaleString('pt-BR');
+                          const position = element.tooltipPosition();
+                          
+                          // Ajuste para não cortar o número caso a barra esteja colada no teto
+                          const yPos = position.y < 20 ? position.y + 15 : position.y - 5;
+                          
+                          ctx.fillText(valorStr, position.x, yPos);
+                      });
+                  }
+              });
+              ctx.restore();
+          }
+      };
+
+      // =======================================================================
+      // FUNÇÃO GENÉRICA DE TOAST (SUCESSO E ERRO) E SKELETON
+      // =======================================================================
+      function mostrarToast(tipo, titulo, mensagem) {
+          const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
+          if (toastEl) {
+              document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
+              
+              const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.animation = 'none';
+                  timerEl.offsetHeight; 
+                  timerEl.style.animation = 'shrinkToast 5s linear forwards';
+              }
+
+              const oldInstance = bootstrap.Toast.getInstance(toastEl);
+              if (oldInstance) oldInstance.dispose();
+
+              const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
+              toast.show();
+          }
       }
 
-      document.addEventListener("DOMContentLoaded", function() {
-        
-        // Lógica da Calculadora de Chapa
-        const btnCalcular = document.getElementById('btnCalcular');
-        if (btnCalcular) {
-            btnCalcular.addEventListener('click', () => {
-                const c = Number(document.getElementById('calcC').value) || 0;
-                const l = Number(document.getElementById('calcL').value) || 0;
-                const a = Number(document.getElementById('calcA').value) || 0;
-                
-                const comp = (c + l) * 2 + 54;
-                const larg = l + a + 24;
-                
-                document.getElementById('resComp').innerText = comp;
-                document.getElementById('resLarg').innerText = larg;
-            });
-        }
+      function mostrarToastCarregando(mensagem) {
+          const successToastEl = document.getElementById('sucessoToast');
+          if(!successToastEl) return;
+          document.getElementById('sucessoTitulo').innerText = "Processando";
+          document.getElementById('sucessoSub').innerText = mensagem;
 
-        // Lógica do Botão Retrátil (Exibir Tudo)
-        const wrapper = document.getElementById('alertContentWrapper');
-        const containerCards = document.getElementById('alertCardsContainer');
-        const btnToggle = document.getElementById('btnToggleAlert');
-        const toggleContainer = document.getElementById('alertToggleContainer');
+          successToastEl.setAttribute('data-bs-autohide', 'false');
 
-        if (wrapper && containerCards && btnToggle) {
-          if (containerCards.scrollHeight > wrapper.clientHeight) {
-            toggleContainer.style.display = 'block'; 
-            btnToggle.addEventListener('click', function() {
-              wrapper.classList.toggle('expanded');
-              if (wrapper.classList.contains('expanded')) {
-                btnToggle.innerHTML = 'Ocultar <i class="fa-solid fa-chevron-up ms-1"></i>';
-              } else {
-                btnToggle.innerHTML = 'Exibir tudo <i class="fa-solid fa-chevron-down ms-1"></i>';
-              }
-            });
-          } else {
-            document.getElementById('alertFadeOverlay').style.display = 'none';
+          const timerEl = document.getElementById('sucessoTimer');
+          if (timerEl) timerEl.style.display = 'none';
+
+          const oldInstance = bootstrap.Toast.getInstance(successToastEl);
+          if (oldInstance) oldInstance.dispose();
+          const successToast = new bootstrap.Toast(successToastEl);
+          successToast.show();
+      }
+
+      function mostrarSkeletonGlobais() {
+          if (document.getElementById('skeleton-temp-container')) return;
+          const mainContent = document.getElementById('mainContentWrapper');
+          if (mainContent) mainContent.style.display = 'none';
+
+          const skeletonHTML = \`
+          <div id="skeleton-temp-container" class="w-100">
+              <div class="skeleton-dark rounded mb-4" style="height: 250px; width: 100%;"></div>
+              
+              <div class="row g-4">
+                  <div class="col-12 col-xl-7">
+                      <div class="skeleton-dark rounded mb-3" style="height: 60px; width: 100%;"></div>
+                      <div class="skeleton-dark rounded" style="height: 350px; width: 100%;"></div>
+                  </div>
+                  <div class="col-12 col-xl-5">
+                      <div class="skeleton-dark rounded mb-3" style="height: 60px; width: 100%;"></div>
+                      <div class="skeleton-dark rounded" style="height: 350px; width: 100%;"></div>
+                  </div>
+              </div>
+          </div>\`;
+          
+          document.querySelector('.content').insertAdjacentHTML('beforeend', skeletonHTML);
+      }
+
+      function ocultarSkeletonGlobais() {
+          const tempSkeleton = document.getElementById('skeleton-temp-container');
+          if (tempSkeleton) tempSkeleton.remove();
+
+          const mainContent = document.getElementById('mainContentWrapper');
+          if (mainContent) mainContent.style.display = '';
+      }
+
+      // =======================================================================
+      // GRÁFICO DE BARRAS DE ESTOQUE
+      // =======================================================================
+      function renderizarGraficoEstoque() {
+          const canvas = document.getElementById('graficoEstoque');
+          if (!canvas) return;
+          
+          const ctx = canvas.getContext('2d');
+          
+          if (chartEstoque) {
+              chartEstoque.destroy();
           }
-        }
 
-        // Inicializar Tooltips do Bootstrap
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+          const labels = chapasDataForChart.map(c => c.label);
+          const data = chapasDataForChart.map(c => c.qtd);
+          const colors = chapasDataForChart.map(c => c.qtd < 5000 ? 'rgba(220, 53, 69, 0.85)' : 'rgba(8, 192, 104, 0.85)');
+          const borderColors = chapasDataForChart.map(c => c.qtd < 5000 ? 'rgba(220, 53, 69, 1)' : 'rgba(8, 192, 104, 1)');
 
-        // Lógica de Filtro Multicoluna
-        const filters = document.querySelectorAll('.col-filter');
-        const tableRows = document.querySelectorAll('#tabelaChapas tbody tr.chapa-row');
-        const counter = document.getElementById('totalRegistos');
+          chartEstoque = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Quantidade em Estoque',
+                      data: data,
+                      backgroundColor: colors,
+                      borderColor: borderColors,
+                      borderWidth: 1,
+                      borderRadius: 4
+                  }]
+              },
+              plugins: [pluginValoresGrafico],
+              options: {
+                  layout: {
+                      padding: {
+                          top: 25 
+                      }
+                  },
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                          backgroundColor: '#1f1f1f',
+                          titleColor: '#fff',
+                          bodyColor: '#fff',
+                          borderColor: 'rgba(255,255,255,0.1)',
+                          borderWidth: 1,
+                          titleFont: { size: 13, family: "'Segoe UI', sans-serif" },
+                          bodyFont: { size: 12, family: "'Segoe UI', sans-serif" },
+                          padding: 10,
+                          callbacks: {
+                              label: function(context) {
+                                  return context.parsed.y.toLocaleString('pt-BR') + ' unidades';
+                              }
+                          }
+                      }
+                  },
+                  scales: {
+                      y: { 
+                          beginAtZero: true, 
+                          grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+                          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } } 
+                      },
+                      x: { 
+                          grid: { display: false }, 
+                          ticks: { 
+                              color: 'rgba(255,255,255,0.4)',
+                              font: { size: 10 },
+                              maxRotation: 45,
+                              minRotation: 0
+                          } 
+                      }
+                  }
+              }
+          });
+      }
 
-        filters.forEach(filter => {
-          filter.addEventListener('click', function(e) {
-            e.stopPropagation();
+      // =======================================================================
+      // INICIALIZAÇÃO DE SCRIPTS LOCAIS (Filtros, Calculadora, Paginação JS)
+      // =======================================================================
+      function inicializarScriptsView() {
+          renderizarGraficoEstoque();
+
+          // Tooltips do Bootstrap
+          const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+          tooltipTriggerList.forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+          // Switch de Facas no Modal
+          document.querySelectorAll('input[type="checkbox"][id^="statusManutencaoFaca"]').forEach(switchFaca => {
+              switchFaca.addEventListener('change', function() {
+                  const lblId = this.id.replace('statusManutencaoFaca', 'lblStatusFaca');
+                  const lblFaca = document.getElementById(lblId);
+                  if (lblFaca) {
+                      if(this.checked) {
+                          lblFaca.innerText = 'Em Manutenção';
+                          lblFaca.className = 'text-warning';
+                      } else {
+                          lblFaca.innerText = 'Disponível';
+                          lblFaca.className = 'text-success';
+                      }
+                  }
+              });
           });
 
-          filter.addEventListener('input', function() {
-            let visiveis = 0;
+          // Calculadora de Chapa
+          const btnCalcular = document.getElementById('btnCalcular');
+          if (btnCalcular) {
+              btnCalcular.addEventListener('click', () => {
+                  const c = Number(document.getElementById('calcC').value) || 0;
+                  const l = Number(document.getElementById('calcL').value) || 0;
+                  const a = Number(document.getElementById('calcA').value) || 0;
+                  
+                  const comp = (c + l) * 2 + 54;
+                  const larg = l + a + 24;
+                  
+                  document.getElementById('resComp').innerText = comp;
+                  document.getElementById('resLarg').innerText = larg;
+              });
+          }
 
-            tableRows.forEach(row => {
-              let showRow = true;
+          // Botão Retrátil (Exibir Tudo) da Saúde do Estoque
+          const wrapper = document.getElementById('alertContentWrapper');
+          const containerCards = document.getElementById('alertCardsContainer');
+          const btnToggle = document.getElementById('btnToggleAlert');
+          const toggleContainer = document.getElementById('alertToggleContainer');
 
-              filters.forEach(f => {
-                const colIdx = f.getAttribute('data-col');
-                const filterValue = f.value.toLowerCase().trim();
-                
-                if (filterValue !== "") {
-                  const cell = row.querySelectorAll('td')[colIdx];
-                  if (cell) {
-                    const cellText = cell.textContent.toLowerCase();
-                    if (!cellText.includes(filterValue)) {
-                      showRow = false;
-                    }
-                  }
+          if (wrapper && containerCards && btnToggle) {
+            if (containerCards.scrollHeight > wrapper.clientHeight) {
+              toggleContainer.style.display = 'block'; 
+              btnToggle.addEventListener('click', function() {
+                wrapper.classList.toggle('expanded');
+                if (wrapper.classList.contains('expanded')) {
+                  btnToggle.innerHTML = 'Ocultar <i class="fa-solid fa-chevron-up ms-1"></i>';
+                } else {
+                  btnToggle.innerHTML = 'Exibir tudo <i class="fa-solid fa-chevron-down ms-1"></i>';
                 }
               });
+            } else {
+              const overlay = document.getElementById('alertFadeOverlay');
+              if(overlay) overlay.style.display = 'none';
+            }
+          }
 
-              row.style.display = showRow ? '' : 'none';
-              if (showRow) visiveis++;
-            });
+          // --- PAGINAÇÃO INTELIGENTE (FRONTEND) ---
+          window.chapasPageSize = 10;
+          window.chapasCurrentPage = 1;
+          window.chapasFilteredRows = [];
 
-            if (counter) counter.innerText = visiveis;
+          window.mudarPagina = function(page) {
+              const totalPages = Math.ceil(window.chapasFilteredRows.length / window.chapasPageSize) || 1;
+              if (page < 1 || page > totalPages) return;
+              window.chapasCurrentPage = page;
+              
+              // Oculta todas
+              document.querySelectorAll('#tabelaChapas tbody tr.chapa-row').forEach(r => r.style.display = 'none');
+              
+              // Exibe apenas as da página atual
+              const start = (window.chapasCurrentPage - 1) * window.chapasPageSize;
+              const end = start + window.chapasPageSize;
+              for (let i = start; i < end && i < window.chapasFilteredRows.length; i++) {
+                  window.chapasFilteredRows[i].style.display = '';
+              }
+              
+              renderPagination();
+          };
+
+          function renderPagination() {
+              const totalPages = Math.ceil(window.chapasFilteredRows.length / window.chapasPageSize) || 1;
+              const paginationEl = document.getElementById('paginationContainer');
+              if (!paginationEl) return;
+
+              if (totalPages <= 1) {
+                  paginationEl.innerHTML = '';
+                  return;
+              }
+
+              let html = '<nav><ul class="pagination pagination-sm mb-0 shadow-sm">';
+              html += \`<li class="page-item \${window.chapasCurrentPage === 1 ? 'disabled' : ''}"><a class="page-link" onclick="window.mudarPagina(\${window.chapasCurrentPage - 1})">«</a></li>\`;
+
+              const delta = 1;
+              let l;
+              const range = [];
+              const rangeWithDots = [];
+
+              for (let i = 1; i <= totalPages; i++) {
+                  if (i === 1 || i === totalPages || (i >= window.chapasCurrentPage - delta && i <= window.chapasCurrentPage + delta)) {
+                      range.push(i);
+                  }
+              }
+
+              for (let i of range) {
+                  if (l) {
+                      if (i - l === 2) {
+                          rangeWithDots.push(l + 1);
+                      } else if (i - l !== 1) {
+                          rangeWithDots.push('...');
+                      }
+                  }
+                  rangeWithDots.push(i);
+                  l = i;
+              }
+
+              for (let i of rangeWithDots) {
+                  if (i === '...') {
+                      html += '<li class="page-item disabled"><span class="page-link border-custom bg-custom-darker text-muted">...</span></li>';
+                  } else {
+                      const activeClass = i === window.chapasCurrentPage ? 'active' : '';
+                      html += \`<li class="page-item \${activeClass}"><a class="page-link" onclick="window.mudarPagina(\${i})">\${i}</a></li>\`;
+                  }
+              }
+
+              html += \`<li class="page-item \${window.chapasCurrentPage === totalPages ? 'disabled' : ''}"><a class="page-link" onclick="window.mudarPagina(\${window.chapasCurrentPage + 1})">»</a></li>\`;
+              html += '</ul></nav>';
+              
+              paginationEl.innerHTML = html;
+          }
+
+          window.aplicarFiltrosEPaginacao = function() {
+              window.chapasFilteredRows = [];
+              const filters = document.querySelectorAll('.col-filter');
+              const allRows = document.querySelectorAll('#tabelaChapas tbody tr.chapa-row');
+              
+              allRows.forEach(row => {
+                  let showRow = true;
+                  filters.forEach(f => {
+                      const colIdx = f.getAttribute('data-col');
+                      const filterValue = f.value.toLowerCase().trim();
+                      
+                      if (filterValue !== "") {
+                          const cell = row.querySelectorAll('td')[colIdx];
+                          if (cell) {
+                              const cellText = cell.textContent.toLowerCase();
+                              if (!cellText.includes(filterValue)) {
+                                  showRow = false;
+                              }
+                          }
+                      }
+                  });
+
+                  if (showRow) {
+                      window.chapasFilteredRows.push(row);
+                  } else {
+                      row.style.display = 'none'; 
+                  }
+              });
+
+              const counter = document.getElementById('totalRegistos');
+              if (counter) counter.innerText = window.chapasFilteredRows.length;
+
+              window.mudarPagina(1);
+          };
+
+          const filtersInputs = document.querySelectorAll('.col-filter');
+          filtersInputs.forEach(filter => {
+              filter.addEventListener('click', function(e) { e.stopPropagation(); });
+              filter.addEventListener('input', window.aplicarFiltrosEPaginacao);
           });
-        });
+
+          // Chamada Inicial da Paginação e Filtros
+          window.aplicarFiltrosEPaginacao();
+      }
+
+      function atualizarModaisDinamicos(doc) {
+          // Os modais não estáticos (edição, exclusão para cada chapa e faca) precisam ser reinjetados
+          const staticModals = ['novaChapaModal', 'calcChapaModal', 'sucessoChapaModal', 'novaManutencaoFacaModal', 'sidebarMenu'];
+          document.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) m.remove();
+          });
+          doc.querySelectorAll('.modal').forEach(m => {
+              if (!staticModals.includes(m.id)) document.body.appendChild(m.cloneNode(true));
+          });
+      }
+
+      // =======================================================================
+      // SUBMISSÃO AJAX SEM RECARREGAMENTO
+      // =======================================================================
+      async function prepararSubmissaoSimples(event, form, titleMsg) {
+          event.preventDefault();
+          if (isSubmitting) return;
+          isSubmitting = true;
+
+          const modalEl = form.closest('.modal');
+          if (modalEl) {
+              const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.hide();
+          }
+
+          mostrarToastCarregando("Processando...");
+          mostrarSkeletonGlobais();
+
+          try {
+              let bodyData;
+              let headers = {};
+              
+              if (form.enctype === 'multipart/form-data') {
+                  bodyData = new FormData(form);
+              } else {
+                  bodyData = new URLSearchParams();
+                  new FormData(form).forEach((value, key) => bodyData.append(key, value));
+                  headers['Content-Type'] = 'application/x-www-form-urlencoded';
+              }
+
+              const response = await fetch(form.action, {
+                  method: form.method || 'POST',
+                  headers: headers,
+                  body: bodyData
+              });
+
+              if (response.ok) {
+                  const html = await response.text();
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  const oldContent = document.getElementById('mainContentWrapper');
+                  const newContent = doc.getElementById('mainContentWrapper');
+                  if (oldContent && newContent) {
+                      oldContent.innerHTML = newContent.innerHTML;
+                  }
+
+                  // Avalia o script script que vem no corpo para ter os novos dados
+                  const newScript = doc.querySelector('script:not([src])');
+                  if(newScript && newScript.textContent.includes('chapasDataForChart')) {
+                      eval(newScript.textContent); 
+                  }
+
+                  inicializarScriptsView();
+                  atualizarModaisDinamicos(doc);
+
+                  mostrarToast('sucesso', 'Concluído!', titleMsg);
+                  form.reset();
+              } else {
+                  mostrarToast('erro', 'Erro', 'Falha ao salvar no servidor.');
+              }
+          } catch (err) {
+              console.error(err);
+              mostrarToast('erro', 'Erro de Conexão', 'Verifique sua rede.');
+          } finally {
+              isSubmitting = false;
+              ocultarSkeletonGlobais();
+          }
+      }
+
+      // =======================================================================
+      // INICIALIZADORES DO DOM
+      // =======================================================================
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(() => {
+              ocultarSkeletonGlobais();
+              inicializarScriptsView();
+          }, 100);
+      } else {
+          window.addEventListener('load', () => {
+              ocultarSkeletonGlobais();
+              inicializarScriptsView();
+          });
+      }
+
+      window.addEventListener('beforeunload', () => {
+          mostrarSkeletonGlobais();
       });
+
     </script>
   </body>
   </html>

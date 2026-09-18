@@ -99,6 +99,19 @@ const forcarResetEstadoManual = () => {
     whatsappEstado.logsTerminal.push(`[${timestamp}] 🔌 Limpando sessão antiga... Inicializando folha limpa de navegação.`);
 };
 
+// NOVA FUNÇÃO: Desperta e foca a aba antes de iniciar o loop de disparos
+const despertarNavegador = async () => {
+    try {
+        if (client && client.pupPage) {
+            registrarLogTerminal('⏳ Despertando e focando a aba oculta do WhatsApp...');
+            await client.pupPage.bringToFront();
+            await client.pupPage.evaluate(() => { window.focus(); });
+        }
+    } catch (e) {
+        console.log('[WHATSAPP] Aviso ao despertar navegador:', e.message);
+    }
+};
+
 console.log('[WHATSAPP] ⚙️ Chamando client.initialize()...');
 client.initialize().catch(err => {
     console.error('[WHATSAPP] 🔥 Erro fatal ao inicializar o Puppeteer:', err.message);
@@ -219,5 +232,6 @@ module.exports = {
     enviarMensagem,
     verificarReady,
     obterDadosMonitor,
-    forcarResetEstadoManual
+    forcarResetEstadoManual,
+    despertarNavegador // <-- Função exposta
 };

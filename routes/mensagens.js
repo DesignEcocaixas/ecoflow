@@ -379,7 +379,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                             cardAtualizado[0].isOmie = true;
                             io.emit("card_atualizado", cardAtualizado[0]);
                             io.emit("webhook_omie_recebido", {
-                                resumo: `Pedido #${numeroPedido} atualizado no Kanban!`,
+                                resumo: `Pedido #${numeroPedido} atualizado`,
                                 status: "Sucesso",
                                 payload: payload
                             });

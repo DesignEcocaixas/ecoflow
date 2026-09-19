@@ -157,7 +157,18 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).send("Nenhum manifesto selecionado.");
+        return res.status(400).json({ error: "Nenhum manifesto selecionado." });
+    }
+
+    // --- NOVA TRAVA DE SEGURANÇA ---
+    if (!whatsappService.verificarReady()) {
+        return res.status(400).json({ error: "O WhatsApp não está conectado ou ainda está a carregar. Aguarde a conexão antes de disparar." });
+    }
+
+    // Desperta e prepara a janela do navegador antes de processar o loop
+    if (typeof whatsappService.despertarNavegador === 'function') {
+        await whatsappService.despertarNavegador();
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Aguarda 2 segundos para a interface reagir perfeitamente
     }
 
     const templatePath = path.join(process.cwd(), 'whatsapp_template.txt');
@@ -254,7 +265,8 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
         }
     })();
 
-    return res.sendStatus(200);
+    // Responde com sucesso imediatamente, o lote segue em background
+    return res.status(200).json({ success: true });
 });
 
 // 5. ATUALIZAR STATUS DE ENVIO DO CADERNO (MARCAR COMO ENVIADO NO DB)

@@ -593,13 +593,19 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
       function atualizarBotaoDisparo() {
           const selecionados = document.querySelectorAll('.check-caderno:checked:not(:disabled)').length;
           const btn = document.getElementById('btnDisparoManual');
+          const isConnected = document.getElementById('whatsappStatusText') && document.getElementById('whatsappStatusText').innerText === 'CONECTADO';
+
           if (btn) {
-              if (selecionados > 0) {
+              if (selecionados > 0 && isConnected) {
                   btn.disabled = false;
                   btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens';
               } else {
                   btn.disabled = true;
-                  btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens';
+                  if (!isConnected && selecionados > 0) {
+                      btn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Aguardando Conexão...';
+                  } else {
+                      btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Disparar Mensagens';
+                  }
               }
           }
       }
@@ -1136,7 +1142,8 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   }, 2000);
 
               } else {
-                  mostrarToast('erro', 'Falha no Servidor', 'Ocorreu um problema ao enviar o lote.');
+                  const errData = await response.json().catch(() => ({}));
+                  mostrarToast('erro', 'Aviso', errData.error || 'Ocorreu um problema ao enviar o lote.');
                   atualizarBotaoDisparo();
               }
           } catch (err) {
@@ -1173,6 +1180,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   if (dados.isReady) {
                       if(statusDot) { statusDot.className = "status-indicator status-online"; }
                       if(statusText) { statusText.innerText = "CONECTADO"; }
+                      atualizarBotaoDisparo();
                       
                       if(areaQr) {
                           areaQr.innerHTML = \`<div class="d-flex flex-column align-items-center justify-content-center h-100 text-success text-center px-2"><i class="fa-solid fa-circle-check fa-2x mb-2"></i><span style="font-size:0.75rem; font-weight:bold;">O Whatsapp já está conectado!</span></div>\`;
@@ -1180,6 +1188,7 @@ function enviosView(req, cadernosPendentes = [], logsEnvio = [], whatsappStatus 
                   } else {
                       if(statusDot) { statusDot.className = "status-indicator status-offline"; }
                       if(statusText) { statusText.innerText = "DESCONECTADO"; }
+                      atualizarBotaoDisparo();
                       
                       if(areaQr) {
                           if (dados.qrCodeBase64) {

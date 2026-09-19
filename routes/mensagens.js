@@ -297,7 +297,16 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
             if (io) {
                 const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
-                io.emit("card_criado", rows[0]);
+                const novoCard = rows[0];
+                novoCard.isOmie = true; // Flag pro frontend suprimir o "Novo Card" generico
+                io.emit("card_criado", novoCard);
+                
+                // Dispara aviso em tempo real pro usuario
+                io.emit("webhook_omie_recebido", {
+                    resumo: `O pedido #${event.numeroPedido} (${clienteNome}) foi importado com sucesso!`,
+                    status: "Sucesso",
+                    payload: payload
+                });
             }
         }
 
@@ -367,6 +376,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                         // 4. Emite o evento do Socket.io para atualizar visualmente
                         if (io) {
                             const [cardAtualizado] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [cardAlvo.id]);
+                            cardAtualizado[0].isOmie = true;
                             io.emit("card_atualizado", cardAtualizado[0]);
                             io.emit("webhook_omie_recebido", {
                                 resumo: `Pedido #${numeroPedido} atualizado no Kanban!`,

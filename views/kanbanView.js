@@ -434,8 +434,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           @media (max-width: 767.98px) {
               body { flex-direction: column; } 
               .sidebar { display: none; } 
-              .content { width: 100%; padding: 12px; }
-              .kanban-board { padding-bottom: 5px; gap: 0px; scroll-padding-left: 12px; }
+              .content { width: 100%; padding: 8px; }
+              .kanban-board { padding-bottom: 5px; gap: 0px; scroll-padding-left: 8px; }
               
               /* TABLET VIEW (421px até 768px) */
               .kanban-column { min-width: 50vw !important; width: 50vw !important; max-width: 350px !important; margin-right: 12px !important; scroll-snap-align: center; }
@@ -448,7 +448,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
           @media (max-width: 420px) {
               /* CELULAR VIEW (até 420px) */
-              .kanban-column { min-width: 88vw !important; width: 88vw !important; max-width: 100% !important; margin-right: 12px !important; scroll-snap-align: center; }
+              .kanban-column { min-width: 85vw !important; width: 85vw !important; max-width: 100% !important; margin-right: 12px !important; scroll-snap-align: center; }
           }
 
           .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #ffffff !important; font-size: 0.8rem; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
@@ -494,6 +494,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
           body.theme-light .kanban-card .text-white-50 {
               color: #666 !important;
+          }
+          body.theme-light .card-completed .card-title-board {
+              color: #888888 !important;
           }
 
           body.theme-light #searchResultsKanban.bg-custom-darker {
@@ -545,12 +548,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
           body.theme-light .modal .form-control, 
           body.theme-light .modal .form-select, 
-          body.theme-light .modal .input-group-text {
+          body.theme-light .modal .input-group-text,
+          body.theme-light .dropdown-menu .form-control,
+          body.theme-light .dropdown-menu .form-select,
+          body.theme-light .dropdown-menu .input-group-text {
               background-color: #ffffff !important;
               color: #333 !important;
               border-color: #ccc !important;
           }
-          body.theme-light .modal .form-control::placeholder {
+          body.theme-light .dropdown-menu .form-control::placeholder {
               color: #999 !important;
           }
           body.theme-light .modal .history-item strong {
@@ -582,6 +588,36 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           body.theme-light #modal-right-col {
               background-color: #f8f9fa !important;
               border-left: 1px solid #dcdcdc !important;
+          }
+          
+          /* Correção do Histórico e Dropdown no Tema Claro */
+          body.theme-light .history-time {
+              color: #888888 !important;
+          }
+          body.theme-light .history-time .text-accent {
+              color: #198754 !important; 
+          }
+          body.theme-light .dropdown-menu-dark,
+          body.theme-light .dropdown-menu {
+              background-color: #ffffff !important;
+              border-color: #ccc !important;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+          }
+          body.theme-light .dropdown-menu-dark .dropdown-item,
+          body.theme-light .dropdown-menu-dark .text-white,
+          body.theme-light .dropdown-menu .text-white {
+              color: #333 !important;
+          }
+          body.theme-light .dropdown-menu-dark .text-white-50,
+          body.theme-light .dropdown-menu .text-white-50 {
+              color: #666 !important;
+          }
+          body.theme-light .dropdown-menu-dark .hover-bg-custom:hover,
+          body.theme-light .dropdown-menu-dark .dropdown-item:hover,
+          body.theme-light .dropdown-menu .hover-bg-custom:hover,
+          body.theme-light .dropdown-menu .dropdown-item:hover {
+              background-color: #f1f3f5 !important;
+              color: #000 !important;
           }
 
           /* BACKGROUND WALLPAPER LOGIC (COM EFEITO DEGRADÊ FLUÍDO) */
@@ -634,7 +670,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       </div>
 
       <div class="content">
-          <!-- Z-index 1050 adicionado à ROW para garantir que o dropdown de Configurações abra sobre as colunas -->
           <div class="row align-items-center w-100 g-3 m-0 position-relative" id="kanban-top-header" style="z-index: 1050;">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
@@ -1052,7 +1087,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.ultimaColunaDeletadaPorMim = 0;
           window.lastNotificationTime = 0;
           window.lastNotificationMsg = "";
-          window.ordemColunas = window.ordemColunas || {};
+          window.ordemColunas = {};
           window.lastFeedbackTime = window.lastFeedbackTime || {};
 
           // Injetando a função de escapeHtmlAttr no frontend
@@ -1067,7 +1102,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
           
           // ==========================================
-          // ESTADO DA VISUALIZAÇÃO GLOBAL (KANBAN / DIA / MÊS) E PERSISTÊNCIA
+          // ESTADO DA VISUALIZAÇÃO GLOBAL E ORDENAÇÃO
           // ==========================================
           window.kanbanViewMode = 'default';
 
@@ -1087,6 +1122,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   monthPicker.style.display = window.kanbanViewMode === 'weekday' ? 'inline-block' : 'none';
               }
               
+              window.renderizarKanban();
+          };
+
+          window.ordenarColuna = function(colId, tipo) {
+              window.ordemColunas[colId] = tipo;
+              localStorage.setItem('kanbanOrdem_${espacoAtual.id}_' + NOME_USUARIO, JSON.stringify(window.ordemColunas));
               window.renderizarKanban();
           };
 
@@ -1117,11 +1158,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if ("Notification" in window && Notification.permission === "granted") {
                   new Notification(titulo, { body: msg, icon: '/img/favicon.ico' });
               }
-          };
-
-          window.ordenarColuna = function(colId, tipo) {
-              window.ordemColunas[colId] = tipo;
-              window.renderizarKanban();
           };
 
           window.limparCardsColuna = async function(colId) {
@@ -1265,6 +1301,16 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const monthPicker = document.getElementById('kanbanMonthPicker');
               if (monthPicker) {
                   monthPicker.value = yyyy + '-' + mm;
+              }
+
+              // Recuperar ordenação salva do usuário
+              const savedOrdem = localStorage.getItem('kanbanOrdem_${espacoAtual.id}_' + NOME_USUARIO);
+              if (savedOrdem) {
+                  try {
+                      window.ordemColunas = JSON.parse(savedOrdem);
+                  } catch(e) {
+                      console.error('Erro ao ler ordem', e);
+                  }
               }
 
               // Recuperar visualização salva do usuário
@@ -2040,6 +2086,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const tipoOrdem = window.ordemColunas[col.id] || 'default';
                       
                       let cardsOrdenados = [...col.cards].sort((a, b) => {
+                          // Alta prioridade SEMPRE por cima
+                          if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
+                          if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
+
                           if (tipoOrdem === 'criacao_asc') {
                               const dataA = a.criado_em ? new Date(a.criado_em).getTime() : 0;
                               const dataB = b.criado_em ? new Date(b.criado_em).getTime() : 0;
@@ -2070,9 +2120,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       return dataA - dataB;
                                   }
                               }
-      
-                              if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
-                              if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;
       
                               return 0; 
                           }
@@ -2566,7 +2613,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   usuario: NOME_USUARIO 
               });
               
-              mostrarToast('sucesso', 'Atualizado!', 'Card atualizado com sucesso.');
+              // mostrarToast('sucesso', 'Atualizado!', 'Card atualizado com sucesso.');
           };
 
           window.acionarUploadModal = function() {
@@ -2736,6 +2783,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           // ==========================================
           // WEBSOCKETS (TEMPO REAL)
           // ==========================================
+          
+          socket.on('webhook_omie_recebido', (dados) => {
+              if (dados && dados.resumo) {
+                  window.playUIFeedback('popup');
+                  window.dispararNotificacaoGlobal('sucesso', 'Sincronização Omie', dados.resumo);
+              }
+          });
+
           socket.on('nova_etiqueta_criada', (etiqueta) => {
               etiquetasDados.push(etiqueta);
               renderizarListaEtiquetas();
@@ -2783,9 +2838,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const colNome = colTarget ? colTarget.titulo : '';
 
               if (Date.now() - (window.ultimoCardCriadoPorMim || 0) > 2000) {
-                  window.playUIFeedback('popup');
-                  let userTxt = card.usuario ? card.usuario : 'Um colega';
-                  window.dispararNotificacaoGlobal('sucesso', 'Novo Card', userTxt + ' adicionou a tarefa "' + (card.titulo || 'Sem Título') + '" na coluna "' + colNome + '".');
+                  if (!card.isOmie) {
+                      window.playUIFeedback('popup');
+                      let userTxt = card.usuario ? card.usuario : 'Um colega';
+                      window.dispararNotificacaoGlobal('sucesso', 'Novo Card', userTxt + ' adicionou a tarefa "' + (card.titulo || 'Sem Título') + '" na coluna "' + colNome + '".');
+                  }
               }
 
               if(colTarget) colTarget.cards.push(card);

@@ -103,7 +103,7 @@ const forcarResetEstadoManual = () => {
 const despertarNavegador = async () => {
     try {
         if (client && client.pupPage) {
-            registrarLogTerminal('⏳ Despertando e focando a aba oculta do WhatsApp...');
+            registrarLogTerminal('⏳ Inicializandoo serviço do Whatsapp...');
             await client.pupPage.bringToFront();
             await client.pupPage.evaluate(() => { window.focus(); });
         }

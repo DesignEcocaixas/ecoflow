@@ -165,10 +165,14 @@ router.post("/caderno-entregas/disparar-manual", async (req, res) => {
         return res.status(400).json({ error: "O WhatsApp não está conectado ou ainda está a carregar. Aguarde a conexão antes de disparar." });
     }
 
-    // Desperta e prepara a janela do navegador antes de processar o loop
+    // Desperta a janela do navegador e força a captura de erros de congelamento
     if (typeof whatsappService.despertarNavegador === 'function') {
-        await whatsappService.despertarNavegador();
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Aguarda 2 segundos para a interface reagir perfeitamente
+        try {
+            await whatsappService.despertarNavegador();
+        } catch (erroDespertar) {
+            console.error("[WHATSAPP] Falha no despertar:", erroDespertar);
+            return res.status(400).json({ error: erroDespertar.message || "A aba do WhatsApp congelou. Faça um Hard Reset do robô." });
+        }
     }
 
     const templatePath = path.join(process.cwd(), 'whatsapp_template.txt');

@@ -24,7 +24,6 @@ const client = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--single-process',
             '--disable-extensions', 
             '--disable-features=FirstPartySets,PrivacySandboxSettings4', 
             '--disable-gpu',
@@ -99,16 +98,28 @@ const forcarResetEstadoManual = () => {
     whatsappEstado.logsTerminal.push(`[${timestamp}] 🔌 Limpando sessão antiga... Inicializando folha limpa de navegação.`);
 };
 
-// NOVA FUNÇÃO: Desperta e foca a aba antes de iniciar o loop de disparos
+// NOVA FUNÇÃO MELHORADA: Desperta e garante que a interface está 100% carregada
 const despertarNavegador = async () => {
+    if (!client || !client.pupPage) {
+        throw new Error("A instância do navegador não foi encontrada.");
+    }
+    
+    if (client.pupPage.isClosed()) {
+        throw new Error("A aba do WhatsApp foi fechada pelo sistema operacional.");
+    }
+
     try {
-        if (client && client.pupPage) {
-            registrarLogTerminal('⏳ Inicializandoo serviço do Whatsapp...');
-            await client.pupPage.bringToFront();
-            await client.pupPage.evaluate(() => { window.focus(); });
-        }
+        registrarLogTerminal('⏳ Acordando a interface oculta do WhatsApp...');
+        await client.pupPage.bringToFront().catch(() => {});
+        
+        await client.pupPage.evaluate(() => { window.focus(); }).catch(() => {});
+
+        // Trava absoluta de segurança: Só prossegue quando o motor de envios (WWebJS) estiver vivo na página
+        await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 10000 });
+        registrarLogTerminal('✅ Interface do WhatsApp injetada e pronta para disparos.');
     } catch (e) {
-        console.log('[WHATSAPP] Aviso ao despertar navegador:', e.message);
+        console.log('[WHATSAPP] Falha ao despertar navegador:', e.message);
+        throw new Error("A interface do WhatsApp congelou e não responde. Por favor, execute um Hard Reset.");
     }
 };
 
@@ -143,7 +154,7 @@ const gerarVersoesNumero = (numeroRaw) => {
     return [versao1, versao2].filter(Boolean); 
 };
 
-// FUNÇÃO DE ENVIO CEGO E DIRETO (SEM GETNUMBERID) PARA ZERAR TRAVAMENTOS COM REDUNDÂNCIA
+// FUNÇÃO DE ENVIO CEGO E DIRETO COM PROTEÇÃO CONTRA DETACHED FRAME
 const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentativa = 1) => {
     if (!verificarReady()) { 
         registrarLogTerminal('⚠️ WhatsApp ainda não está pronto. Mensagem ignorada.');
@@ -164,7 +175,6 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         try {
             const chatId = numVer + "@c.us";
 
-            // Se for uma segunda tentativa, pinga a aba antes de enviar para garantir que ela está focada
             if (tentativa > 1) {
                 await client.pupPage.evaluate(() => 1).catch(() => {});
             }
@@ -176,11 +186,9 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
             
         } catch (error) {
             ultimoErro = error;
-            // Se o erro for a falta do nono dígito (No LID), pula pro próximo numVer do For()
             if (error.message && (error.message.includes('LID') || error.message.includes('invalid number'))) {
                 continue;
             } else {
-                // Se for um erro crítico de DOM/Frame, força a saída para cair no Retry Block abaixo
                 break;
             }
         }
@@ -190,13 +198,16 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         registrarLogTerminal(`✅ Mensagem enviada com sucesso para: ${nomeCliente} | ${numero}`);
         return { success: true };
     } else {
-        const isDetached = ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached') || ultimoErro.message.includes('destroyed'));
+        const isDetached = ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached') || ultimoErro.message.includes('destroyed') || ultimoErro.message.includes('Target closed'));
         
         // Retry Block Inteligente: Recupera a tela caso o navegador a tenha suspendido
         if (isDetached && tentativa < 3) {
-            registrarLogTerminal(`⚠️ Instabilidade no navegador (Detached Frame). Recuperando aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
+            registrarLogTerminal(`⚠️ Instabilidade no navegador (Detached Frame). Tentando recuperar aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
             try {
-                if (client.pupPage) await client.pupPage.bringToFront().catch(() => {});
+                if (client.pupPage && !client.pupPage.isClosed()) {
+                    await client.pupPage.bringToFront().catch(() => {});
+                    await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 5000 }).catch(() => {});
+                }
             } catch(e) {}
             
             return await enviarMensagem(numero, mensagem, nomeCliente, tentativa + 1);
@@ -233,5 +244,5 @@ module.exports = {
     verificarReady,
     obterDadosMonitor,
     forcarResetEstadoManual,
-    despertarNavegador // <-- Função exposta
+    despertarNavegador
 };

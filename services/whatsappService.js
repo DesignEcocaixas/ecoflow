@@ -3,9 +3,9 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
 
-console.log('[WHATSAPP] 🚀 Inicializando módulo do serviço...');
+console.log('[WHATSAPP] 🚀 Inicializando módulo do serviço com OTIMIZAÇÃO EXTREMA DE RAM...');
 
-// Aumento global de listeners para evitar memory leaks em loops de disparo do express
+// Aumento global de listeners para evitar memory leaks no express
 require('events').EventEmitter.defaultMaxListeners = 20;
 
 const client = new Client({
@@ -25,11 +25,11 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--disable-extensions', 
-            '--disable-features=FirstPartySets,PrivacySandboxSettings4', 
             '--disable-gpu',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
+            '--disable-software-rasterizer', // Reduz consumo de renderização CPU
+            '--mute-audio', // Corta carregamento de drivers de aúdio
+            '--disable-features=IsolateOrigins,site-per-process,FirstPartySets,PrivacySandboxSettings4', // Desativa isolamento (Economia massiva de RAM)
+            '--js-flags=--expose-gc --max-old-space-size=256' // Libera Garbage Collection manual e trava o teto da aba em 256MB
         ]
     }
 });
@@ -51,11 +51,39 @@ const registrarLogTerminal = (texto) => {
     }
 };
 
-client.on('loading_screen', (percent, message) => {
+// ============================================================================
+// ESCUDO DE MEMÓRIA: ABORTA DOWNLOAD DE FOTOS, VÍDEOS, FONTES E CSS DO CHROME
+// ============================================================================
+let interceptacaoAtiva = false;
+const ativarLowRamMode = async () => {
+    if (client && client.pupPage && !interceptacaoAtiva) {
+        try {
+            interceptacaoAtiva = true;
+            await client.pupPage.setRequestInterception(true);
+            client.pupPage.on('request', (req) => {
+                const rType = req.resourceType();
+                // Aborta impiedosamente recursos pesados e visuais
+                if (rType === 'image' || rType === 'media' || rType === 'font' || rType === 'stylesheet') {
+                    req.abort();
+                } else {
+                    req.continue();
+                }
+            });
+            registrarLogTerminal('🛡️ Modo Low-RAM Ativado: Bloqueando processamento visual e mídias.');
+        } catch (e) {
+            interceptacaoAtiva = false;
+            console.log('[WHATSAPP] Falha ao injetar Low-RAM:', e.message);
+        }
+    }
+};
+
+client.on('loading_screen', async (percent, message) => {
     registrarLogTerminal(`⏳ Carregando: ${percent}% - ${message}`);
+    ativarLowRamMode(); // Garante que a injeção comece bem cedo
 });
 
 client.on('qr', async (qr) => {
+    ativarLowRamMode(); // Reforço caso o evento anterior falhe
     console.log('\n==================================================');
     console.log('🤖 SCANNEIE O QR CODE ABAIXO COM O WHATSAPP DA EMPRESA');
     console.log('==================================================\n');
@@ -70,7 +98,7 @@ client.on('qr', async (qr) => {
 
 client.on('authenticated', () => {
     whatsappEstado.ultimoQrCode = null; 
-    registrarLogTerminal('🔑 Autenticado com sucesso! Sincronizando e carregando conversas...');
+    registrarLogTerminal('🔑 Autenticado! Sincronizando (apenas texto por segurança de RAM)...');
 });
 
 client.on('ready', () => {
@@ -94,9 +122,24 @@ client.on('disconnected', (reason) => {
 const forcarResetEstadoManual = () => {
     whatsappEstado.isReady = false;
     whatsappEstado.ultimoQrCode = null;
+    interceptacaoAtiva = false; // Reseta flag para a proxima inicialização
     const timestamp = new Date().toLocaleTimeString('pt-BR');
     whatsappEstado.logsTerminal.push(`[${timestamp}] 🔌 Limpando sessão antiga... Inicializando folha limpa de navegação.`);
 };
+
+// ============================================================================
+// LIXEIRO AUTOMÁTICO (Evita que o Chrome vaze memória com o passar das horas)
+// ============================================================================
+setInterval(async () => {
+    if (client && client.pupPage && whatsappEstado.isReady && !client.pupPage.isClosed()) {
+        try {
+            await client.pupPage.evaluate(() => {
+                if (window.gc) window.gc(); // Despeja o lixo do V8
+                console.clear();            // Evita estouro de array no console interno
+            });
+        } catch (e) {}
+    }
+}, 60000 * 5); // Corre a cada 5 minutos silenciosamente
 
 // NOVA FUNÇÃO MELHORADA: Desperta e garante que a interface está 100% carregada
 const despertarNavegador = async () => {
@@ -164,7 +207,7 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
     const versoesParaTentar = gerarVersoesNumero(numero);
     if (versoesParaTentar.length === 0) return { success: false, error: "Número inválido ou em branco." };
 
-    // Delay mais longo caso o robô esteja tentando se recuperar de uma queda de Frame
+    // Delay mais longo caso o robô esteja a tentar se recuperar de uma queda de Frame
     const delayBase = tentativa === 1 ? 1500 : 4000;
     await new Promise(resolve => setTimeout(resolve, delayBase));
 
@@ -200,7 +243,7 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
     } else {
         const isDetached = ultimoErro && ultimoErro.message && (ultimoErro.message.includes('detached') || ultimoErro.message.includes('destroyed') || ultimoErro.message.includes('Target closed'));
         
-        // Retry Block Inteligente: Recupera a tela caso o navegador a tenha suspendido
+        // Retry Block Inteligente: Tenta recuperar a tela caso o navegador a tenha suspendido
         if (isDetached && tentativa < 3) {
             registrarLogTerminal(`⚠️ Instabilidade no navegador (Detached Frame). Tentando recuperar aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
             try {

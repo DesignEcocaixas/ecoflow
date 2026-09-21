@@ -3,14 +3,14 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
 
-console.log('[WHATSAPP] 🚀 Inicializando módulo do serviço com OTIMIZAÇÃO EXTREMA DE RAM...');
+console.log('[WHATSAPP] 🚀 Inicializando módulo do serviço (MODO ECONOMIA EXTREMA DE RAM)...');
 
 // Aumento global de listeners para evitar memory leaks no express
 require('events').EventEmitter.defaultMaxListeners = 20;
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    authTimeoutMs: 60000,
+    authTimeoutMs: 120000, // Aumentado para 2 mins (dá folga para a CPU descriptografar em VPS de 2GB)
     webVersionCache: {
         type: 'remote',
         remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018.0-web_light.html'
@@ -20,16 +20,29 @@ const client = new Client({
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
+            '--disable-dev-shm-usage', // Salva a RAM! Usa o disco (/tmp) para partições temporárias
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-extensions', 
             '--disable-gpu',
-            '--disable-software-rasterizer', // Reduz consumo de renderização CPU
-            '--mute-audio', // Corta carregamento de drivers de aúdio
-            '--disable-features=IsolateOrigins,site-per-process,FirstPartySets,PrivacySandboxSettings4', // Desativa isolamento (Economia massiva de RAM)
-            '--js-flags=--expose-gc --max-old-space-size=256' // Libera Garbage Collection manual e trava o teto da aba em 256MB
+            '--disable-software-rasterizer',
+            '--mute-audio',
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-client-side-phishing-detection',
+            '--disable-default-apps',
+            '--disable-hang-monitor',
+            '--disable-ipc-flooding-protection',
+            '--disable-prompt-on-repost',
+            '--disable-sync',
+            '--disable-translate',
+            '--metrics-recording-only',
+            '--no-default-browser-check',
+            '--renderer-process-limit=1', // Impede o Chromium de spawnar processos paralelos que comem RAM
+            '--disable-features=IsolateOrigins,site-per-process,Translate,OptimizationHints,MediaRouter',
+            '--js-flags=--expose-gc --max-old-space-size=256' // Limita a memória V8 da aba a 256MB
         ]
     }
 });
@@ -52,7 +65,7 @@ const registrarLogTerminal = (texto) => {
 };
 
 // ============================================================================
-// ESCUDO DE MEMÓRIA: ABORTA DOWNLOAD DE FOTOS, VÍDEOS, FONTES E CSS DO CHROME
+// ESCUDO DE MEMÓRIA: ABORTA TUDO EXCETO O MOTOR JAVASCRIPT DO WHATSAPP
 // ============================================================================
 let interceptacaoAtiva = false;
 const ativarLowRamMode = async () => {
@@ -62,14 +75,16 @@ const ativarLowRamMode = async () => {
             await client.pupPage.setRequestInterception(true);
             client.pupPage.on('request', (req) => {
                 const rType = req.resourceType();
-                // Aborta impiedosamente recursos pesados e visuais
-                if (rType === 'image' || rType === 'media' || rType === 'font' || rType === 'stylesheet') {
+                // Bloqueio Agressivo! Só passa Document, Script, XHR e WebSocket. Todo o resto morre.
+                const blockList = ['image', 'media', 'font', 'stylesheet', 'other', 'manifest', 'texttrack', 'object', 'ping', 'csp_report'];
+                
+                if (blockList.includes(rType)) {
                     req.abort();
                 } else {
                     req.continue();
                 }
             });
-            registrarLogTerminal('🛡️ Modo Low-RAM Ativado: Bloqueando processamento visual e mídias.');
+            registrarLogTerminal('🛡️ Modo Economia Ativado: Desativando interface gráfica do Chromium.');
         } catch (e) {
             interceptacaoAtiva = false;
             console.log('[WHATSAPP] Falha ao injetar Low-RAM:', e.message);
@@ -78,12 +93,12 @@ const ativarLowRamMode = async () => {
 };
 
 client.on('loading_screen', async (percent, message) => {
-    registrarLogTerminal(`⏳ Carregando: ${percent}% - ${message}`);
+    registrarLogTerminal(`⏳ Sincronizando BD (Uso de CPU alto esperado): ${percent}% - ${message}`);
     ativarLowRamMode(); // Garante que a injeção comece bem cedo
 });
 
 client.on('qr', async (qr) => {
-    ativarLowRamMode(); // Reforço caso o evento anterior falhe
+    ativarLowRamMode(); 
     console.log('\n==================================================');
     console.log('🤖 SCANNEIE O QR CODE ABAIXO COM O WHATSAPP DA EMPRESA');
     console.log('==================================================\n');
@@ -98,13 +113,13 @@ client.on('qr', async (qr) => {
 
 client.on('authenticated', () => {
     whatsappEstado.ultimoQrCode = null; 
-    registrarLogTerminal('🔑 Autenticado! Sincronizando (apenas texto por segurança de RAM)...');
+    registrarLogTerminal('🔑 Autenticado! Descriptografando mensagens na CPU...');
 });
 
 client.on('ready', () => {
     whatsappEstado.isReady = true; 
     whatsappEstado.ultimoQrCode = null;
-    registrarLogTerminal('✅ Bot do WhatsApp conectado e pronto para disparar mensagens!');
+    registrarLogTerminal('✅ Sincronização concluída! CPU aliviada. Pronto para disparos.');
 });
 
 client.on('auth_failure', msg => {
@@ -134,8 +149,8 @@ setInterval(async () => {
     if (client && client.pupPage && whatsappEstado.isReady && !client.pupPage.isClosed()) {
         try {
             await client.pupPage.evaluate(() => {
-                if (window.gc) window.gc(); // Despeja o lixo do V8
-                console.clear();            // Evita estouro de array no console interno
+                if (window.gc) window.gc(); // Despeja o lixo do V8 RAM
+                console.clear();            // Evita estouro de array no console invisível
             });
         } catch (e) {}
     }
@@ -148,7 +163,7 @@ const despertarNavegador = async () => {
     }
     
     if (client.pupPage.isClosed()) {
-        throw new Error("A aba do WhatsApp foi fechada pelo sistema operacional.");
+        throw new Error("A aba do WhatsApp foi fechada pelo sistema operacional (Falta de RAM).");
     }
 
     try {
@@ -158,11 +173,11 @@ const despertarNavegador = async () => {
         await client.pupPage.evaluate(() => { window.focus(); }).catch(() => {});
 
         // Trava absoluta de segurança: Só prossegue quando o motor de envios (WWebJS) estiver vivo na página
-        await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 10000 });
-        registrarLogTerminal('✅ Interface do WhatsApp injetada e pronta para disparos.');
+        await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 15000 });
+        registrarLogTerminal('✅ Motor de disparo injetado com sucesso.');
     } catch (e) {
         console.log('[WHATSAPP] Falha ao despertar navegador:', e.message);
-        throw new Error("A interface do WhatsApp congelou e não responde. Por favor, execute um Hard Reset.");
+        throw new Error("A interface do WhatsApp congelou devido a pico de processamento. Aguarde ou reinicie.");
     }
 };
 
@@ -245,11 +260,11 @@ const enviarMensagem = async (numero, mensagem, nomeCliente = 'Cliente', tentati
         
         // Retry Block Inteligente: Tenta recuperar a tela caso o navegador a tenha suspendido
         if (isDetached && tentativa < 3) {
-            registrarLogTerminal(`⚠️ Instabilidade no navegador (Detached Frame). Tentando recuperar aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
+            registrarLogTerminal(`⚠️ Instabilidade no navegador. Tentando recuperar aba para ${nomeCliente}... (Tentativa ${tentativa + 1}/3)`);
             try {
                 if (client.pupPage && !client.pupPage.isClosed()) {
                     await client.pupPage.bringToFront().catch(() => {});
-                    await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 5000 }).catch(() => {});
+                    await client.pupPage.waitForFunction('window.WWebJS !== undefined', { timeout: 8000 }).catch(() => {});
                 }
             } catch(e) {}
             

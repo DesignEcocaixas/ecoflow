@@ -1,9 +1,9 @@
 // views/homeView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
 function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva = null) {
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario);
   const qtdNotificacoes = notificacoes.length;
   const isMotorista = usuario && usuario.tipo_usuario === "motorista";
 
@@ -602,15 +602,23 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <i class="fa-solid fa-bars text-white"></i>
             </button>
             <div>
-              <h4 class="mb-0 fw-bold text-white fs-5">Painel de Controle</h4>
+              <h4 class="mb-0 fw-bold text-white fs-5">Início</h4>
               <span class="text-muted d-none d-sm-block" style="font-size:0.75rem;">Sistema de gestão Ecocaixas</span>
             </div>
         </div>
       </div>
 
+      <!-- MÓDULOS RECENTES -->
+      <div class="mb-4" id="recentModulesSection" style="display: none;">
+        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessados Recentemente</h6>
+        <div class="row g-3" id="recentModulesContainer">
+            <!-- Renderizado via JS -->
+        </div>
+      </div>
+
       <div class="row g-3">
         <div class="${isMotorista ? 'col-12' : 'col-12 col-lg-5'}">
-          <div class="card dashboard-section-card h-100 bg-custom-dark">
+          <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
             <div class="card-body p-3 d-flex flex-column pb-4">
               <div id="dashboardCarousel" class="carousel slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
                 <div class="carousel-indicators mb-0" style="bottom: -20px;">
@@ -626,7 +634,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
         ${!isMotorista ? `
         <div class="col-12 col-lg-7">
-          <div class="card dashboard-section-card h-100 bg-custom-dark">
+          <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
             <div class="card-body p-3 d-flex flex-column">
               
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -773,7 +781,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       let chartData = ${JSON.stringify(graficoMensal)};
       let chartInstance = null;
 
-      // FUNÇÃO QUE RENDERIZA OS DOIS COMPARATIVOS ALINHADOS À ESQUERDA (COM ESCAPES PARA O BROWSER)
+      // FUNÇÃO QUE RENDERIZA OS DOIS COMPARATIVOS ALINHADOS À ESQUERDA
       function atualizarMiniContainerVolume() {
           const totalEl = document.getElementById('totalVolumePeriodo');
           const badgeEl = document.getElementById('badgeVariacaoVolume');
@@ -783,7 +791,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const totalAtual = chartData.data.reduce((acc, val) => acc + Number(val || 0), 0);
           totalEl.textContent = totalAtual.toLocaleString('pt-BR') + ' caixas';
 
-          // 1. Badge vs Mês Passado / Ano Passado (Alinhado à esquerda com px-3)
+          // 1. Badge vs Mês Passado / Ano Passado
           const pct = Number(chartData.variacaoPct || 0);
           const periodoLabel = mesSelecionadoJS.modo === 'mensal' ? 'ano passado' : 'mês passado';
 
@@ -795,7 +803,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1"><i class="fa-solid fa-minus me-2"></i> 0% vs \${periodoLabel}</span>\`;
           }
 
-          // 2. Badge vs Período Passado / Meses Anteriores (Alinhado à esquerda com px-3)
+          // 2. Badge vs Período Passado / Meses Anteriores
           if (badgePeriodoEl) {
               const pctPeriodo = Number(chartData.variacaoPeriodoPct || 0);
               const subLabel = mesSelecionadoJS.modo === 'mensal' ? 'meses anteriores' : 'período passado';
@@ -970,6 +978,118 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     </script>
 
     <script>
+      // =========================================================================
+      // RASTREAMENTO E RENDERIZAÇÃO DOS MÓDULOS RECENTES (LOCALSTORAGE)
+      // =========================================================================
+      
+      function renderRecentModules() {
+          const container = document.getElementById('recentModulesContainer');
+          const section = document.getElementById('recentModulesSection');
+          if (!container || !section) return;
+
+          let recents = JSON.parse(localStorage.getItem('ecoflow_recent_modules') || '[]');
+          
+          // Limpeza do cache sujo (Remove "Acessar módulo" dos nomes salvos na última atualização)
+          let cacheAlterado = false;
+          recents = recents.map(m => {
+              if (m.name && m.name.toLowerCase().includes('acessar')) {
+                  m.name = m.name.split('\\n')[0].replace('Acessar módulo', '').trim();
+                  cacheAlterado = true;
+              }
+              return m;
+          });
+          if (cacheAlterado) localStorage.setItem('ecoflow_recent_modules', JSON.stringify(recents));
+
+          // Se for o primeiro acesso, extrai os 3 primeiros módulos permitidos no menu lateral
+          if (recents.length === 0) {
+              const links = document.querySelectorAll('.sidebar a[href^="/"]');
+              links.forEach(l => {
+                  const h = l.getAttribute('href');
+                  if (h !== '/home' && h !== '/logout' && h !== '#' && recents.length < 3) {
+                      let textNode = Array.from(l.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
+                      let n = textNode ? textNode.nodeValue.trim() : l.innerText.trim();
+                      
+                      let iconEl = l.querySelector('i');
+                      let iHtml = '<i class="fa-solid fa-cube"></i>';
+                      if (iconEl) {
+                          const clone = iconEl.cloneNode(true);
+                          clone.className = clone.className.replace(/me-\\d+/g, '').replace(/ms-\\d+/g, '').replace(/text-\\w+/g, '').trim();
+                          iHtml = clone.outerHTML;
+                      }
+                      if (n && !recents.find(r => r.href === h)) {
+                          recents.push({href: h, name: n, iconHTML: iHtml});
+                      }
+                  }
+              });
+          }
+
+          if (recents.length > 0) {
+              section.style.display = 'block';
+              container.innerHTML = recents.map(m => \`
+                  <div class="col-12 col-md-4">
+                      <a href="\${m.href}" class="text-decoration-none" data-name="\${m.name}">
+                          <div class="card bg-custom-dark border-custom shadow-sm h-100 chk-item" style="border-left: 3px solid #08c068 !important; border-radius: 8px; transition: all 0.2s;">
+                              <div class="card-body p-2 px-3 d-flex align-items-center gap-3">
+                                  <div class="rounded bg-custom-darker d-flex align-items-center justify-content-center border-custom shadow-sm flex-shrink-0" style="width: 38px; height: 38px; font-size: 1.1rem; color: #08c068;">
+                                      \${m.iconHTML}
+                                  </div>
+                                  <div class="flex-grow-1 overflow-hidden d-flex flex-column justify-content-center">
+                                      <strong class="mb-1 fw-bold text-white text-truncate" style="font-size: 0.85rem; line-height: 1;">\${m.name}</strong>
+                                      <span class="text-muted text-truncate" style="font-size: 0.7rem; line-height: 1;">Acessar módulo</span>
+                                  </div>
+                                  <i class="fa-solid fa-chevron-right text-muted opacity-50" style="font-size: 0.8rem;"></i>
+                              </div>
+                          </div>
+                      </a>
+                  </div>
+              \`).join('');
+          }
+      }
+
+      // Escuta global de cliques para salvar o histórico no navegador
+      document.addEventListener('click', function(e) {
+          const link = e.target.closest('a');
+          if (link && link.href) {
+              const hrefAttr = link.getAttribute('href');
+              if (hrefAttr && hrefAttr.startsWith('/') && hrefAttr !== '/home' && hrefAttr !== '/logout' && hrefAttr !== '#') {
+                  
+                  let name = link.getAttribute('data-name'); // Proteção: pega o nome exato se clicou no container horizontal
+                  let iHtml = '<i class="fa-solid fa-cube"></i>';
+
+                  if (!name) {
+                      // Se foi clicado no Menu Lateral comum:
+                      let textNode = Array.from(link.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
+                      if (textNode) {
+                          name = textNode.nodeValue.trim();
+                      } else {
+                          name = link.innerText.trim();
+                      }
+
+                      let iconEl = link.querySelector('i');
+                      if (iconEl) {
+                          const clone = iconEl.cloneNode(true);
+                          clone.className = clone.className.replace(/me-\\d+/g, '').replace(/ms-\\d+/g, '').replace(/text-\\w+/g, '').trim();
+                          iHtml = clone.outerHTML;
+                      }
+                  } else {
+                      // Se foi clicado no Acesso Rápido Horizontal (reaproveita o ícone)
+                      let iconEl = link.querySelector('.rounded i');
+                      if (iconEl) iHtml = iconEl.outerHTML;
+                  }
+
+                  if (name) {
+                      let recents = JSON.parse(localStorage.getItem('ecoflow_recent_modules') || '[]');
+                      recents = recents.filter(m => m.href !== hrefAttr);
+                      recents.unshift({ href: hrefAttr, name, iconHTML: iHtml });
+                      if (recents.length > 3) recents = recents.slice(0, 3);
+                      localStorage.setItem('ecoflow_recent_modules', JSON.stringify(recents));
+                  }
+              }
+          }
+      });
+    </script>
+
+    <script>
       function gerarSkeletonCard() {
           let html = '';
           for(let i=0; i<3; i++) {
@@ -994,32 +1114,45 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const isMotoristaStr = ${isMotorista};
 
           const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="row g-3 skeleton-container">
-              <div class="\${isMotoristaStr ? 'col-12' : 'col-12 col-lg-5'}">
-                  <div class="card dashboard-section-card h-100 bg-custom-dark">
-                      <div class="card-body p-3">
-                          <div class="skeleton-dark skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
-                          \${gerarSkeletonCard()}
-                      </div>
+          <div id="skeleton-temp-container" class="skeleton-container">
+              <div class="mb-4">
+                  <div class="skeleton-dark skeleton-text-view mb-3" style="width: 220px; height: 18px;"></div>
+                  <div class="row g-3">
+                      <div class="col-12 col-md-4"><div class="skeleton-dark" style="height: 66px; border-radius: 8px;"></div></div>
+                      <div class="col-12 col-md-4"><div class="skeleton-dark d-none d-md-block" style="height: 66px; border-radius: 8px;"></div></div>
+                      <div class="col-12 col-md-4"><div class="skeleton-dark d-none d-md-block" style="height: 66px; border-radius: 8px;"></div></div>
                   </div>
               </div>
-              \${!isMotoristaStr ? \`
-              <div class="col-12 col-lg-7">
-                  <div class="card dashboard-section-card h-100 bg-custom-dark">
-                      <div class="card-body p-3 d-flex flex-column">
-                          <div class="d-flex justify-content-between mb-3">
-                              <div class="skeleton-dark skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
-                              <div class="skeleton-dark skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
+              <div class="row g-3">
+                  <div class="\${isMotoristaStr ? 'col-12' : 'col-12 col-lg-5'}">
+                      <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
+                          <div class="card-body p-3">
+                              <div class="skeleton-dark skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
+                              \${gerarSkeletonCard()}
                           </div>
-                          <div class="skeleton-dark w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
                       </div>
                   </div>
+                  \${!isMotoristaStr ? \`
+                  <div class="col-12 col-lg-7">
+                      <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
+                          <div class="card-body p-3 d-flex flex-column">
+                              <div class="d-flex justify-content-between mb-3">
+                                  <div class="skeleton-dark skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
+                                  <div class="skeleton-dark skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
+                              </div>
+                              <div class="skeleton-dark w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
+                          </div>
+                      </div>
+                  </div>
+                  \` : ''}
               </div>
-              \` : ''}
           </div>\`;
 
           if (mainContainer && !mainContainer.classList.contains('skeleton-container')) {
               mainContainer.style.display = 'none';
+              const recentSection = document.getElementById('recentModulesSection');
+              if(recentSection) recentSection.style.display = 'none';
+              
               mainContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
           }
       }
@@ -1030,6 +1163,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
           const mainContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
           if (mainContainer) mainContainer.style.display = 'flex';
+          
+          if(typeof renderRecentModules === 'function') renderRecentModules();
       }
 
       mostrarSkeletonGlobais();

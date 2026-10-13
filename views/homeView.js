@@ -631,7 +631,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
                 <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 26px; height: 13px;">
                 <label class="form-check-label text-white-50 cursor-pointer fw-medium m-0 ms-1" for="homeWallpaperSwitch" style="font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                    <i class="fa-regular fa-image text-accent"></i> Fundo Dinâmico
+                    <i class="fa-regular fa-image text-accent"></i> Fundo dinâmico
                 </label>
             </div>
             

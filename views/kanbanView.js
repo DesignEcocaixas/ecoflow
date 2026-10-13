@@ -239,7 +239,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; transition: border-color 0.3s ease; }
           .text-accent { color: var(--verde-ecoflow) !important; }
           .hover-bg-custom:hover { background-color: rgba(255,255,255,0.05); }
-          .cursor-pointer { cursor: pointer; }
+          .cursor-pointer { cursor: pointer !important; }
 
           .btn-primary { background-color: var(--verde-ecoflow); border-color: var(--verde-ecoflow); color: #1f1f1f; }
           .btn-primary:hover { background-color: var(--verde-hover) !important; border-color: var(--verde-hover) !important; color: #1f1f1f !important; }
@@ -350,7 +350,22 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           }
           .preview-html * { background-color: transparent !important; color: inherit !important; margin-bottom: 0px !important; font-size: 0.8rem !important; }
           .preview-html ul { padding-left: 18px; margin-bottom: 0; }
-          .preview-html a { color: var(--verde-ecoflow) !important; text-decoration: underline !important; pointer-events: auto; position: relative; z-index: 10; }
+          
+          /* Melhoria Visual para Links */
+          .preview-html a, .card-desc-modal a { 
+              color: var(--verde-ecoflow) !important; 
+              text-decoration: underline !important; 
+              pointer-events: auto !important; 
+              position: relative; 
+              z-index: 10; 
+              cursor: pointer !important;
+              transition: background-color 0.2s;
+          }
+          .preview-html a:hover, .card-desc-modal a:hover {
+              color: #fff !important;
+              background-color: rgba(8, 192, 104, 0.2) !important;
+              border-radius: 2px;
+          }
 
           .card-title-modal { font-size: 1.25rem; font-weight: 700; outline: none; border-radius: 4px; padding: 4px; transition: background 0.2s; width: 100%; border: 1px solid transparent; }
           .card-title-modal:focus { background-color: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
@@ -719,7 +734,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
                       <div class="dropdown">
                           <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
-                              <i class="fa-solid fa-gear"></i>
+                          <i class="fa-solid fa-gear"></i>
                           </button>
                           <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
                               <li class="px-3 py-2 border-bottom border-custom">
@@ -836,7 +851,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                             id="modalCardPrazo"
                                             class="inline-date-picker w-100 p-1"
                                             onchange="salvarTextosModal()">
-                                        <div id="modalCardPrazoBadge" class="mt-1"></div>
                                     </div>
                                 </div>
 
@@ -1023,7 +1037,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-lg">
               <div class="modal-content bg-transparent border-0 shadow-none">
                   <div class="modal-header border-0 pb-0 justify-content-end">
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="filter: drop-shadow(0 0 5px rgba(0,0,0,1));"></button>
+                      <i class="fa-solid fa-circle-xmark text-white fs-2 cursor-pointer" data-bs-dismiss="modal" style="filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));"></i>
                   </div>
                   <div class="modal-body text-center p-0">
                       <img id="imgPreviewGrande" src="" class="img-fluid rounded shadow-lg border border-custom" style="max-height: 85vh;">
@@ -1730,10 +1744,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (resultsContainer) resultsContainer.classList.add('d-none');
           };
 
+          // EVENTO GLOBAL DE CLIQUE (LIDA COM OS LINKS DOS CARDS E DO MODAL DE FORMA NATIVA E SEGURA)
           document.addEventListener('click', (e) => {
               const searchContainer = document.getElementById('searchResultsKanban');
               if (searchContainer && !e.target.closest('#searchInputKanban') && !e.target.closest('#searchResultsKanban')) {
                   searchContainer.classList.add('d-none');
+              }
+              
+              const link = e.target.closest('a');
+              if (link && (link.closest('.preview-html') || link.closest('.card-desc-modal'))) {
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  if(link.href) window.open(link.href, link.target || '_blank');
               }
           });
 
@@ -2320,7 +2342,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               anexosHTML += '</div>';
 
               return \`
-              <div class="kanban-card \${isConcluido} \${isAlta}" data-id="\${card.id}" style="border-left-color: \${corColuna};" onclick="abrirModalCard(\${card.id})">
+              <div class="kanban-card \${isConcluido} \${isAlta}" data-id="\${card.id}" style="border-left-color: \${corColuna};" onclick="if(!event.target.closest('a')) abrirModalCard(\${card.id})">
                   <div class="d-flex justify-content-between align-items-start mb-1">
                       <div class="d-flex flex-wrap align-items-center w-100">
                           <div class="card-title-board text-break fw-bold" style="font-size: 0.85rem;">
@@ -2385,7 +2407,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const prazoFinal = cardData.prazo ? String(cardData.prazo).slice(0, 10) : '';
               
               document.getElementById('modalCardPrazo').value = prazoFinal;
-              document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoFinal, cardData.concluido);
               document.getElementById('modalCardStatus').checked = !!cardData.concluido;
               
               const selectColuna = document.getElementById('modalCardColunaSelect');
@@ -2432,9 +2453,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const btnExcluirAnexo = \`<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 shadow" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;" onclick="confirmarDeletarAnexoModal(\${anexo.id}, \${cardId}, event)" title="Excluir Anexo"><i class="fa-solid fa-xmark"></i></button>\`;
 
                       if (isImage) {
-                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><span class="small text-white-50 mt-1 d-block text-truncate" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-regular fa-image me-1"></i> \${window.escapeHtmlAttr(anexo.nome_original || '')}</span>\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100 cursor-pointer" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto; cursor: pointer;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><span class="small text-white-50 mt-1 d-block text-truncate cursor-pointer" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-regular fa-image me-1"></i> \${window.escapeHtmlAttr(anexo.nome_original || '')}</span>\${btnExcluirAnexo}</div>\`;
                       } else {
-                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2" style="height: auto; pointer-events: auto;" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-solid fa-file-pdf me-2 text-danger"></i><span class="text-truncate">\${window.escapeHtmlAttr(anexo.nome_original || 'Documento')}</span></a>\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2 cursor-pointer" style="height: auto; pointer-events: auto; cursor: pointer !important; text-decoration: none;" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-solid fa-file-pdf me-2 text-danger"></i><span class="text-truncate text-white">\${window.escapeHtmlAttr(anexo.nome_original || 'Documento')}</span></a>\${btnExcluirAnexo}</div>\`;
                       }
                   }).join('');
               } else {
@@ -2552,10 +2573,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               const newPercasP = JSON.stringify(extrairPercas('containerPercasPintura'));
               const newPercasC = JSON.stringify(extrairPercas('containerPercasCorte'));
-
-              if (document.getElementById('modalCardPrazoBadge')) {
-                  document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazo, concluido);
-              }
 
               if (!titulo) {
                   return mostrarToast('erro', 'Aviso', 'O título não pode ficar vazio.');
@@ -2941,7 +2958,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       } else {
                           prazoInput.value = '';
                       }
-                      document.getElementById('modalCardPrazoBadge').innerHTML = calcularBadgeDiasRestantes(prazoInput.value, dados.concluido);
                   }
 
                   const prioridadeSelect = document.getElementById('modalCardPrioridade');

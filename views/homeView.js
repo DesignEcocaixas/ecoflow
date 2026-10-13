@@ -622,22 +622,22 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <i class="fa-solid fa-bars text-white"></i>
             </button>
             <div>
-              <h4 class="mb-0 fw-bold text-white fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Início</h4>
+              <h4 class="mb-0 fw-bold text-white fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Painel de Controle</h4>
               <span class="text-white-50 d-none d-sm-block" style="font-size:0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Sistema de gestão Ecocaixas</span>
             </div>
         </div>
 
-        <div class="form-check form-switch mb-0 d-flex align-items-center gap-2 bg-custom-darker p-2 px-3 rounded border border-custom shadow-sm ms-auto">
-            <input class="form-check-input cursor-pointer m-0 mt-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 32px; height: 16px;">
-            <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="homeWallpaperSwitch" style="font-size: 0.8rem; margin-top: 2px;">
-                <i class="fa-regular fa-image text-accent me-1"></i> Fundo Dinâmico
+        <div class="form-check form-switch mb-0 d-flex align-items-center gap-1 ms-auto">
+            <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 26px; height: 13px;">
+            <label class="form-check-label text-white-50 cursor-pointer fw-medium m-0 ms-1" for="homeWallpaperSwitch" style="font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                <i class="fa-regular fa-image text-accent"></i> Fundo dinâmico
             </label>
         </div>
       </div>
 
       <!-- MÓDULOS RECENTES -->
       <div class="mb-4" id="recentModulesSection" style="display: none;">
-        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessos Recentes</h6>
+        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessados Recentemente</h6>
         <div class="row g-3" id="recentModulesContainer">
             <!-- Renderizado via JS -->
         </div>
@@ -1010,7 +1010,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       // =========================================================================
       
       const STORAGE_KEY = 'ecoflow_recent_modules_${usuario.nome}';
-      const WALLPAPER_KEY = 'ecoflow_home_wallpaper_global'; // Fica igual para toda a máquina/navegador
+      const WALLPAPER_KEY = 'ecoflow_home_wallpaper_global'; 
 
       // Imagens padronizadas baseadas em dias da semana
       const dailyWallpapers = [
@@ -1028,8 +1028,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (!contentDiv) return;
           
           if (enabled) {
-              // O getDay() retorna 0 para Domingo, 1 para Segunda, etc.
-              // Assim, toda a empresa no Brasil verá a mesma imagem no mesmo dia.
               const dayOfWeek = new Date().getDay();
               const bgUrl = dailyWallpapers[dayOfWeek];
               

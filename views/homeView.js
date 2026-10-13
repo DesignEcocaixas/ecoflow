@@ -641,7 +641,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                     <strong class="text-white" style="font-size: 0.75rem;"><i class="fa-solid fa-lightbulb text-warning me-1"></i> Fundo dinâmico</strong>
                     <i class="fa-solid fa-xmark text-white-50 cursor-pointer hover-text-white" style="font-size: 0.8rem;" onclick="dismissWallpaperTooltip()"></i>
                 </div>
-                <p class="text-white-50 mb-0" style="font-size: 0.7rem; line-height: 1.3;">Ative o fundo dinâmico para ver uma paisagem diferente a cada dia</p>
+                <p class="text-white-50 mb-0" style="font-size: 0.7rem; line-height: 1.3;">Ative para ver uma paisagem diferente a cada dia</p>
             </div>
         </div>
       </div>

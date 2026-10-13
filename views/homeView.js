@@ -648,7 +648,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
       <!-- MÓDULOS RECENTES -->
       <div class="mb-4" id="recentModulesSection" style="display: none;">
-        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessados Recentemente</h6>
+        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessos recentes</h6>
         <div class="row g-3" id="recentModulesContainer">
             <!-- Renderizado via JS -->
         </div>

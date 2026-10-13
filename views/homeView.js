@@ -565,6 +565,26 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         .offcanvas { background-color: #1f1f1f !important; }
         .offcanvas-body a { display: block; text-align: left; padding: 12px 15px; color: white; text-decoration: none; margin: 4px 0; border-radius: 6px;}
         .offcanvas-body a:hover, .offcanvas-body a.active { background-color: rgba(255,255,255,0.1); }
+        
+        /* -------------------------------------------------------------
+           ESTILOS DO PAPEL DE PAREDE DINÂMICO
+        ------------------------------------------------------------- */
+        body.home-has-wallpaper .content {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: local;
+            transition: background-image 0.5s ease-in-out;
+        }
+        body.home-has-wallpaper .dashboard-section-card,
+        body.home-has-wallpaper .chk-item,
+        body.home-has-wallpaper .bg-custom-darker,
+        body.home-has-wallpaper .bg-custom-dark {
+            background-color: rgba(34, 34, 34, 0.85) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-color: rgba(255,255,255,0.1) !important;
+        }
       </style>
   </head>
 
@@ -602,15 +622,22 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <i class="fa-solid fa-bars text-white"></i>
             </button>
             <div>
-              <h4 class="mb-0 fw-bold text-white fs-5">Painel de Controle</h4>
-              <span class="text-muted d-none d-sm-block" style="font-size:0.75rem;">Sistema de gestão Ecocaixas</span>
+              <h4 class="mb-0 fw-bold text-white fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Início</h4>
+              <span class="text-white-50 d-none d-sm-block" style="font-size:0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Sistema de gestão Ecocaixas</span>
             </div>
+        </div>
+
+        <div class="form-check form-switch mb-0 d-flex align-items-center gap-2 bg-custom-darker p-2 px-3 rounded border border-custom shadow-sm ms-auto">
+            <input class="form-check-input cursor-pointer m-0 mt-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 32px; height: 16px;">
+            <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="homeWallpaperSwitch" style="font-size: 0.8rem; margin-top: 2px;">
+                <i class="fa-regular fa-image text-accent me-1"></i> Fundo Dinâmico
+            </label>
         </div>
       </div>
 
       <!-- MÓDULOS RECENTES -->
       <div class="mb-4" id="recentModulesSection" style="display: none;">
-        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessados Recentemente</h6>
+        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessos Recentes</h6>
         <div class="row g-3" id="recentModulesContainer">
             <!-- Renderizado via JS -->
         </div>
@@ -979,10 +1006,46 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
     <script>
       // =========================================================================
-      // RASTREAMENTO E RENDERIZAÇÃO DOS MÓDULOS RECENTES (LOCALSTORAGE)
+      // RASTREAMENTO E RENDERIZAÇÃO DOS MÓDULOS RECENTES E PAPEL DE PAREDE
       // =========================================================================
       
       const STORAGE_KEY = 'ecoflow_recent_modules_${usuario.nome}';
+      const WALLPAPER_KEY = 'ecoflow_home_wallpaper_global'; // Fica igual para toda a máquina/navegador
+
+      // Imagens padronizadas baseadas em dias da semana
+      const dailyWallpapers = [
+          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2672&auto=format&fit=crop', // Domingo (Planeta/Espaço)
+          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2670&auto=format&fit=crop', // Segunda (Paisagem Natural)
+          'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop', // Terça (Paisagem Urbana)
+          'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=2659&auto=format&fit=crop', // Quarta (Animais/Leão)
+          'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2574&auto=format&fit=crop', // Quinta (Planeta/Marte)
+          'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2775&auto=format&fit=crop', // Sexta (Paisagem Natural)
+          'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2756&auto=format&fit=crop'  // Sábado (Paisagem Urbana Noturna)
+      ];
+
+      function applyHomeWallpaper(enabled) {
+          const contentDiv = document.querySelector('.content');
+          if (!contentDiv) return;
+          
+          if (enabled) {
+              // O getDay() retorna 0 para Domingo, 1 para Segunda, etc.
+              // Assim, toda a empresa no Brasil verá a mesma imagem no mesmo dia.
+              const dayOfWeek = new Date().getDay();
+              const bgUrl = dailyWallpapers[dayOfWeek];
+              
+              // Adiciona o degradê escuro superior sobre a imagem para não ofuscar os textos brancos
+              contentDiv.style.backgroundImage = 'linear-gradient(to bottom, rgba(31,31,31,0.9) 0%, rgba(31,31,31,0.4) 100%), url(' + bgUrl + ')';
+              document.body.classList.add('home-has-wallpaper');
+          } else {
+              contentDiv.style.backgroundImage = '';
+              document.body.classList.remove('home-has-wallpaper');
+          }
+      }
+
+      function toggleHomeWallpaper(checked) {
+          localStorage.setItem(WALLPAPER_KEY, checked ? '1' : '0');
+          applyHomeWallpaper(checked);
+      }
 
       function renderRecentModules() {
           const container = document.getElementById('recentModulesContainer');
@@ -991,7 +1054,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
           let recents = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
           
-          // Limpeza do cache sujo (Remove "Acessar módulo" dos nomes salvos acidentalmente)
           let cacheAlterado = false;
           recents = recents.map(m => {
               if (m.name && m.name.toLowerCase().includes('acessar')) {
@@ -1002,7 +1064,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           });
           if (cacheAlterado) localStorage.setItem(STORAGE_KEY, JSON.stringify(recents));
 
-          // Se for o primeiro acesso, extrai os 3 primeiros módulos permitidos no menu lateral
           if (recents.length === 0) {
               const links = document.querySelectorAll('.sidebar a[href^="/"]');
               links.forEach(l => {
@@ -1036,8 +1097,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                                       \${m.iconHTML}
                                   </div>
                                   <div class="flex-grow-1 overflow-hidden d-flex flex-column justify-content-center">
-                                      <strong class="mb-1 fw-bold text-white text-truncate" style="font-size: 0.85rem; line-height: 1;">\${m.name}</strong>
-                                      <span class="text-muted text-truncate" style="font-size: 0.7rem; line-height: 1;">Acessar módulo</span>
+                                      <strong class="mb-1 fw-bold text-white text-truncate" style="font-size: 0.85rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">\${m.name}</strong>
+                                      <span class="text-white-50 text-truncate" style="font-size: 0.7rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Acessar módulo</span>
                                   </div>
                                   <i class="fa-solid fa-chevron-right text-muted opacity-50" style="font-size: 0.8rem;"></i>
                               </div>
@@ -1048,7 +1109,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           }
       }
 
-      // Escuta global de cliques para salvar o histórico no navegador
       document.addEventListener('click', function(e) {
           const link = e.target.closest('a');
           if (link && link.href) {
@@ -1059,7 +1119,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   let iHtml = '<i class="fa-solid fa-cube"></i>';
 
                   if (!name) {
-                      // Se foi clicado no Menu Lateral comum:
                       let textNode = Array.from(link.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
                       if (textNode) {
                           name = textNode.nodeValue.trim();
@@ -1074,7 +1133,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                           iHtml = clone.outerHTML;
                       }
                   } else {
-                      // Se foi clicado no Acesso Rápido Horizontal (reaproveita o ícone)
                       let iconEl = link.querySelector('.rounded i');
                       if (iconEl) iHtml = iconEl.outerHTML;
                   }
@@ -1167,6 +1225,12 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           if (mainContainer) mainContainer.style.display = 'flex';
           
           if(typeof renderRecentModules === 'function') renderRecentModules();
+
+          // Inicia o Wallpaper se estiver ativado no LocalStorage
+          const isWallpaperEnabled = localStorage.getItem(WALLPAPER_KEY) === '1';
+          const sw = document.getElementById('homeWallpaperSwitch');
+          if (sw) sw.checked = isWallpaperEnabled;
+          applyHomeWallpaper(isWallpaperEnabled);
       }
 
       mostrarSkeletonGlobais();

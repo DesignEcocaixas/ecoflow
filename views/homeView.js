@@ -602,7 +602,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <i class="fa-solid fa-bars text-white"></i>
             </button>
             <div>
-              <h4 class="mb-0 fw-bold text-white fs-5">Início</h4>
+              <h4 class="mb-0 fw-bold text-white fs-5">Painel de Controle</h4>
               <span class="text-muted d-none d-sm-block" style="font-size:0.75rem;">Sistema de gestão Ecocaixas</span>
             </div>
         </div>
@@ -982,14 +982,16 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       // RASTREAMENTO E RENDERIZAÇÃO DOS MÓDULOS RECENTES (LOCALSTORAGE)
       // =========================================================================
       
+      const STORAGE_KEY = 'ecoflow_recent_modules_${usuario.nome}';
+
       function renderRecentModules() {
           const container = document.getElementById('recentModulesContainer');
           const section = document.getElementById('recentModulesSection');
           if (!container || !section) return;
 
-          let recents = JSON.parse(localStorage.getItem('ecoflow_recent_modules') || '[]');
+          let recents = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
           
-          // Limpeza do cache sujo (Remove "Acessar módulo" dos nomes salvos na última atualização)
+          // Limpeza do cache sujo (Remove "Acessar módulo" dos nomes salvos acidentalmente)
           let cacheAlterado = false;
           recents = recents.map(m => {
               if (m.name && m.name.toLowerCase().includes('acessar')) {
@@ -998,7 +1000,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               }
               return m;
           });
-          if (cacheAlterado) localStorage.setItem('ecoflow_recent_modules', JSON.stringify(recents));
+          if (cacheAlterado) localStorage.setItem(STORAGE_KEY, JSON.stringify(recents));
 
           // Se for o primeiro acesso, extrai os 3 primeiros módulos permitidos no menu lateral
           if (recents.length === 0) {
@@ -1053,7 +1055,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               const hrefAttr = link.getAttribute('href');
               if (hrefAttr && hrefAttr.startsWith('/') && hrefAttr !== '/home' && hrefAttr !== '/logout' && hrefAttr !== '#') {
                   
-                  let name = link.getAttribute('data-name'); // Proteção: pega o nome exato se clicou no container horizontal
+                  let name = link.getAttribute('data-name'); 
                   let iHtml = '<i class="fa-solid fa-cube"></i>';
 
                   if (!name) {
@@ -1078,11 +1080,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   }
 
                   if (name) {
-                      let recents = JSON.parse(localStorage.getItem('ecoflow_recent_modules') || '[]');
+                      let recents = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                       recents = recents.filter(m => m.href !== hrefAttr);
                       recents.unshift({ href: hrefAttr, name, iconHTML: iHtml });
                       if (recents.length > 3) recents = recents.slice(0, 3);
-                      localStorage.setItem('ecoflow_recent_modules', JSON.stringify(recents));
+                      localStorage.setItem(STORAGE_KEY, JSON.stringify(recents));
                   }
               }
           }

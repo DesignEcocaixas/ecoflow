@@ -627,11 +627,22 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             </div>
         </div>
 
-        <div class="form-check form-switch mb-0 d-flex align-items-center gap-1 ms-auto">
-            <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 26px; height: 13px;">
-            <label class="form-check-label text-white-50 cursor-pointer fw-medium m-0 ms-1" for="homeWallpaperSwitch" style="font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                <i class="fa-regular fa-image text-accent"></i> Fundo dinâmico
-            </label>
+        <div class="position-relative ms-auto">
+            <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
+                <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 26px; height: 13px;">
+                <label class="form-check-label text-white-50 cursor-pointer fw-medium m-0 ms-1" for="homeWallpaperSwitch" style="font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                    <i class="fa-regular fa-image text-accent"></i> Fundo Dinâmico
+                </label>
+            </div>
+            
+            <div id="wallpaperTooltip" class="position-absolute bg-custom-darker border rounded shadow-lg p-2" style="top: 100%; right: 0; margin-top: 10px; width: 230px; z-index: 1050; border-color: rgba(8,192,104,0.5) !important; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease;">
+                <div class="position-absolute" style="top: -6px; right: 30px; width: 10px; height: 10px; background-color: #222; border-top: 1px solid rgba(8,192,104,0.5); border-left: 1px solid rgba(8,192,104,0.5); transform: rotate(45deg);"></div>
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <strong class="text-white" style="font-size: 0.75rem;"><i class="fa-solid fa-lightbulb text-warning me-1"></i> Fundo dinâmico</strong>
+                    <i class="fa-solid fa-xmark text-white-50 cursor-pointer hover-text-white" style="font-size: 0.8rem;" onclick="dismissWallpaperTooltip()"></i>
+                </div>
+                <p class="text-white-50 mb-0" style="font-size: 0.7rem; line-height: 1.3;">Ative o fundo dinâmico para ver uma paisagem diferente a cada dia</p>
+            </div>
         </div>
       </div>
 
@@ -1011,6 +1022,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       
       const STORAGE_KEY = 'ecoflow_recent_modules_${usuario.nome}';
       const WALLPAPER_KEY = 'ecoflow_home_wallpaper_global'; 
+      const TOOLTIP_KEY = 'ecoflow_wallpaper_tooltip_seen_${usuario.nome}';
 
       // Imagens padronizadas baseadas em dias da semana
       const dailyWallpapers = [
@@ -1022,6 +1034,32 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2775&auto=format&fit=crop', // Sexta (Paisagem Natural)
           'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2756&auto=format&fit=crop'  // Sábado (Paisagem Urbana Noturna)
       ];
+
+      function showWallpaperTooltip() {
+          if (!localStorage.getItem(TOOLTIP_KEY)) {
+              setTimeout(() => {
+                  const tooltip = document.getElementById('wallpaperTooltip');
+                  if (tooltip) {
+                      tooltip.style.opacity = '1';
+                      tooltip.style.visibility = 'visible';
+                      tooltip.style.transform = 'translateY(0)';
+                      
+                      // Auto-fechar após 12 segundos para não incomodar
+                      setTimeout(dismissWallpaperTooltip, 12000);
+                  }
+              }, 1200); 
+          }
+      }
+
+      function dismissWallpaperTooltip() {
+          localStorage.setItem(TOOLTIP_KEY, '1');
+          const tooltip = document.getElementById('wallpaperTooltip');
+          if (tooltip) {
+              tooltip.style.opacity = '0';
+              tooltip.style.visibility = 'hidden';
+              tooltip.style.transform = 'translateY(-10px)';
+          }
+      }
 
       function applyHomeWallpaper(enabled) {
           const contentDiv = document.querySelector('.content');
@@ -1043,6 +1081,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       function toggleHomeWallpaper(checked) {
           localStorage.setItem(WALLPAPER_KEY, checked ? '1' : '0');
           applyHomeWallpaper(checked);
+          dismissWallpaperTooltip(); // Esconde o balão ao utilizar o botão
       }
 
       function renderRecentModules() {
@@ -1229,6 +1268,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const sw = document.getElementById('homeWallpaperSwitch');
           if (sw) sw.checked = isWallpaperEnabled;
           applyHomeWallpaper(isWallpaperEnabled);
+          
+          // Dispara a verificação para exibir o balão da nova funcionalidade
+          showWallpaperTooltip();
       }
 
       mostrarSkeletonGlobais();

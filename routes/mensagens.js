@@ -363,15 +363,18 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
                     // =========================================================================
                     // FASE A: DETECÇÃO E EXCLUSÃO DE ITENS REMOVIDOS NO OMIE
+                    // O regex foi aprimorado para ler a linha independentemente dos estilos CSS aplicados
                     // =========================================================================
                     console.log(`[Omie Webhook] ⚙️ FASE A: Verificando se há itens excluídos...`);
-                    const nomesOmieAtuais = itens.map(item => item.produto.descricao.trim());
+                    const nomesOmieAtuais = itens.map(item => item.produto.descricao.trim().replace(/\s+/g, ' '));
                     
-                    const regexItemRow = /<div style="margin-bottom: 6px;"><input type="checkbox"[^>]*>\s*([^<]+?)\s*<b>x \d+<\/b>[\s\S]*?<\/div>/gi;
+                    const regexItemRow = /<div[^>]*>\s*<input[^>]*type="checkbox"[^>]*>\s*([^<]+?)\s*<(?:b|strong)[^>]*>x \d+<\/(?:b|strong)>[\s\S]*?<\/div>/gi;
                     
                     novaDescricao = novaDescricao.replace(regexItemRow, (match, nomeNoHtml) => {
-                        const nomeLimpo = nomeNoHtml.trim();
-                        if (nomesOmieAtuais.includes(nomeLimpo)) {
+                        const nomeLimpo = nomeNoHtml.trim().replace(/\s+/g, ' ');
+                        const existeNoOmie = nomesOmieAtuais.some(nomeOmie => nomeOmie.toLowerCase() === nomeLimpo.toLowerCase());
+                        
+                        if (existeNoOmie) {
                             return match; 
                         } else {
                             console.log(`[Omie Webhook] 🗑️ Item removido detectado: ${nomeLimpo}. Excluindo do Card...`);
@@ -382,6 +385,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
                     // =========================================================================
                     // FASE B: ATUALIZAR QUANTIDADES E INSERIR NOVOS ITENS
+                    // Usa busca flexível de espaços para não duplicar linhas riscadas/editadas
                     // =========================================================================
                     console.log(`[Omie Webhook] ⚙️ FASE B: Verificando quantidades e novos itens adicionados...`);
                     if (!novaDescricao.includes("ITENS DO PEDIDO") && itens.length > 0) {
@@ -389,12 +393,14 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                     }
 
                     itens.forEach(item => {
-                        const prodDesc = item.produto.descricao;
+                        const prodDesc = item.produto.descricao.trim();
                         const prodQtd = item.produto.quantidade;
                         const obsItem = item.observacao && item.observacao.obs_item ? ` - ${item.observacao.obs_item.trim()}` : "";
                         
                         const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regexBuscaProduto = new RegExp(escapeRegExp(prodDesc) + "\\s*<b>x (\\d+)</b>", "i");
+                        const prodDescFlex = escapeRegExp(prodDesc).replace(/\s+/g, '\\s+'); // Permite espaços extras acidentais
+                        
+                        const regexBuscaProduto = new RegExp(prodDescFlex + "\\s*<(?:b|strong)[^>]*>x (\\d+)<\/(?:b|strong)>", "i");
                         
                         const match = novaDescricao.match(regexBuscaProduto);
 
@@ -403,7 +409,8 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                             if (qtdAntiga != prodQtd) {
                                 console.log(`[Omie Webhook] ✏️ Quantidade atualizada no item: ${prodDesc} (de ${qtdAntiga} para ${prodQtd})`);
                                 const strAntiga = match[0];
-                                const strNova = strAntiga.replace(`<b>x ${qtdAntiga}</b>`, `<b>x ${prodQtd}</b>`);
+                                const regexReplaceQtd = new RegExp(`(<(?:b|strong)[^>]*>x\\s*)${qtdAntiga}(<\/(?:b|strong)>)`, 'i');
+                                const strNova = strAntiga.replace(regexReplaceQtd, `$1${prodQtd}$2`);
                                 novaDescricao = novaDescricao.replace(strAntiga, strNova);
                                 houveMudancaItens = true;
                             }
@@ -455,7 +462,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                                 payload: payload
                             });
                         }
-                        console.log(`[Omie Webhook] ✅ Fluxo concluído com sucesso para #${numeroPedido}.`);
+                        console.log(`[Omie Webhook] ✅ Limpeza e Mesclagem do pedido #${numeroPedido} concluída com sucesso.`);
                     } else {
                         console.log(`[Omie Webhook] ⏭️ Nenhuma divergência estrutural detectada no pedido #${numeroPedido}. Nenhuma ação necessária.`);
                     }

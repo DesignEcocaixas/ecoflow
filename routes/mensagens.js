@@ -232,43 +232,28 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
         io.emit("webhook_omie_recebido", { payload: payload });
     }
 
-    if (payload && payload.ping) {
-        console.log(`[Omie Webhook] 📡 PING recebido com sucesso.`);
-        return res.status(200).json({ message: "pong" });
-    }
-    
+    if (payload && payload.ping) return res.status(200).json({ message: "pong" });
     if (!payload || !payload.topic || !payload.event) return res.status(200).send("OK");
 
     const event = payload.event;
     const appKey = payload.appKey;
-    console.log(`\n[Omie Webhook] 📥 Iniciando processamento... Tópico: ${payload.topic} | Pedido: #${event.numeroPedido}`);
 
     const empresaConfig = EMPRESAS_OMIE[appKey];
     if (!empresaConfig) {
-        console.log(`[Omie Webhook] ⚠️ AppKey não reconhecida. Abortando.`);
         return res.status(200).send("OK");
     }
 
     const ETAPA_GATILHO = "20"; 
 
     try {
-        // =========================================================================
         // AÇÃO 1: ETAPA ALTERADA -> CRIAR NOVO CARD
-        // =========================================================================
         if (payload.topic === "VendaProduto.EtapaAlterada" && event.etapa === ETAPA_GATILHO) {
-            console.log(`[Omie Webhook] 🔍 Verificando se o pedido #${event.numeroPedido} já existe no Kanban...`);
-            const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${event.numeroPedido} - %`]);
-            if (jaExiste.length > 0) {
-                console.log(`[Omie Webhook] ⏭️ Pedido #${event.numeroPedido} já existe. Ignorando criação.`);
-                return res.status(200).send("OK");
-            }
 
-            console.log(`[Omie Webhook] 📡 Buscando detalhes do pedido #${event.numeroPedido} na API do Omie...`);
+            const [jaExiste] = await dbPromise.query("SELECT id FROM kanban_cards WHERE titulo LIKE ?", [`%${event.numeroPedido} - %`]);
+            if (jaExiste.length > 0) return res.status(200).send("OK");
+
             const dados = await buscarDetalhesOmie(appKey, empresaConfig.secret, event.idPedido, event.idCliente);
-            if (!dados || !dados.pedido) {
-                console.log(`[Omie Webhook] ❌ Falha ao buscar dados do pedido #${event.numeroPedido}.`);
-                return res.status(200).send("OK");
-            }
+            if (!dados || !dados.pedido) return res.status(200).send("OK");
 
             const cli = dados.cliente;
             const clienteNome = cli.nome_fantasia || cli.razao_social || "Cliente Desconhecido";
@@ -281,7 +266,6 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                 prazo = dados.pedido.cabecalho.data_previsao.split('/').reverse().join('-');
             }
 
-            console.log(`[Omie Webhook] 📝 Montando descrição para o novo card...`);
             const itens = dados.pedido.det || [];
             const obsGeral = dados.pedido.observacoes && dados.pedido.observacoes.obs_venda
                 ? dados.pedido.observacoes.obs_venda
@@ -297,8 +281,7 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                 const obsItem = item.observacao && item.observacao.obs_item
                     ? ` - ${item.observacao.obs_item.trim()}`
                     : "";
-                // Uso de checkbox interativo e formatado desde a criação
-                descricaoCard += `<div style="margin-bottom: 6px;"><input type="checkbox" style="cursor: pointer; margin-right: 6px;"> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b>${obsItem}</div>`;
+                descricaoCard += `<div style="margin-bottom: 6px;"><input type="checkbox" disabled> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b>${obsItem}</div>`;
             });
 
             const [col] = await dbPromise.query("SELECT id FROM kanban_colunas WHERE titulo LIKE '%Pedidos%' LIMIT 1");
@@ -310,14 +293,15 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             );
 
             await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Criado via Omie Webhook', 'Omie')", [insert.insertId]);
-            console.log(`[Omie Webhook] ✅ Card criado com sucesso: ${tituloCard}`);
+            console.log(`✅ Card criado: ${tituloCard}`);
 
             if (io) {
                 const [rows] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [insert.insertId]);
                 const novoCard = rows[0];
-                novoCard.isOmie = true; 
+                novoCard.isOmie = true; // Flag pro frontend suprimir o "Novo Card" generico
                 io.emit("card_criado", novoCard);
                 
+                // Dispara aviso em tempo real pro usuario
                 io.emit("webhook_omie_recebido", {
                     resumo: `O pedido #${event.numeroPedido} (${clienteNome}) foi importado com sucesso!`,
                     status: "Sucesso",
@@ -326,25 +310,23 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
             }
         }
 
-        // =========================================================================
-        // AÇÃO 2: PEDIDO ALTERADO -> ATUALIZAR PRAZO, MESCLAR DESCRIÇÃO E EXCLUIR ITENS NO KANBAN
-        // =========================================================================
+        // AÇÃO 2: PEDIDO ALTERADO -> ATUALIZAR PRAZO E DESCRIÇÃO NO KANBAN
         if (payload.topic === "VendaProduto.Alterada") {
             const idPedido = event.idPedido;
             const numeroPedido = event.numeroPedido;
 
+            // 1. Verifica se já existe um card no Kanban para este pedido
             const [cardsExistentes] = await dbPromise.query("SELECT * FROM kanban_cards WHERE titulo LIKE ?", [`%${numeroPedido} - %`]);
 
             if (cardsExistentes.length > 0) {
                 const cardAlvo = cardsExistentes[0];
-                console.log(`[Omie Webhook] 🔄 Pedido #${numeroPedido} alterado no Omie. Iniciando mesclagem inteligente...`);
+                console.log(`[Omie] Pedido #${numeroPedido} alterado no Omie. Verificando novos dados...`);
 
-                console.log(`[Omie Webhook] 📡 Buscando dados atualizados na API do Omie...`);
+                // 2. Busca os dados atualizados na API do Omie
                 const dadosCompletos = await buscarDetalhesOmie(appKey, empresaConfig.secret, idPedido, event.idCliente);
 
                 if (dadosCompletos && dadosCompletos.pedido) {
-                    
-                    // 1. Atualização do Prazo
+                    // --- ATUALIZAÇÃO DO PRAZO ---
                     const dataPrevisao = dadosCompletos.pedido.cabecalho.data_previsao;
                     let prazoFormatado = null;
                     if (dataPrevisao) {
@@ -352,128 +334,66 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
                         if (partes.length === 3) prazoFormatado = `${partes[2]}-${partes[1]}-${partes[0]}`;
                     }
 
+                    // --- ATUALIZAÇÃO DA DESCRIÇÃO (ITENS E OBSERVAÇÕES) ---
                     const itens = dadosCompletos.pedido.det || [];
                     const obsGeral = dadosCompletos.pedido.observacoes && dadosCompletos.pedido.observacoes.obs_venda
                         ? dadosCompletos.pedido.observacoes.obs_venda
                         : "";
 
-                    const dbDesc = cardAlvo.descricao || "";
-                    let novaDescricao = dbDesc;
-                    let houveMudancaItens = false;
-
-                    // =========================================================================
-                    // FASE A: DETECÇÃO E EXCLUSÃO DE ITENS REMOVIDOS NO OMIE
-                    // O regex foi aprimorado para ler a linha independentemente dos estilos CSS aplicados
-                    // =========================================================================
-                    console.log(`[Omie Webhook] ⚙️ FASE A: Verificando se há itens excluídos...`);
-                    const nomesOmieAtuais = itens.map(item => item.produto.descricao.trim().replace(/\s+/g, ' '));
-                    
-                    const regexItemRow = /<div[^>]*>\s*<input[^>]*type="checkbox"[^>]*>\s*([^<]+?)\s*<(?:b|strong)[^>]*>x \d+<\/(?:b|strong)>[\s\S]*?<\/div>/gi;
-                    
-                    novaDescricao = novaDescricao.replace(regexItemRow, (match, nomeNoHtml) => {
-                        const nomeLimpo = nomeNoHtml.trim().replace(/\s+/g, ' ');
-                        const existeNoOmie = nomesOmieAtuais.some(nomeOmie => nomeOmie.toLowerCase() === nomeLimpo.toLowerCase());
-                        
-                        if (existeNoOmie) {
-                            return match; 
-                        } else {
-                            console.log(`[Omie Webhook] 🗑️ Item removido detectado: ${nomeLimpo}. Excluindo do Card...`);
-                            houveMudancaItens = true;
-                            return ""; 
-                        }
-                    });
-
-                    // =========================================================================
-                    // FASE B: ATUALIZAR QUANTIDADES E INSERIR NOVOS ITENS
-                    // Usa busca flexível de espaços para não duplicar linhas riscadas/editadas
-                    // =========================================================================
-                    console.log(`[Omie Webhook] ⚙️ FASE B: Verificando quantidades e novos itens adicionados...`);
-                    if (!novaDescricao.includes("ITENS DO PEDIDO") && itens.length > 0) {
-                        novaDescricao += `<br><div style="font-weight:bold; margin-bottom:10px; margin-top:10px;">ITENS DO PEDIDO</div>`;
+                    let novaDescricao = "";
+                    if (obsGeral) {
+                        novaDescricao += `<div style="font-weight:bold; margin-bottom:5px; color: #ffc107;"><i class="fa-solid fa-circle-exclamation"></i> OBSERVAÇÕES DO PEDIDO</div>`;
+                        novaDescricao += `<div style="margin-bottom:15px; padding: 10px; background: rgba(255,193,7,0.1); border-left: 3px solid #ffc107; border-radius: 4px; font-size: 0.85rem;">${obsGeral.replace(/\n/g, '<br>')}</div>`;
                     }
-
+                    novaDescricao += `<div style="font-weight:bold; margin-bottom:10px;">ITENS DO PEDIDO</div>`;
                     itens.forEach(item => {
-                        const prodDesc = item.produto.descricao.trim();
-                        const prodQtd = item.produto.quantidade;
-                        const obsItem = item.observacao && item.observacao.obs_item ? ` - ${item.observacao.obs_item.trim()}` : "";
-                        
-                        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const prodDescFlex = escapeRegExp(prodDesc).replace(/\s+/g, '\\s+'); // Permite espaços extras acidentais
-                        
-                        const regexBuscaProduto = new RegExp(prodDescFlex + "\\s*<(?:b|strong)[^>]*>x (\\d+)<\/(?:b|strong)>", "i");
-                        
-                        const match = novaDescricao.match(regexBuscaProduto);
-
-                        if (match) {
-                            const qtdAntiga = match[1];
-                            if (qtdAntiga != prodQtd) {
-                                console.log(`[Omie Webhook] ✏️ Quantidade atualizada no item: ${prodDesc} (de ${qtdAntiga} para ${prodQtd})`);
-                                const strAntiga = match[0];
-                                const regexReplaceQtd = new RegExp(`(<(?:b|strong)[^>]*>x\\s*)${qtdAntiga}(<\/(?:b|strong)>)`, 'i');
-                                const strNova = strAntiga.replace(regexReplaceQtd, `$1${prodQtd}$2`);
-                                novaDescricao = novaDescricao.replace(strAntiga, strNova);
-                                houveMudancaItens = true;
-                            }
-                        } else {
-                            console.log(`[Omie Webhook] ➕ Novo item detectado: ${prodDesc} x ${prodQtd}`);
-                            const htmlNovoItem = `<div style="margin-bottom: 6px;"><input type="checkbox" style="cursor: pointer; margin-right: 6px;"> ${prodDesc} <b>x ${prodQtd}</b>${obsItem}</div>`;
-                            novaDescricao += htmlNovoItem;
-                            houveMudancaItens = true;
-                        }
+                        const obsItem = item.observacao && item.observacao.obs_item
+                            ? ` - ${item.observacao.obs_item.trim()}`
+                            : "";
+                        novaDescricao += `<div style="margin-bottom: 6px;"><input type="checkbox" disabled> ${item.produto.descricao} <b>x ${item.produto.quantidade}</b>${obsItem}</div>`;
                     });
 
-                    // =========================================================================
-                    // FASE C: ATUALIZAR OBSERVAÇÕES GERAIS
-                    // =========================================================================
-                    console.log(`[Omie Webhook] ⚙️ FASE C: Verificando observações de venda...`);
-                    const obsGeralClean = obsGeral.replace(/\n/g, '<br>');
-                    if (obsGeralClean && !dbDesc.includes(obsGeralClean)) {
-                        console.log(`[Omie Webhook] 💬 Nova observação de venda encontrada e anexada ao card.`);
-                        const alertaNovaObs = `<div style="margin-top:10px; margin-bottom:10px; padding: 10px; background: rgba(13,110,253,0.1); border-left: 3px solid #0d6efd; border-radius: 4px; font-size: 0.85rem;"><i class="fa-solid fa-info-circle"></i> <b>Nota atualizada no Omie:</b><br>${obsGeralClean}</div>`;
-                        novaDescricao = alertaNovaObs + novaDescricao;
-                        houveMudancaItens = true;
-                    }
-
+                    // --- COMPARAÇÃO PARA EVITAR UPDATES DESNECESSÁRIOS ---
                     const prazoBancoStr = cardAlvo.prazo ? new Date(cardAlvo.prazo).toISOString().split('T')[0] : null;
+                    
+                    const dbDesc = cardAlvo.descricao || "";
                     const mudouPrazo = prazoFormatado !== prazoBancoStr;
-                    console.log(`[Omie Webhook] 🕒 Prazos analisados. Banco (${prazoBancoStr || 'Vazio'}) vs Omie (${prazoFormatado || 'Vazio'}) -> Mudou? ${mudouPrazo}`);
+                    const mudouDescricao = novaDescricao !== dbDesc;
 
-                    if (mudouPrazo || houveMudancaItens) {
-                        console.log(`[Omie Webhook] 💾 Alterações confirmadas. Salvando dados no banco...`);
+                    if (mudouPrazo || mudouDescricao) {
+                        // Atualiza no banco de dados
                         await dbPromise.query(
                             "UPDATE kanban_cards SET prazo = ?, descricao = ? WHERE id = ?", 
                             [prazoFormatado, novaDescricao, cardAlvo.id]
                         );
 
                         let msgHistorico = 'Pedido atualizado via Omie';
-                        if (mudouPrazo && !houveMudancaItens) msgHistorico = 'Prazo atualizado via Omie';
-                        else if (houveMudancaItens && !mudouPrazo) msgHistorico = 'Itens/Observações atualizados via Omie';
+                        if (mudouPrazo && !mudouDescricao) msgHistorico = 'Prazo atualizado via Omie';
+                        else if (mudouDescricao && !mudouPrazo) msgHistorico = 'Itens/Observações atualizados via Omie';
 
                         await dbPromise.query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, ?, 'Omie')", [cardAlvo.id, msgHistorico]);
 
+                        // 4. Emite o evento do Socket.io para atualizar visualmente
                         if (io) {
                             const [cardAtualizado] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [cardAlvo.id]);
                             cardAtualizado[0].isOmie = true;
                             io.emit("card_atualizado", cardAtualizado[0]);
-                            
                             io.emit("webhook_omie_recebido", {
-                                resumo: `O Pedido #${numeroPedido} sofreu atualizações no Kanban! (${msgHistorico})`,
+                                resumo: `Pedido #${numeroPedido} atualizado`,
                                 status: "Sucesso",
                                 payload: payload
                             });
                         }
-                        console.log(`[Omie Webhook] ✅ Limpeza e Mesclagem do pedido #${numeroPedido} concluída com sucesso.`);
+                        console.log(`✅ Dados do pedido #${numeroPedido} atualizados automaticamente.`);
                     } else {
-                        console.log(`[Omie Webhook] ⏭️ Nenhuma divergência estrutural detectada no pedido #${numeroPedido}. Nenhuma ação necessária.`);
+                        console.log(`[Omie] O pedido #${numeroPedido} foi alterado, mas a data e os itens continuam os mesmos.`);
                     }
                 }
-            } else {
-                console.log(`[Omie Webhook] ⏭️ Pedido #${numeroPedido} alterado no Omie, mas não existe no Kanban. Ignorando.`);
             }
         }
 
     } catch (error) {
-        console.error("[Omie Webhook] ❌ Erro Crítico no processamento do Webhook:", error);
+        console.error("Erro no processamento do Webhook Omie:", error);
     }
 
     return res.status(200).send("OK");

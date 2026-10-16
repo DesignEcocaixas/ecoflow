@@ -2438,6 +2438,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               if (a.prazo && !b.prazo) return -1; 
                               if (!a.prazo && !b.prazo) return 0;
                               return new Date(b.prazo).getTime() - new Date(a.prazo).getTime();
+                          } else if (tipoOrdem === 'etiqueta_asc') {
+                              const tagA = (a.etiquetas && a.etiquetas.length > 0) ? a.etiquetas[0].nome.toLowerCase() : '\\uFFFF';
+                              const tagB = (b.etiquetas && b.etiquetas.length > 0) ? b.etiquetas[0].nome.toLowerCase() : '\\uFFFF';
+                              return tagA.localeCompare(tagB);
+                          } else if (tipoOrdem === 'etiqueta_desc') {
+                              const tagA = (a.etiquetas && a.etiquetas.length > 0) ? a.etiquetas[0].nome.toLowerCase() : '\\uFFFF';
+                              const tagB = (b.etiquetas && b.etiquetas.length > 0) ? b.etiquetas[0].nome.toLowerCase() : '\\uFFFF';
+                              return tagB.localeCompare(tagA);
                           } else {
                               if (!a.prazo && b.prazo) return 1;  
                               if (a.prazo && !b.prazo) return -1; 
@@ -2488,6 +2496,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                   <option value="criacao_desc" \${window.ordemColunas[col.id] === 'criacao_desc' ? 'selected' : ''}>Criação (Mais Recentes)</option>
                                   <option value="prazo_asc" \${window.ordemColunas[col.id] === 'prazo_asc' ? 'selected' : ''}>Prazo (Crescente)</option>
                                   <option value="prazo_desc" \${window.ordemColunas[col.id] === 'prazo_desc' ? 'selected' : ''}>Prazo (Decrescente)</option>
+                                  <option value="etiqueta_asc" \${window.ordemColunas[col.id] === 'etiqueta_asc' ? 'selected' : ''}>Etiquetas (A-Z)</option>
+                                  <option value="etiqueta_desc" \${window.ordemColunas[col.id] === 'etiqueta_desc' ? 'selected' : ''}>Etiquetas (Z-A)</option>
                               </select>
                               
                               <h6 class="text-white fw-bold mb-2 mt-3" style="font-size: 0.8rem;">Limpeza Manual</h6>

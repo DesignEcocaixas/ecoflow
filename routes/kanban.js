@@ -370,20 +370,20 @@ router.post("/espacos-trabalho/wallpaper/:id", isLogged, uploadKanban.single("wa
 router.get("/kanban/api/espacos", isLogged, async (req, res) => {
     try {
         const user = req.session.user;
-        const [espacos] = await db.promise().query("SELECT id, nome, permissoes, criador, criado_por, usuario_id FROM espacos_trabalho ORDER BY nome ASC");
+        // CORREÇÃO: Removidos os campos 'criador' e 'usuario_id' que não existem na tabela espacos_trabalho
+        const [espacos] = await db.promise().query("SELECT id, nome, permissoes, criado_por FROM espacos_trabalho ORDER BY nome ASC");
         
         const userRole = user.tipo_usuario || 'admin';
         const espacosPermitidos = espacos.filter(e => {
             const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : [];
             const isOwnerOrAdmin = userRole === 'admin' || 
-                                   (e.criador && e.criador === user.nome) || 
-                                   (e.criado_por && e.criado_por === user.nome) || 
-                                   (e.usuario_id && e.usuario_id == user.id);
+                                   (e.criado_por && e.criado_por === user.nome);
             return isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
         }).map(e => ({ id: e.id, nome: e.nome }));
 
         res.json({ success: true, espacos: espacosPermitidos });
     } catch(e) {
+        console.error("Erro na busca de espaços de trabalho: ", e);
         res.status(500).json({ success: false });
     }
 });

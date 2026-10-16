@@ -362,6 +362,63 @@ router.post("/espacos-trabalho/wallpaper/:id", isLogged, uploadKanban.single("wa
     });
 });
 
+// =========================================================================================
+// ROTAS PARA TRANSFERÊNCIA DE CARDS ENTRE WORKSPACES E IMPORTAÇÃO
+// =========================================================================================
+
+// BUSCAR ESPAÇOS DE TRABALHO PARA O DROPDOWN DE TRANSFERÊNCIA
+router.get("/kanban/api/espacos", isLogged, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const [espacos] = await db.promise().query("SELECT id, nome, permissoes, criador, criado_por, usuario_id FROM espacos_trabalho ORDER BY nome ASC");
+        
+        const userRole = user.tipo_usuario || 'admin';
+        const espacosPermitidos = espacos.filter(e => {
+            const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : [];
+            const isOwnerOrAdmin = userRole === 'admin' || 
+                                   (e.criador && e.criador === user.nome) || 
+                                   (e.criado_por && e.criado_por === user.nome) || 
+                                   (e.usuario_id && e.usuario_id == user.id);
+            return isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
+        }).map(e => ({ id: e.id, nome: e.nome }));
+
+        res.json({ success: true, espacos: espacosPermitidos });
+    } catch(e) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// BUSCAR AS COLUNAS DE UM ESPAÇO ESPECÍFICO (PARA TRANSFERÊNCIA)
+router.get("/kanban/api/espacos/:id/colunas", isLogged, async (req, res) => {
+    try {
+        const [colunas] = await db.promise().query("SELECT id, titulo FROM kanban_colunas WHERE espaco_id = ? ORDER BY ordem ASC", [req.params.id]);
+        res.json({ success: true, colunas });
+    } catch(e) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// EFETUAR A TRANSFERÊNCIA DO CARD PARA OUTRO ESPAÇO/COLUNA
+router.post("/kanban/api/cards/transferir", express.json(), isLogged, async (req, res) => {
+    try {
+        const { cardId, novaColunaId } = req.body;
+        
+        // Atualiza a coluna do card e manda-o para o final da fila (ordem 999)
+        await db.promise().query("UPDATE kanban_cards SET coluna_id = ?, ordem = 999 WHERE id = ?", [novaColunaId, cardId]);
+        
+        // Regista a transferência no histórico do cartão
+        await db.promise().query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Transferido para outro Workspace', ?)", [cardId, req.session.user.nome]);
+        
+        // Remove as etiquetas associadas, pois as etiquetas são exclusivas de cada workspace
+        await db.promise().query("DELETE FROM kanban_cards_etiquetas WHERE card_id = ?", [cardId]);
+
+        res.json({ success: true });
+    } catch(e) {
+        console.error("Erro na transferência do card:", e);
+        res.status(500).json({ success: false });
+    }
+});
+
 //HISTÓRICO CARD KANBAN
 router.get("/kanban/historico/:id", isLogged, (req, res) => {
     const cardId = req.params.id;

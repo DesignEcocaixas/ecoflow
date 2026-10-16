@@ -203,39 +203,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   `;
 
-  // Modal para Transferência entre Workspaces
-  const modalTransferirCardHtml = `
-  <div class="modal fade" id="modalTransferirCard" tabindex="-1" style="z-index: 2080;">
-      <div class="modal-dialog modal-dialog-centered modal-sm">
-          <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
-              <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Transferir Card</h6>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body p-3 bg-custom-dark">
-                  <p class="text-white-50 mb-3" style="font-size: 0.75rem;">Mova este card e os seus anexos para outro Workspace.</p>
-                  
-                  <div class="mb-2">
-                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Workspace Destino</label>
-                      <select id="selectTransferWorkspace" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" onchange="carregarColunasTransferencia(this.value)">
-                          <option value="">Carregando...</option>
-                      </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Coluna Destino</label>
-                      <select id="selectTransferColuna" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" disabled>
-                          <option value="">Selecione um Workspace primeiro</option>
-                      </select>
-                  </div>
-                  
-                  <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
-              </div>
-          </div>
-      </div>
-  </div>
-  `;
-
   return `
   <!DOCTYPE html>
   <html lang="pt-BR">
@@ -849,23 +816,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" style="height: 85vh;">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
                       <div class="d-flex w-100 justify-content-between align-items-center">
-                          <div class="d-flex align-items-center gap-2">
-                              <span class="badge bg-custom-dark border-custom text-white" id="modalCardIdBadge">#CARD</span>
-                              <div class="d-flex gap-1">
-                                  <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 p-1 d-flex align-items-center justify-content-center transition-hover shadow-sm" style="width: 24px; height: 24px; border-radius: 4px;" onclick="copiarDadosCard()" title="Copiar / Compartilhar Card">
-                                      <i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i>
-                                  </button>
-                                  <div class="dropdown">
-                                      <button class="btn btn-sm btn-outline-secondary border-custom text-white-50 p-1 d-flex align-items-center justify-content-center transition-hover shadow-sm" type="button" data-bs-toggle="dropdown" style="width: 24px; height: 24px; border-radius: 4px;" title="Importar ou Transferir">
-                                          <i class="fa-solid fa-file-import" style="font-size: 0.75rem;"></i>
-                                      </button>
-                                      <ul class="dropdown-menu dropdown-menu-dark shadow-lg border-custom p-1" style="background-color: #2a2a2a; min-width: 220px; z-index: 1060;">
-                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="importarDadosCard()"><i class="fa-solid fa-paste text-accent me-2"></i> Colar Dados Copiados</a></li>
-                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="abrirModalTransferir()"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Enviar para Workspace</a></li>
-                                      </ul>
-                                  </div>
-                              </div>
-                          </div>
+                          <span class="badge bg-custom-dark border-custom text-white" id="modalCardIdBadge">#CARD</span>
                           <div>
                               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="fecharModalCard()"></button>
                           </div>
@@ -1095,36 +1046,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           </div>
       </div>
 
-      <div class="modal fade" id="modalTransferirCard" tabindex="-1" style="z-index: 2080;" data-bs-backdrop="static">
-          <div class="modal-dialog modal-dialog-centered modal-sm">
-              <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
-                  <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Transferir Card</h6>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                  </div>
-                  <div class="modal-body p-3 bg-custom-dark">
-                      <p class="text-white-50 mb-3" style="font-size: 0.75rem;">Mova este card e os seus anexos para outro Workspace.</p>
-                      
-                      <div class="mb-2">
-                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Workspace Destino</label>
-                          <select id="selectTransferWorkspace" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" onchange="carregarColunasTransferencia(this.value)">
-                              <option value="">Carregando...</option>
-                          </select>
-                      </div>
-                      
-                      <div class="mb-4">
-                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Coluna Destino</label>
-                          <select id="selectTransferColuna" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" disabled>
-                              <option value="">Selecione um Workspace primeiro</option>
-                          </select>
-                      </div>
-                      
-                      <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-
       <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 3000;">
           <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
               <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
@@ -1192,236 +1113,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   .replace(/'/g, '&#39;')
                   .replace(/</g, '&lt;')
                   .replace(/>/g, '&gt;');
-          };
-
-          // ==========================================
-          // FUNÇÃO: COMPARTILHAR/COPIAR DADOS DO CARD
-          // ==========================================
-          window.copiarDadosCard = function() {
-              if (!cardAbertoId) return;
-
-              let cardData = null;
-              let colunaNome = "";
-
-              for (const col of colunasDados) {
-                  const achado = col.cards.find(c => c.id == cardAbertoId);
-                  if (achado) { cardData = achado; colunaNome = col.titulo; break; }
-              }
-              if (!cardData) return;
-
-              let textoCopiar = '📌 *' + (cardData.titulo || 'Sem Título') + '* (Card #' + cardData.id + ')\\n';
-              textoCopiar += '📋 Coluna: ' + colunaNome + '\\n';
-              
-              const p = cardData.prioridade || 'normal';
-              textoCopiar += '📊 Prioridade: ' + (p.charAt(0).toUpperCase() + p.slice(1)) + '\\n';
-              
-              if (cardData.prazo) {
-                  textoCopiar += '⏳ Prazo: ' + formatarDataCompleta(cardData.prazo) + '\\n';
-              }
-              
-              textoCopiar += '✅ Status: ' + (cardData.concluido ? 'Concluído' : 'Pendente') + '\\n';
-
-              const tagsDoCard = cardData.etiquetas || [];
-              const tagIds = tagsDoCard.map(t => typeof t === 'object' ? t.id : t);
-              if (tagIds.length > 0) {
-                  const nomesTags = tagIds.map(id => {
-                      const tag = etiquetasDados.find(e => e.id == id);
-                      return tag ? tag.nome : '';
-                  }).filter(n => n !== '');
-                  if (nomesTags.length > 0) {
-                      textoCopiar += '🏷️ Etiquetas: ' + nomesTags.join(', ') + '\\n';
-                  }
-              }
-
-              if (cardData.descricao) {
-                  let descTexto = cardData.descricao;
-                  // Converte quebras de linha e divs para novas linhas
-                  descTexto = descTexto.replace(/<br\\s*[\\/]?>/gi, "\\n");
-                  descTexto = descTexto.replace(/<\\/div>/gi, "\\n");
-                  descTexto = descTexto.replace(/<\\/p>/gi, "\\n");
-                  
-                  // Traduz visualmente as checkboxes
-                  descTexto = descTexto.replace(/<input[^>]*checked[^>]*>/gi, "[x] ");
-                  descTexto = descTexto.replace(/<input[^>]*type="checkbox"[^>]*>/gi, "[ ] ");
-                  
-                  // Limpa qualquer outra tag HTML restante
-                  descTexto = descTexto.replace(/<[^>]+>/ig, "");
-                  
-                  // Decodifica possíveis entidades HTML
-                  const div = document.createElement('div');
-                  div.innerHTML = descTexto;
-                  descTexto = div.textContent || div.innerText || "";
-                  
-                  // Remove excessos de quebras vazias
-                  descTexto = descTexto.replace(/\\n{3,}/g, "\\n\\n").trim();
-
-                  textoCopiar += '\\n📝 *Descrição:*\\n' + descTexto + '\\n';
-              }
-
-              navigator.clipboard.writeText(textoCopiar).then(() => {
-                  mostrarToast('sucesso', 'Copiado!', 'A informação do card foi copiada para a área de transferência.');
-              }).catch(err => {
-                  mostrarToast('erro', 'Erro', 'Não foi possível copiar os dados.');
-                  console.error('Erro ao copiar: ', err);
-              });
-          };
-
-          // ==========================================
-          // FUNÇÃO: COLAR/IMPORTAR DADOS DO CARD
-          // ==========================================
-          window.importarDadosCard = async function() {
-              if (!cardAbertoId) return;
-              try {
-                  let text = '';
-                  if (navigator.clipboard && navigator.clipboard.readText) {
-                      text = await navigator.clipboard.readText();
-                  } else {
-                      text = prompt("Cole (Ctrl+V) os dados que copiou anteriormente de outro card:");
-                  }
-
-                  if (!text || text.trim() === '') {
-                      mostrarToast('erro', 'Aviso', 'A área de transferência está vazia ou bloqueada.');
-                      return;
-                  }
-
-                  const linhas = text.split('\\n');
-                  let novoTitulo = '';
-                  let novaPrioridade = 'normal';
-                  let novoStatus = false;
-                  let novoPrazo = '';
-                  let novaDescricao = '';
-                  let isDesc = false;
-
-                  linhas.forEach(linha => {
-                      const lLimpa = linha.trim();
-                      if (lLimpa.startsWith('📌 *')) {
-                          const match = lLimpa.match(/📌 \\*(.*?)\\*/);
-                          if (match) novoTitulo = match[1];
-                      } else if (lLimpa.startsWith('📊 Prioridade:')) {
-                          const p = lLimpa.replace('📊 Prioridade:', '').trim().toLowerCase();
-                          if (['baixa', 'normal', 'alta'].includes(p)) novaPrioridade = p;
-                      } else if (lLimpa.startsWith('⏳ Prazo:')) {
-                          const dStr = lLimpa.replace('⏳ Prazo:', '').trim();
-                          const parts = dStr.split('/');
-                          if (parts.length === 3) novoPrazo = \`\${parts[2]}-\${parts[1]}-\${parts[0]}\`;
-                      } else if (lLimpa.startsWith('✅ Status:')) {
-                          novoStatus = lLimpa.includes('Concluído');
-                      } else if (lLimpa.startsWith('📝 *Descrição:*')) {
-                          isDesc = true;
-                      } else if (isDesc && lLimpa !== '') {
-                          let l = lLimpa;
-                          if (l.startsWith('[x] ')) l = \`<div style="margin-bottom: 6px;"><input type="checkbox" checked style="margin-right: 6px; cursor: pointer;"> \${l.substring(4)}</div>\`;
-                          else if (l.startsWith('[ ] ')) l = \`<div style="margin-bottom: 6px;"><input type="checkbox" style="margin-right: 6px; cursor: pointer;"> \${l.substring(4)}</div>\`;
-                          else l = \`<div>\${l}</div>\`;
-                          novaDescricao += l;
-                      }
-                  });
-
-                  if (novoTitulo) document.getElementById('modalCardTitulo').innerText = novoTitulo;
-                  if (novaPrioridade) document.getElementById('modalCardPrioridade').value = novaPrioridade;
-                  document.getElementById('modalCardStatus').checked = novoStatus;
-                  if (novoPrazo) document.getElementById('modalCardPrazo').value = novoPrazo;
-                  if (novaDescricao) document.getElementById('modalCardDescricao').innerHTML = novaDescricao;
-
-                  salvarTextosModal();
-                  mostrarToast('sucesso', 'Importado!', 'Os dados foram perfeitamente colados no card.');
-              } catch(e) {
-                  console.error(e);
-                  mostrarToast('erro', 'Aviso', 'Não foi possível aceder à área de transferência do seu dispositivo.');
-              }
-          };
-
-          // ==========================================
-          // FUNÇÕES: TRANSFERIR CARD ENTRE WORKSPACES
-          // ==========================================
-          window.abrirModalTransferir = async function() {
-              if (!cardAbertoId) return;
-              const selectWs = document.getElementById('selectTransferWorkspace');
-              const selectCol = document.getElementById('selectTransferColuna');
-              
-              selectWs.innerHTML = '<option value="">Carregando...</option>';
-              selectCol.innerHTML = '<option value="">Aguardando...</option>';
-              selectCol.disabled = true;
-              
-              const modal = new bootstrap.Modal(document.getElementById('modalTransferirCard'));
-              modal.show();
-
-              try {
-                  const res = await fetch('/kanban/api/espacos');
-                  const data = await res.json();
-                  if (data.success && data.espacos && data.espacos.length > 0) {
-                      selectWs.innerHTML = '<option value="" disabled selected>Escolha o Workspace</option>' + 
-                          data.espacos.map(e => \`<option value="\${e.id}">\${escapeHtmlAttr(e.nome)}</option>\`).join('');
-                  } else {
-                      selectWs.innerHTML = '<option value="">Nenhum workspace disponível</option>';
-                  }
-              } catch(e) {
-                  selectWs.innerHTML = '<option value="">Erro ao carregar workspaces</option>';
-              }
-          };
-
-          window.carregarColunasTransferencia = async function(espacoId) {
-              const selectCol = document.getElementById('selectTransferColuna');
-              if (!espacoId) {
-                  selectCol.disabled = true;
-                  selectCol.innerHTML = '<option value="">Aguardando...</option>';
-                  return;
-              }
-              selectCol.innerHTML = '<option value="">Carregando...</option>';
-              selectCol.disabled = false;
-
-              try {
-                  const res = await fetch('/kanban/api/espacos/' + espacoId + '/colunas');
-                  const data = await res.json();
-                  if (data.success && data.colunas && data.colunas.length > 0) {
-                      selectCol.innerHTML = '<option value="" disabled selected>Escolha a Coluna</option>' + 
-                          data.colunas.map(c => \`<option value="\${c.id}">\${escapeHtmlAttr(c.titulo)}</option>\`).join('');
-                  } else {
-                      selectCol.innerHTML = '<option value="">Nenhuma coluna encontrada</option>';
-                      selectCol.disabled = true;
-                  }
-              } catch(e) {
-                  selectCol.innerHTML = '<option value="">Erro ao carregar colunas</option>';
-                  selectCol.disabled = true;
-              }
-          };
-
-          window.executarTransferenciaCard = async function() {
-              if (!cardAbertoId) return;
-              const novaColunaId = document.getElementById('selectTransferColuna').value;
-              if (!novaColunaId) {
-                  mostrarToast('erro', 'Atenção', 'Selecione a coluna de destino antes de transferir.');
-                  return;
-              }
-
-              try {
-                  const res = await fetch('/kanban/api/cards/transferir', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ cardId: cardAbertoId, novaColunaId: novaColunaId })
-                  });
-                  
-                  if (res.ok) {
-                      const data = await res.json();
-                      if (data.success) {
-                          bootstrap.Modal.getInstance(document.getElementById('modalTransferirCard')).hide();
-                          fecharModalCard();
-                          bootstrap.Modal.getInstance(document.getElementById('modalCardDetalhes')).hide();
-                          
-                          // Remover visualmente do DOM atual
-                          socket.emit('deletar_card', { id: cardAbertoId, usuario: NOME_USUARIO, silencioso: true });
-                          for (const col of colunasDados) {
-                              col.cards = col.cards.filter(c => c.id != cardAbertoId);
-                          }
-                          renderizarKanban();
-                          mostrarToast('sucesso', 'Transferido!', 'O card e os seus anexos foram enviados.');
-                      } else {
-                          mostrarToast('erro', 'Erro', 'Falha na transferência do card no servidor.');
-                      }
-                  }
-              } catch(e) {
-                  mostrarToast('erro', 'Falha de Conexão', 'Não foi possível concluir a transferência.');
-              }
           };
           
           // ==========================================
@@ -2121,6 +1812,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           a.target = "_blank";
                           a.className = "text-accent text-decoration-underline";
                           a.style.pointerEvents = "auto";
+                          a.onclick = function(e) { e.stopPropagation(); };
                           a.textContent = part;
                           fragment.appendChild(a);
                       } else if(part) {
@@ -3300,9 +2992,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           socket.on('card_deletado', (payload) => {
               const cardId = typeof payload === 'object' ? payload.id : payload;
               const usuarioAcao = typeof payload === 'object' && payload.usuario ? payload.usuario : 'Um colega';
-              
-              // Se a flag silencioso estiver presente, não disparamos aviso visual global (usado na transferência)
-              const silencioso = typeof payload === 'object' && payload.silencioso;
 
               let deletedCardTitle = 'Uma tarefa';
               let deletedColName = 'uma coluna';
@@ -3316,8 +3005,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   }
               }
 
-              if (!silencioso && (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000)) {
+              if (Date.now() - (window.ultimoCardDeletadoPorMim || 0) > 2000) {
                   window.playUIFeedback('delete');
+                  // Exclusão é a única ação que deve manter a notificação vermelha (info convertida para erro)
                   window.dispararNotificacaoGlobal('erro', 'Card Excluído', usuarioAcao + ' excluiu o card "' + deletedCardTitle + '" da coluna "' + deletedColName + '".');
               }
 

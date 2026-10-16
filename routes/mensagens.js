@@ -1,3 +1,4 @@
+// routes/mensagens.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -375,9 +376,31 @@ router.post("/webhook/omie/pedidos", async (req, res) => {
 
                         // 4. Emite o evento do Socket.io para atualizar visualmente
                         if (io) {
-                            const [cardAtualizado] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [cardAlvo.id]);
-                            cardAtualizado[0].isOmie = true;
-                            io.emit("card_atualizado", cardAtualizado[0]);
+                            // Busca os dados atualizados para compor o payload esperado
+                            const [cardCompletoArr] = await dbPromise.query("SELECT * FROM kanban_cards WHERE id = ?", [cardAlvo.id]);
+                            const cardCompleto = cardCompletoArr[0];
+                            
+                            // Busca as etiquetas atreladas, pois o frontend necessita dessa informação no card_atualizado
+                            const [tagsArray] = await dbPromise.query("SELECT etiqueta_id FROM kanban_cards_etiquetas WHERE card_id = ?", [cardAlvo.id]);
+                            const tagIds = tagsArray.map(t => t.etiqueta_id);
+
+                            // Formata o payload para imitar perfeitamente o Socket de atualização do Kanban
+                            const payloadSocket = {
+                                id: cardCompleto.id,
+                                titulo: cardCompleto.titulo,
+                                descricao: cardCompleto.descricao,
+                                concluido: cardCompleto.concluido,
+                                prazo: cardCompleto.prazo,
+                                prioridade: cardCompleto.prioridade,
+                                percas_pintura: cardCompleto.percas_pintura,
+                                percas_corte: cardCompleto.percas_corte,
+                                etiquetas: tagIds,
+                                usuario: "Omie",
+                                isOmie: true 
+                            };
+
+                            io.emit("card_atualizado", payloadSocket);
+                            
                             io.emit("webhook_omie_recebido", {
                                 resumo: `Pedido #${numeroPedido} atualizado`,
                                 status: "Sucesso",

@@ -2842,103 +2842,107 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               salvarTextosModal();
           };
 
+          window.salvarTextosModalTimer = null;
+
           window.salvarTextosModal = function() {
-              if (!cardAbertoId) return;
+              if (window.salvarTextosModalTimer) clearTimeout(window.salvarTextosModalTimer);
               
-              window.ultimoCardAtualizadoPorMim = Date.now();
-              
-              const titulo = document.getElementById('modalCardTitulo').innerText.trim();
-              
-              const descEl = document.getElementById('modalCardDescricao');
-              autoLinkify(descEl); 
-              let descricao = descEl.innerHTML.trim();
-              
-              const concluido = document.getElementById('modalCardStatus').checked ? 1 : 0;
-              const prazoInput = document.getElementById('modalCardPrazo');
-              const prazo = prazoInput ? prazoInput.value : '';
-              
-              const prioridadeElement = document.getElementById('modalCardPrioridade');
-              const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
-
-              const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
-
-              const extrairPercas = (containerId) => {
-                  const container = document.getElementById(containerId);
-                  if(!container) return [];
-                  const rows = container.querySelectorAll('.perca-row');
-                  const data = [];
-                  rows.forEach(row => {
-                      data.push({
-                          op1: row.querySelector('.perca-op1').value,
-                          op2: row.querySelector('.perca-op2').value,
-                          qtd: row.querySelector('.perca-qtd').value,
-                          material: row.querySelector('.perca-material').value,
-                          chapa: row.querySelector('.perca-chapa').value
-                      });
-                  });
-                  return data;
-              };
-
-              const newPercasP = JSON.stringify(extrairPercas('containerPercasPintura'));
-              const newPercasC = JSON.stringify(extrairPercas('containerPercasCorte'));
-
-              if (!titulo) {
-                  return mostrarToast('erro', 'Aviso', 'O título não pode ficar vazio.');
-              }
-
-              let cardOriginal = null;
-              for (const col of colunasDados) {
-                  cardOriginal = col.cards.find(c => c.id == cardAbertoId);
-                  if (cardOriginal) break;
-              }
-
-              if (cardOriginal) {
-                  const oldTitulo = (cardOriginal.titulo || '').trim();
-                  const oldDesc = (cardOriginal.descricao || '').trim();
-                  const novaDescNormalizada = (descricao === '<br>' || descricao === '<div><br></div>') ? '' : descricao;
-                  const oldConcluido = cardOriginal.concluido ? 1 : 0;
-                  const oldPrazo = cardOriginal.prazo ? String(cardOriginal.prazo).slice(0, 10) : '';
-                  const oldPrioridade = cardOriginal.prioridade || 'normal';
+              window.salvarTextosModalTimer = setTimeout(() => {
+                  if (!cardAbertoId) return;
                   
-                  const oldTags = cardOriginal.etiquetas || [];
-                  const oldTagIds = oldTags.map(t => typeof t === 'object' ? t.id : t).sort().join(',');
-                  const newTagIds = tagIds.sort().join(',');
+                  window.ultimoCardAtualizadoPorMim = Date.now();
+                  
+                  const titulo = document.getElementById('modalCardTitulo').innerText.trim();
+                  
+                  const descEl = document.getElementById('modalCardDescricao');
+                  autoLinkify(descEl); 
+                  let descricao = descEl.innerHTML.trim();
+                  
+                  const concluido = document.getElementById('modalCardStatus').checked ? 1 : 0;
+                  const prazoInput = document.getElementById('modalCardPrazo');
+                  const prazo = prazoInput ? prazoInput.value : '';
+                  
+                  const prioridadeElement = document.getElementById('modalCardPrioridade');
+                  const prioridade = prioridadeElement ? prioridadeElement.value : 'normal';
 
-                  const strObj = (obj) => {
-                      if (!obj) return '[]';
-                      return typeof obj === 'string' ? obj : JSON.stringify(obj);
+                  const tagIds = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => parseInt(cb.value));
+
+                  const extrairPercas = (containerId) => {
+                      const container = document.getElementById(containerId);
+                      if(!container) return [];
+                      const rows = container.querySelectorAll('.perca-row');
+                      const data = [];
+                      rows.forEach(row => {
+                          data.push({
+                              op1: row.querySelector('.perca-op1').value,
+                              op2: row.querySelector('.perca-op2').value,
+                              qtd: row.querySelector('.perca-qtd').value,
+                              material: row.querySelector('.perca-material').value,
+                              chapa: row.querySelector('.perca-chapa').value
+                          });
+                      });
+                      return data;
                   };
 
-                  const oldPercasP = strObj(cardOriginal.percas_pintura);
-                  const oldPercasC = strObj(cardOriginal.percas_corte);
+                  const newPercasP = JSON.stringify(extrairPercas('containerPercasPintura'));
+                  const newPercasC = JSON.stringify(extrairPercas('containerPercasCorte'));
 
-                  if (titulo === oldTitulo &&
-                      novaDescNormalizada === oldDesc &&
-                      concluido === oldConcluido &&
-                      prazo === oldPrazo &&
-                      prioridade === oldPrioridade &&
-                      newTagIds === oldTagIds &&
-                      oldPercasP === newPercasP &&
-                      oldPercasC === newPercasC) {
-                      return; 
+                  if (!titulo) {
+                      return mostrarToast('erro', 'Aviso', 'O título não pode ficar vazio.');
                   }
-              }
 
-              socket.emit('atualizar_card', { 
-                  id: cardAbertoId, 
-                  cardId: cardAbertoId, 
-                  titulo: titulo, 
-                  descricao: descricao, 
-                  concluido: concluido, 
-                  prazo: prazo, 
-                  prioridade: prioridade,
-                  etiquetas: tagIds,
-                  percas_pintura: newPercasP,
-                  percas_corte: newPercasC,
-                  usuario: NOME_USUARIO 
-              });
-              
-              // mostrarToast('sucesso', 'Atualizado!', 'Card atualizado com sucesso.');
+                  let cardOriginal = null;
+                  for (const col of colunasDados) {
+                      cardOriginal = col.cards.find(c => c.id == cardAbertoId);
+                      if (cardOriginal) break;
+                  }
+
+                  if (cardOriginal) {
+                      const oldTitulo = (cardOriginal.titulo || '').trim();
+                      const oldDesc = (cardOriginal.descricao || '').trim();
+                      const novaDescNormalizada = (descricao === '<br>' || descricao === '<div><br></div>') ? '' : descricao;
+                      const oldConcluido = cardOriginal.concluido ? 1 : 0;
+                      const oldPrazo = cardOriginal.prazo ? String(cardOriginal.prazo).slice(0, 10) : '';
+                      const oldPrioridade = cardOriginal.prioridade || 'normal';
+                      
+                      const oldTags = cardOriginal.etiquetas || [];
+                      const oldTagIds = oldTags.map(t => typeof t === 'object' ? t.id : t).sort().join(',');
+                      const newTagIds = tagIds.sort().join(',');
+
+                      const strObj = (obj) => {
+                          if (!obj) return '[]';
+                          return typeof obj === 'string' ? obj : JSON.stringify(obj);
+                      };
+
+                      const oldPercasP = strObj(cardOriginal.percas_pintura);
+                      const oldPercasC = strObj(cardOriginal.percas_corte);
+
+                      if (titulo === oldTitulo &&
+                          novaDescNormalizada === oldDesc &&
+                          concluido === oldConcluido &&
+                          prazo === oldPrazo &&
+                          prioridade === oldPrioridade &&
+                          newTagIds === oldTagIds &&
+                          oldPercasP === newPercasP &&
+                          oldPercasC === newPercasC) {
+                          return; 
+                      }
+                  }
+
+                  socket.emit('atualizar_card', { 
+                      id: cardAbertoId, 
+                      cardId: cardAbertoId, 
+                      titulo: titulo, 
+                      descricao: descricao, 
+                      concluido: concluido, 
+                      prazo: prazo, 
+                      prioridade: prioridade,
+                      etiquetas: tagIds,
+                      percas_pintura: newPercasP,
+                      percas_corte: newPercasC,
+                      usuario: NOME_USUARIO 
+                  });
+              }, 300);
           };
 
           window.acionarUploadModal = function() {

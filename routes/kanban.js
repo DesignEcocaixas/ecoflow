@@ -424,10 +424,11 @@ router.get("/kanban/historico/:id", isLogged, (req, res) => {
     const cardId = req.params.id;
 
     const query = `
-        SELECT h.*, u.foto 
+        SELECT h.*, MAX(u.foto) as foto 
         FROM kanban_historico h 
         LEFT JOIN usuarios u ON h.usuario COLLATE utf8mb4_unicode_ci = u.nome COLLATE utf8mb4_unicode_ci
         WHERE h.card_id = ? 
+        GROUP BY h.id
         ORDER BY h.criado_em DESC
     `;
 

@@ -1,12 +1,23 @@
 // views/diaristasView.js
 const menuLateral = require("./menuLateral");
-const termosComponent = require("./termosComponent"); // <--- NOVA IMPORTAÇÃO AQUI
+const termosComponent = require("./termosComponent"); 
 
 function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, paginacao = {}, taxas = {}) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
-  const termosHTML = termosComponent(usuario); // <--- GERA O HTML DOS TERMOS
+  const termosHTML = termosComponent(usuario); 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
+
+  // Função para evitar quebra do HTML em nomes com aspas
+  const escapeHtmlAttr = (str) => {
+      if (!str) return '';
+      return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+  };
 
   const fmtData = (d) => {
     try {
@@ -21,7 +32,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
   const fmtMoeda = (n) => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // Funções de formatação para injetar os valores já com máscara no HTML gerado da tabela
   const applyMaskPhone = (v) => {
       if (!v) return "";
       v = String(v).replace(/\D/g, "");
@@ -47,7 +57,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
   const valDomingo = taxas.diaria_domingo || 95.00;
   const valLimpeza = taxas.diaria_limpeza || 75.00;
 
-  // Arrays de Dados Serializados para o JavaScript Frontend
   const diaristasJson = JSON.stringify(diaristas.map(d => ({
       id: d.id, 
       nome: d.nome, 
@@ -82,24 +91,28 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       };
   }));
 
-  // =========================================================================
-  // GERAÇÃO DOS CARDS (APENAS DIARISTAS NA TELA PRINCIPAL)
-  // =========================================================================
-  const apenasDiaristas = diaristas.filter(d => d.tipo_usuario === 'diarista');
+  const apenasDiaristas = diaristas.filter(d => d.tipo_usuario === 'diarista' || d.tipo_usuario === 'ajudante');
+  
+  const getBadgeColabList = (tipo) => {
+      if (tipo === 'ajudante') return '<span class="badge bg-custom-dark border-custom text-warning mb-2 px-2 py-1" style="font-size: 0.60rem; letter-spacing: 0.5px;">AJUDANTE</span>';
+      return '<span class="badge bg-custom-dark border-custom text-muted mb-2 px-2 py-1" style="font-size: 0.60rem; letter-spacing: 0.5px;">DIARISTA</span>';
+  };
+
   const cardsDiaristas = apenasDiaristas.length > 0 ? apenasDiaristas.map(d => {
       const fotoUrl = d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=1f1f1f&color=08c068`;
       const pixStatus = d.pix && d.pix.trim() !== '' ? '<span class="text-success"><i class="fa-brands fa-pix"></i> Cadastrado</span>' : '<span class="text-danger"><i class="fa-brands fa-pix"></i> Pendente</span>';
 
       return `
-         <div class="col-12 col-sm-6 col-md-4 col-xl-3 diarista-card-item">
-             <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom" style="cursor: pointer;" onclick="abrirModalCriarPasta('${d.id}')" title="Abrir uma nova pasta de diárias para este colaborador">
+         <div class="diarista-wrapper col-12 col-sm-6 col-md-4 col-xl-3" data-id="${d.id}" data-nome="${escapeHtmlAttr(d.nome).toLowerCase()}">
+             <!-- VISUALIZAÇÃO EM GRADE -->
+             <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom grid-view-item" style="cursor: pointer;" onclick="abrirModalCriarPasta('${d.id}')" title="Abrir uma nova pasta de diárias">
                  <div class="card-body text-center p-3 d-flex flex-column justify-content-center align-items-center">
                      <div class="position-relative mb-2">
                          <img src="${fotoUrl}" class="rounded-circle shadow-sm border border-custom" style="width: 55px; height: 55px; object-fit: cover;">
                          <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-custom rounded-circle" style="width: 12px; height: 12px;" title="Ativo"></span>
                      </div>
                      <h6 class="fw-bold text-white mb-1 w-100 text-truncate px-2" style="font-size: 0.85rem;" title="${d.nome}">${d.nome}</h6>
-                     <span class="badge bg-custom-dark border-custom text-muted mb-2 px-2 py-1" style="font-size: 0.60rem; letter-spacing: 0.5px;">DIARISTA</span>
+                     ${getBadgeColabList(d.tipo_usuario)}
                      
                      <div class="w-100 border-top border-custom pt-2 text-muted" style="font-size: 0.70rem;">
                          <div class="mb-1 text-truncate"><i class="fa-solid fa-id-card opacity-75 me-1"></i> CPF: ${applyMaskCPF(d.cpf) || 'N/A'}</div>
@@ -107,13 +120,35 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                      </div>
                  </div>
              </div>
+
+             <!-- VISUALIZAÇÃO EM LISTA COMPACTA -->
+             <div class="card erp-card-list w-100 bg-transparent list-view-item" style="display: none; cursor: pointer; border-radius: 0; border: none; border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="abrirModalCriarPasta('${d.id}')">
+                 <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                     <div class="d-flex align-items-center flex-grow-1" style="min-width: 200px;">
+                         <div class="position-relative me-3">
+                             <img src="${fotoUrl}" class="rounded-circle shadow-sm border border-custom" style="width: 35px; height: 35px; object-fit: cover;">
+                             <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-custom rounded-circle" style="width: 10px; height: 10px;" title="Ativo"></span>
+                         </div>
+                         <div>
+                             <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">${d.nome}</h6>
+                             ${d.tipo_usuario === 'ajudante' ? '<span class="text-warning" style="font-size: 0.65rem;">Ajudante</span>' : '<span class="text-muted" style="font-size: 0.65rem;">Diarista</span>'}
+                         </div>
+                     </div>
+                     <div class="text-muted text-nowrap d-none d-md-block" style="font-size: 0.75rem;">
+                         <i class="fa-solid fa-phone opacity-75 me-1"></i> ${applyMaskPhone(d.telefone) || 'Sem contato'}
+                     </div>
+                     <div class="text-muted text-nowrap" style="font-size: 0.75rem;">
+                         <i class="fa-solid fa-id-card opacity-75 me-1"></i> ${applyMaskCPF(d.cpf) || 'N/A'}
+                     </div>
+                     <div class="text-nowrap" style="font-size: 0.75rem;">
+                         ${pixStatus}
+                     </div>
+                 </div>
+             </div>
          </div>
       `;
-  }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum diarista cadastrado no sistema.</p></div>`;
+  }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum diarista ou ajudante cadastrado.</p></div>`;
 
-  // =========================================================================
-  // GERAÇÃO DO HISTÓRICO DE PASTAS
-  // =========================================================================
   const modaisDinamicosExcluir = [];
   const linhasPastas = pastas.length > 0 ? pastas.map(p => {
       const fotoUrl = p.foto_colab ? `/uploads/${p.foto_colab}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome_colaborador || 'C')}&background=1f1f1f&color=08c068`;
@@ -164,9 +199,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       `;
   }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="fa-solid fa-folder-open fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhuma pasta de diárias encontrada no período.</p></td></tr>`;
 
-  // =========================================================================
-  // GERAÇÃO DA TABELA DO MODAL GESTÃO DE EQUIPE (TODOS OS COLABORADORES)
-  // =========================================================================
   const getTipoBadge = (tipo) => {
     switch (tipo) {
       case 'diarista': return '<span class="badge bg-custom-darker border-custom text-info">Diarista</span>';
@@ -206,7 +238,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       `;
   }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x mb-3 opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum colaborador cadastrado.</span></td></tr>`;
 
-  // Paginação
   const qsParams = [];
   if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
   if (filtros.data_fim) qsParams.push(`data_fim=${filtros.data_fim}`);
@@ -250,7 +281,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <style>
-      /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(8, 192, 104, 0.3); border-radius: 10px; }
@@ -262,13 +292,11 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       
       .content { flex: 1; padding: 24px; overflow-y: auto; position: relative; background-color: #1f1f1f; }
       
-      /* Tema Escuro Customizado */
       .bg-custom-dark { background-color: #2a2a2a !important; }
       .bg-custom-darker { background-color: #222222 !important; }
       .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
       .text-accent { color: #08c068 !important; }
 
-      /* Modificadores Bootstrap */
       .text-dark { color: #ffffff !important; }
       .text-muted { color: rgba(255,255,255,0.5) !important; }
       
@@ -280,12 +308,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       .btn-outline-secondary { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
       .btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-      /* Inputs e Selects */
       .form-control, .form-select, .input-group-text { background-color: #222; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 0.8rem; }
       .form-control:focus, .form-select:focus { background-color: #2a2a2a; border-color: #08c068; color: #fff; box-shadow: 0 0 0 0.2rem rgba(8, 192, 104, 0.25); }
       .input-group-text { background-color: #2a2a2a; color: rgba(255,255,255,0.6); }
 
-      /* Tabelas e Modais */
       .table { 
           --bs-table-bg: transparent; 
           --bs-table-color: #fff; 
@@ -316,18 +342,20 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
       .erp-card { transition: all 0.3s ease; border-radius: 12px; border-width: 1px !important; background-color: #2a2a2a !important; border-style: solid; border-color: rgba(255,255,255,0.05) !important; }
       .erp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.2) !important; border-color: #08c068 !important; }
+      
+      .erp-card-list { background-color: transparent !important; }
+      .erp-card-list .card-body { transition: background-color 0.2s ease; }
+      .erp-card-list:hover .card-body { background-color: rgba(255,255,255,0.06); }
 
       .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       
-      /* Pagination */
       .pagination .page-link { background-color: #222; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
       .pagination .page-item.active .page-link { background-color: #08c068; border-color: #08c068; color: #1f1f1f !important; }
       .pagination .page-link:hover { background-color: #2a2a2a; color: #fff; }
       .pagination .page-item.disabled .page-link { background-color: #1f1f1f; color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.05); }
 
-      /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
       .toast.showing, .toast.show { transform: translateX(0); }
       .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
@@ -336,7 +364,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      /* CONTAINER DE FOTO DE PERFIL (Para Upload) */
       .profile-upload-container {
           width: 100px;
           height: 100px;
@@ -376,7 +403,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       }
       .btn-flutuante:hover { transform: scale(1.1); background-color: #06a055; color: #1f1f1f; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.5); }
 
-      /* SKELETON LOADING (MODO ESCURO) */
       .skeleton-dark {
           background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
           background-size: 200% 100% !important;
@@ -436,9 +462,31 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
             </div>
         </div>
         
-        <button class="btn btn-sm btn-primary shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalGerirColaboradores">
-           <i class="fa-solid fa-users me-1"></i> Gestão de Equipe
-        </button>
+        <div class="d-flex gap-2">
+            <!-- Dropdown Ordenação -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary border-custom shadow-sm px-2 text-white h-100" type="button" data-bs-toggle="dropdown" title="Ordenar Lista">
+                    <i id="sortIconIndicador" class="fa-solid fa-arrow-down-a-z"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-1" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 210px; z-index: 1060;">
+                    <li><h6 class="dropdown-header text-muted" style="font-size: 0.7rem; text-transform: uppercase;">Classificar por</h6></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('az')"><i class="fa-solid fa-arrow-down-a-z me-2 text-accent" style="width: 16px;"></i> Nome (A-Z)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('za')"><i class="fa-solid fa-arrow-up-z-a me-2 text-accent" style="width: 16px;"></i> Nome (Z-A)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('cad_asc')"><i class="fa-solid fa-arrow-down-1-9 me-2 text-accent" style="width: 16px;"></i> Cadastro (Antigos)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="sortDiaristas('cad_desc')"><i class="fa-solid fa-arrow-up-9-1 me-2 text-accent" style="width: 16px;"></i> Cadastro (Recentes)</a></li>
+                </ul>
+            </div>
+            
+            <div class="btn-group shadow-sm border-custom rounded" role="group">
+                <input type="radio" class="btn-check" name="btnradio_view" id="view_grid" autocomplete="off" checked onchange="toggleViewMode('grid')">
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="fa-solid fa-grip"></i></label>
+                <input type="radio" class="btn-check" name="btnradio_view" id="view_list" autocomplete="off" onchange="toggleViewMode('list')">
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="fa-solid fa-list"></i></label>
+            </div>
+            <button class="btn btn-sm btn-primary shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalGerirColaboradores">
+               <i class="fa-solid fa-users me-1"></i> Gestão de Equipe
+            </button>
+        </div>
       </div>
 
       <div class="row g-3" id="diaristasGrid">
@@ -536,9 +584,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- GESTÃO DE EQUIPE (MODAL PRINCIPAL DA LISTAGEM)                          -->
-    <!-- ======================================================================= -->
+    <!-- GESTÃO DE EQUIPE (MODAL PRINCIPAL DA LISTAGEM) -->
     <div class="modal fade" id="modalGerirColaboradores" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
@@ -889,6 +935,77 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       }
 
       // =======================================================================
+      // MODO DE VISUALIZAÇÃO DOS CARDS E ORDENAÇÃO
+      // =======================================================================
+      let viewMode = localStorage.getItem('diaristasViewMode') || 'grid';
+      
+      function applyViewMode() {
+          const wrappers = document.querySelectorAll('.diarista-wrapper');
+          const gridItems = document.querySelectorAll('.grid-view-item');
+          const listItems = document.querySelectorAll('.list-view-item');
+          const gridContainer = document.getElementById('diaristasGrid');
+          
+          if (viewMode === 'list') {
+              if (gridContainer) {
+                  gridContainer.classList.remove('g-3');
+                  gridContainer.classList.add('g-0', 'border', 'border-custom', 'rounded-3', 'overflow-hidden');
+              }
+              wrappers.forEach(w => w.className = 'diarista-wrapper col-12');
+              gridItems.forEach(el => el.style.display = 'none');
+              listItems.forEach(el => el.style.display = 'block');
+              document.getElementById('view_list').checked = true;
+          } else {
+              if (gridContainer) {
+                  gridContainer.classList.remove('g-0', 'border', 'border-custom', 'rounded-3', 'overflow-hidden');
+                  gridContainer.classList.add('g-3');
+              }
+              wrappers.forEach(w => w.className = 'diarista-wrapper col-12 col-sm-6 col-md-4 col-xl-3');
+              gridItems.forEach(el => el.style.display = 'block');
+              listItems.forEach(el => el.style.display = 'none');
+              document.getElementById('view_grid').checked = true;
+          }
+      }
+
+      function toggleViewMode(mode) {
+          viewMode = mode;
+          localStorage.setItem('diaristasViewMode', mode);
+          applyViewMode();
+      }
+
+      function sortDiaristas(order) {
+          localStorage.setItem('diaristasSortOrder', order);
+          const container = document.getElementById('diaristasGrid');
+          if(!container) return;
+          
+          const wrappers = Array.from(container.querySelectorAll('.diarista-wrapper'));
+          
+          wrappers.sort((a, b) => {
+              const idA = parseInt(a.getAttribute('data-id'));
+              const idB = parseInt(b.getAttribute('data-id'));
+              const nomeA = a.getAttribute('data-nome');
+              const nomeB = b.getAttribute('data-nome');
+              
+              if (order === 'az') return nomeA.localeCompare(nomeB);
+              if (order === 'za') return nomeB.localeCompare(nomeA);
+              if (order === 'cad_asc') return idA - idB;
+              if (order === 'cad_desc') return idB - idA;
+              return 0;
+          });
+          
+          wrappers.forEach(w => container.appendChild(w));
+          
+          const sortIcon = document.getElementById('sortIconIndicador');
+          if(sortIcon) {
+              if(order === 'az') sortIcon.className = 'fa-solid fa-arrow-down-a-z';
+              if(order === 'za') sortIcon.className = 'fa-solid fa-arrow-up-z-a';
+              if(order === 'cad_asc') sortIcon.className = 'fa-solid fa-arrow-down-1-9';
+              if(order === 'cad_desc') sortIcon.className = 'fa-solid fa-arrow-up-9-1';
+          }
+          
+          renderCardsPage(1);
+      }
+
+      // =======================================================================
       // FILTRO E BUSCA DE COLABORADORES DO MODAL
       // =======================================================================
       function filtrarTabelaEquipe() {
@@ -970,13 +1087,13 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       }
 
       // =======================================================================
-      // LÓGICA DE PAGINAÇÃO DOS CARDS
+      // LÓGICA DE PAGINAÇÃO DOS CARDS (GRID/LISTA)
       // =======================================================================
       let currentPageCards = 1;
       const itemsPerPageCards = 8;
       
       function renderCardsPage(page) {
-          const items = document.querySelectorAll('.diarista-card-item');
+          const items = document.querySelectorAll('.diarista-wrapper');
           if(items.length === 0) return;
           const totalPages = Math.ceil(items.length / itemsPerPageCards);
           if(page < 1) page = 1;
@@ -989,6 +1106,12 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   item.style.display = 'block';
               }
           });
+          
+          const vList = document.getElementById('view_list');
+          const vGrid = document.getElementById('view_grid');
+          if(vList) vList.checked = (viewMode === 'list');
+          if(vGrid) vGrid.checked = (viewMode === 'grid');
+          
           renderCardsPagination(totalPages);
       }
 
@@ -1023,7 +1146,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           if(!p) return;
 
           let msg = \`Relatório de Fechamento de Diárias - Ecoflow\\n\\n\`;
-          msg += \`[Diarista: \${p.nome_colaborador} ]\\n\`;
+          msg += \`[Colaborador: \${p.nome_colaborador} ]\\n\`;
           msg += \`Pasta #\${p.id}  |  Início: \${p.data_abertura}\\n\\n\`;
           msg += \`Resumo de Registros:\\n\`;
 
@@ -1173,14 +1296,16 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           let html = '';
           for(let i=0; i<quantidade; i++) {
               html += \`
-              <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                  <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom p-3 text-center d-flex flex-column align-items-center">
+              <div class="diarista-wrapper col-12 col-sm-6 col-md-4 col-xl-3">
+                  <div class="card erp-card shadow-sm h-100 bg-custom-darker border-custom p-3 text-center d-flex flex-column align-items-center grid-view-item">
                       <div class="skeleton-dark skeleton-avatar-view mb-2" style="width: 55px; height: 55px;"></div>
                       <div class="skeleton-dark skeleton-text-view mb-2" style="width: 60%; height: 14px;"></div>
                       <div class="skeleton-dark skeleton-text-view mb-2" style="width: 40%; height: 12px; border-radius: 12px;"></div>
-                      <div class="w-100 border-top border-custom pt-2 mt-2">
-                          <div class="skeleton-dark skeleton-text-view mx-auto mb-1" style="width: 70%; height: 10px;"></div>
-                          <div class="skeleton-dark skeleton-text-view mx-auto" style="width: 50%; height: 10px; margin-bottom: 0;"></div>
+                  </div>
+                  <div class="card erp-card-list w-100 bg-transparent list-view-item" style="display: none; border-radius: 0; border: none; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                      <div class="card-body p-2 px-3 d-flex align-items-center gap-3">
+                          <div class="skeleton-dark skeleton-avatar-view" style="width: 35px; height: 35px;"></div>
+                          <div class="skeleton-dark skeleton-text-view" style="width: 150px; height: 14px;"></div>
                       </div>
                   </div>
               </div>\`;
@@ -1264,9 +1389,12 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       }
 
       mostrarSkeletonGlobais();
+      
       window.addEventListener('load', () => {
           ocultarSkeletonGlobais();
-          renderCardsPage(1); 
+          const savedOrder = localStorage.getItem('diaristasSortOrder') || 'az';
+          sortDiaristas(savedOrder);
+          applyViewMode(); 
       });
 
       function mostrarToast(tipo, titulo, mensagem) {
@@ -1302,7 +1430,11 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   const newContent = doc.querySelector('.content');
                   if (oldContent && newContent) oldContent.innerHTML = newContent.innerHTML;
                   atualizarModaisDinamicos(doc);
-                  renderCardsPage(currentPageCards);
+                  
+                  const savedOrder = localStorage.getItem('diaristasSortOrder') || 'az';
+                  sortDiaristas(savedOrder);
+                  applyViewMode();
+                  
                   window.history.pushState({}, '', url);
                   mostrarToast('sucesso', 'Busca Concluída!', titleMsg);
               } else {
@@ -1335,7 +1467,11 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   const newContent = doc.querySelector('.content');
                   if (oldContent && newContent) oldContent.innerHTML = newContent.innerHTML;
                   atualizarModaisDinamicos(doc);
-                  renderCardsPage(currentPageCards);
+                  
+                  const savedOrder = localStorage.getItem('diaristasSortOrder') || 'az';
+                  sortDiaristas(savedOrder);
+                  applyViewMode();
+                  
                   window.history.pushState({}, '', url);
               }
           } catch (err) {
@@ -1396,7 +1532,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   if (oldContent && newContent) oldContent.innerHTML = newContent.innerHTML;
                   
                   atualizarModaisDinamicos(doc);
-                  renderCardsPage(currentPageCards);
+                  
+                  const savedOrder = localStorage.getItem('diaristasSortOrder') || 'az';
+                  sortDiaristas(savedOrder);
+                  applyViewMode();
 
                   if (keepPastaIdOpen) {
                       setTimeout(() => {

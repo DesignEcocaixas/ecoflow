@@ -1,3 +1,4 @@
+// routes/diaristas.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -9,7 +10,7 @@ const { uploadDiaristas } = require("../config/uploadConfig");
 const diaristasView = require("../views/diaristasView");
 
 //------------------------------------------------------------------------------ROTAS PARA DIARISTAS------------------------------------------------------------------------------
-//LISTAR DIARISTAS
+//LISTAR DIARISTAS E AJUDANTES
 router.get("/diaristas", async (req, res) => {
     if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro" && req.session.user.tipo_usuario !== "logistica")) {
         return res.redirect("/login");
@@ -28,8 +29,8 @@ router.get("/diaristas", async (req, res) => {
             if (['diaria_padrao', 'diaria_domingo', 'diaria_limpeza'].includes(c.chave)) taxas[c.chave] = parseFloat(c.valor);
         });
 
-        // B. Busca Diaristas para os Cards
-        const [diaristas] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco, telefone FROM usuarios WHERE tipo_usuario = 'diarista' ORDER BY nome ASC");
+        // B. Busca Diaristas e Ajudantes para a tela inicial
+        const [diaristas] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco, telefone FROM usuarios WHERE tipo_usuario IN ('diarista', 'ajudante') ORDER BY nome ASC");
 
         // C. Filtros e Busca das PASTAS DE FECHAMENTO
         let whereHist = [];

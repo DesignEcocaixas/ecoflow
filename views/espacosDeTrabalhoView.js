@@ -3,7 +3,7 @@ const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
 function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
-  const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
+  const user = usuario || { nome: "Usuário", tipo_usuario: "admin", id: "0" };
   const menuHTML = menuLateral(user, "/espacos-trabalho");
   const termosHTML = termosComponent(usuario); 
 
@@ -19,157 +19,234 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
   ];
 
   // =========================================================================
-  // GERAÇÃO DOS CARDS DE ESPAÇOS DE TRABALHO
+  // GERAÇÃO DOS CARDS E LISTA DE ESPAÇOS DE TRABALHO
   // =========================================================================
-  const cards = espacos.length > 0 ? espacos.map(e => {
-    const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;
-    const imgUrl = e.thumb ? `/uploads/${e.thumb}` : fallbackUrl;
-    
-    // Tratamento das permissões atuais
-    const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : roles.map(r => r.id);
+  let cardsHtml = '';
+  let listHtml = '';
 
-    // Validação de acesso do utilizador logado (considerando acesso individual usr_ID)
-    const userRole = user.tipo_usuario || 'admin';
-    const isOwnerOrAdmin = userRole === 'admin' || 
-                           (e.criador && e.criador === user.nome) || 
-                           (e.criado_por && e.criado_por === user.nome) || 
-                           (e.usuario_id && e.usuario_id == user.id);
-                           
-    const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
+  if (espacos.length > 0) {
+      espacos.forEach(e => {
+          const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;
+          const imgUrl = e.thumb ? `/uploads/${e.thumb}` : fallbackUrl;
+          
+          // Tratamento das permissões atuais
+          const permAtuais = e.permissoes ? (typeof e.permissoes === 'string' ? e.permissoes.split(',') : e.permissoes) : roles.map(r => r.id);
 
-    const permissoesHtml = roles.map(r => {
-        let isRoleChecked = permAtuais.includes(r.id);
-        let isChecked = isRoleChecked ? 'checked' : '';
-        let isDisabled = '';
-        
-        if (r.id === 'admin' || r.id === userRole) {
-            isChecked = 'checked';
-            isDisabled = 'disabled';
-            isRoleChecked = true;
-        }
+          // Validação de acesso do utilizador logado
+          const userRole = user.tipo_usuario || 'admin';
+          const isOwnerOrAdmin = userRole === 'admin' || 
+                                 (e.criador && e.criador === user.nome) || 
+                                 (e.criado_por && e.criado_por === user.nome) || 
+                                 (e.usuario_id && e.usuario_id == user.id);
+                                 
+          const hasAccess = isOwnerOrAdmin || permAtuais.includes(userRole) || permAtuais.includes('usr_' + user.id);
 
-        // Filtra os usuários que pertencem a esta hierarquia
-        const roleUsers = usuarios.filter(u => u.tipo_usuario === r.id);
-        let usersHtml = '';
+          // Identificar quem tem acesso a este espaço para renderizar as miniaturas de foto (Apenas View Lista)
+          const authorizedUsers = usuarios.filter(u => {
+              if (u.tipo_usuario === 'admin') return true;
+              if (permAtuais.includes(u.tipo_usuario)) return true;
+              if (permAtuais.includes('usr_' + u.id)) return true;
+              return false;
+          });
 
-        if (roleUsers.length > 0) {
-            usersHtml = `
-            <div class="collapse mt-2 mb-1 ps-3 ms-1 border-start border-secondary" id="collapse_${e.id}_${r.id}">
-                ${roleUsers.map(u => {
-                    const userKey = 'usr_' + u.id;
-                    
-                    // Estado explícito salvo no banco
-                    let hasExplicitAccess = permAtuais.includes(userKey); 
-                    // Marca se tiver acesso direto OU se herdar do cargo
-                    let isUserChecked = hasExplicitAccess || isRoleChecked ? 'checked' : '';
-                    
-                    // Trava o switch do usuário se o cargo dele estiver liberado geral, 
-                    // obrigando o Admin a desmarcar o cargo para controlar individualmente
-                    let isUserDisabled = (r.id === 'admin' || u.id === user.id || isRoleChecked) ? 'disabled' : '';
+          let usersAvatarsHtml = '';
+          const maxAvatars = 4;
+          authorizedUsers.slice(0, maxAvatars).forEach((u, index) => {
+              const uFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=1f1f1f&color=fff&size=64&font-size=0.33`;
+              const uFoto = u.foto ? `/uploads/${u.foto}` : uFallback;
+              usersAvatarsHtml += `
+                  <img src="${uFoto}" alt="${u.nome}" title="${u.nome}" class="rounded-circle shadow-sm position-relative" style="width: 28px; height: 28px; object-fit: cover; border: 2px solid #2a2a2a; margin-left: ${index === 0 ? '0' : '-10px'}; z-index: ${maxAvatars - index};">
+              `;
+          });
+          if (authorizedUsers.length > maxAvatars) {
+              usersAvatarsHtml += `
+                  <div class="rounded-circle shadow-sm position-relative d-flex align-items-center justify-content-center bg-custom-darker border border-custom" style="width: 28px; height: 28px; margin-left: -10px; z-index: 0;">
+                      <span class="text-white-50" style="font-size: 0.6rem; font-weight: bold;">+${authorizedUsers.length - maxAvatars}</span>
+                  </div>
+              `;
+          }
 
-                    return `
-                    <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
-                        <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm user-cb-${e.id}-${r.id}" 
-                            type="checkbox" 
-                            id="perm_${e.id}_${userKey}" 
-                            data-explicit="${hasExplicitAccess}"
-                            onchange="salvarPermissaoEspaco('${e.id}', '${userKey}', this.checked)" 
-                            ${isUserChecked} ${isUserDisabled} 
-                            style="width: 24px; height: 12px;">
-                        <label class="form-check-label text-muted cursor-pointer m-0 text-truncate" for="perm_${e.id}_${userKey}" style="font-size: 0.75rem; max-width: 130px;" title="${u.nome}">${u.nome}</label>
-                    </div>`;
-                }).join('')}
-            </div>`;
-        }
+          const permissoesHtml = roles.map(r => {
+              let isRoleChecked = permAtuais.includes(r.id);
+              let isChecked = isRoleChecked ? 'checked' : '';
+              let isDisabled = '';
+              
+              if (r.id === 'admin' || r.id === userRole) {
+                  isChecked = 'checked';
+                  isDisabled = 'disabled';
+                  isRoleChecked = true;
+              }
 
-        return `
-        <li class="px-2 py-1" onclick="event.stopPropagation();">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                    <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${r.id}" onchange="salvarPermissaoEspaco('${e.id}', '${r.id}', this.checked)" ${isChecked} ${isDisabled} style="width: 28px; height: 14px;">
-                    <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="perm_${e.id}_${r.id}" style="font-size: 0.8rem;">${r.label}</label>
-                </div>
-                ${roleUsers.length > 0 ? `
-                <button class="btn btn-sm text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${e.id}_${r.id}" aria-expanded="false" onclick="event.stopPropagation();">
-                    <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
-                </button>
-                ` : ''}
-            </div>
-            ${usersHtml}
-        </li>`;
-    }).join('');
+              // Filtra os usuários que pertencem a esta hierarquia
+              const roleUsers = usuarios.filter(u => u.tipo_usuario === r.id);
+              let usersHtml = '';
 
-    let dropdownPermissoes = '';
-    if (isOwnerOrAdmin) {
-        dropdownPermissoes = `
-        <div class="dropdown" onclick="event.stopPropagation();">
-            <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
-                <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 240px; max-height: 350px; overflow-y: auto; z-index: 1060; border-radius: 8px;">
-                <li class="px-2 pb-2 border-bottom border-custom mb-2">
-                    <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade e Usuários</span>
-                </li>
-                ${permissoesHtml}
-            </ul>
+              if (roleUsers.length > 0) {
+                  usersHtml = `
+                  <div class="collapse mt-2 mb-1 ps-3 ms-1 border-start border-secondary" id="collapse_${e.id}_${r.id}">
+                      ${roleUsers.map(u => {
+                          const userKey = 'usr_' + u.id;
+                          let hasExplicitAccess = permAtuais.includes(userKey); 
+                          let isUserChecked = hasExplicitAccess || isRoleChecked ? 'checked' : '';
+                          let isUserDisabled = (r.id === 'admin' || u.id === user.id || isRoleChecked) ? 'disabled' : '';
+
+                          return `
+                          <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                              <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm user-cb-${e.id}-${r.id}" 
+                                  type="checkbox" 
+                                  id="perm_${e.id}_${userKey}" 
+                                  data-explicit="${hasExplicitAccess}"
+                                  onchange="salvarPermissaoEspaco('${e.id}', '${userKey}', this.checked)" 
+                                  ${isUserChecked}${isUserDisabled} 
+                                  style="width: 24px; height: 12px;">
+                              <label class="form-check-label text-muted cursor-pointer m-0 text-truncate" for="perm_${e.id}_${userKey}" style="font-size: 0.75rem; max-width: 130px;" title="${u.nome}">${u.nome}</label>
+                          </div>`;
+                      }).join('')}
+                  </div>`;
+              }
+
+              return `
+              <li class="px-2 py-1" onclick="event.stopPropagation();">
+                  <div class="d-flex justify-content-between align-items-center">
+                      <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                          <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="perm_${e.id}_${r.id}" onchange="salvarPermissaoEspaco('${e.id}', '${r.id}', this.checked)" ${isChecked} ${isDisabled} style="width: 28px; height: 14px;">
+                          <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="perm_${e.id}_${r.id}" style="font-size: 0.8rem;">${r.label}</label>
+                      </div>
+                      ${roleUsers.length > 0 ? `
+                      <button class="btn btn-sm text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${e.id}_${r.id}" aria-expanded="false" onclick="event.stopPropagation();">
+                          <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                      </button>
+                      ` : ''}
+                  </div>
+                  ${usersHtml}
+              </li>`;
+          }).join('');
+
+          let dropdownPermissoes = '';
+          if (isOwnerOrAdmin) {
+              dropdownPermissoes = `
+              <div class="dropdown" onclick="event.stopPropagation();">
+                  <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
+                      <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 240px; max-height: 350px; overflow-y: auto; z-index: 1060; border-radius: 8px;">
+                      <li class="px-2 pb-2 border-bottom border-custom mb-2">
+                          <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade e Usuários</span>
+                      </li>
+                      ${permissoesHtml}
+                  </ul>
+              </div>
+              `;
+          }
+
+          // === TEMPLATE: CARD GRID ===
+          cardsHtml += `
+          <div class="col-12 col-md-6 col-lg-4 col-xl-3 espaco-card-item">
+              <div class="card erp-card bg-custom-darker border-custom shadow-sm h-100 ${hasAccess ? 'transition-hover' : ''}" 
+                   style="${hasAccess ? 'cursor: pointer;' : 'cursor: not-allowed; opacity: 0.6;'} overflow: visible; position: relative;" 
+                   ${hasAccess ? `onclick="window.location.href='/kanban?espaco_id=${e.id}'"` : ''}
+                   title="${hasAccess ? `Acessar o quadro Kanban: ${e.nome}` : 'Acesso Restrito'}">
+                   
+                  <div class="position-relative" style="height: 140px; background-color: #222; border-radius: 11px 11px 0 0; overflow: hidden;">
+                      <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
+                      
+                      ${!hasAccess ? `
+                      <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 5;">
+                          <i class="fa-solid fa-lock fa-3x text-white-50"></i>
+                      </div>
+                      ` : ''}
+
+                      <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                          <span class="badge bg-custom-darker border-custom text-muted shadow-sm" style="font-size: 0.6rem;"><i class="fa-solid fa-table-columns text-accent me-1"></i> Kanban</span>
+                      </div>
+                  </div>
+
+                  <div class="card-body p-3 d-flex flex-column">
+                      <h6 class="fw-bold text-white mb-1 text-truncate" style="font-size: 0.95rem;">${e.nome}</h6>
+                      <p class="text-muted mb-3 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
+                      
+                      <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
+                          <div>
+                              ${dropdownPermissoes}
+                          </div>
+
+                          ${hasAccess ? `
+                          <div class="btn-group">
+                              <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
+                                  <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+                              </button>
+                              <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation(); abrirModalExcluirEspaco('${e.id}', '${e.nome.replace(/'/g, "\\'")}')" title="Excluir">
+                                  <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                              </button>
+                          </div>
+                          ` : ''}
+                      </div>
+                  </div>
+              </div>
+          </div>
+          `;
+
+          // === TEMPLATE: LISTA COMPACTA ===
+          listHtml += `
+          <div class="card erp-card bg-custom-darker border-custom shadow-sm mb-2 ${hasAccess ? 'transition-hover' : ''}" 
+               style="${hasAccess ? 'cursor: pointer;' : 'cursor: not-allowed; opacity: 0.6;'} overflow: visible;" 
+               ${hasAccess ? `onclick="window.location.href='/kanban?espaco_id=${e.id}'"` : ''}>
+               
+              <div class="card-body p-2 px-3 d-flex align-items-center flex-wrap flex-md-nowrap gap-3">
+                  
+                  <div class="flex-shrink-0 position-relative" style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                      <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
+                      ${!hasAccess ? `
+                      <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5);">
+                          <i class="fa-solid fa-lock text-white-50" style="font-size: 1rem;"></i>
+                      </div>
+                      ` : ''}
+                  </div>
+
+                  <div class="flex-grow-1 overflow-hidden" style="min-width: 150px;">
+                      <h6 class="fw-bold text-white mb-0 text-truncate" style="font-size: 0.9rem;">${e.nome}</h6>
+                      <p class="text-muted mb-0 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
+                  </div>
+
+                  ${hasAccess ? `
+                  <div class="d-none d-lg-flex align-items-center justify-content-center px-3 border-start border-end border-custom flex-shrink-0" style="min-width: 120px;">
+                      <div class="d-flex align-items-center">
+                          ${usersAvatarsHtml}
+                      </div>
+                  </div>
+                  ` : ''}
+
+                  <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+                      ${dropdownPermissoes}
+
+                      ${hasAccess ? `
+                      <div class="btn-group">
+                          <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
+                              <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+                          </button>
+                          <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation(); abrirModalExcluirEspaco('${e.id}', '${e.nome.replace(/'/g, "\\'")}')" title="Excluir">
+                              <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                          </button>
+                      </div>
+                      ` : ''}
+                  </div>
+              </div>
+          </div>
+          `;
+      });
+  } else {
+      const emptyStateHtml = `
+        <div class="col-12 text-center text-muted py-5 text-center-empty w-100">
+            <i class="fa-solid fa-cubes fa-3x opacity-25 mb-3 d-block"></i>
+            <span style="font-size: 0.85rem;">Nenhum Workspace criado.<br>Crie um novo Workspace para gerenciar os seus quadros Kanban.</span>
         </div>
-        `;
-    }
-
-    return `
-    <div class="col-12 col-md-6 col-lg-4 col-xl-3 espaco-card-item">
-        <div class="card erp-card bg-custom-darker border-custom shadow-sm h-100 ${hasAccess ? 'transition-hover' : ''}" 
-             style="${hasAccess ? 'cursor: pointer;' : 'cursor: not-allowed; opacity: 0.6;'} overflow: visible; position: relative;" 
-             ${hasAccess ? `onclick="window.location.href='/kanban?espaco_id=${e.id}'"` : ''}
-             title="${hasAccess ? `Acessar o quadro Kanban: ${e.nome}` : 'Acesso Restrito'}">
-             
-            <div class="position-relative" style="height: 140px; background-color: #222; border-radius: 11px 11px 0 0; overflow: hidden;">
-                <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
-                
-                ${!hasAccess ? `
-                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 5;">
-                    <i class="fa-solid fa-lock fa-3x text-white-50"></i>
-                </div>
-                ` : ''}
-
-                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                    <span class="badge bg-custom-darker border-custom text-muted shadow-sm" style="font-size: 0.6rem;"><i class="fa-solid fa-table-columns text-accent me-1"></i> Kanban</span>
-                </div>
-            </div>
-
-            <div class="card-body p-3 d-flex flex-column">
-                <h6 class="fw-bold text-white mb-1 text-truncate" style="font-size: 0.95rem;">${e.nome}</h6>
-                <p class="text-muted mb-3 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
-                
-                <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
-                    <div>
-                        ${dropdownPermissoes}
-                    </div>
-
-                    ${hasAccess ? `
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
-                            <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation(); abrirModalExcluirEspaco('${e.id}', '${e.nome.replace(/'/g, "\\'")}')" title="Excluir">
-                            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
-                        </button>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    </div>
-    `;
-  }).join("") : `
-    <div class="col-12 text-center text-muted py-5 text-center-empty">
-        <i class="fa-solid fa-cubes fa-3x opacity-25 mb-3 d-block"></i>
-        <span style="font-size: 0.85rem;">Nenhum Workspace criado.<br>Crie um novo Workspace para gerenciar os seus quadros Kanban.</span>
-    </div>
-  `;
+      `;
+      cardsHtml = emptyStateHtml;
+      listHtml = emptyStateHtml;
+  }
 
   // =========================================================================
-  // GERAÇÃO DOS MODAIS DE EDIÇÃO (Permanece Intacto)
+  // GERAÇÃO DOS MODAIS DE EDIÇÃO
   // =========================================================================
   const modaisEdicao = espacos.map(e => {
       const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.nome)}&background=08c068&color=1f1f1f&size=250&font-size=0.33`;
@@ -225,6 +302,16 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+      // =======================================================================
+      // ANTI-FLICKER: Aplica a preferência de View antes da renderização da página
+      // =======================================================================
+      const VIEW_PREF_KEY = 'ecoflow_workspace_view_pref_${user.id}';
+      const savedViewPref = localStorage.getItem(VIEW_PREF_KEY) || 'grid';
+      document.documentElement.setAttribute('data-workspace-view', savedViewPref);
+    </script>
+
     <style>
       /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -277,6 +364,13 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       .erp-modal { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background-color: #2a2a2a; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
       .erp-modal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
       .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
+
+      /* LÓGICA DE VIEW ATIVA PELO CSS */
+      html[data-workspace-view="list"] #espacosGrid { display: none !important; }
+      html[data-workspace-view="list"] #espacosList { display: flex !important; }
+      
+      html[data-workspace-view="grid"] #espacosGrid { display: flex !important; }
+      html[data-workspace-view="grid"] #espacosList { display: none !important; }
 
       /* ANIMAÇÕES GLOBAIS (TOASTS E MODAIS) */
       .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease !important; }
@@ -336,12 +430,14 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
             <img src="/img/logo.png" alt="Logo" class="img-fluid" style="max-width:140px;">
         </div>
         ${menuHTML}
+        <hr class="border-custom mt-4">
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
     <div class="content">
       
-      <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
@@ -349,14 +445,33 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Organize os quadros Kanban por projetos ou setores</span>
             </div>
         </div>
-        <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-3" data-bs-toggle="modal" data-bs-target="#novoEspacoModal">
-            <i class="fa-solid fa-plus me-1"></i> Criar
-        </button>
+        
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <!-- BOTÕES DE ALTERNAR VIEW -->
+            <div class="btn-group shadow-sm border-custom rounded me-2" role="group">
+                <input type="radio" class="btn-check" name="btnradio_view_ws" id="view_grid" autocomplete="off" onchange="toggleWorkspaceView('grid')">
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="fa-solid fa-table-cells-large"></i></label>
+
+                <input type="radio" class="btn-check" name="btnradio_view_ws" id="view_list" autocomplete="off" onchange="toggleWorkspaceView('list')">
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="fa-solid fa-list"></i></label>
+            </div>
+
+            <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-3" data-bs-toggle="modal" data-bs-target="#novoEspacoModal">
+                <i class="fa-solid fa-plus me-1"></i> Criar
+            </button>
+        </div>
       </div>
 
-      <div class="row g-3" id="espacosGrid">
-        ${cards}
+      <!-- CONTAINER GRID -->
+      <div class="row g-3 view-container" id="espacosGrid">
+        ${cardsHtml}
       </div>
+
+      <!-- CONTAINER LISTA -->
+      <div class="flex-column view-container" id="espacosList">
+        ${listHtml}
+      </div>
+
     </div>
 
     <div class="modal fade" id="novoEspacoModal" tabindex="-1" data-bs-backdrop="static">
@@ -451,6 +566,29 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
 
     <script>
       // =======================================================================
+      // ALTERNADOR DE VIEW (GRID / LISTA)
+      // =======================================================================
+      function toggleWorkspaceView(mode) {
+          // Atualiza o atributo global para o CSS agir
+          document.documentElement.setAttribute('data-workspace-view', mode);
+          // Salva no LocalStorage atrelado ao usuário
+          localStorage.setItem(VIEW_PREF_KEY, mode);
+          
+          // Mantém os botões visuais sincronizados
+          const btnList = document.getElementById('view_list');
+          const btnGrid = document.getElementById('view_grid');
+          if (mode === 'list' && btnList) btnList.checked = true;
+          if (mode === 'grid' && btnGrid) btnGrid.checked = true;
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+          // Sincroniza os botões de rádio com a view carregada inicialmente
+          const currentView = document.documentElement.getAttribute('data-workspace-view') || 'grid';
+          if (currentView === 'list') document.getElementById('view_list').checked = true;
+          else document.getElementById('view_grid').checked = true;
+      });
+
+      // =======================================================================
       // SALVAR PERMISSÕES DE ACESSO AO WORKSPACE
       // =======================================================================
       async function salvarPermissaoEspaco(espacoId, papel, isChecked) {
@@ -483,10 +621,11 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                       });
                   } else {
                       // Se o clique foi num Usuário, salva o estado individual dele no atributo de dados
-                      const cb = document.getElementById('perm_' + espacoId + '_' + papel);
-                      if(cb) {
+                      const cbList = document.querySelectorAll('input[id^="perm_' + espacoId + '_' + papel + '"]');
+                      cbList.forEach(cb => {
                           cb.setAttribute('data-explicit', isChecked ? 'true' : 'false');
-                      }
+                          cb.checked = isChecked;
+                      });
                   }
 
               } else {
@@ -581,7 +720,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       }
 
       function mostrarSkeletonGlobais() {
-          const gridContainer = document.querySelector('.content > .row.g-3');
+          const viewsContainers = document.querySelectorAll('.view-container');
           const emptyState = document.querySelector('.content > .text-center-empty');
           
           if (document.getElementById('skeleton-temp-container')) return;
@@ -591,12 +730,17 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
               \${gerarSkeletonCards(4)}
           </div>\`;
 
-          if (gridContainer && !gridContainer.classList.contains('skeleton-container')) {
-              gridContainer.style.display = 'none';
-              gridContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
-          } else if (emptyState) {
+          viewsContainers.forEach(container => {
+              // Checa o estilo computado e ignora os escondidos
+              if(window.getComputedStyle(container).display !== 'none') {
+                  container.style.display = 'none';
+                  container.insertAdjacentHTML('beforebegin', skeletonHTML);
+              }
+          });
+          
+          if (emptyState) {
               emptyState.style.display = 'none';
-              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+              if(!document.getElementById('skeleton-temp-container')) emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
           }
       }
 
@@ -604,11 +748,17 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           const tempSkeleton = document.getElementById('skeleton-temp-container');
           if (tempSkeleton) tempSkeleton.remove();
 
-          const gridContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
           const emptyState = document.querySelector('.content > .text-center-empty');
-
-          if (gridContainer) gridContainer.style.display = 'flex';
           if (emptyState) emptyState.style.display = 'block';
+
+          // A View ativa já será controlada e exibida pelo CSS data-workspace-view no html
+          // Apenas removemos o inline display: none injetado pelo skeleton
+          document.querySelectorAll('.view-container').forEach(container => {
+              container.style.display = '';
+          });
+          
+          const savedView = document.documentElement.getAttribute('data-workspace-view') || 'grid';
+          toggleWorkspaceView(savedView); // Sincroniza radios
       }
 
       mostrarSkeletonGlobais();

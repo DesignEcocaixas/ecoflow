@@ -1,3 +1,4 @@
+// routes/workspaces.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -17,8 +18,8 @@ router.get("/espacos-trabalho", isLogged, (req, res) => {
     db.query("SELECT * FROM espacos_trabalho ORDER BY id DESC", (err, espacos) => {
         if (err) return res.status(500).send("Erro ao carregar espaços de trabalho");
         
-        // Busca os usuários para poder listar individualmente dentro do dropdown de permissões
-        db.query("SELECT id, nome, tipo_usuario FROM usuarios", (errU, usuarios) => {
+        // CORREÇÃO: Adicionada a coluna 'foto' na query para que os avatares sejam renderizados na lista
+        db.query("SELECT id, nome, tipo_usuario, foto FROM usuarios", (errU, usuarios) => {
             const listaUsuarios = errU ? [] : usuarios;
             res.send(espacosDeTrabalhoView(req.session.user, espacos, listaUsuarios));
         });

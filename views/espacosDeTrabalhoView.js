@@ -55,12 +55,12 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
               const uFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome)}&background=1f1f1f&color=fff&size=64&font-size=0.33`;
               const uFoto = u.foto ? `/uploads/${u.foto}` : uFallback;
               usersAvatarsHtml += `
-                  <img src="${uFoto}" alt="${u.nome}" title="${u.nome}" class="rounded-circle shadow-sm position-relative" style="width: 28px; height: 28px; object-fit: cover; border: 2px solid #2a2a2a; margin-left: ${index === 0 ? '0' : '-10px'}; z-index: ${maxAvatars - index};">
+                  <img src="${uFoto}" alt="${u.nome}" title="${u.nome}" class="rounded-circle shadow-sm position-relative flex-shrink-0" style="width: 28px; height: 28px; object-fit: cover; border: 2px solid #2a2a2a; margin-left: ${index === 0 ? '0' : '-10px'}; z-index: ${maxAvatars - index};">
               `;
           });
           if (authorizedUsers.length > maxAvatars) {
               usersAvatarsHtml += `
-                  <div class="rounded-circle shadow-sm position-relative d-flex align-items-center justify-content-center bg-custom-darker border border-custom" style="width: 28px; height: 28px; margin-left: -10px; z-index: 0;">
+                  <div class="rounded-circle shadow-sm position-relative d-flex align-items-center justify-content-center bg-custom-darker border border-custom flex-shrink-0" style="width: 28px; height: 28px; margin-left: -10px; z-index: 0;">
                       <span class="text-white-50" style="font-size: 0.6rem; font-weight: bold;">+${authorizedUsers.length - maxAvatars}</span>
                   </div>
               `;
@@ -166,8 +166,13 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                       <p class="text-muted mb-3 text-truncate" style="font-size: 0.75rem;">${e.descricao || '<em class="opacity-50">Sem descrição detalhada</em>'}</p>
                       
                       <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
-                          <div>
+                          <div class="d-flex align-items-center gap-2">
                               ${dropdownPermissoes}
+                              ${hasAccess ? `
+                              <div class="d-flex align-items-center ms-1">
+                                  ${usersAvatarsHtml}
+                              </div>
+                              ` : ''}
                           </div>
 
                           ${hasAccess ? `

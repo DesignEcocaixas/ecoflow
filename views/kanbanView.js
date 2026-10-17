@@ -25,6 +25,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   };
   const colunasJsonStr = escapeHtmlAttr(JSON.stringify(colunas));
   const etiquetasJsonStr = escapeHtmlAttr(JSON.stringify(espacoAtual.etiquetas || []));
+  const colaboradoresJsonStr = escapeHtmlAttr(JSON.stringify(colaboradores.map(c => ({nome: c.nome, foto: c.foto}))));
   
   const optionsOperadoresHtml = (colaboradores || []).filter(c => c.tipo_usuario === 'producao').map(c => `<option value="${c.id}">${escapeHtmlAttr(c.nome)}</option>`).join('');
 
@@ -699,6 +700,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   <body>
       <input type="hidden" id="kanban-data-input" value="${colunasJsonStr}">
       <input type="hidden" id="etiquetas-data-input" value="${etiquetasJsonStr}">
+      <input type="hidden" id="colaboradores-data-input" value="${colaboradoresJsonStr}">
       <input type="file" id="globalFileInput" multiple style="display: none;" onchange="handleUploadDireto(this)">
 
       <div class="sidebar d-none d-md-flex">
@@ -732,10 +734,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               </div>
               
               <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative">
-                <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar">
-                    <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="searchInputKanban" class="form-control bg-custom-darker border-custom border-end-0 text-white" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
-                    <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar flex-grow-1">
+                        <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="searchInputKanban" class="form-control bg-custom-darker border-custom border-end-0 text-white" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
+                        <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="online-users-container" class="d-flex align-items-center flex-shrink-0" style="min-width: 30px;">
+                        <!-- Avatares de usuários online serão injetados aqui via JS -->
+                    </div>
                 </div>
                 <div id="searchResultsKanban" class="position-absolute w-100 bg-custom-darker border border-custom rounded shadow-lg mt-1 d-none" style="max-height: 300px; overflow-y: auto; left: 0;"></div>
             </div>
@@ -1167,6 +1174,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           
           let colunasDados = JSON.parse(document.getElementById('kanban-data-input').value);
           let etiquetasDados = JSON.parse(document.getElementById('etiquetas-data-input').value || '[]');
+          const colabCache = JSON.parse(document.getElementById('colaboradores-data-input').value || '[]');
           
           const paletaBase = ${JSON.stringify(paletaCores)};
           let modalNovaColunaObj, modalVerImagemObj, modalDeletarCardObj, modalDeletarColunaObj, modalCardDetalhesObj, modalDeletarAnexoObj, modalGerenciarEtiquetasObj;
@@ -1193,6 +1201,47 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   .replace(/</g, '&lt;')
                   .replace(/>/g, '&gt;');
           };
+
+          // Função de apoio para encontrar a foto do usuário
+          function getUsuarioFoto(nomeUsuario) {
+              const u = colabCache.find(x => x.nome.toLowerCase() === nomeUsuario.toLowerCase());
+              if (u && u.foto) return '/uploads/' + u.foto;
+              return \`https://ui-avatars.com/api/?name=\${encodeURIComponent(nomeUsuario)}&background=1f1f1f&color=fff&size=64&font-size=0.33\`;
+          }
+
+          function renderizarUsuariosOnline(usersList) {
+              const container = document.getElementById('online-users-container');
+              if (!container) return;
+              
+              if (!usersList || usersList.length === 0) {
+                  container.innerHTML = '';
+                  return;
+              }
+
+              const maxShow = 3;
+              let html = '';
+              
+              usersList.slice(0, maxShow).forEach((u, index) => {
+                  if(!u.online) return;
+                  const fotoUrl = getUsuarioFoto(u.nome);
+                  html += \`
+                      <div class="position-relative" style="margin-left: \${index === 0 ? '0' : '-8px'}; z-index: \${maxShow - index};" title="\${u.nome} (Online)">
+                          <img src="\${fotoUrl}" class="rounded-circle shadow-sm" style="width: 28px; height: 28px; object-fit: cover; border: 2px solid #1f1f1f;">
+                          <span class="position-absolute bottom-0 end-0 bg-success border border-dark rounded-circle" style="width: 8px; height: 8px; margin-bottom: 2px; margin-right: 2px;"></span>
+                      </div>
+                  \`;
+              });
+
+              if (usersList.length > maxShow) {
+                  html += \`
+                      <div class="rounded-circle shadow-sm d-flex align-items-center justify-content-center bg-custom-darker border" style="width: 28px; height: 28px; margin-left: -8px; z-index: 0; border-color: #1f1f1f !important;">
+                          <span class="text-white-50" style="font-size: 0.6rem; font-weight: bold;">+\${usersList.length - maxShow}</span>
+                      </div>
+                  \`;
+              }
+              
+              container.innerHTML = html;
+          }
 
           // ==========================================
           // FUNÇÃO: COMPARTILHAR/COPIAR DADOS DO CARD
@@ -1700,6 +1749,27 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       }
                   });
               }
+
+              // ===============================================
+              // COMUNICAÇÃO DE PRESENÇA NO ESPAÇO DE TRABALHO
+              // ===============================================
+              const urlParamsSocket = new URLSearchParams(window.location.search);
+              const espacoIdAtual = urlParamsSocket.get('espaco_id') || 1;
+
+              socket.emit('kanban:join_workspace', { nome: NOME_USUARIO, espaco_id: espacoIdAtual });
+
+              socket.on('kanban:online_users', (usersList) => {
+                  // Filtra duplicatas caso o utilizador tenha múltiplas abas abertas
+                  const unicos = [];
+                  const mapaNomes = new Map();
+                  for (const u of usersList) {
+                      if (!mapaNomes.has(u.nome)) {
+                          mapaNomes.set(u.nome, true);
+                          unicos.push({ nome: u.nome, online: true });
+                      }
+                  }
+                  renderizarUsuariosOnline(unicos);
+              });
           });
 
           // ==========================================
@@ -3123,6 +3193,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           // WEBSOCKETS (TEMPO REAL)
           // ==========================================
           
+          socket.on('motoristas:update', (usersList) => {
+              renderizarUsuariosOnline(usersList);
+          });
+
           socket.on('webhook_omie_recebido', (dados) => {
               if (dados && dados.resumo) {
                   window.playUIFeedback('popup');

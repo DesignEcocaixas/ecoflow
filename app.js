@@ -1,3 +1,4 @@
+// app.js
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
@@ -11,7 +12,7 @@ const db = require("./db");
 
 const { Server } = require("socket.io");
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
 
@@ -30,7 +31,7 @@ const sessionStore = new MySQLStore({
 // Configuração da sessão atualizada
 app.use(session({
     key: 'ecoflow_cookie',
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'secret_dev',
     store: sessionStore, // Define o MySQL como motor de gravação
     resave: false,
     saveUninitialized: false,
@@ -64,8 +65,8 @@ const io = new Server(server, {
 app.set("io", io);
 
 const motoristasOnline = new Map();
-// key: nomeFinal (chave fixa)
-// value: { id, nome, socketId, lat, lng, accuracy, origem, updatedAt, online }
+// NOVA ESTRUTURA PARA PRESENÇA NOS WORKSPACES
+const kanbanPresenca = new Map(); 
 
 io.on("connection", (socket) => {
     socket.on("motorista:online", ({ nome }) => {
@@ -130,7 +131,6 @@ io.on("connection", (socket) => {
             const m = motoristasOnline.get(nomeFinal);
 
             // Só marca offline se este disconnect for do socket ATUAL daquele motorista
-            // (evita ficar offline depois que reconectou)
             if (m && m.socketId === socket.id) {
                 motoristasOnline.set(nomeFinal, {
                     ...m,
@@ -217,13 +217,32 @@ app.use("/", enviosRoutes);
 const downloadsRoutes = require("./routes/downloads");
 app.use("/", downloadsRoutes);
 
-// Importando o testador
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);
 
-//WEB SOCKETS DO CRUD DO KANBAN
+//WEB SOCKETS DO CRUD DO KANBAN E PRESENÇA
 io.on("connection", (socket) => {
-    console.log("Novo utilizador conectado ao Kanban");
+    
+    // ======== NOVO SISTEMA DE PRESENÇA NO WORKSPACE ========
+    socket.on("kanban:join_workspace", (dados) => {
+        const { espaco_id, nome } = dados;
+        socket.join(`workspace_${espaco_id}`);
+        kanbanPresenca.set(socket.id, { nome, espaco_id });
+
+        const usuariosNoEspaco = Array.from(kanbanPresenca.values()).filter(u => u.espaco_id == espaco_id);
+        io.to(`workspace_${espaco_id}`).emit("kanban:online_users", usuariosNoEspaco);
+    });
+
+    socket.on("disconnect", () => {
+        if (kanbanPresenca.has(socket.id)) {
+            const user = kanbanPresenca.get(socket.id);
+            kanbanPresenca.delete(socket.id);
+            
+            const usuariosNoEspaco = Array.from(kanbanPresenca.values()).filter(u => u.espaco_id == user.espaco_id);
+            io.to(`workspace_${user.espaco_id}`).emit("kanban:online_users", usuariosNoEspaco);
+        }
+    });
+    // =======================================================
 
     // CRIAR NOVA ETIQUETA
     socket.on("nova_etiqueta", (dados) => {
@@ -297,7 +316,6 @@ io.on("connection", (socket) => {
         });
     });
 
-    //CRIAR CARD
     //CRIAR CARD
     socket.on("novo_card", (dados) => {
         db.query("INSERT INTO kanban_cards (coluna_id, titulo, descricao, ordem) VALUES (?, ?, ?, 999)",
@@ -414,10 +432,6 @@ io.on("connection", (socket) => {
                 io.emit("card_deletado", { id: cardId, usuario: usuario });
             });
         });
-    });
-
-    socket.on("disconnect", () => {
-        console.log("Utilizador desconectado do Kanban");
     });
 });
 

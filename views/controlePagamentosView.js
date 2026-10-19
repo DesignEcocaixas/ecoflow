@@ -8,8 +8,22 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
 
-  // Número fixo para envio do WhatsApp
-  const wppPhone = "557196785385";
+  // Lógica do número de WhatsApp e aplicação da máscara
+  let rawWpp = taxas.num_wpp_pagamentos || "7196785385";
+  if (rawWpp.startsWith("55") && rawWpp.length >= 12) rawWpp = rawWpp.substring(2);
+  const wppPhone = rawWpp;
+  const wppPhoneLink = "55" + rawWpp;
+
+  const applyMaskPhone = (v) => {
+      if (!v) return "";
+      v = String(v).replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 10) return v.replace(/^(\d{2})(\d{1})(\d{4})(\d{4}).*/, "($1) $2 $3-$4");
+      if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+      if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+      if (v.length > 0) return v.replace(/^(\d*)/, "($1");
+      return v;
+  };
 
   const fmtData = (d) => {
     try {
@@ -155,7 +169,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
       // WhatsApp Motorista Individual (Só útil se for avulso)
       const msgWppMot = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${mot.nome} (Motorista)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorMotCalc)}\n\n*Dados Bancários:*\n*PIX:* ${mot.pix}\n*Banco:* ${mot.banco}\n*CPF:* ${mot.cpf}`;
-      const btnWppMot = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppMot)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.85rem;"></i></a>`;
+      const btnWppMot = `<a href="https://wa.me/${wppPhoneLink}?text=${encodeURIComponent(msgWppMot)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.85rem;"></i></a>`;
 
       const btnMotDisabled = mot.id ? '' : 'disabled';
       const btnMotHtml = isMotPago 
@@ -186,7 +200,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       if (c.ajudante && c.ajudante.trim() !== '') {
           // WhatsApp Ajudante Individual
           const msgWppAju = `*Pagamento de Serviço (Ecoflow)*\n\n*Colaborador:* ${aju.nome} (Ajudante)\n*Data:* ${fmtData(c.data_criacao)}\n*Qtd. Entregas:* ${c.qtd_entregas}\n*Valor a Pagar:* R$ ${fmtMoeda(valorAjuCalc)}\n\n*Dados Bancários:*\n*PIX:* ${aju.pix}\n*Banco:* ${aju.banco}\n*CPF:* ${aju.cpf}`;
-          const btnWppAju = `<a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppAju)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.85rem;"></i></a>`;
+          const btnWppAju = `<a href="https://wa.me/${wppPhoneLink}?text=${encodeURIComponent(msgWppAju)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm d-flex align-items-center justify-content-center" style="padding: 2px 6px;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp" style="font-size: 0.85rem;"></i></a>`;
 
           const btnAjuDisabled = aju.id ? '' : 'disabled';
           const btnAjuHtml = isAjuPago
@@ -404,7 +418,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                     <button type="submit" class="btn btn-sm btn-success shadow-sm fw-bold ms-1 py-0 px-2 text-dark" style="font-size: 0.75rem;" title="Marcar como Pago"><i class="fa-solid fa-check me-1"></i> Pagar</button>
                 </form>
                 ` : ''}
-                <a href="https://wa.me/${wppPhone}?text=${encodeURIComponent(msgWppHist)}" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://wa.me/${wppPhoneLink}?text=${encodeURIComponent(msgWppHist)}" target="_blank" class="btn btn-sm btn-outline-secondary text-accent shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" title="Enviar dados para pagamento via WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                 <button type="button" class="btn btn-sm btn-outline-secondary text-danger shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPagamentoModal${p.id}')).show();" title="Excluir"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
@@ -624,7 +638,7 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
             <div class="vr d-none d-md-block mx-1"></div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();" title="Mensagem do Período (WhatsApp)">
+                <button class="btn btn-sm btn-success fw-bold shadow-sm px-3" style="font-size: 0.75rem;" onclick="prepararModalWhatsApp()" title="Mensagem do Período (WhatsApp)">
                    <i class="fa-brands fa-whatsapp fs-6"></i> <span class="d-none d-sm-inline ms-1">Cobrança</span>
                 </button>
                 <a href="/pagamentos/exportar-excel${excelQueryString}" target="_blank" onclick="setTimeout(function(){ if(typeof ocultarSkeletonGlobais === 'function') ocultarSkeletonGlobais(); document.body.classList.remove('modal-open'); }, 1000);" class="btn btn-sm btn-outline-success fw-bold shadow-sm px-3" style="font-size: 0.75rem;" title="Exportar para Excel">
@@ -685,7 +699,9 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           <i class="fa-solid fa-question"></i>
       </button>
 
-    </div> <div class="modal fade" id="modalInstrucoesPagamentos" tabindex="-1">
+    </div>
+
+    <div class="modal fade" id="modalInstrucoesPagamentos" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
           <div class="modal-header text-white border-0 bg-custom-darker">
@@ -733,22 +749,50 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
       </div>
     </div>
 
-    <div class="modal fade" id="modalMensagemPeriodo" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content erp-modal shadow-lg border-0">
-                <div class="modal-header bg-custom-darker text-white border-0">
-                    <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-brands fa-whatsapp text-accent me-2"></i> Relatório do Período</h6>
+    <!-- MODAL: Preview da Mensagem de Cobrança com Edição e Destino -->
+    <div class="modal fade" id="modalMensagemPeriodo" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+                <div class="modal-header bg-custom-darker text-white border-custom">
+                    <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-brands fa-whatsapp text-accent me-2"></i> Relatório de cobrança motoristas/ajudantes</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4 bg-custom-dark text-center">
-                    <i class="fa-solid fa-file-invoice-dollar fa-3x text-accent mb-3"></i>
-                    <h6 class="fw-bold text-white" style="font-size: 0.85rem;">Gerar Relatório Geral</h6>
-                    <p class="text-muted" style="font-size: 0.75rem; line-height: 1.4;">
-                        O sistema irá varrer <strong>todas as rotas</strong> listadas no período filtrado e organizar os colaboradores avulsos por data, calculando os valores totais e gerando a mensagem para pagamento.
-                    </p>
+                <div class="modal-body p-0 bg-custom-dark d-flex flex-column h-100">
+                    <div class="p-3 bg-custom-darker border-bottom border-custom shadow-sm z-1">
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.4;">
+                            Selecione os colaboradores que deseja incluir/excluir na mensagem no relatório de entregas do WhatsApp. Você pode editar o texto abaixo antes de gerar a mensagem.
+                        </p>
+                    </div>
+                    <div class="row g-0 flex-grow-1" style="min-height: 400px;">
+                        
+                        <!-- Lista de Colaboradores Selecionáveis -->
+                        <div class="col-12 col-md-5 border-end border-custom p-3 bg-custom-darker overflow-auto" id="containerCheckboxesWpp" style="max-height: 50vh;">
+                            <!-- Injetado via JS -->
+                        </div>
+                        
+                        <!-- Preview da Mensagem e Destino -->
+                        <div class="col-12 col-md-7 p-3 bg-custom-dark d-flex flex-column" style="max-height: 50vh;">
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-white-50 fw-bold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-phone text-accent me-1"></i> Número do WhatsApp (Destino)</label>
+                                <div class="input-group input-group-sm shadow-sm">
+                                    <input type="text" id="inputWppDestino" name="num_wpp_pagamentos" class="form-control bg-custom-darker text-white border-custom shadow-sm" value="${applyMaskPhone(wppPhone)}" placeholder="(00) 9 0000-0000" oninput="this.value = maskPhone(this.value)">
+                                    <button class="btn btn-outline-secondary border-custom text-accent fw-bold px-3" type="button" onclick="salvarNumeroWpp()" title="Salvar como padrão"><i class="fa-solid fa-save"></i> Salvar</button>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-muted mb-0" style="font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square me-1"></i> Pré-visualização da mensagem</h6>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copiarPreview()"><i class="fa-regular fa-copy"></i> Copiar</button>
+                            </div>
+                            <textarea id="previewTextoWpp" class="form-control flex-grow-1 bg-custom-darker text-white border-custom p-3 shadow-sm" style="font-family: monospace; font-size: 0.75rem; line-height: 1.5; resize: none;"></textarea>
+                        </div>
+
+                    </div>
                 </div>
-                <div class="modal-footer bg-custom-darker border-0 p-3">
-                    <button class="btn btn-sm btn-success w-100 fw-bold shadow-sm text-dark" onclick="dispararMensagemPeriodo()"><i class="fa-solid fa-paper-plane me-1"></i> Gerar Link WhatsApp</button>
+                <div class="modal-footer bg-custom-darker border-custom p-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-4" onclick="dispararMensagemSelecionados()"><i class="fa-solid fa-paper-plane me-1"></i> Gerar mensagem</button>
                 </div>
             </div>
         </div>
@@ -976,8 +1020,48 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
 
     <script>
       const listaDB = ${colaboradoresJson};
-      const NUMERO_WPP = "${wppPhone}";
+      let NUMERO_WPP_SAVED = null;
       const TAXAS = ${JSON.stringify(taxas)};
+      
+      // Variável global para armazenar a lista processada temporária antes do disparo do envio
+      let preFiltroWppGlobais = {};
+
+      function maskPhone(v) {
+          v = v.replace(/\\D/g, "");
+          if (v.length > 11) v = v.slice(0, 11);
+          if (v.length > 10) return v.replace(/^(\\d{2})(\\d{1})(\\d{4})(\\d{4}).*/, "($1) $2 $3-$4");
+          if (v.length > 6) return v.replace(/^(\\d{2})(\\d{4})(\\d{0,4}).*/, "($1) $2-$3");
+          if (v.length > 2) return v.replace(/^(\\d{2})(\\d{0,5})/, "($1) $2");
+          if (v.length > 0) return v.replace(/^(\\d*)/, "($1");
+          return v;
+      }
+
+      async function salvarNumeroWpp() {
+          const input = document.getElementById('inputWppDestino');
+          if(!input) return;
+          const numeroLimpo = input.value.replace(/\\D/g, '');
+          if(numeroLimpo.length < 10) {
+              mostrarToast('erro', 'Aviso', 'Número de WhatsApp inválido.');
+              return;
+          }
+          try {
+              const formData = new URLSearchParams();
+              formData.append('num_wpp_pagamentos', numeroLimpo);
+              const response = await fetch('/configuracoes/taxas', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: formData.toString()
+              });
+              if(response.ok) {
+                  mostrarToast('sucesso', 'Salvo!', 'Número de WhatsApp padrão atualizado com sucesso.');
+                  NUMERO_WPP_SAVED = numeroLimpo;
+              } else {
+                  mostrarToast('erro', 'Erro', 'Falha ao salvar no banco.');
+              }
+          } catch(e) {
+              mostrarToast('erro', 'Conexão', 'Erro ao salvar o número.');
+          }
+      }
 
       // =======================================================================
       // LÓGICA DE PAGINAÇÃO DOS CARDS DE CADERNOS
@@ -1176,11 +1260,25 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
           return { nome: nomeBusca, pix: 'Não cadastrado', banco: 'Não cadastrado', cpf: 'Não cadastrado', tipo_usuario: 'motorista' };
       }
 
-      function dispararMensagemPeriodo() {
+      // =======================================================================
+      // LÓGICA DO NOVO MODAL DE WHATSAPP COM SELEÇÃO, DATA E EDIÇÃO DE TEXTO
+      // =======================================================================
+      function prepararModalWhatsApp() {
           let listaCadernosDB = ${cadernosSensiveis};
           
-          const dtInicioStr = document.querySelector('input[name="caderno_inicio"]').value;
-          const dtFimStr = document.querySelector('input[name="caderno_fim"]').value;
+          const dtInicioStr = document.querySelector('input[name="caderno_inicio"]')?.value;
+          const dtFimStr = document.querySelector('input[name="caderno_fim"]')?.value;
+
+          const spanPeriodo = document.getElementById('periodoRelatorioTexto');
+          let textoPeriodo = "Todo o período";
+          if (dtInicioStr && dtFimStr) {
+              textoPeriodo = dtInicioStr.split('-').reverse().join('/') + ' até ' + dtFimStr.split('-').reverse().join('/');
+          } else if (dtInicioStr) {
+              textoPeriodo = 'A partir de ' + dtInicioStr.split('-').reverse().join('/');
+          } else if (dtFimStr) {
+              textoPeriodo = 'Até ' + dtFimStr.split('-').reverse().join('/');
+          }
+          if(spanPeriodo) spanPeriodo.innerText = textoPeriodo;
 
           if (dtInicioStr) {
               listaCadernosDB = listaCadernosDB.filter(c => {
@@ -1209,13 +1307,13 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               return;
           }
 
-          // Formatador de moeda à prova de falhas (evita problemas de locale do VPS Linux)
+          // Formatador de moeda à prova de falhas
           const fmtM = (v) => {
               let str = Number(v).toFixed(2).replace('.', ',');
               return str.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
           };
 
-          const colaboradoresPagamentos = {};
+          preFiltroWppGlobais = {};
 
           listaCadernosDB.forEach(c => {
               if (c.motorista) {
@@ -1224,8 +1322,8 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                   
                   if (isMotAvulsoJs) {
                       const valMot = getTierValue(c.qtd_entregas, 'mot');
-                      if (!colaboradoresPagamentos[mot.nome]) {
-                          colaboradoresPagamentos[mot.nome] = {
+                      if (!preFiltroWppGlobais[mot.nome]) {
+                          preFiltroWppGlobais[mot.nome] = {
                               tipo: 'Motorista',
                               rotas: [],
                               registros: [],
@@ -1233,17 +1331,17 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                               pix: mot.pix, banco: mot.banco, cpf: mot.cpf
                           };
                       }
-                      colaboradoresPagamentos[mot.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                      colaboradoresPagamentos[mot.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valMot));
-                      colaboradoresPagamentos[mot.nome].total += valMot;
+                      preFiltroWppGlobais[mot.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
+                      preFiltroWppGlobais[mot.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valMot));
+                      preFiltroWppGlobais[mot.nome].total += valMot;
                   }
               }
 
               if (c.ajudante && c.ajudante.trim() !== "") {
                   const aju = getColabDataJs(c.ajudante);
                   const valAju = getTierValue(c.qtd_entregas, 'aju');
-                  if (!colaboradoresPagamentos[aju.nome]) {
-                      colaboradoresPagamentos[aju.nome] = {
+                  if (!preFiltroWppGlobais[aju.nome]) {
+                      preFiltroWppGlobais[aju.nome] = {
                           tipo: 'Ajudante',
                           rotas: [],
                           registros: [],
@@ -1251,19 +1349,73 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
                           pix: aju.pix, banco: aju.banco, cpf: aju.cpf
                       };
                   }
-                  colaboradoresPagamentos[aju.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
-                  colaboradoresPagamentos[aju.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valAju));
-                  colaboradoresPagamentos[aju.nome].total += valAju;
+                  preFiltroWppGlobais[aju.nome].rotas.push("Rota #" + c.id + "  |  " + c.data_formatada);
+                  preFiltroWppGlobais[aju.nome].registros.push("- " + c.data_formatada + " - R$ " + fmtM(valAju));
+                  preFiltroWppGlobais[aju.nome].total += valAju;
               }
           });
 
-          // Uso de array limpo com marcadores amigáveis à URL
+          if(Object.keys(preFiltroWppGlobais).length === 0) {
+              mostrarToast('erro', 'Atenção', 'Nenhum pagamento avulso gerado para este período.');
+              return;
+          }
+
+          // Injetar Checkboxes na Modal
+          const containerCheckboxes = document.getElementById('containerCheckboxesWpp');
+          let chksHtml = '';
+          
+          Object.keys(preFiltroWppGlobais).forEach((nome, index) => {
+              const d = preFiltroWppGlobais[nome];
+              chksHtml += \`
+                  <div class="form-check form-switch mb-3 p-2 bg-custom-dark rounded border border-custom d-flex justify-content-between align-items-center">
+                      <div>
+                          <label class="form-check-label text-white fw-bold d-block" for="chk_wpp_\${index}" style="font-size: 0.8rem; cursor: pointer;">\${nome}</label>
+                          <span class="badge bg-custom-darker border border-custom text-muted mt-1" style="font-size: 0.55rem;">\${d.tipo.toUpperCase()}</span>
+                      </div>
+                      <input class="form-check-input ms-0 shadow-sm" type="checkbox" id="chk_wpp_\${index}" value="\${nome}" checked onchange="atualizarPreviewWpp()" style="width: 32px; height: 16px; cursor: pointer;">
+                  </div>
+              \`;
+          });
+          containerCheckboxes.innerHTML = chksHtml;
+
+          atualizarPreviewWpp();
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMensagemPeriodo')).show();
+      }
+
+      function atualizarPreviewWpp() {
+          const checkboxes = document.querySelectorAll('input[id^="chk_wpp_"]:checked');
+          const nomesAtivos = Array.from(checkboxes).map(cb => cb.value);
+          const previewTextarea = document.getElementById('previewTextoWpp');
+
+          if (nomesAtivos.length === 0) {
+              previewTextarea.value = 'Selecione pelo menos um colaborador para gerar a mensagem.';
+              return;
+          }
+
+          const fmtM = (v) => {
+              let str = Number(v).toFixed(2).replace('.', ',');
+              return str.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
+          };
+
+          const dtInicioStr = document.querySelector('input[name="caderno_inicio"]')?.value;
+          const dtFimStr = document.querySelector('input[name="caderno_fim"]')?.value;
+
+          let textoPeriodo = "Todo o período";
+          if (dtInicioStr && dtFimStr) {
+              textoPeriodo = dtInicioStr.split('-').reverse().join('/') + ' até ' + dtFimStr.split('-').reverse().join('/');
+          } else if (dtInicioStr) {
+              textoPeriodo = 'A partir de ' + dtInicioStr.split('-').reverse().join('/');
+          } else if (dtFimStr) {
+              textoPeriodo = 'Até ' + dtFimStr.split('-').reverse().join('/');
+          }
+
           const linhasMsg = [];
           linhasMsg.push("*Relatório de Pagamentos Motoristas/Ajudantes - Ecoflow*");
+          linhasMsg.push("_Período: " + textoPeriodo + "_");
           linhasMsg.push("");
 
-          Object.keys(colaboradoresPagamentos).forEach(nome => {
-              const d = colaboradoresPagamentos[nome];
+          nomesAtivos.forEach(nome => {
+              const d = preFiltroWppGlobais[nome];
               
               linhasMsg.push("📌 *[" + d.tipo + ": " + nome + "]*");
               d.rotas.forEach(r => linhasMsg.push("• " + r));
@@ -1280,23 +1432,51 @@ function controlePagamentosView(usuario, colaboradores = [], pagamentos = [], ca
               linhasMsg.push("Banco: " + (d.banco || "Não cadastrado"));
               linhasMsg.push("CPF: " + (d.cpf || "Não cadastrado"));
               linhasMsg.push("*TOTAL A PAGAR: R$ " + fmtM(d.total) + "*");
-              
               linhasMsg.push("");
               linhasMsg.push("----------------------------------------");
               linhasMsg.push("");
           });
 
-          // Aqui está a correção: uso de \\n para injetar o caracter de escape na string final gerada
-          const msgFinal = encodeURIComponent(linhasMsg.join("\\n"));
-          const url = "https://wa.me/" + NUMERO_WPP + "?text=" + msgFinal;
+          previewTextarea.value = linhasMsg.join('\\n');
+      }
+
+      function copiarPreview() {
+          const textElement = document.getElementById('previewTextoWpp');
+          if (!textElement || textElement.value.includes('Selecione pelo menos um colaborador')) return;
+          
+          let cleanText = textElement.value;
+
+          navigator.clipboard.writeText(cleanText).then(() => {
+              mostrarToast('sucesso', 'Copiado!', 'Mensagem copiada para a área de transferência.');
+          }).catch(err => {
+              mostrarToast('erro', 'Erro', 'Não foi possível copiar o texto.');
+          });
+      }
+
+      function dispararMensagemSelecionados() {
+          const textElement = document.getElementById('previewTextoWpp');
+          const inputWpp = document.getElementById('inputWppDestino');
+          
+          if (!textElement || textElement.value.includes('Selecione pelo menos um colaborador')) {
+              mostrarToast('erro', 'Aviso', 'A mensagem está vazia.');
+              return;
+          }
+
+          let numeroDestino = inputWpp ? inputWpp.value.replace(/\\D/g, '') : (NUMERO_WPP_SAVED || "${wppPhone}");
+          if(!numeroDestino) {
+              mostrarToast('erro', 'Aviso', 'Informe um número de WhatsApp válido.');
+              return;
+          }
+          if (!numeroDestino.startsWith('55') && numeroDestino.length <= 11) {
+              numeroDestino = '55' + numeroDestino;
+          }
+
+          let cleanText = textElement.value;
+          const msgFinal = encodeURIComponent(cleanText);
+          const url = "https://wa.me/" + numeroDestino + "?text=" + msgFinal;
           
           window.open(url, '_blank');
-          
-          const modalEl = document.getElementById('modalMensagemPeriodo');
-          if (modalEl) {
-              const modal = bootstrap.Modal.getInstance(modalEl);
-              if(modal) modal.hide();
-          }
+          bootstrap.Modal.getInstance(document.getElementById('modalMensagemPeriodo')).hide();
       }
 
       function togglePagoState(checkbox) {

@@ -1,3 +1,4 @@
+// routes/pagamentos.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -27,16 +28,24 @@ router.get("/pagamentos", async (req, res) => {
             mot_t1: 80, mot_t2: 95, mot_t3: 110,
             aju_t1: 55, aju_t2: 65, aju_t3: 75,
             val_almoco: 25,
-            vl_sulbahia: 200, vl_aracaju1: 160, vl_aracaju2: 200, vl_capimgrosso: 200
+            vl_sulbahia: 200, vl_aracaju1: 160, vl_aracaju2: 200, vl_capimgrosso: 200,
+            num_wpp_pagamentos: "7196785385" // Chave Padrão do WhatsApp
         };
         configs.forEach(c => {
-            if (taxas[c.chave] !== undefined) taxas[c.chave] = parseFloat(c.valor);
+            if (taxas[c.chave] !== undefined) {
+                // O número do WhatsApp deve ser mantido como String para evitar perdas
+                if (c.chave === 'num_wpp_pagamentos') {
+                    taxas[c.chave] = c.valor;
+                } else {
+                    taxas[c.chave] = parseFloat(c.valor);
+                }
+            }
         });
 
         // B. Busca Colaboradores
         const [colaboradores] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco FROM usuarios ORDER BY nome ASC");
 
-        // C. Busca Cadernos Pendentes (CORRIGIDO: Puxa o status e o VALOR EXATO pago para atualizar os cards)
+        // C. Busca Cadernos Pendentes
         let whereCad = [];
         let paramsCad = [];
         if (caderno_inicio) { whereCad.push("DATE(c.data_criacao) >= ?"); paramsCad.push(caderno_inicio); }
@@ -97,7 +106,7 @@ router.get("/pagamentos", async (req, res) => {
     }
 });
 
-//DEFINIÇÕES DE PAGAMENTO
+//DEFINIÇÕES DE PAGAMENTO (Taxas e WhatsApp)
 router.post("/configuracoes/taxas", async (req, res) => {
     if (!req.session.user || (req.session.user.tipo_usuario !== "admin" && req.session.user.tipo_usuario !== "financeiro")) {
         return res.status(403).send("Acesso negado.");
@@ -108,9 +117,18 @@ router.post("/configuracoes/taxas", async (req, res) => {
             return db.promise().query("INSERT INTO configuracoes (chave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = ?", [chave, req.body[chave], req.body[chave]]);
         });
         await Promise.all(promises);
+        
+        // Se a requisição veio via Fetch/AJAX especificamente para o WhatsApp, devolvemos JSON
+        if (req.body.num_wpp_pagamentos && Object.keys(req.body).length === 1) {
+            return res.json({ success: true });
+        }
+
         res.redirect("/pagamentos");
     } catch (error) {
         console.error("Erro ao salvar taxas:", error);
+        if (req.body.num_wpp_pagamentos && Object.keys(req.body).length === 1) {
+            return res.status(500).json({ success: false });
+        }
         res.status(500).send("Erro ao salvar configurações.");
     }
 });
@@ -242,7 +260,6 @@ router.get("/pagamentos/exportar-excel", async (req, res) => {
     try {
         const { data_inicio, data_fim, colaborador } = req.query;
 
-        // CORREÇÃO: Tabela alterada de 'colaboradores' para 'usuarios'
         let queryPagamentos = `
             SELECT p.*, u.nome, u.cpf, u.pix, u.banco 
             FROM pagamentos_colaboradores p

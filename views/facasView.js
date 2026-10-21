@@ -207,7 +207,7 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
                           '</div>' +
                           '<div class="col-4 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Versão</label>' +
-                              '<input type="text" name="versao" class="form-control form-control-sm shadow-sm" value="' + (f.versao || '') + '" placeholder="Ex: v2.0">' +
+                              '<input type="text" name="versao" class="form-control form-control-sm shadow-sm" value="' + (f.versao || '') + '" placeholder="Nova/Antiga">' +
                           '</div>' +
                           
                           '<div class="col-6 mt-2">' +

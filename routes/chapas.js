@@ -103,7 +103,7 @@ router.post("/facas/editar/:id", upload.single("imagem_faca"), async (req, res) 
             );
         } else {
             await db.promise().query(
-                `UPDATE facas_manutencao SET faca=?, data_saida=?, nome_retirou=?, descricao=?, data_entrada=?, nome_entregou=?, em_manutencao=? WHERE id=?`,
+                `UPDATE facas_manutencao SET faca=NULL, data_saida=NULL, nome_retirou=NULL, descricao=NULL, data_entrada=NULL, nome_entregou=NULL, em_manutencao=0 WHERE faca=?`,
                 [faca, data_saida || null, nome_retirou, descricao, data_entrada || null, nome_entregou, isEmManutencao, id]
             );
         }

@@ -28,6 +28,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       'downloads': { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" },
       'precos': { href: "/tabela-precos", icone: "fas fa-tags", texto: "Preços" },
       'chapas': { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
+      'facas': { href: "/catalogo-facas", icone: "fa-solid fa-scissors", texto: "Facas de Corte" },
       'entradas_saidas': { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
       'diaristas': { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
       'pagamentos': { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
@@ -37,11 +38,11 @@ function menuLateral(usuario, rotaAtiva = "") {
   };
 
   // --- DEFINIÇÃO DOS LINKS PADRÕES POR PERFIL ---
-  const logLinks = [ allModulesMap['producao'], allModulesMap['veiculos'], allModulesMap['checklist'], allModulesMap['rotas'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'] ];
+  const logLinks = [ allModulesMap['producao'], allModulesMap['veiculos'], allModulesMap['checklist'], allModulesMap['rotas'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'], allModulesMap['facas'] ];
   const motLinks = [ allModulesMap['checklist'], allModulesMap['rotas'] ];
   const finLinks = [ allModulesMap['precos'], allModulesMap['chapas'], allModulesMap['entradas_saidas'], allModulesMap['producao'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['diaristas'], allModulesMap['pagamentos'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'] ];
   const desLinks = [ allModulesMap['propostas'], allModulesMap['gabaritos'], allModulesMap['workspaces'], allModulesMap['qr_codes'], allModulesMap['downloads'] ];
-  const prodLinks = [ allModulesMap['chapas'], allModulesMap['workspaces'] ];
+  const prodLinks = [ allModulesMap['chapas'], allModulesMap['facas'], allModulesMap['workspaces'], allModulesMap['facas'] ];
   const comLinks = [ allModulesMap['precos'], allModulesMap['chapas'], allModulesMap['workspaces'] ];
 
   let availableLinks = [ { href: "/home", icone: "fas fa-home", texto: "Início" } ];
@@ -249,8 +250,7 @@ function menuLateral(usuario, rotaAtiva = "") {
               ${tipo}
             </span>
             ${btnNotificacoes}
-            ${btnConfigAdmin}
-            ${btnSair}
+            ${btnConfigAdmin}${btnSair}
           </div>
         </div>
       </div>
@@ -529,14 +529,12 @@ function menuLateral(usuario, rotaAtiva = "") {
 
     <div class="d-flex flex-column h-100 pt-0 w-100">
       <div class="flex-grow-1 sidebar-scroll-area" id="sidebarMenuContainer">
-        ${userProfileHtml}
-        ${menuLinks}
+        ${userProfileHtml}${menuLinks}
       </div>
       ${footerHTML}
     </div>
 
-    ${modalFotoHtml}
-    ${modalMeuPerfilHtml}
+    ${modalFotoHtml}${modalMeuPerfilHtml}
 
     <script>
       // =======================================================================

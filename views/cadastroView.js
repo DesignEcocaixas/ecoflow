@@ -18,6 +18,7 @@ function cadastroView(usuario, usuarios = []) {
       { id: 'downloads', label: 'Downloads' },
       { id: 'precos', label: 'Tabela de Preços' },
       { id: 'chapas', label: 'Chapas' },
+      { id: 'facas', label: 'Facas de Corte' },
       { id: 'entradas_saidas', label: 'Entradas/Saídas' },
       { id: 'diaristas', label: 'Diaristas' },
       { id: 'pagamentos', label: 'Pagamentos' },
@@ -32,8 +33,8 @@ function cadastroView(usuario, usuarios = []) {
       'logistica': ['producao', 'veiculos', 'checklist', 'rotas', 'caderno', 'envios', 'workspaces', 'clientes', 'downloads'],
       'motorista': ['checklist', 'rotas'],
       'financeiro': ['precos', 'chapas', 'entradas_saidas', 'producao', 'caderno', 'envios', 'diaristas', 'pagamentos', 'workspaces', 'clientes', 'downloads'],
-      'design': ['propostas', 'gabaritos', 'workspaces', 'qr_codes', 'downloads'],
-      'producao': ['chapas', 'workspaces'],
+      'design': ['propostas', 'gabaritos', 'workspaces', 'facas', 'qr_codes', 'downloads'],
+      'producao': ['chapas', 'facas', 'workspaces'],
       'comercial': ['precos', 'chapas', 'workspaces']
   };
 
@@ -686,8 +687,8 @@ function cadastroView(usuario, usuarios = []) {
             'logistica': ['producao', 'veiculos', 'checklist', 'rotas', 'caderno', 'envios', 'workspaces', 'clientes', 'downloads'],
             'motorista': ['checklist', 'rotas'],
             'financeiro': ['precos', 'chapas', 'entradas_saidas', 'producao', 'caderno', 'envios', 'diaristas', 'pagamentos', 'workspaces', 'clientes', 'downloads'],
-            'design': ['propostas', 'gabaritos', 'workspaces', 'qr_codes', 'downloads'],
-            'producao': ['chapas', 'workspaces'],
+            'design': ['propostas', 'gabaritos', 'workspaces', 'facas', 'qr_codes', 'downloads'],
+            'producao': ['chapas', 'facas', 'workspaces'],
             'comercial': ['precos', 'chapas', 'workspaces']
         };
 

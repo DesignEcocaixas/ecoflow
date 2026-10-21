@@ -217,6 +217,9 @@ app.use("/", enviosRoutes);
 const downloadsRoutes = require("./routes/downloads");
 app.use("/", downloadsRoutes);
 
+const facasRoutes = require('./routes/facas');
+app.use('/', facasRoutes);
+
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);
 

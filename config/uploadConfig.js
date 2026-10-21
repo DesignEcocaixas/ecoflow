@@ -12,7 +12,7 @@ const criarStorage = (subPasta) => multer.diskStorage({
     filename: (req, file, cb) => {
         // 1. TENTA CAPTURAR O ID AUTOMATICAMENTE
         // Procura na URL (req.params.id) ou no formulário (req.body.id)
-        let objectId = req.params.id || req.body.id;
+        let objectId = req.params.id || req.body.id || req.body.codigo; // Adicionado req.body.codigo para as facas
 
         // Se o parâmetro tiver outro nome (ex: /veiculos/:veiculoId), pega o primeiro número que achar na URL
         if (!objectId) {
@@ -45,6 +45,7 @@ const uploadVeiculosFotos = multer({ storage: criarStorage("veiculos/fotos") });
 const uploadWorkspaces = multer({ storage: criarStorage("workspaces") });
 const uploadMensagens = multer({ storage: criarStorage("mensagensSistema") });
 const uploadClientes = multer({ storage: criarStorage("clientes") });
+const uploadFacas = multer({ storage: criarStorage("facas") }); // <--- Upload das facas
 
 // NOVO: Upload específico para a Central de Downloads (Arquivos, matrizes e PDFs)
 const uploadDownloads = multer({ 
@@ -66,5 +67,6 @@ module.exports = {
     uploadWorkspaces,
     uploadMensagens,
     uploadClientes,
-    uploadDownloads // <--- Exportado com sucesso
+    uploadFacas, // <--- Exportado com sucesso
+    uploadDownloads 
 };

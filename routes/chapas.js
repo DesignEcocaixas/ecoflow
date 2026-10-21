@@ -34,14 +34,23 @@ router.get("/chapas", async (req, res) => {
         
         let facas = [];
         try {
-            // Busca facas (caso a tabela já exista)
+            // Busca histórico de manutenções
             const [resultFacas] = await db.promise().query("SELECT * FROM facas_manutencao ORDER BY id DESC");
             facas = resultFacas;
         } catch (errDb) {
             console.log("[Aviso] A tabela facas_manutencao não existe ou está vazia.");
         }
 
-        res.send(chapasView(req.session.user, chapas, facas));
+        let catalogoFacas = [];
+        try {
+            // Busca o catálogo de facas para listar no Select (Agora incluindo categoria)
+            const [resultCat] = await db.promise().query("SELECT id, modelo, tamanho_referencia, configuracao, componente, categoria FROM facas ORDER BY modelo ASC");
+            catalogoFacas = resultCat;
+        } catch (errDb) {
+            console.log("[Aviso] O catálogo de facas está vazio.");
+        }
+
+        res.send(chapasView(req.session.user, chapas, facas, catalogoFacas));
     } catch (err) {
         console.error("Erro ao buscar chapas e facas:", err);
         res.status(500).send("Erro interno");
@@ -57,7 +66,6 @@ router.post("/facas/manutencao", upload.single("imagem_faca"), async (req, res) 
     const isEmManutencao = status === 'em_manutencao' ? 1 : 0;
 
     try {
-        // Garantia de criação da tabela caso seja a primeira vez que o módulo é executado
         await db.promise().query(`
             CREATE TABLE IF NOT EXISTS facas_manutencao (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -103,7 +111,7 @@ router.post("/facas/editar/:id", upload.single("imagem_faca"), async (req, res) 
             );
         } else {
             await db.promise().query(
-                `UPDATE facas_manutencao SET faca=NULL, data_saida=NULL, nome_retirou=NULL, descricao=NULL, data_entrada=NULL, nome_entregou=NULL, em_manutencao=0 WHERE faca=?`,
+                `UPDATE facas_manutencao SET faca=?, data_saida=?, nome_retirou=?, descricao=?, data_entrada=?, nome_entregou=?, em_manutencao=? WHERE id=?`,
                 [faca, data_saida || null, nome_retirou, descricao, data_entrada || null, nome_entregou, isEmManutencao, id]
             );
         }
@@ -190,7 +198,6 @@ router.get('/exportar/chapas', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // Busca todos os dados do estoque de chapas
         const [dados] = await db.promise().query(`
             SELECT material, modelo, fornecedor, medida, quantidade 
             FROM chapas 
@@ -209,14 +216,12 @@ router.get('/exportar/chapas', async (req, res) => {
             { header: 'QUANTIDADE', key: 'quantidade', width: 15 }
         ];
 
-        // Estiliza o cabeçalho
         sheet.getRow(1).eachCell(cell => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D5749' } };
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        // Preenche os dados
         dados.forEach(c => {
             const row = sheet.addRow({
                 material: c.material,
@@ -226,13 +231,11 @@ router.get('/exportar/chapas', async (req, res) => {
                 quantidade: Number(c.quantidade) || 0
             });
 
-            // Destaca quantidades críticas (abaixo de 5000)
             if (Number(c.quantidade) < 5000) {
                 row.getCell('quantidade').font = { color: { argb: 'FFDC3545' }, bold: true };
             }
         });
 
-        // Aplica bordas em todas as células
         sheet.eachRow(row => {
             row.eachCell(cell => {
                 cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };

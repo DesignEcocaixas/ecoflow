@@ -150,7 +150,7 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
                           '<div class="col-6"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Código / ID</strong><span class="text-white fw-bold">' + f.id + '</span></div>' +
                           '<div class="col-6"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Categoria</strong><span class="badge ' + catColor + ' text-uppercase">' + f.categoria + '</span></div>' +
                           '<div class="col-12"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Modelo</strong><span class="text-white fs-6 fw-bold">' + f.modelo + '</span></div>' +
-                          '<div class="col-4"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Tam. Ref.</strong><span class="text-white">' + (f.tamanho_referencia || '-') + '</span></div>' +
+                          '<div class="col-4"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Tamanho</strong><span class="text-white">' + (f.tamanho_referencia || '-') + '</span></div>' +
                           '<div class="col-4"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Medida</strong><span class="text-white">' + (f.medida || '-') + '</span></div>' +
                           '<div class="col-4"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Versão</strong><span class="text-white">' + (f.versao || '-') + '</span></div>' +
                           '<div class="col-6"><strong class="d-block text-white-50 mb-1" style="font-size: 0.7rem;">Componente</strong><span class="text-white">' + (f.componente || '-') + '</span></div>' +
@@ -194,12 +194,12 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
                           
                           '<div class="col-12 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Modelo</label>' +
-                              '<input type="text" name="modelo" class="form-control form-control-sm shadow-sm" value="' + (f.modelo || '') + '" required placeholder="Ex: Bela Parma">' +
+                              '<input type="text" name="modelo" class="form-control form-control-sm shadow-sm" value="' + (f.modelo || '') + '" required placeholder="Oitavada N40">' +
                           '</div>' +
 
                           '<div class="col-4 mt-2">' +
-                              '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Tam. Ref.</label>' +
-                              '<input type="text" name="tamanho_referencia" class="form-control form-control-sm shadow-sm" value="' + (f.tamanho_referencia || '') + '" placeholder="Ex: 15613">' +
+                              '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Tamanho</label>' +
+                              '<input type="text" name="tamanho_referencia" class="form-control form-control-sm shadow-sm" value="' + (f.tamanho_referencia || '') + '" placeholder="N40">' +
                           '</div>' +
                           '<div class="col-4 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Medida</label>' +
@@ -212,16 +212,16 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
                           
                           '<div class="col-6 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Componente</label>' +
-                              '<input type="text" name="componente" class="form-control form-control-sm shadow-sm" value="' + (f.componente || '') + '" placeholder="Componentes">' +
+                              '<input type="text" name="componente" class="form-control form-control-sm shadow-sm" value="' + (f.componente || '') + '" placeholder="Tampa/Fundo">' +
                           '</div>' +
                           '<div class="col-6 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Configuração</label>' +
-                              '<input type="text" name="configuracao" class="form-control form-control-sm shadow-sm" value="' + (f.configuracao || '') + '" placeholder="Detalhes">' +
+                              '<input type="text" name="configuracao" class="form-control form-control-sm shadow-sm" value="' + (f.configuracao || '') + '" placeholder="Conjugada/Separada">' +
                           '</div>' +
 
                           '<div class="col-12 mt-2">' +
                               '<label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Utilização</label>' +
-                              '<input type="text" name="utilizacao" class="form-control form-control-sm shadow-sm" value="' + (f.utilizacao || '') + '" placeholder="Ex: Caixa de Pizza 35cm">' +
+                              '<input type="text" name="utilizacao" class="form-control form-control-sm shadow-sm" value="' + (f.utilizacao || '') + '" placeholder="Pizza/Carne/Salgado/Outros">' +
                           '</div>' +
 
                           '<div class="col-12 mt-2">' +
@@ -418,7 +418,7 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
             <form id="formFiltroFacas" class="d-flex align-items-center mb-0 gap-2 flex-grow-1 flex-xl-grow-0" method="GET" action="/catalogo-facas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
                 <div class="input-group input-group-sm shadow-sm flex-nowrap w-100">
                     <span class="input-group-text border-custom"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="busca" class="form-control" value="${filtros.busca || ''}" placeholder="Buscar por modelo ou ID..." oninput="pesquisaTempoReal(this.form)">
+                    <input type="text" name="busca" class="form-control" value="${filtros.busca || ''}" placeholder="Buscar modelo, ref, chapas, medida..." oninput="pesquisaTempoReal(this.form)">
                     <select name="categoria" class="form-select border-custom" style="max-width: 140px;" onchange="pesquisaTempoReal(this.form)">
                         <option value="">Todas</option>
                         <option value="rotativa" ${filtros.categoria === 'rotativa' ? 'selected' : ''}>Rotativas</option>
@@ -469,12 +469,12 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
 
                 <div class="col-12 mt-2">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Modelo</label>
-                    <input type="text" name="modelo" class="form-control form-control-sm shadow-sm" placeholder="Ex: Bela Parma" required>
+                    <input type="text" name="modelo" class="form-control form-control-sm shadow-sm" placeholder="Oitavada N40" required>
                 </div>
 
                 <div class="col-4 mt-2">
-                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Tam. Ref.</label>
-                    <input type="text" name="tamanho_referencia" class="form-control form-control-sm shadow-sm" placeholder="Ex: 15613">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Tamanho</label>
+                    <input type="text" name="tamanho_referencia" class="form-control form-control-sm shadow-sm" placeholder="N40">
                 </div>
                 <div class="col-4 mt-2">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Medida</label>
@@ -487,16 +487,16 @@ function facasView(usuario, facas = [], filtros = {}, paginacao = {}, chapasDisp
                 
                 <div class="col-6 mt-2">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Componente</label>
-                    <input type="text" name="componente" class="form-control form-control-sm shadow-sm" placeholder="Componentes">
+                    <input type="text" name="componente" class="form-control form-control-sm shadow-sm" placeholder="Tampa/Fundo">
                 </div>
                 <div class="col-6 mt-2">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Configuração</label>
-                    <input type="text" name="configuracao" class="form-control form-control-sm shadow-sm" placeholder="Detalhes">
+                    <input type="text" name="configuracao" class="form-control form-control-sm shadow-sm" placeholder="Conjugada/Separada">
                 </div>
 
                 <div class="col-12 mt-2">
                     <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Utilização</label>
-                    <input type="text" name="utilizacao" class="form-control form-control-sm shadow-sm" placeholder="Ex: Caixa de Pizza 35cm">
+                    <input type="text" name="utilizacao" class="form-control form-control-sm shadow-sm" placeholder="Pizza/Carne/Salgado/Outros">
                 </div>
 
                 <div class="col-12 mt-2">

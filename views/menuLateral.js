@@ -38,9 +38,9 @@ function menuLateral(usuario, rotaAtiva = "") {
   };
 
   // --- DEFINIÇÃO DOS LINKS PADRÕES POR PERFIL ---
-  const logLinks = [ allModulesMap['producao'], allModulesMap['veiculos'], allModulesMap['checklist'], allModulesMap['rotas'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'], allModulesMap['facas'] ];
+  const logLinks = [ allModulesMap['producao'], allModulesMap['veiculos'], allModulesMap['checklist'], allModulesMap['chapas'], allModulesMap['rotas'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'], allModulesMap['facas'] ];
   const motLinks = [ allModulesMap['checklist'], allModulesMap['rotas'] ];
-  const finLinks = [ allModulesMap['precos'], allModulesMap['chapas'], allModulesMap['entradas_saidas'], allModulesMap['producao'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['diaristas'], allModulesMap['pagamentos'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'] ];
+  const finLinks = [ allModulesMap['precos'], allModulesMap['entradas_saidas'], allModulesMap['producao'], allModulesMap['caderno'], allModulesMap['envios'], allModulesMap['diaristas'], allModulesMap['pagamentos'], allModulesMap['workspaces'], allModulesMap['clientes'], allModulesMap['downloads'] ];
   const desLinks = [ allModulesMap['propostas'], allModulesMap['gabaritos'], allModulesMap['workspaces'], allModulesMap['qr_codes'], allModulesMap['downloads'] ];
   const prodLinks = [ allModulesMap['chapas'], allModulesMap['facas'], allModulesMap['workspaces'], allModulesMap['facas'] ];
   const comLinks = [ allModulesMap['precos'], allModulesMap['chapas'], allModulesMap['workspaces'] ];

@@ -7,10 +7,10 @@ const path = require("path");
 const { uploadFacas } = require("../config/uploadConfig"); 
 const facasView = require("../views/facasView");
 const facaFichaView = require("../views/facaFichaView");
-const facasQrPrintView = require("../views/facasQrPrintView"); // <--- Adicionar isto
+const facasQrPrintView = require("../views/facasQrPrintView");
 
 // =========================================================================
-// ROTA GET: LISTAR FACAS
+// ROTA GET: LISTAR FACAS COM FILTROS E PAGINAÇÃO
 // =========================================================================
 router.get("/catalogo-facas", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
@@ -24,9 +24,22 @@ router.get("/catalogo-facas", async (req, res) => {
         let where = [];
         let params = [];
 
+        // NOVO MOTOR DE BUSCA: Procura em múltiplas colunas ao mesmo tempo
         if (busca) {
-            where.push("(modelo LIKE ? OR id LIKE ?)");
-            params.push(`%${busca}%`, `%${busca}%`);
+            where.push(`(
+                modelo LIKE ? OR 
+                id LIKE ? OR 
+                tamanho_referencia LIKE ? OR 
+                medida LIKE ? OR 
+                utilizacao LIKE ? OR 
+                componente LIKE ? OR 
+                configuracao LIKE ? OR 
+                chapas_utilizadas LIKE ?
+            )`);
+            // Adiciona o parâmetro de busca 8 vezes (uma para cada coluna acima)
+            for(let i = 0; i < 8; i++) {
+                params.push(`%${busca}%`);
+            }
         }
         
         if (categoria) {
@@ -208,14 +221,12 @@ router.post("/catalogo-facas/excluir/:id", async (req, res) => {
 router.get("/catalogo-facas/ficha/:id", async (req, res) => {
     try {
         const id = req.params.id;
-        // Traz a faca pelo ID sem precisar de verificação de login (view pública)
         const [[faca]] = await db.promise().query("SELECT * FROM facas WHERE id = ?", [id]);
         
         if (!faca) {
             return res.status(404).send("Ficha técnica não encontrada ou faca excluída.");
         }
 
-        // Constrói o link completo atual (com https ou http dinamicamente)
         const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
         
         res.send(facaFichaView(faca, fullUrl));
@@ -233,10 +244,8 @@ router.get("/catalogo-facas/qrcodes", async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
 
     try {
-        // Busca todas as facas para a impressão (pode limitar ou ordenar como quiser)
         const [facas] = await db.promise().query("SELECT id, modelo, tamanho_referencia, categoria, componente FROM facas ORDER BY categoria, modelo ASC");
         
-        // Pega a Base URL (ex: https://seudominio.com ou http://localhost:3000)
         const baseUrl = req.protocol + '://' + req.get('host');
         
         res.send(facasQrPrintView(facas, baseUrl));

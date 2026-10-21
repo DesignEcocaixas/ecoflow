@@ -3,7 +3,7 @@ const menuLateral = require("./menuLateral");
 const renderLoaderParticulas = require("./renderLoaderParticulas");
 const termosComponent = require("./termosComponent");
 
-function chapasView(usuario, chapas = [], facas = []) {
+function chapasView(usuario, chapas = [], facas = [], catalogoFacas = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const termosHTML = termosComponent(usuario);
 
@@ -21,6 +21,35 @@ function chapasView(usuario, chapas = [], facas = []) {
           return '';
       }
   };
+
+  // --- CONSTRUÇÃO DOS SELECTS AGRUPADOS DE FACAS ---
+  const buildFacaOption = (f, selectedVal = null) => {
+      const parts = [f.modelo || 'Sem modelo'];
+      if (f.tamanho_referencia && f.tamanho_referencia.trim() !== '') parts.push(f.tamanho_referencia.trim());
+      if (f.configuracao && f.configuracao.trim() !== '') parts.push(f.configuracao.trim());
+      if (f.componente && f.componente.trim() !== '') parts.push(f.componente.trim());
+      
+      const label = parts.join(' - ');
+      const valor = parts.join(' | ');
+      const sel = (valor === selectedVal) ? 'selected' : '';
+      return `<option value="${escapeHtmlAttr(valor)}" ${sel}>${escapeHtmlAttr(label)}</option>`;
+  };
+
+  const renderFacaOptGroups = (selectedVal = null) => {
+      const rotativas = (catalogoFacas || []).filter(f => f.categoria === 'rotativa');
+      const planas = (catalogoFacas || []).filter(f => f.categoria === 'plana');
+      
+      let html = '';
+      if (rotativas.length > 0) {
+          html += '<optgroup label="Rotativas">' + rotativas.map(f => buildFacaOption(f, selectedVal)).join('') + '</optgroup>';
+      }
+      if (planas.length > 0) {
+          html += '<optgroup label="Planas">' + planas.map(f => buildFacaOption(f, selectedVal)).join('') + '</optgroup>';
+      }
+      return html;
+  };
+
+  const opcoesCatalogoFacas = renderFacaOptGroups();
 
   // --- LÓGICA DE SAÚDE DO ESTOQUE ---
   let containerSaude = "";
@@ -199,6 +228,22 @@ function chapasView(usuario, chapas = [], facas = []) {
     const dataSaidaFormatada = formataDataIso(f.data_saida);
     const dataEntradaFormatada = formataDataIso(f.data_entrada);
 
+    const isFacaInCatalogo = catalogoFacas.some(cf => {
+         const parts = [cf.modelo || 'Sem modelo'];
+         if (cf.tamanho_referencia && cf.tamanho_referencia.trim() !== '') parts.push(cf.tamanho_referencia.trim());
+         if (cf.configuracao && cf.configuracao.trim() !== '') parts.push(cf.configuracao.trim());
+         if (cf.componente && cf.componente.trim() !== '') parts.push(cf.componente.trim());
+         const val = parts.join(' | ');
+         return val === f.faca;
+    });
+
+    let selectOptionsEdicao = renderFacaOptGroups(f.faca);
+
+    // Previne que registos antigos que foram digitados à mão não quebrem ao serem editados
+    if (f.faca && !isFacaInCatalogo) {
+        selectOptionsEdicao = `<option value="${escapeHtmlAttr(f.faca)}" selected>${escapeHtmlAttr(f.faca)} (Registro Antigo)</option>` + selectOptionsEdicao;
+    }
+
     return `
     <div class="modal fade" id="editarFacaModal${f.id}" tabindex="-1" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -219,7 +264,10 @@ function chapasView(usuario, chapas = [], facas = []) {
 
               <div class="col-12">
                 <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Faca / Equipamento</label>
-                <input type="text" name="faca" value="${escapeHtmlAttr(f.faca)}" class="form-control form-control-sm py-2 shadow-sm text-white" required>
+                <select name="faca" class="form-select form-select-sm py-2 shadow-sm text-white" required>
+                  <option value="" disabled>Selecione a faca...</option>
+                  ${selectOptionsEdicao}
+                </select>
               </div>
 
               <div class="col-6">
@@ -315,7 +363,10 @@ function chapasView(usuario, chapas = [], facas = []) {
 
             <div class="col-12">
               <label class="form-label mb-1 fw-bold" style="font-size:0.75rem;">Faca / Equipamento</label>
-              <input type="text" name="faca" class="form-control form-control-sm py-2 shadow-sm text-white" placeholder="Ex: Faca N20" required>
+              <select name="faca" class="form-select form-select-sm py-2 shadow-sm text-white" required>
+                <option value="" disabled selected>Selecione a faca...</option>
+                ${opcoesCatalogoFacas}
+              </select>
             </div>
 
             <div class="col-6">

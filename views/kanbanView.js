@@ -23,6 +23,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
   };
+  
+  // Ordena as colunas nativamente pela propriedade ordem antes de enviar para o cliente
+  colunas.sort((a, b) => a.ordem - b.ordem);
+  
   const colunasJsonStr = escapeHtmlAttr(JSON.stringify(colunas));
   const etiquetasJsonStr = escapeHtmlAttr(JSON.stringify(espacoAtual.etiquetas || []));
   const colaboradoresJsonStr = escapeHtmlAttr(JSON.stringify(colaboradores.map(c => ({nome: c.nome, foto: c.foto}))));
@@ -223,14 +227,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       </select>
                   </div>
                   
-                  <div class="mb-3">
-                      <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Coluna Destino</label>
-                      <select id="selectTransferColuna" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" disabled>
-                          <option value="">Selecione um Workspace primeiro</option>
-                      </select>
+                  <div class="mb-4">
+                          <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Coluna Destino</label>
+                          <select id="selectTransferColuna" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" disabled>
+                              <option value="">Selecione um Workspace primeiro</option>
+                          </select>
                   </div>
                   
-                  <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
+                  <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
               </div>
           </div>
       </div>
@@ -1474,6 +1478,35 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
           
           // ==========================================
+          // MUDANÇA DE ORDEM DA COLUNA
+          // ==========================================
+          window.moverColunaKanban = function(colId, direcao) {
+              const currentIndex = colunasDados.findIndex(c => c.id == colId);
+              if (currentIndex === -1) return;
+              
+              if (direcao === 'esquerda' && currentIndex > 0) {
+                  const temp = colunasDados[currentIndex - 1];
+                  colunasDados[currentIndex - 1] = colunasDados[currentIndex];
+                  colunasDados[currentIndex] = temp;
+              } else if (direcao === 'direita' && currentIndex < colunasDados.length - 1) {
+                  const temp = colunasDados[currentIndex + 1];
+                  colunasDados[currentIndex + 1] = colunasDados[currentIndex];
+                  colunasDados[currentIndex] = temp;
+              } else {
+                  return;
+              }
+              
+              // Atualiza a propriedade de ordem baseada no novo array index
+              colunasDados.forEach((c, i) => c.ordem = i);
+              
+              // Emite o evento ao servidor para guardar as alterações
+              const novaOrdemArray = colunasDados.map(c => c.id);
+              socket.emit('reordenar_colunas', { espacoId: ${espacoAtual.id}, novaOrdemIds: novaOrdemArray });
+              
+              renderizarKanban();
+          };
+
+          // ==========================================
           // ESTADO DA VISUALIZAÇÃO GLOBAL E ORDENAÇÃO
           // ==========================================
           window.kanbanViewMode = 'default';
@@ -1559,7 +1592,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       col.cards = col.cards.filter(c => c.id != id);
                                   }
                                   if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                                  socket.emit('deletar_card', id);
+                                  socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO, silencioso: true });
                               });
                               renderizarKanban();
                           }
@@ -1603,7 +1636,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const id = card.id;
                       coluna.cards = coluna.cards.filter(c => c.id != id);
                       if (cardAbertoId == id) { modalCardDetalhesObj.hide(); cardAbertoId = null; }
-                      socket.emit('deletar_card', id);
+                      socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO, silencioso: true });
                   });
                   renderizarKanban();
                   mostrarToast('sucesso', 'Limpeza Concluída', cardsVencidos.length + ' cards vencidos foram excluídos.');
@@ -2472,7 +2505,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   sourceColunas = getVirtualColsMonth();
               }
 
-              sourceColunas.forEach(col => {
+              sourceColunas.forEach((col, idx) => {
                   const isVirtual = col.isVirtual;
                   const corColuna = col.cor || '#08c068';
                   const bgHeader = hexToRgba(corColuna, 0.15); 
@@ -2551,6 +2584,22 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </div>
                       </div>\`;
 
+                  // Condicionais para exibir as setas de mover apenas se for possível
+                  const podeMoverEsquerda = idx > 0;
+                  const podeMoverDireita = idx < sourceColunas.length - 1;
+                  
+                  const btnEsquerdaHtml = podeMoverEsquerda ? \`
+                      <button class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-between mb-1 border-custom" type="button" onclick="moverColunaKanban('\${col.id}', 'esquerda')">
+                          <i class="fa-solid fa-arrow-left"></i> <span>Mover para Esquerda</span>
+                      </button>
+                  \` : '';
+                  
+                  const btnDireitaHtml = podeMoverDireita ? \`
+                      <button class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-between mb-3 border-custom" type="button" onclick="moverColunaKanban('\${col.id}', 'direita')">
+                          <span>Mover para Direita</span> <i class="fa-solid fa-arrow-right"></i>
+                      </button>
+                  \` : '';
+
                   const dropdownConfigColuna = isVirtual ? 
                       '' : 
                       \`<div class="dropdown d-inline-block ms-auto">
@@ -2559,7 +2608,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-3 shadow-lg border-custom" style="min-width: 240px; background-color: #2a2a2a; z-index: 1060;">
                               
-                              <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Ordenar Tarefas</h6>
+                              <h6 class="text-white fw-bold mb-2" style="font-size: 0.8rem;">Posição da Coluna</h6>
+                              \${btnEsquerdaHtml}
+                              \${btnDireitaHtml}
+                              
+                              <h6 class="text-white fw-bold mb-2 border-top border-custom pt-3" style="font-size: 0.8rem;">Ordenar Tarefas</h6>
                               <select class="form-select form-select-sm bg-custom-darker border-custom text-white mb-3 shadow-sm" onchange="window.ordenarColuna('\${col.id}', this.value)">
                                   <option value="default" \${window.ordemColunas[col.id] === 'default' || !window.ordemColunas[col.id] ? 'selected' : ''}>Padrão (Prazo e Prioridade)</option>
                                   <option value="criacao_asc" \${window.ordemColunas[col.id] === 'criacao_asc' ? 'selected' : ''}>Criação (Mais Antigos)</option>
@@ -3306,6 +3359,39 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
               
               renderizarKanban();
+          });
+          
+          socket.on('colunas_reordenadas', (dados) => {
+              if (dados.espacoId == ${espacoAtual.id}) {
+                  // Só reordena se a ordem atual do cliente for diferente da ordem do servidor
+                  // para evitar saltos estranhos no ecrã de quem já fez a ação localmente
+                  let needsUpdate = false;
+                  for (let i = 0; i < dados.novaOrdemIds.length; i++) {
+                      const currentId = colunasDados[i] ? colunasDados[i].id : -1;
+                      if (currentId != dados.novaOrdemIds[i]) {
+                          needsUpdate = true;
+                          break;
+                      }
+                  }
+                  
+                  if (needsUpdate) {
+                      const novasColunas = [];
+                      dados.novaOrdemIds.forEach(id => {
+                          const col = colunasDados.find(c => c.id == id);
+                          if(col) novasColunas.push(col);
+                      });
+                      
+                      // Mantém as colunas que eventualmente não estavam na array enviada no fim
+                      colunasDados.forEach(col => {
+                          if (!novasColunas.some(c => c.id == col.id)) {
+                              novasColunas.push(col);
+                          }
+                      });
+                      
+                      colunasDados = novasColunas;
+                      renderizarKanban();
+                  }
+              }
           });
 
           socket.on('card_atualizado', (dados) => {

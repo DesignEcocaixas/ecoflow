@@ -12,6 +12,30 @@ const { isLogged } = require("../middlewares/authMiddleware");
 // View
 const kanbanView = require("../views/kanbanView");
 
+// =========================================================================
+// FUNÇÃO UTILITÁRIA DE AUDITORIA (LOGS DE SISTEMA)
+// =========================================================================
+const registrarLogSistema = async (usuario, acao, modulo, detalhes) => {
+    try {
+        await db.promise().query(`
+            CREATE TABLE IF NOT EXISTS logs_sistema (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                usuario_nome VARCHAR(255) NOT NULL,
+                acao VARCHAR(255) NOT NULL,
+                modulo VARCHAR(100) NOT NULL,
+                detalhes TEXT,
+                data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await db.promise().query(
+            "INSERT INTO logs_sistema (usuario_nome, acao, modulo, detalhes) VALUES (?, ?, ?, ?)",
+            [usuario || 'Sistema', acao, modulo, detalhes]
+        );
+    } catch (err) {
+        console.error("Falha ao registar log de auditoria:", err);
+    }
+};
+
 //------------------------------------------------------------------------------ROTAS PARA KANBAN------------------------------------------------------------------------------
 //LISTAR COLUNAS/CARDS E ETIQUETAS
 router.get("/kanban", isLogged, (req, res) => {
@@ -128,6 +152,8 @@ router.get("/kanban", isLogged, (req, res) => {
                                 });
 
                                 if (cardsParaDeletar.length > 0) {
+                                    registrarLogSistema('Sistema', 'Exclusão Automática', 'Kanban', `Os cartões com IDs ${cardsParaDeletar.join(', ')} foram automaticamente excluídos.`);
+                                    
                                     db.query("DELETE FROM kanban_cards WHERE id IN (?)", [cardsParaDeletar], () => {});
                                     db.query("DELETE FROM kanban_anexos WHERE card_id IN (?)", [cardsParaDeletar], () => {});
                                     db.query("DELETE FROM kanban_historico WHERE card_id IN (?)", [cardsParaDeletar], () => {});
@@ -266,6 +292,8 @@ router.post("/kanban/relatorio", isLogged, async (req, res) => {
             csv += linhaArray.join(';') + '\n';
         });
 
+        registrarLogSistema(req.session.user.nome, 'Relatório Gerado', 'Kanban', `Relatório exportado para o Espaço de Trabalho ID: ${espaco_id}`);
+
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="relatorio_kanban_espaco_${espaco_id}.csv"`);
         res.send('\uFEFF' + csv);
@@ -297,6 +325,8 @@ router.post("/kanban/colunas/:id/limpar", isLogged, async (req, res) => {
             await db.promise().query("DELETE FROM kanban_historico WHERE card_id IN (?)", [idsDeletar]);
             await db.promise().query("DELETE FROM kanban_cards_etiquetas WHERE card_id IN (?)", [idsDeletar]);
         }
+        
+        registrarLogSistema(req.session.user.nome, 'Limpeza Manual', 'Kanban Colunas', `Coluna ID ${colId} teve ${cards.length} cartões apagados.`);
 
         res.json({ success: true, deletados: cards.length, ids: idsDeletar });
     } catch (error) {
@@ -320,6 +350,7 @@ router.post("/kanban/colunas/exclusao-automatica", isLogged, async (req, res) =>
         }
         
         await Promise.all(promises);
+        registrarLogSistema(req.session.user.nome, 'Regras de Exclusão Atualizadas', 'Kanban Colunas', `O utilizador definiu novas regras de exclusão automática.`);
         res.json({ success: true });
     } catch (error) {
         console.error("Erro ao atualizar regras de exclusão:", error);
@@ -337,6 +368,7 @@ router.post("/espacos-trabalho/percas/:id", isLogged, (req, res) => {
             console.error("Erro ao atualizar status de percas:", err);
             return res.status(500).json({ success: false });
         }
+        registrarLogSistema(req.session.user.nome, 'Status das Percas Atualizado', 'Espaço de Trabalho', `Status alterado para ${percasAtivo} no Espaço ID ${espacoId}.`);
         res.json({ success: true });
     });
 });
@@ -370,7 +402,6 @@ router.post("/espacos-trabalho/wallpaper/:id", isLogged, uploadKanban.single("wa
 router.get("/kanban/api/espacos", isLogged, async (req, res) => {
     try {
         const user = req.session.user;
-        // CORREÇÃO: Removidos os campos 'criador' e 'usuario_id' que não existem na tabela espacos_trabalho
         const [espacos] = await db.promise().query("SELECT id, nome, permissoes, criado_por FROM espacos_trabalho ORDER BY nome ASC");
         
         const userRole = user.tipo_usuario || 'admin';
@@ -403,14 +434,11 @@ router.post("/kanban/api/cards/transferir", express.json(), isLogged, async (req
     try {
         const { cardId, novaColunaId } = req.body;
         
-        // Atualiza a coluna do card e manda-o para o final da fila (ordem 999)
         await db.promise().query("UPDATE kanban_cards SET coluna_id = ?, ordem = 999 WHERE id = ?", [novaColunaId, cardId]);
-        
-        // Regista a transferência no histórico do cartão
         await db.promise().query("INSERT INTO kanban_historico (card_id, acao, usuario) VALUES (?, 'Transferido para outro Workspace', ?)", [cardId, req.session.user.nome]);
-        
-        // Remove as etiquetas associadas, pois as etiquetas são exclusivas de cada workspace
         await db.promise().query("DELETE FROM kanban_cards_etiquetas WHERE card_id = ?", [cardId]);
+
+        registrarLogSistema(req.session.user.nome, 'Transferência de Card', 'Kanban Cards', `Card ID ${cardId} transferido para a coluna ID ${novaColunaId}.`);
 
         res.json({ success: true });
     } catch(e) {
@@ -468,11 +496,12 @@ router.post("/kanban/anexos/:id", isLogged, uploadKanban.array("anexo"), (req, r
             return res.status(500).send("Erro ao guardar anexo.");
         }
         
-        // Dispara a Notificação de Anexo com o Título
         db.query("SELECT titulo FROM kanban_cards WHERE id = ?", [cardId], (errSel, rows) => {
             const tituloCard = (rows && rows.length > 0) ? rows[0].titulo : "um card";
             const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
             db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} anexou arquivo(s) no card "${tituloCard}"`]);
+            
+            registrarLogSistema(usuarioNome, 'Anexo Adicionado', 'Kanban Cards', `Ficheiros anexados ao Card ID ${cardId}.`);
         });
 
         res.json({ success: true, message: "Anexos salvos com sucesso!" });
@@ -497,11 +526,12 @@ router.delete("/kanban/anexos/:id", isLogged, (req, res) => {
         db.query("DELETE FROM kanban_anexos WHERE id = ?", [anexoId], (deleteErr) => {
             if (deleteErr) return res.status(500).send("Erro ao excluir registro do banco");
             
-            // Dispara a Notificação de Exclusão com o Título
             db.query("SELECT titulo FROM kanban_cards WHERE id = ?", [cardId], (errSel, rows) => {
                 const tituloCard = (rows && rows.length > 0) ? rows[0].titulo : "um card";
                 const usuarioNome = req.session.user ? req.session.user.nome : 'Sistema';
                 db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuarioNome} removeu um anexo do card "${tituloCard}"`]);
+                
+                registrarLogSistema(usuarioNome, 'Anexo Excluído', 'Kanban Cards', `Anexo ID ${anexoId} removido do Card ID ${cardId}.`);
             });
             
             res.json({ success: true });

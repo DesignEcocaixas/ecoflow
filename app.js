@@ -247,6 +247,22 @@ app.use('/', facasRoutes);
 const testeRoutes = require('./routes/testes');
 app.use('/', testeRoutes);
 
+// ROTA DA AUDITORIA (LOGS) - Sem View
+app.get("/logs", async (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(403).send("Acesso restrito a administradores.");
+    }
+    
+    try {
+        // Traz as últimas 500 ações registadas
+        const [logs] = await db.promise().query("SELECT * FROM logs_sistema ORDER BY data_hora DESC LIMIT 500");
+        res.json(logs); // Envia direto como JSON
+    } catch (err) {
+        console.error("Erro ao buscar logs:", err);
+        res.status(500).send("Erro interno ao aceder à auditoria.");
+    }
+});
+
 //WEB SOCKETS DO CRUD DO KANBAN E PRESENÇA
 io.on("connection", (socket) => {
     
@@ -355,11 +371,39 @@ io.on("connection", (socket) => {
             db.query("DELETE FROM kanban_colunas WHERE id = ?", [colunaId], (errDel) => {
                 if (errDel) return console.error(errDel);
                 
-                registrarLogSistema(usuarioNome, 'Exclusão', 'Kanban Colunas', `A apagou permanentemente a coluna "${tituloColuna}" do Workspace ID ${espacoId}.`);
+                registrarLogSistema(usuarioNome, 'Exclusão', 'Kanban Colunas', `Apagou permanentemente a coluna "${tituloColuna}" do Workspace ID ${espacoId}.`);
 
                 io.emit("coluna_deletada", colunaId);
             });
         });
+    });
+
+    // =========================================================================
+    // REORDENAR COLUNAS (Mover para esquerda/direita)
+    // =========================================================================
+    socket.on("reordenar_colunas", async (dados) => {
+        try {
+            const { espacoId, novaOrdemIds } = dados;
+            if (!novaOrdemIds || !Array.isArray(novaOrdemIds)) return;
+
+            // Executa a atualização de ordem para todas as colunas
+            const promises = novaOrdemIds.map((id, index) => {
+                return db.promise().query("UPDATE kanban_colunas SET ordem = ? WHERE id = ?", [index, id]);
+            });
+
+            await Promise.all(promises);
+
+            const userPresenca = kanbanPresenca.get(socket.id);
+            const usuarioNome = userPresenca ? userPresenca.nome : 'Usuário do Workspace';
+
+            // Registar no log de auditoria
+            registrarLogSistema(usuarioNome, 'Reordenação', 'Kanban Colunas', `Reordenou a posição das colunas no Workspace ID ${espacoId}.`);
+
+            // Avisa todos os clientes conectados para sincronizar visualmente
+            io.emit('colunas_reordenadas', dados);
+        } catch (error) {
+            console.error("Erro ao reordenar colunas:", error);
+        }
     });
 
     //CRIAR CARD
@@ -491,24 +535,6 @@ app.get("/ping-sessao", (req, res) => {
     return res.status(401).json({ status: "expirado" });
 });
 
-// Rota rápida para consulta de auditoria
-app.get("/logs", async (req, res) => {
-    // Bloqueia o acesso a quem não for admin
-    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
-        return res.status(403).send("Acesso restrito a administradores.");
-    }
-    
-    try {
-        // Traz as últimas 100 ações registadas
-        const [logs] = await db.promise().query("SELECT * FROM logs_sistema ORDER BY data_hora DESC LIMIT 100");
-        
-        // Exibe os dados em formato JSON diretamente no ecrã
-        res.json(logs); 
-    } catch (err) {
-        console.error("Erro ao procurar logs:", err);
-        res.status(500).send("Erro interno ao aceder à auditoria.");
-    }
-});
 
 app.use(notFoundHandler);     
 app.use(globalErrorHandler);

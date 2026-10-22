@@ -793,6 +793,17 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       <label class="form-check-label text-white cursor-pointer fw-medium m-0" for="percasSwitch" style="font-size: 0.85rem; padding-top: 2px;">Percas(Produção)</label>
                                   </div>
                               </li>
+                              
+                              <li class="px-3 py-2 border-bottom border-custom">
+                                  <label class="form-label text-white fw-bold mb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar Todas as Colunas</label>
+                                  <select class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" onchange="if(this.value){ window.ordenarTodasColunas(this.value); this.value=''; }">
+                                      <option value="" disabled selected>Escolha a ordenação...</option>
+                                      <option value="etiqueta_asc">Etiquetas (Crescente A-Z)</option>
+                                      <option value="etiqueta_desc">Etiquetas (Decrescente Z-A)</option>
+                                      <option value="default">Padrão (Prazo e Prioridade)</option>
+                                  </select>
+                              </li>
+
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
                                       <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
@@ -1534,6 +1545,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               window.ordemColunas[colId] = tipo;
               localStorage.setItem('kanbanOrdem_${espacoAtual.id}_' + NOME_USUARIO, JSON.stringify(window.ordemColunas));
               window.renderizarKanban();
+          };
+
+          window.ordenarTodasColunas = function(tipo) {
+              colunasDados.forEach(col => {
+                  window.ordemColunas[col.id] = tipo;
+              });
+              localStorage.setItem('kanbanOrdem_${espacoAtual.id}_' + NOME_USUARIO, JSON.stringify(window.ordemColunas));
+              window.renderizarKanban();
+              mostrarToast('sucesso', 'Ordenação Atualizada', 'Todas as colunas foram reordenadas.');
           };
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;

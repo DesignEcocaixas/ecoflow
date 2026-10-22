@@ -147,6 +147,30 @@ io.on("connection", (socket) => {
     });
 });
 
+// =========================================================================
+// FUNÇÃO UTILITÁRIA DE AUDITORIA (LOGS DE SISTEMA)
+// =========================================================================
+const registrarLogSistema = async (usuario, acao, modulo, detalhes) => {
+    try {
+        await db.promise().query(`
+            CREATE TABLE IF NOT EXISTS logs_sistema (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                usuario_nome VARCHAR(255) NOT NULL,
+                acao VARCHAR(255) NOT NULL,
+                modulo VARCHAR(100) NOT NULL,
+                detalhes TEXT,
+                data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await db.promise().query(
+            "INSERT INTO logs_sistema (usuario_nome, acao, modulo, detalhes) VALUES (?, ?, ?, ?)",
+            [usuario || 'Sistema', acao, modulo, detalhes]
+        );
+    } catch (err) {
+        console.error("Falha ao registar log de auditoria:", err);
+    }
+};
+
 //---------------------------------------------------ROTAS DO SISTEMA---------------------------------------------------
 const authRoutes = require("./routes/auth");
 app.use("/", authRoutes);
@@ -266,12 +290,20 @@ io.on("connection", (socket) => {
 
     // APAGAR ETIQUETA
     socket.on("deletar_etiqueta", (id) => {
-        db.query("DELETE FROM kanban_etiquetas WHERE id = ?", [id], (err) => {
-            if (!err) {
-                io.emit("etiqueta_deletada_global", id);
-            } else {
-                console.error("Erro ao deletar etiqueta:", err);
-            }
+        const userPresenca = kanbanPresenca.get(socket.id);
+        const usuarioNome = userPresenca ? userPresenca.nome : 'Usuário do Workspace';
+
+        db.query("SELECT nome FROM kanban_etiquetas WHERE id = ?", [id], (err, rows) => {
+            const nomeEtiqueta = (rows && rows.length > 0) ? rows[0].nome : `ID ${id}`;
+
+            db.query("DELETE FROM kanban_etiquetas WHERE id = ?", [id], (errDel) => {
+                if (!errDel) {
+                    registrarLogSistema(usuarioNome, 'Exclusão', 'Kanban Etiquetas', `Apagou a etiqueta "${nomeEtiqueta}".`);
+                    io.emit("etiqueta_deletada_global", id);
+                } else {
+                    console.error("Erro ao deletar etiqueta:", errDel);
+                }
+            });
         });
     });
 
@@ -313,9 +345,20 @@ io.on("connection", (socket) => {
 
     //APAGAR COLUNA
     socket.on("deletar_coluna", (colunaId) => {
-        db.query("DELETE FROM kanban_colunas WHERE id = ?", [colunaId], (err) => {
-            if (err) return console.error(err);
-            io.emit("coluna_deletada", colunaId);
+        const userPresenca = kanbanPresenca.get(socket.id);
+        const usuarioNome = userPresenca ? userPresenca.nome : 'Usuário do Workspace';
+
+        db.query("SELECT titulo, espaco_id FROM kanban_colunas WHERE id = ?", [colunaId], (err, rows) => {
+            const tituloColuna = (rows && rows.length > 0) ? rows[0].titulo : `ID ${colunaId}`;
+            const espacoId = (rows && rows.length > 0) ? rows[0].espaco_id : '?';
+
+            db.query("DELETE FROM kanban_colunas WHERE id = ?", [colunaId], (errDel) => {
+                if (errDel) return console.error(errDel);
+                
+                registrarLogSistema(usuarioNome, 'Exclusão', 'Kanban Colunas', `A apagou permanentemente a coluna "${tituloColuna}" do Workspace ID ${espacoId}.`);
+
+                io.emit("coluna_deletada", colunaId);
+            });
         });
     });
 
@@ -429,6 +472,8 @@ io.on("connection", (socket) => {
             db.query("DELETE FROM kanban_cards WHERE id = ?", [cardId], (err) => {
                 if (err) return console.error(err);
                 
+                registrarLogSistema(usuario, 'Exclusão', 'Kanban Cards', `Excluiu o card "${tituloCard}" (ID ${cardId}).`);
+                
                 // Lança a notificação com o título recuperado
                 db.query("INSERT INTO notificacoes (mensagem, tipo) VALUES (?, 'kanban')", [`${usuario} excluiu o card "${tituloCard}"`]);
                 
@@ -446,6 +491,24 @@ app.get("/ping-sessao", (req, res) => {
     return res.status(401).json({ status: "expirado" });
 });
 
+// Rota rápida para consulta de auditoria
+app.get("/logs", async (req, res) => {
+    // Bloqueia o acesso a quem não for admin
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(403).send("Acesso restrito a administradores.");
+    }
+    
+    try {
+        // Traz as últimas 100 ações registadas
+        const [logs] = await db.promise().query("SELECT * FROM logs_sistema ORDER BY data_hora DESC LIMIT 100");
+        
+        // Exibe os dados em formato JSON diretamente no ecrã
+        res.json(logs); 
+    } catch (err) {
+        console.error("Erro ao procurar logs:", err);
+        res.status(500).send("Erro interno ao aceder à auditoria.");
+    }
+});
 
 app.use(notFoundHandler);     
 app.use(globalErrorHandler);

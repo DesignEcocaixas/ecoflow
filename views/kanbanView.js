@@ -55,6 +55,50 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
   </div>
   ` : '';
 
+  // Modal: Filtros e Ordenação de Colunas
+  const modalFiltrosOrdenacaoHtml = `
+  <div class="modal fade" id="modalFiltrosOrdenacao" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
+          <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
+              <div class="modal-header modal-header-dark border-custom py-3">
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-filter text-info me-2"></i> Filtros e Ordenação</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark text-white">
+                  
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar Todas as Colunas</h6>
+                  <select class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm mb-4" onchange="if(this.value){ window.ordenarTodasColunas(this.value); }">
+                      <option value="" disabled selected>Escolha a ordenação...</option>
+                      <option value="default">Padrão (Prazo e Prioridade)</option>
+                      <option value="criacao_asc">Criação (Mais Antigos)</option>
+                      <option value="criacao_desc">Criação (Mais Recentes)</option>
+                      <option value="prazo_asc">Prazo (Crescente)</option>
+                      <option value="prazo_desc">Prazo (Decrescente)</option>
+                      <option value="etiqueta_asc">Etiquetas (Crescente A-Z)</option>
+                      <option value="etiqueta_desc">Etiquetas (Decrescente Z-A)</option>
+                  </select>
+
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-tags text-accent me-1"></i> Exibir Apenas Etiquetas</h6>
+                  <div class="d-flex flex-column gap-1" style="max-height: 220px; overflow-y: auto;">
+                      ${espacoAtual.etiquetas && espacoAtual.etiquetas.length > 0 ? espacoAtual.etiquetas.map(e => `
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0 filtro-etiqueta-checkbox" type="checkbox" value="${e.id}" onchange="window.aplicarFiltroEtiquetas()">
+                          <div class="rounded flex-shrink-0 me-2 shadow-sm" style="width: 12px; height: 12px; background-color: ${e.cor};"></div>
+                          <span style="font-size: 0.8rem;" class="text-truncate fw-medium text-white">${escapeHtmlAttr(e.nome)}</span>
+                      </label>
+                      `).join('') : '<span class="text-white-50 small">Nenhuma etiqueta cadastrada no painel.</span>'}
+                  </div>
+                  
+              </div>
+              <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap py-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white fw-bold" onclick="window.limparFiltrosEtiquetas()">Limpar Filtro</button>
+                  <button type="button" class="btn btn-sm btn-primary w-100 text-dark fw-bold shadow-sm" data-bs-dismiss="modal">Concluir</button>
+              </div>
+          </div>
+      </div>
+  </div>
+  `;
+
   // Modal: Exportação Dinâmica do Relatório (Com filtros de data e colunas)
   const modalExportacaoRelatorioHtml = `
   <div class="modal fade" id="modalExportacaoRelatorio" tabindex="-1">
@@ -125,7 +169,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               </div>
               <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar relatório</button>
+                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar Ficheiro</button>
               </div>
           </form>
       </div>
@@ -795,13 +839,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </li>
                               
                               <li class="px-3 py-2 border-bottom border-custom">
-                                  <label class="form-label text-white fw-bold mb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar todas as colunas</label>
-                                  <select class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" onchange="if(this.value){ window.ordenarTodasColunas(this.value); this.value=''; }">
-                                      <option value="" disabled selected>Escolha a ordenação...</option>
-                                      <option value="etiqueta_asc">Etiquetas (Crescente A-Z)</option>
-                                      <option value="etiqueta_desc">Etiquetas (Decrescente Z-A)</option>
-                                      <option value="default">Padrão (Prazo e Prioridade)</option>
-                                  </select>
+                                  <button class="btn btn-sm btn-outline-info w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalFiltrosOrdenacao">
+                                      <i class="fa-solid fa-filter"></i> Filtros e Ordenação
+                                  </button>
                               </li>
 
                               <li class="px-3 py-2 border-bottom border-custom">
@@ -811,7 +851,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </li>
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
-                                      <i class="fa-solid fa-file-excel"></i> Relatório
+                                      <i class="fa-solid fa-file-excel"></i> Baixar Relatório
                                   </button>
                               </li>
                               <li class="px-3 py-3">
@@ -839,6 +879,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       ${modalAvisoHtml}
       ${modalExclusaoAutomaticaHtml}
+      ${modalFiltrosOrdenacaoHtml}
       ${modalExportacaoRelatorioHtml}
       ${modalExclusaoColunaHtml}
 
@@ -1205,6 +1246,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.lastNotificationMsg = "";
           window.ordemColunas = {};
           window.lastFeedbackTime = window.lastFeedbackTime || {};
+          
+          window.filtroEtiquetasAtivo = [];
 
           // Injetando a função de escapeHtmlAttr no frontend
           window.escapeHtmlAttr = function(str) {
@@ -1554,6 +1597,21 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               localStorage.setItem('kanbanOrdem_${espacoAtual.id}_' + NOME_USUARIO, JSON.stringify(window.ordemColunas));
               window.renderizarKanban();
               mostrarToast('sucesso', 'Ordenação Atualizada', 'Todas as colunas foram reordenadas.');
+          };
+
+          // ==========================================
+          // FILTRO POR ETIQUETAS
+          // ==========================================
+          window.aplicarFiltroEtiquetas = function() {
+              const checkboxes = document.querySelectorAll('.filtro-etiqueta-checkbox:checked');
+              window.filtroEtiquetasAtivo = Array.from(checkboxes).map(cb => parseInt(cb.value));
+              window.renderizarKanban();
+          };
+
+          window.limparFiltrosEtiquetas = function() {
+              document.querySelectorAll('.filtro-etiqueta-checkbox').forEach(cb => cb.checked = false);
+              window.filtroEtiquetasAtivo = [];
+              window.renderizarKanban();
           };
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
@@ -2538,7 +2596,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   if (col.cards && col.cards.length > 0) {
                       const tipoOrdem = window.ordemColunas[col.id] || 'default';
                       
-                      let cardsOrdenados = [...col.cards].sort((a, b) => {
+                      let cardsParaProcessar = col.cards;
+                      if (window.filtroEtiquetasAtivo && window.filtroEtiquetasAtivo.length > 0) {
+                          cardsParaProcessar = cardsParaProcessar.filter(card => {
+                              const tagIds = (card.etiquetas || []).map(t => typeof t === 'object' ? t.id : t);
+                              return window.filtroEtiquetasAtivo.some(id => tagIds.includes(id));
+                          });
+                      }
+
+                      let cardsOrdenados = [...cardsParaProcessar].sort((a, b) => {
                           // Alta prioridade SEMPRE por cima
                           if (a.prioridade === 'alta' && b.prioridade !== 'alta') return -1;
                           if (b.prioridade === 'alta' && a.prioridade !== 'alta') return 1;

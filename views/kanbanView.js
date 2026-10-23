@@ -125,7 +125,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               </div>
               <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar Ficheiro</button>
+                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar relatório</button>
               </div>
           </form>
       </div>
@@ -795,7 +795,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </li>
                               
                               <li class="px-3 py-2 border-bottom border-custom">
-                                  <label class="form-label text-white fw-bold mb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar Todas as Colunas</label>
+                                  <label class="form-label text-white fw-bold mb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar todas as colunas</label>
                                   <select class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm" onchange="if(this.value){ window.ordenarTodasColunas(this.value); this.value=''; }">
                                       <option value="" disabled selected>Escolha a ordenação...</option>
                                       <option value="etiqueta_asc">Etiquetas (Crescente A-Z)</option>
@@ -811,7 +811,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </li>
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
-                                      <i class="fa-solid fa-file-excel"></i> Baixar Relatório
+                                      <i class="fa-solid fa-file-excel"></i> Relatório
                                   </button>
                               </li>
                               <li class="px-3 py-3">

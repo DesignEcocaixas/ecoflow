@@ -256,4 +256,30 @@ router.get('/exportar/chapas', async (req, res) => {
     }
 });
 
+// ==============================================================================
+// API PÚBLICA PARA CONSUMO VIA FETCH (SEM VERIFICAÇÃO DE LOGIN)
+// ==============================================================================
+router.get("/api/chapas", async (req, res) => {
+    try {
+        // Adiciona headers CORS caso a API seja consumida por domínios diferentes
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Methods", "GET");
+
+        // Busca todas as chapas disponíveis
+        const [chapas] = await db.promise().query("SELECT * FROM chapas ORDER BY id DESC");
+        
+        res.status(200).json({
+            success: true,
+            total: chapas.length,
+            data: chapas
+        });
+    } catch (err) {
+        console.error("Erro na API pública de chapas:", err);
+        res.status(500).json({ 
+            success: false, 
+            message: "Erro interno ao buscar as informações das chapas." 
+        });
+    }
+});
+
 module.exports = router;

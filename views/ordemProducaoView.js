@@ -65,7 +65,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   // PRÉ-PROCESSAMENTO DOS DADOS PARA O CALENDÁRIO (DEDUPLICAÇÃO ATIVA)
   // =======================================================================
   const ordensCalendario = {};
-  const chavesUnicasDia = {}; // Armazena Hash para impedir duplicatas iguais no mesmo dia
+  const chavesUnicasDia = {}; 
   
   const processarParaCalendario = (ordem, tipo) => {
       if (!ordem.previsao_faturamento) return;
@@ -85,13 +85,11 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
           const quantidade = ordem.quantidade || 0;
           const status = ordem.status_producao || 'pendente';
           
-          // Chave rígida para deduplicação (Se for idêntico e para o mesmo dia, sobreescreve/ignora a cópia)
           const chaveHash = `${tipo}|${cliente}|${modelo}|${quantidade}|${status}`;
 
           if (!chavesUnicasDia[dataStr].has(chaveHash)) {
               chavesUnicasDia[dataStr].add(chaveHash);
               
-              // Adicionamos os dados que o modal diário necessita
               ordensCalendario[dataStr][tipo].push({
                   id: ordem.id,
                   cliente: cliente,
@@ -119,6 +117,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <style>
     /* Scrollbars Globais (Dark & Green) */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -237,7 +236,8 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     }
     .skeleton-dark * { visibility: hidden !important; }
     .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
-    .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
+    .skeleton-btn-view { height: 26px; width: 50px; border-radius: 4px; display: inline-block; }
+    .skeleton-img-view { height: 140px; width: 100%; }
     @keyframes skeleton-loading-view {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
@@ -252,6 +252,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .hover-cell-calendar { transition: background-color 0.2s ease; }
     .hover-cell-calendar:hover { background-color: rgba(255,255,255,0.05) !important; }
     .cursor-pointer { cursor: pointer; }
+    
+    .sortable-col-item { transition: background-color 0.2s; }
+    .sortable-col-item:hover { background-color: rgba(255,255,255,0.08) !important; }
 
     /* Custom CSS para o scroll dentro da célula do calendário caso tenha muitos nomes */
     .scroll-calendar-cell::-webkit-scrollbar { width: 3px; }
@@ -545,7 +548,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom py-3">
               <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 5. Exportar Planilhas</strong>
-              Dentro dos modais de produção, o botão "Baixar Todas" faz o download do que está visível naquele exato momento.
+              Dentro dos modais de produção, o botão "Baixar relatório" faz o download do que está visível naquele exato momento.
             </li>
             <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
               <strong class="text-white d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 6. Limpar Tudo</strong>
@@ -581,10 +584,12 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
             </div>
             
             <button class="btn btn-sm btn-info fw-bold text-nowrap shadow-sm text-white d-flex align-items-center" onclick="prepararEnvioKanban('modalRotativa')" title="Enviar para a coluna Corte no Kanban">
-              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Kanban
+              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Workspace
             </button>
             
-            <a href="/exportar/rotativa" target="_blank" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
+            <button type="button" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center" onclick="abrirConfigExportacao('rotativa')">
+              <i class="fa-solid fa-file-excel me-1"></i> Baixar relatório
+            </button>
           </div>
 
           <div style="padding-right: 5px;">
@@ -634,7 +639,9 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
               <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Kanban
             </button>
             
-            <a href="/exportar/flexografica" target="_blank" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center"><i class="fa-solid fa-file-excel me-1"></i> Baixar Todas</a>
+            <button type="button" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center" onclick="abrirConfigExportacao('flexo')">
+              <i class="fa-solid fa-file-excel me-1"></i> Baixar Todas
+            </button>
           </div>
 
           <div style="padding-right: 5px;">
@@ -718,12 +725,12 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                  <div class="p-3 bg-custom-darker border border-custom rounded h-100">
                      <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-download me-1"></i> EXPORTAR PLANILHAS</h6>
                      <div class="d-flex flex-column gap-2">
-                         <a href="/exportar/rotativa" target="_blank" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                         <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('rotativa');">
                              <i class="fa-solid fa-gear me-2"></i> Baixar Rotativa / Plana
-                         </a>
-                         <a href="/exportar/flexografica" target="_blank" class="btn btn-sm btn-success fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide();">
+                         </button>
+                         <button type="button" class="btn btn-sm btn-success fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('flexo');">
                              <i class="fa-solid fa-layer-group me-2"></i> Baixar Flexográfica
-                         </a>
+                         </button>
                      </div>
                  </div>
              </div>
@@ -752,13 +759,65 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
+  <!-- NOVO MODAL: CONFIGURAÇÃO DO EXCEL E KANBAN -->
+  <div class="modal fade" id="modalConfigExportacao" tabindex="-1" style="z-index: 2065;" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+          <form id="formExportacaoExcel" method="GET" action="" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarOrdemColunas(event)">
+              <div class="modal-header bg-custom-darker border-custom shadow-sm">
+                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-file-excel text-success me-2"></i> Gerar Relatório Excel</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark">
+                  
+                  <div class="mb-4">
+                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-layer-group me-1"></i> Agrupar e Ordenar linhas por:</label>
+                      <select name="agrupamento" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm">
+                          <option value="cliente" selected>Cliente (Padrão)</option>
+                          <option value="data">Data de Faturamento</option>
+                          <option value="modelo">Modelo</option>
+                          <option value="tamanho">Tamanho</option>
+                      </select>
+                      <small class="text-muted mt-2 d-block" style="font-size: 0.65rem;">O sistema irá criar automaticamente uma linha em branco para separar cada grupo no Excel.</small>
+                  </div>
+                  
+                  <hr class="border-custom mb-3 mt-3">
+
+                  <div>
+                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-arrows-up-down me-1"></i> Ordem das Colunas na Planilha:</label>
+                      <input type="hidden" name="colunas" id="hiddenColunasExport">
+                      <div id="sortableColunasExport" class="d-flex flex-wrap gap-2">
+                          <!-- Preenchido via JS -->
+                      </div>
+                      <small class="text-muted mt-3 d-block" style="font-size: 0.65rem;">Arraste os blocos acima para definir a ordem (da esquerda para a direita) que as colunas aparecerão na planilha.</small>
+                  </div>
+
+              </div>
+              <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Relatório</button>
+              </div>
+          </form>
+      </div>
+  </div>
+
   <div class="modal fade" id="modalConfirmarKanban" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
       <div class="modal-content erp-modal border-0 shadow-lg">
         <div class="modal-body text-center p-4 bg-custom-darker">
           <i class="fa-solid fa-share-nodes fa-3x text-info mb-3"></i>
           <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Integrar com Kanban?</h6>
-          <p id="textoConfirmacaoKanban" class="text-muted mb-4" style="font-size: 0.75rem;">Deseja processar e enviar as ordens?</p>
+          <p id="textoConfirmacaoKanban" class="text-muted mb-3" style="font-size: 0.75rem;">Deseja processar e enviar as ordens?</p>
+          
+          <div class="mb-4 text-start">
+              <label class="form-label text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Agrupar cartões por:</label>
+              <select id="selectAgrupamentoKanban" class="form-select form-select-sm bg-custom-dark border-custom text-white shadow-sm">
+                  <option value="cliente" selected>Cliente</option>
+                  <option value="data">Data de Previsão</option>
+                  <option value="modelo">Modelo</option>
+                  <option value="tamanho">Tamanho</option>
+              </select>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary w-50 text-white" data-bs-dismiss="modal">Cancelar</button>
             <button type="button" class="btn btn-sm btn-info w-50 fw-bold text-white" onclick="executarEnvioKanban()">Sim, Enviar</button>
@@ -772,6 +831,95 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+
+    // =======================================================================
+    // CONFIGURAÇÃO DO RELATÓRIO EXCEL (SORTABLE)
+    // =======================================================================
+    const colunasDisponiveis = {
+        rotativa: [
+            { key: 'cliente', label: 'Cliente' },
+            { key: 'vendedor', label: 'Vendedor' },
+            { key: 'modelo', label: 'Modelo' },
+            { key: 'tamanho', label: 'Tamanho' },
+            { key: 'quantidade', label: 'Quantidade' },
+            { key: 'previsao_faturamento', label: 'Data Previsão' },
+            { key: 'operador', label: 'Operador' }
+        ],
+        flexo: [
+            { key: 'cliente', label: 'Cliente' },
+            { key: 'vendedor', label: 'Vendedor' },
+            { key: 'modelo', label: 'Modelo' },
+            { key: 'tamanho', label: 'Tamanho' },
+            { key: 'material', label: 'Material' },
+            { key: 'qtd_cores', label: 'Qtd Cores' },
+            { key: 'cor_personalizacao', label: 'Cor Personalização' },
+            { key: 'quantidade', label: 'Quantidade' },
+            { key: 'previsao_faturamento', label: 'Data Previsão' },
+            { key: 'operador', label: 'Operador' }
+        ]
+    };
+
+    let sortableExport = null;
+
+    window.abrirConfigExportacao = function(tipo) {
+        const form = document.getElementById('formExportacaoExcel');
+        form.action = '/exportar/' + (tipo === 'rotativa' ? 'rotativa' : 'flexografica');
+        
+        const container = document.getElementById('sortableColunasExport');
+        const cols = colunasDisponiveis[tipo];
+        
+        container.innerHTML = cols.map(c => \`
+            <div class="p-1 px-2 bg-custom-darker border border-custom rounded shadow-sm d-flex align-items-center cursor-pointer sortable-col-item" data-key="\${c.key}" style="width: calc(50% - 0.5rem);">
+                <i class="fa-solid fa-grip-vertical text-muted me-2"></i>
+                <span class="text-white fw-medium text-truncate" style="font-size: 0.75rem;" title="\${c.label}">\${c.label}</span>
+            </div>
+        \`).join('');
+
+        if(sortableExport) sortableExport.destroy();
+        sortableExport = new Sortable(container, {
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+
+        const modalSugestao = bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload'));
+        if(modalSugestao) modalSugestao.hide();
+
+        const modalRot = bootstrap.Modal.getInstance(document.getElementById('modalRotativa'));
+        if(modalRot) modalRot.hide();
+
+        const modalFlex = bootstrap.Modal.getInstance(document.getElementById('modalFlexo'));
+        if(modalFlex) modalFlex.hide();
+
+        const modal = new bootstrap.Modal(document.getElementById('modalConfigExportacao'));
+        modal.show();
+    };
+
+    window.salvarOrdemColunas = function(e) {
+        e.preventDefault(); // Impede o envio tradicional que aciona o beforeunload
+        
+        const form = e.target;
+        const items = document.querySelectorAll('.sortable-col-item');
+        const keys = Array.from(items).map(item => item.getAttribute('data-key'));
+        document.getElementById('hiddenColunasExport').value = keys.join(',');
+        
+        const formData = new FormData(form);
+        const queryString = new URLSearchParams(formData).toString();
+        const url = form.action + '?' + queryString;
+        
+        const modalEl = document.getElementById('modalConfigExportacao');
+        const m = bootstrap.Modal.getInstance(modalEl);
+        if (m) m.hide();
+        
+        mostrarToast('sucesso', 'Relatório Gerado', 'O download foi iniciado com as suas configurações.');
+        
+        // Dispara o download de forma silenciosa via hiperligação escondida
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
 
     // =======================================================================
     // LÓGICA DO CALENDÁRIO COM QUADRADINHOS COLORIDOS (AVATAR INICIAIS)
@@ -975,6 +1123,8 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         const { ids, tipo } = kanbanEnvioState;
         if (!ids || ids.length === 0) return;
 
+        const agrupamento = document.getElementById('selectAgrupamentoKanban').value || 'cliente';
+
         mostrarToast('sucesso', 'Aguarde', 'Agrupando e enviando para o Kanban...');
 
         try {
@@ -983,7 +1133,8 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     ordens_ids: ids,
-                    tipo: tipo
+                    tipo: tipo,
+                    agrupamento: agrupamento
                 }) 
             });
 

@@ -507,15 +507,21 @@ router.post('/limpar', async (req, res) => {
 //EXPORTAR EXCEL DE ORDENS DA ROTATIVA
 router.get('/exportar/rotativa', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+    const agrupamento = req.query.agrupamento || 'cliente';
+    const colunasQuery = req.query.colunas;
 
     try {
+        let ordencaoSql = "previsao_faturamento ASC, cliente ASC";
+        if (agrupamento === 'cliente') ordencaoSql = "cliente ASC, previsao_faturamento ASC";
+        if (agrupamento === 'data') ordencaoSql = "previsao_faturamento ASC, cliente ASC";
+        if (agrupamento === 'modelo') ordencaoSql = "modelo ASC, cliente ASC";
+        if (agrupamento === 'tamanho') ordencaoSql = "tamanho ASC, cliente ASC";
+
         const [dados] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, quantidade, previsao_faturamento, status_producao
             FROM pedidos_rotativa
             WHERE ativo = 1
-            ORDER BY 
-                previsao_faturamento ASC,
-                cliente ASC
+            ORDER BY ${ordencaoSql}
         `);
 
         const ExcelJS = require('exceljs');
@@ -531,15 +537,21 @@ router.get('/exportar/rotativa', async (req, res) => {
             margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
         };
 
-        sheet.columns = [
-            { header: 'CLIENTE', key: 'cliente', width: 30 },
-            { header: 'VENDEDOR', key: 'vendedor', width: 10 },
-            { header: 'MODELO', key: 'modelo', width: 20 },
-            { header: 'TAMANHO', key: 'tamanho', width: 10 },
-            { header: 'QUANTIDADE', key: 'quantidade', width: 13 },
-            { header: 'DATA', key: 'previsao_faturamento', width: 10 },
-            { header: 'OPERADOR', key: 'operador', width: 20 }
-        ];
+        const colunasMap = {
+            cliente: { header: 'CLIENTE', key: 'cliente', width: 30 },
+            vendedor: { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+            modelo: { header: 'MODELO', key: 'modelo', width: 25 },
+            tamanho: { header: 'TAMANHO', key: 'tamanho', width: 12 },
+            quantidade: { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
+            previsao_faturamento: { header: 'DATA', key: 'previsao_faturamento', width: 15 },
+            operador: { header: 'OPERADOR', key: 'operador', width: 20 }
+        };
+
+        let colKeys = ['cliente', 'vendedor', 'modelo', 'tamanho', 'quantidade', 'previsao_faturamento', 'operador'];
+        if (colunasQuery) {
+            colKeys = colunasQuery.split(',').filter(k => colunasMap[k]);
+        }
+        sheet.columns = colKeys.map(k => colunasMap[k]);
 
         sheet.insertRow(1, []);
         sheet.mergeCells(1, 1, 1, sheet.columns.length);
@@ -557,32 +569,34 @@ router.get('/exportar/rotativa', async (req, res) => {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        let clienteAnterior = null;
+        let valorAnterior = null;
 
         dados.forEach(d => {
-            // Insere uma linha em branco apenas quando mudar de cliente
-            if (clienteAnterior && d.cliente !== clienteAnterior) {
+            let valorAtual = d.cliente;
+            if (agrupamento === 'data') valorAtual = d.previsao_faturamento ? new Date(d.previsao_faturamento).getTime() : null;
+            else if (agrupamento === 'modelo') valorAtual = d.modelo;
+            else if (agrupamento === 'tamanho') valorAtual = d.tamanho;
+
+            if (valorAnterior !== null && valorAtual !== valorAnterior) {
                 sheet.addRow({});
             }
 
             sheet.addRow({
-                cliente: d.cliente,
-                vendedor: d.vendedor,
-                modelo: d.modelo,
-                tamanho: d.tamanho,
-                quantidade: d.quantidade,
+                ...d,
                 previsao_faturamento: d.previsao_faturamento ? new Date(d.previsao_faturamento) : null,
                 operador: ''
             });
 
-            clienteAnterior = d.cliente;
+            valorAnterior = valorAtual;
         });
 
-        sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
-        sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
-        sheet.getColumn('modelo').alignment = { horizontal: 'center' };
-        sheet.getColumn('tamanho').alignment = { horizontal: 'center' };
-        sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
+        if (sheet.getColumn('previsao_faturamento')) {
+            sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+        }
+        if (sheet.getColumn('modelo')) sheet.getColumn('modelo').alignment = { horizontal: 'center' };
+        if (sheet.getColumn('tamanho')) sheet.getColumn('tamanho').alignment = { horizontal: 'center' };
+        if (sheet.getColumn('quantidade')) sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
 
         sheet.eachRow((row) => {
             row.eachCell((cell) => {
@@ -605,15 +619,23 @@ router.get('/exportar/rotativa', async (req, res) => {
 //EXPORTAR EXCEL DE ORDENS DA FLEXOGRAFICA
 router.get('/exportar/flexografica', async (req, res) => {
     if (!req.session.user) return res.redirect("/login");
+    const agrupamento = req.query.agrupamento || 'cliente';
+    const colunasQuery = req.query.colunas;
 
     try {
+        let ordencaoSql = "previsao_faturamento ASC, cliente ASC";
+        if (agrupamento === 'cliente') ordencaoSql = "cliente ASC, previsao_faturamento ASC";
+        if (agrupamento === 'data') ordencaoSql = "previsao_faturamento ASC, cliente ASC";
+        if (agrupamento === 'modelo') ordencaoSql = "modelo ASC, cliente ASC";
+        if (agrupamento === 'tamanho') ordencaoSql = "tamanho ASC, cliente ASC";
+
         const [dados] = await db.promise().query(`
             SELECT cliente, vendedor, modelo, tamanho, material,
                    qtd_cores, cor_personalizacao, quantidade,
                    status_pedido, previsao_faturamento, status_producao
             FROM pedidos_flexografica
             WHERE ativo = 1
-            ORDER BY previsao_faturamento ASC, cliente ASC
+            ORDER BY ${ordencaoSql}
         `);
 
         const ExcelJS = require('exceljs');
@@ -629,18 +651,24 @@ router.get('/exportar/flexografica', async (req, res) => {
             margins: { left: 0, right: 0, top: 0, bottom: 0, header: 0, footer: 0 }
         };
 
-        sheet.columns = [
-            { header: 'CLIENTE', key: 'cliente', width: 30 },
-            { header: 'VENDEDOR', key: 'vendedor', width: 10 },
-            { header: 'MODELO', key: 'modelo', width: 20 },
-            { header: 'TAMANHO', key: 'tamanho', width: 10 },
-            { header: 'MATERIAL', key: 'material', width: 10 },
-            { header: 'QTD CORES', key: 'qtd_cores', width: 10 },
-            { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
-            { header: 'QTD', key: 'quantidade', width: 6 },
-            { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 10 },
-            { header: 'OPERADOR', key: 'operador', width: 20 }
-        ];
+        const colunasMap = {
+            cliente: { header: 'CLIENTE', key: 'cliente', width: 30 },
+            vendedor: { header: 'VENDEDOR', key: 'vendedor', width: 15 },
+            modelo: { header: 'MODELO', key: 'modelo', width: 20 },
+            tamanho: { header: 'TAMANHO', key: 'tamanho', width: 10 },
+            material: { header: 'MATERIAL', key: 'material', width: 12 },
+            qtd_cores: { header: 'QTD CORES', key: 'qtd_cores', width: 12 },
+            cor_personalizacao: { header: 'COR PERSONALIZAÇÃO', key: 'cor_personalizacao', width: 35 },
+            quantidade: { header: 'QTD', key: 'quantidade', width: 10 },
+            previsao_faturamento: { header: 'PREV. FAT.', key: 'previsao_faturamento', width: 15 },
+            operador: { header: 'OPERADOR', key: 'operador', width: 20 }
+        };
+
+        let colKeys = ['cliente', 'vendedor', 'modelo', 'tamanho', 'material', 'qtd_cores', 'cor_personalizacao', 'quantidade', 'previsao_faturamento', 'operador'];
+        if (colunasQuery) {
+            colKeys = colunasQuery.split(',').filter(k => colunasMap[k]);
+        }
+        sheet.columns = colKeys.map(k => colunasMap[k]);
 
         sheet.insertRow(1, []);
         sheet.mergeCells(1, 1, 1, sheet.columns.length);
@@ -657,10 +685,15 @@ router.get('/exportar/flexografica', async (req, res) => {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        let clienteAnterior = null;
+        let valorAnterior = null;
 
         dados.forEach(d => {
-            if (clienteAnterior && d.cliente !== clienteAnterior) {
+            let valorAtual = d.cliente;
+            if (agrupamento === 'data') valorAtual = d.previsao_faturamento ? new Date(d.previsao_faturamento).getTime() : null;
+            else if (agrupamento === 'modelo') valorAtual = d.modelo;
+            else if (agrupamento === 'tamanho') valorAtual = d.tamanho;
+
+            if (valorAnterior !== null && valorAtual !== valorAnterior) {
                 sheet.addRow({});
             }
 
@@ -670,13 +703,15 @@ router.get('/exportar/flexografica', async (req, res) => {
                 operador: ''
             });
 
-            clienteAnterior = d.cliente;
+            valorAnterior = valorAtual;
         });
 
-        sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
-        sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
-        sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
-        sheet.getColumn('qtd_cores').alignment = { horizontal: 'center' };
+        if (sheet.getColumn('previsao_faturamento')) {
+            sheet.getColumn('previsao_faturamento').numFmt = 'dd/mm/yyyy';
+            sheet.getColumn('previsao_faturamento').alignment = { horizontal: 'center' };
+        }
+        if (sheet.getColumn('quantidade')) sheet.getColumn('quantidade').alignment = { horizontal: 'center' };
+        if (sheet.getColumn('qtd_cores')) sheet.getColumn('qtd_cores').alignment = { horizontal: 'center' };
 
         sheet.eachRow((row) => {
             row.eachCell(cell => {
@@ -700,8 +735,8 @@ router.get('/exportar/flexografica', async (req, res) => {
 router.post("/producao/integrar-kanban", async (req, res) => {
     if (!req.session.user) return res.status(401).json({ success: false, message: "Não autorizado" });
 
-    // Agora recebemos também o 'tipo' para saber de onde vêm as ordens
-    const { ordens_ids, tipo } = req.body;
+    // Recebemos 'tipo' e a nova configuração 'agrupamento'
+    const { ordens_ids, tipo, agrupamento = 'cliente' } = req.body;
     const usuarioNome = req.session.user.nome;
 
     if (!ordens_ids || !Array.isArray(ordens_ids) || ordens_ids.length === 0) {
@@ -732,27 +767,45 @@ router.post("/producao/integrar-kanban", async (req, res) => {
             return res.status(404).json({ success: false, message: "As ordens solicitadas não foram encontradas." });
         }
 
-        // 3. Agrupamento por Cliente
+        // 3. Agrupamento Dinâmico (Cliente, Data, Modelo ou Tamanho)
         const ordensAgrupadas = {};
         for (const ordem of ordens) {
-            const cliente = ordem.cliente || 'Cliente Indefinido';
-            if (!ordensAgrupadas[cliente]) ordensAgrupadas[cliente] = [];
-            ordensAgrupadas[cliente].push(ordem);
+            let chaveGrupo = 'Indefinido';
+            
+            if (agrupamento === 'data') {
+                if (ordem.previsao_faturamento) {
+                    const d = new Date(ordem.previsao_faturamento);
+                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                    chaveGrupo = d.toLocaleDateString('pt-BR');
+                } else {
+                    chaveGrupo = 'Sem Data';
+                }
+            } else if (agrupamento === 'modelo') {
+                chaveGrupo = ordem.modelo || 'Modelo Indefinido';
+            } else if (agrupamento === 'tamanho') {
+                chaveGrupo = ordem.tamanho || 'Tamanho Indefinido';
+            } else {
+                chaveGrupo = ordem.cliente || 'Cliente Indefinido';
+            }
+
+            if (!ordensAgrupadas[chaveGrupo]) ordensAgrupadas[chaveGrupo] = [];
+            ordensAgrupadas[chaveGrupo].push(ordem);
         }
 
         // 4. Cria os cards agrupados
-        for (const cliente in ordensAgrupadas) {
-            const pedidosDoCliente = ordensAgrupadas[cliente];
-            const tituloCard = cliente;
+        for (const chave in ordensAgrupadas) {
+            const pedidosDoCliente = ordensAgrupadas[chave];
+            const tituloCard = chave;
 
-            let descricaoCard = `<strong>Vendedor:</strong> ${pedidosDoCliente[0].vendedor || '-'}<br><br>`;
-            descricaoCard += `<strong>--- PEDIDOS DESTE CLIENTE ---</strong><br><br>`;
+            let descricaoCard = `<strong>Vendedor(es):</strong> ${[...new Set(pedidosDoCliente.map(p => p.vendedor).filter(Boolean))].join(', ') || '-'}<br><br>`;
+            descricaoCard += `<strong>--- PEDIDOS DESTE GRUPO ---</strong><br><br>`;
 
             // Monta a descrição do card dinâmica por setor
             pedidosDoCliente.forEach((pedido, index) => {
                 descricaoCard += `
                     <div style="margin-bottom: 10px; border-left: 2px solid #08c068; padding-left: 8px;">
                         <strong>Pedido #${index + 1}</strong><br>
+                        <strong>Cliente:</strong> ${pedido.cliente || '-'}<br>
                         <strong>Modelo:</strong> ${pedido.modelo || '-'}<br>
                         <strong>Tamanho:</strong> ${pedido.tamanho || '-'}<br>`;
 

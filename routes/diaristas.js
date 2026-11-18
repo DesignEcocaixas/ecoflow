@@ -22,12 +22,23 @@ router.get("/diaristas", async (req, res) => {
         const offset = (page - 1) * limit;
         const { data_inicio, data_fim, diarista_id } = req.query;
 
-        // A. Busca Taxas
-        const [configs] = await db.promise().query("SELECT chave, valor FROM configuracoes");
-        let taxas = {};
-        configs.forEach(c => {
-            if (['diaria_padrao', 'diaria_domingo', 'diaria_limpeza'].includes(c.chave)) taxas[c.chave] = parseFloat(c.valor);
-        });
+        // A. Busca Categorias de Diárias Dinâmicas (Prefixo: diaria_cat_)
+        const [configs] = await db.promise().query("SELECT chave, valor FROM configuracoes WHERE chave LIKE 'diaria_cat_%'");
+        let categoriasDiarias = [];
+        
+        if (configs.length > 0) {
+            categoriasDiarias = configs.map(c => ({
+                nome: c.chave.replace('diaria_cat_', ''),
+                valor: parseFloat(c.valor)
+            }));
+        } else {
+            // Fallback caso não existam categorias criadas ainda
+            categoriasDiarias = [
+                { nome: 'Diária Padrão', valor: 85.00 },
+                { nome: 'Diária aos Domingos', valor: 95.00 },
+                { nome: 'Diária de Limpeza', valor: 75.00 }
+            ];
+        }
 
         // B. Busca Diaristas e Ajudantes para a tela inicial
         const [diaristas] = await db.promise().query("SELECT id, nome, tipo_usuario, foto, cpf, pix, banco, telefone FROM usuarios WHERE tipo_usuario IN ('diarista', 'ajudante') ORDER BY nome ASC");
@@ -65,11 +76,47 @@ router.get("/diaristas", async (req, res) => {
 
         const filtros = { data_inicio, data_fim, diarista_id };
 
-        res.send(diaristasView(req.session.user, diaristas, pastas, filtros, { page, totalPages }, taxas));
+        res.send(diaristasView(req.session.user, diaristas, pastas, filtros, { page, totalPages }, categoriasDiarias));
 
     } catch (error) {
         console.error("Erro no Controle de Diaristas:", error);
         res.status(500).send("Erro interno ao carregar a página.");
+    }
+});
+
+// NOVA ROTA POST: ATUALIZAR CATEGORIAS DE DIÁRIAS DINAMICAMENTE
+router.post("/diaristas/categorias", async (req, res) => {
+    if (!req.session.user || req.session.user.tipo_usuario !== 'admin') {
+        return res.status(403).json({ success: false, message: "Acesso restrito." });
+    }
+
+    const { categorias } = req.body; // Array de objetos { nome, valor }
+
+    if (!categorias || !Array.isArray(categorias)) {
+        return res.status(400).json({ success: false, message: "Dados inválidos." });
+    }
+
+    const conn = await db.promise().getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // Limpa todas as categorias antigas
+        await conn.query("DELETE FROM configuracoes WHERE chave LIKE 'diaria_cat_%'");
+
+        // Insere as novas categorias
+        if (categorias.length > 0) {
+            const values = categorias.map(cat => [`diaria_cat_${cat.nome.trim()}`, parseFloat(cat.valor).toFixed(2)]);
+            await conn.query("INSERT INTO configuracoes (chave, valor) VALUES ?", [values]);
+        }
+
+        await conn.commit();
+        res.json({ success: true, message: "Categorias de diárias atualizadas com sucesso!" });
+    } catch (error) {
+        await conn.rollback();
+        console.error("Erro ao salvar categorias de diárias:", error);
+        res.status(500).json({ success: false, message: "Erro ao salvar as categorias." });
+    } finally {
+        conn.release();
     }
 });
 

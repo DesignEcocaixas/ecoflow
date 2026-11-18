@@ -38,7 +38,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
               <div class="modal-header bg-warning text-dark border-0">
-                  <h6 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Aviso de Limpeza Automática</h6>
+                  <h6 class="modal-title fw-bold"><i class="ph-fill ph-warning me-2"></i> Aviso de Limpeza Automática</h6>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4 bg-custom-dark text-white">
@@ -61,12 +61,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
           <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
               <div class="modal-header modal-header-dark border-custom py-3">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-filter text-info me-2"></i> Filtros e Ordenação</h6>
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="ph-fill ph-funnel text-info me-2"></i> Filtros e Ordenação</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4 bg-custom-dark text-white">
                   
-                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-sort text-accent me-1"></i> Ordenar Todas as Colunas</h6>
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-fill ph-sort-ascending text-accent me-1"></i> Ordenar Todas as Colunas</h6>
                   <select class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm mb-4" onchange="if(this.value){ window.ordenarTodasColunas(this.value); }">
                       <option value="" disabled selected>Escolha a ordenação...</option>
                       <option value="default">Padrão (Prazo e Prioridade)</option>
@@ -78,7 +78,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <option value="etiqueta_desc">Etiquetas (Decrescente Z-A)</option>
                   </select>
 
-                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-tags text-accent me-1"></i> Exibir Apenas Etiquetas</h6>
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-fill ph-tag text-accent me-1"></i> Exibir Apenas Etiquetas</h6>
                   <div class="d-flex flex-column gap-1" style="max-height: 220px; overflow-y: auto;">
                       ${espacoAtual.etiquetas && espacoAtual.etiquetas.length > 0 ? espacoAtual.etiquetas.map(e => `
                       <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
@@ -105,12 +105,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
           <form id="formExportacao" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" action="/kanban/relatorio?espaco_id=${espacoAtual.id}" method="POST">
               <div class="modal-header modal-header-dark border-custom">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-download text-success me-2"></i> Exportar Relatório</h6>
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="ph-fill ph-download-simple text-success me-2"></i> Exportar Relatório</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4 bg-custom-dark text-white" style="max-height: 70vh; overflow-y: auto;">
                   
-                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar-days me-1"></i> 1. Período de Criação (Opcional)</h6>
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-fill ph-calendar-blank me-1"></i> 1. Período de Criação (Opcional)</h6>
                   <div class="row g-2 mb-4">
                       <div class="col-6">
                           <label class="form-label text-white-50 mb-1" style="font-size: 0.7rem;">De:</label>
@@ -122,7 +122,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       </div>
                   </div>
 
-                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-table-columns me-1"></i> 2. Colunas a Exportar</h6>
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-fill ph-columns me-1"></i> 2. Colunas a Exportar</h6>
                   <div class="d-flex flex-column gap-1 mb-4">
                       ${colunas.length > 0 ? colunas.map(c => `
                       <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
@@ -133,7 +133,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       `).join('') : '<span class="text-white-50 small">Nenhuma coluna disponível</span>'}
                   </div>
 
-                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-list-check me-1"></i> 3. Informações do Card</h6>
+                  <h6 class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-fill ph-list-checks me-1"></i> 3. Informações do Card</h6>
                   <div class="d-flex flex-column gap-1">
                       <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
                           <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="titulo" checked> <span style="font-size: 0.8rem;">Título do Card</span>
@@ -143,6 +143,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       </label>
                       <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
                           <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="prazo" checked> <span style="font-size: 0.8rem;">Prazo de Conclusão</span>
+                      </label>
+                      <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
+                          <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="data_criacao" checked> <span style="font-size: 0.8rem;">Data de Criação</span>
                       </label>
                       <label class="form-check cursor-pointer m-0 p-2 border border-custom rounded bg-custom-darker shadow-sm d-flex align-items-center hover-bg-custom">
                           <input class="form-check-input ms-0 me-2 mt-0" type="checkbox" name="campos[]" value="coluna" checked> <span style="font-size: 0.8rem;">Coluna Atual</span>
@@ -169,7 +172,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               </div>
               <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide();"><i class="fa-solid fa-file-excel me-1"></i> Gerar Ficheiro</button>
+                  <button type="button" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="window.ignorarSkeletonMenu = true; document.getElementById('formExportacao').submit(); bootstrap.Modal.getInstance(document.getElementById('modalExportacaoRelatorio')).hide(); window.mostrarToast('sucesso', 'Download Iniciado', 'O seu relatório está a ser gerado.');"><i class="ph-fill ph-file-csv me-1"></i> Gerar Relatório</button>
               </div>
           </form>
       </div>
@@ -182,7 +185,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 320px;">
           <form id="formExclusaoColuna" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoColunaUnica(event, this)">
               <div class="modal-header modal-header-dark border-custom">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Limpeza Manual</h6>
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="ph-fill ph-clock-counter-clockwise text-accent me-2"></i> Limpeza Manual</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4 bg-custom-dark text-center">
@@ -190,14 +193,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <p class="text-white-50 mb-3" style="font-size: 0.8rem; line-height: 1.4;">Excluir os cards desta coluna a partir de quantos dias de criação?</p>
                   
                   <div class="input-group input-group-sm shadow-sm mx-auto" style="width: 140px;">
-                      <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                      <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="ph-fill ph-calendar-x"></i></span>
                       <input type="number" id="configExclusaoColDias" name="dias" class="form-control bg-custom-darker border-custom text-white fw-bold text-center" min="1" placeholder="Ex: 10">
                       <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
                   </div>
               </div>
               <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
+                  <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 shadow-sm"><i class="ph-fill ph-trash me-1"></i> Excluir</button>
               </div>
           </form>
       </div>
@@ -210,7 +213,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
           <form id="formExclusaoAutomatica" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarExclusaoAutomatica(event, this)">
               <div class="modal-header modal-header-dark border-custom">
-                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Regras de Exclusão</h6>
+                  <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-clock-counter-clockwise text-accent me-2"></i> Regras de Exclusão</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-3 bg-custom-dark">
@@ -230,10 +233,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                       <span class="text-white fw-medium text-truncate" style="font-size:0.85rem;" title="${escapeHtmlAttr(c.titulo)}">${escapeHtmlAttr(c.titulo)}</span>
                                   </label>
                               </div>
-                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="fa-solid fa-layer-group ms-1"></i></span>
+                              <span class="badge bg-custom-dark border-custom flex-shrink-0" style="font-size: 0.65rem;">${numCards} <i class="ph-fill ph-stack ms-1"></i></span>
                           </div>
                           <div class="input-group input-group-sm shadow-sm" style="width: 100%;">
-                              <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-regular fa-calendar-xmark"></i></span>
+                              <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="ph-fill ph-calendar-x"></i></span>
                               <input type="number" name="col_${c.id}" id="input_col_${c.id}" class="form-control bg-custom-darker border-custom text-white fw-bold" value="${hasRule ? c.dias_exclusao : ''}" min="1" ${hasRule ? '' : 'disabled'} placeholder="Desativado" style="text-align: left;">
                               <span class="input-group-text bg-custom-darker border-custom text-muted px-2">dias</span>
                           </div>
@@ -245,7 +248,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               </div>
               <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar Regras</button>
+                  <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm"><i class="ph-fill ph-floppy-disk me-1"></i> Salvar Regras</button>
               </div>
           </form>
       </div>
@@ -258,7 +261,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <div class="modal-dialog modal-dialog-centered modal-sm">
           <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
               <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Transferir Card</h6>
+                  <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="ph-fill ph-share-network text-warning me-2"></i> Transferir Card</h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-3 bg-custom-dark">
@@ -278,7 +281,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </select>
                   </div>
                   
-                  <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
+                  <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="ph-fill ph-paper-plane-tilt me-1"></i> Confirmar Transferência</button>
               </div>
           </div>
       </div>
@@ -294,7 +297,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       <title>${espacoAtual.nome} - Kanban | Ecoflow</title>
       <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <!-- FONT AWESOME MANTIDO PARA GARANTIR COMPATIBILIDADE SE ALGUM MÓDULO NÃO TIVER SIDO ATUALIZADO -->
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <script src="https://unpkg.com/@phosphor-icons/web"></script>
       <style>
           /* Scrollbars Globais */
           ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -507,15 +512,84 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           .toast.showing, .toast.show { transform: translateX(0); }
           .toast-timer { height: 4px; background: var(--verde-ecoflow); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
 
-          .skeleton-dark {
-              background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
-              background-size: 200% 100% !important;
-              animation: skeleton-loading-view 1.5s infinite linear !important;
-              border-radius: 0px; color: transparent !important; border-color: transparent !important; pointer-events: none;
-          }
-          .skeleton-dark * { visibility: hidden !important; }
-          @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
           @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
+
+          /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+          .apple-spinner {
+              display: inline-block;
+              width: 24px;
+              height: 24px;
+              position: relative;
+          }
+          .apple-spinner div {
+              transform-origin: 12px 12px;
+              animation: apple-spinner 1.2s linear infinite;
+          }
+          .apple-spinner div:after {
+              content: " ";
+              display: block;
+              position: absolute;
+              top: 0;
+              left: 11px;
+              width: 2.5px;
+              height: 6px;
+              border-radius: 20%;
+              background: #08c068;
+          }
+          .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+          .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+          .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+          .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+          .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+          .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+          .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+          .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+          .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+          .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+          .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+          .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+          
+          @keyframes apple-spinner {
+              0% { opacity: 1; }
+              100% { opacity: 0.15; }
+          }
+
+          /* TOUR POPOVER STYLES */
+          .tour-popover {
+              border: 1px solid #08c068 !important;
+              --bs-popover-bg: #2a2a2a;
+              --bs-popover-header-bg: #222;
+              --bs-popover-header-color: #fff;
+              --bs-popover-body-color: rgba(255,255,255,0.8);
+              z-index: 1070 !important;
+          }
+          .tour-popover .popover-header { font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+          .tour-popover .popover-arrow::after { border-bottom-color: #222 !important; border-top-color: #2a2a2a !important; }
+
+          .tour-highlight {
+              position: relative !important;
+              z-index: 1060 !important;
+              pointer-events: none !important;
+              box-shadow: 0 0 15px rgba(8, 192, 104, 0.4), 0 0 0 2px #08c068 !important;
+              border-radius: inherit;
+          }
+          .tour-highlight-parent {
+              position: relative !important;
+              z-index: 1056 !important;
+          }
+
+          /* Botão de ajuda inline no cabeçalho */
+          .btn-ajuda-inline {
+              background-color: transparent;
+              color: rgba(255,255,255,0.4);
+              border: none;
+              padding: 0 5px;
+              margin-left: 8px;
+              font-size: 1.1rem;
+              transition: color 0.2s ease, transform 0.2s ease;
+          }
+          .btn-ajuda-inline:hover { color: #08c068; }
+          .btn-ajuda-inline:active { transform: scale(0.9); }
 
           /* RESPONSIVIDADE & SCROLL SNAP */
           @media (max-width: 991.98px) {
@@ -758,7 +832,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
       <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu" style="background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05);">
           <div class="offcanvas-header border-bottom border-custom">
-              <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+              <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="ph-bold ph-list text-muted me-2"></i> Menu</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
           </div>
           <div class="offcanvas-body">
@@ -771,22 +845,27 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="row align-items-center w-100 g-3 m-0 position-relative" id="kanban-top-header" style="z-index: 1050;">
               
               <div class="col-auto col-md-4 d-flex align-items-center gap-3 p-0">
-                  <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+                  <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" id="btn-tour-menu"><i class="ph-bold ph-list text-white"></i></button>
                   <a href="/espacos-trabalho" class="btn btn-sm btn-outline-secondary border-custom text-white d-none d-sm-block" title="Voltar aos Espaços de Trabalho">
-                      <i class="fa-solid fa-arrow-left"></i>
+                      <i class="ph-bold ph-arrow-left"></i>
                   </a>
                   <div>
-                      <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-table-columns text-accent me-2"></i>${espacoAtual.nome}</h4>
+                      <div class="d-flex align-items-center">
+                          <h4 class="mb-0 fw-bold text-white"><i class="ph-fill ph-kanban text-accent me-2"></i>${espacoAtual.nome}</h4>
+                          <button type="button" class="btn-ajuda-inline" id="btnAjudaTour" onclick="toggleTourMode()" title="Como funciona esta tela?">
+                              <i class="ph-fill ph-question"></i>
+                          </button>
+                      </div>
                       <span class="text-white-50 mt-1 d-none d-sm-block" style="font-size:0.75rem;">Organize as etapas dos processos internos</span>
                   </div>
               </div>
               
               <div class="col-12 col-md-4 order-3 order-md-2 p-0 px-md-3 position-relative">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar flex-grow-1">
-                        <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <div class="input-group input-group-sm shadow-sm w-100 kanban-search-bar flex-grow-1" id="btn-tour-pesquisa">
+                        <span class="input-group-text bg-custom-darker border-custom text-muted"><i class="ph-bold ph-magnifying-glass"></i></span>
                         <input type="text" id="searchInputKanban" class="form-control bg-custom-darker border-custom border-end-0 text-white" placeholder="Pesquisar cards..." onkeyup="pesquisarCardsKanban(this.value)">
-                        <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                        <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparPesquisaKanban()" id="clearSearchBtn" style="display: none;"><i class="ph-bold ph-x"></i></button>
                     </div>
                     <div id="online-users-container" class="d-flex align-items-center flex-shrink-0" style="min-width: 30px;">
                         <!-- Avatares de usuários online serão injetados aqui via JS -->
@@ -799,15 +878,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   <!-- BOTÕES DE VISUALIZAÇÃO KANBAN / DATA E SELETOR DE MÊS -->
                   <div class="d-flex align-items-center gap-2">
-                      <div class="btn-group shadow-sm border-custom rounded" role="group">
+                      <div class="btn-group shadow-sm border-custom rounded" role="group" id="btn-tour-view">
                           <input type="radio" class="btn-check" name="btnradio_view" id="view_kanban" autocomplete="off" checked onchange="window.mudarVisualizacao('default')">
-                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_kanban" title="Visualização Padrão (Kanban)"><i class="fa-solid fa-table-columns"></i></label>
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_kanban" title="Visualização Padrão (Kanban)"><i class="ph-bold ph-columns"></i></label>
 
                           <input type="radio" class="btn-check" name="btnradio_view" id="view_weekday" autocomplete="off" onchange="window.mudarVisualizacao('weekday')">
-                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_weekday" title="Agrupar por Dia da Semana"><i class="fa-solid fa-calendar-week"></i></label>
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_weekday" title="Agrupar por Dia da Semana"><i class="ph-bold ph-calendar-check"></i></label>
 
                           <input type="radio" class="btn-check" name="btnradio_view" id="view_month" autocomplete="off" onchange="window.mudarVisualizacao('month')">
-                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_month" title="Agrupar por Mês"><i class="fa-solid fa-calendar-days"></i></label>
+                          <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_month" title="Agrupar por Mês"><i class="ph-bold ph-calendar-blank"></i></label>
                       </div>
                       
                       <!-- SELETOR DE MÊS (Aparece apenas na visualização por dia da semana) -->
@@ -815,14 +894,14 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   </div>
 
                   <div class="d-flex align-items-center gap-1">
-                      <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" onclick="abrirModalEtiquetas()" title="Etiquetas">
-                          <i class="fa-solid fa-tags"></i> <span class="d-none d-md-inline ms-1">Etiquetas</span>
+                      <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" onclick="abrirModalEtiquetas()" title="Etiquetas" id="btn-tour-tags">
+                          <i class="ph-bold ph-tag"></i> <span class="d-none d-md-inline ms-1">Etiquetas</span>
                       </button>
 
                       <!-- MENU DE CONFIGURAÇÕES DA VIEW (TEMA / BACKGROUND / REGRAS) -->
-                      <div class="dropdown">
+                      <div class="dropdown" id="btn-tour-config">
                           <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configurações da View">
-                          <i class="fa-solid fa-gear"></i>
+                          <i class="ph-bold ph-gear"></i>
                           </button>
                           <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-0" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 235px; z-index: 1060;">
                               <li class="px-3 py-2 border-bottom border-custom">
@@ -840,34 +919,34 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-info w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalFiltrosOrdenacao">
-                                      <i class="fa-solid fa-filter"></i> Filtros e Ordenação
+                                      <i class="ph-bold ph-funnel"></i> Filtros e Ordenação
                                   </button>
                               </li>
 
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExclusaoAutomatica">
-                                      <i class="fa-solid fa-clock-rotate-left"></i> Exclusão programada
+                                      <i class="ph-bold ph-clock-counter-clockwise"></i> Exclusão programada
                                   </button>
                               </li>
                               <li class="px-3 py-2 border-bottom border-custom">
                                   <button class="btn btn-sm btn-outline-success w-100 fw-bold border-custom d-flex align-items-center justify-content-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExportacaoRelatorio">
-                                      <i class="fa-solid fa-file-excel"></i> Baixar Relatório
+                                      <i class="ph-bold ph-file-csv"></i> Baixar Relatório
                                   </button>
                               </li>
                               <li class="px-3 py-3">
-                                  <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="fa-regular fa-image me-1"></i> Papel de Parede</label>
+                                  <label class="form-label text-white fw-medium mb-2 d-block" style="font-size: 0.8rem;"><i class="ph-bold ph-image me-1"></i> Papel de Parede</label>
                                   <div class="d-flex flex-column gap-2">
                                       <input class="d-none" type="file" id="bgUpload" accept="image/*" onchange="changeBackground(this, ${espacoAtual.id})">
-                                      <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white" onclick="document.getElementById('bgUpload').click()"><i class="fa-solid fa-upload me-1"></i> Escolher Fundo</button>
-                                      <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground(${espacoAtual.id})" style="font-size: 0.75rem;"><i class="fa-solid fa-trash me-1"></i> Remover Fundo</button>
+                                      <button class="btn btn-sm btn-outline-secondary w-100 fw-bold border-custom text-white" onclick="document.getElementById('bgUpload').click()"><i class="ph-bold ph-upload-simple me-1"></i> Escolher Fundo</button>
+                                      <button class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="clearBackground(${espacoAtual.id})" style="font-size: 0.75rem;"><i class="ph-bold ph-trash me-1"></i> Remover Fundo</button>
                                   </div>
                               </li>
                           </ul>
                       </div>
                   </div>
                   
-                  <button id="btnNovaColunaHeader" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark px-2" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
-                      <i class="fa-solid fa-plus"></i> <span class="d-none d-md-inline ms-1">Nova Coluna</span>
+                  <button id="btn-tour-coluna" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark px-2" data-bs-toggle="modal" data-bs-target="#modalNovaColuna">
+                      <i class="ph-bold ph-plus"></i> <span class="d-none d-md-inline ms-1">Nova Coluna</span>
                   </button>
               </div>
           </div>
@@ -887,7 +966,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-tags text-accent me-2"></i> Etiquetas</h6>
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="ph-fill ph-tag text-accent me-2"></i> Etiquetas</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-3 bg-custom-dark">
@@ -916,15 +995,15 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               <span class="badge bg-custom-dark border-custom text-white" id="modalCardIdBadge">#CARD</span>
                               <div class="d-flex gap-1">
                                   <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white-50 p-1 d-flex align-items-center justify-content-center transition-hover shadow-sm" style="width: 24px; height: 24px; border-radius: 4px;" onclick="copiarDadosCard()" title="Copiar / Compartilhar Card">
-                                      <i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i>
+                                      <i class="ph-bold ph-copy" style="font-size: 1rem;"></i>
                                   </button>
                                   <div class="dropdown">
                                       <button class="btn btn-sm btn-outline-secondary border-custom text-white-50 p-1 d-flex align-items-center justify-content-center transition-hover shadow-sm" type="button" data-bs-toggle="dropdown" style="width: 24px; height: 24px; border-radius: 4px;" title="Importar ou Transferir">
-                                          <i class="fa-solid fa-file-import" style="font-size: 0.75rem;"></i>
+                                          <i class="ph-bold ph-export" style="font-size: 1rem;"></i>
                                       </button>
                                       <ul class="dropdown-menu dropdown-menu-dark shadow-lg border-custom p-1" style="background-color: #2a2a2a; min-width: 220px; z-index: 1060;">
-                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="importarDadosCard()"><i class="fa-solid fa-paste text-accent me-2"></i> Colar Dados Copiados</a></li>
-                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="abrirModalTransferir()"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Enviar para Workspace</a></li>
+                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="importarDadosCard()"><i class="ph-bold ph-clipboard text-accent me-2"></i> Colar Dados Copiados</a></li>
+                                          <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="abrirModalTransferir()"><i class="ph-bold ph-share-network text-warning me-2"></i> Enviar para Workspace</a></li>
                                       </ul>
                                   </div>
                               </div>
@@ -980,7 +1059,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                     <div class="d-flex align-items-center justify-content-between mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="text-white-50 fw-bold mb-0" style="font-size: 0.75rem;">
-                                                <i class="fa-solid fa-users me-1"></i> Etiquetas
+                                                <i class="ph-bold ph-users me-1"></i> Etiquetas
                                             </label>
 
                                             <div id="modalCardEtiquetasVisual" class="d-flex flex-wrap gap-2"></div>
@@ -998,7 +1077,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                             <span id="modalCardEtiquetasSelecionadas" class="text-truncate">
                                                 Selecione as etiquetas...
                                             </span>
-                                            <i class="fa-solid fa-chevron-down text-white-50 ms-2" style="font-size:0.7rem;"></i>
+                                            <i class="ph-bold ph-caret-down text-white-50 ms-2"></i>
                                         </button>
 
                                         <ul class="dropdown-menu dropdown-menu-dark p-2 shadow-lg"
@@ -1009,12 +1088,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                 </div>
 
                               <div id="modalCardPercasContainer" style="display: ${espacoAtual.percas_ativo ? 'block' : 'none'};">
-                                  <h6 class="text-white-50 fw-bold mb-3 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="fa-solid fa-scissors me-1"></i> Controle de Percas</h6>
+                                  <h6 class="text-white-50 fw-bold mb-3 mt-4 border-top border-custom pt-3" style="font-size: 0.75rem;"><i class="ph-bold ph-scissors me-1"></i> Controle de Percas</h6>
                                   
                                   <div class="mb-3">
                                       <div class="d-flex align-items-center mb-2">
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Pintura</span>
-                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
+                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Pintura'); salvarTextosModal();" title="Adicionar Linha"><i class="ph-bold ph-plus"></i></button>
                                       </div>
                                       <div id="containerPercasPintura" class="d-flex flex-column gap-2"></div>
                                   </div>
@@ -1022,40 +1101,40 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                                   <div class="mb-3">
                                       <div class="d-flex align-items-center mb-2">
                                           <span class="text-accent fw-bold" style="font-size: 0.75rem;">Percas Corte</span>
-                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="fa-solid fa-plus"></i></button>
+                                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm ms-2" style="font-size: 0.7rem; width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" onclick="adicionarLinhaPerca('Corte'); salvarTextosModal();" title="Adicionar Linha"><i class="ph-bold ph-plus"></i></button>
                                       </div>
                                       <div id="containerPercasCorte" class="d-flex flex-column gap-2"></div>
                                   </div>
                               </div>
 
                               <div class="mb-4 mt-3">
-                                  <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-align-left me-1"></i> Descrição</label>
+                                  <label class="text-white-50 fw-bold mb-1" style="font-size: 0.75rem;"><i class="ph-bold ph-text-align-left me-1"></i> Descrição</label>
                                   <div class="card-desc-container">
                                       <div class="rich-text-toolbar shadow-sm">
-                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('bold', false, null);"><i class="fas fa-bold"></i></button>
-                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);"><i class="fas fa-italic"></i></button>
-                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline', false, null);"><i class="fas fa-underline"></i></button>
-                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('insertUnorderedList', false, null);"><i class="fas fa-list-ul"></i></button>
-                                          <button type="button" onmousedown="event.preventDefault(); window.inserirCheckboxTarefa();" title="Adicionar Check-list"><i class="fa-regular fa-square-check"></i></button>
+                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('bold', false, null);"><i class="ph-bold ph-text-b"></i></button>
+                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);"><i class="ph-bold ph-text-italic"></i></button>
+                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline', false, null);"><i class="ph-bold ph-text-underline"></i></button>
+                                          <button type="button" onmousedown="event.preventDefault(); document.execCommand('insertUnorderedList', false, null);"><i class="ph-bold ph-list-bullets"></i></button>
+                                          <button type="button" onmousedown="event.preventDefault(); window.inserirCheckboxTarefa();" title="Adicionar Check-list"><i class="ph-bold ph-check-square"></i></button>
                                       </div>
                                       <div id="modalCardDescricao" class="card-desc-modal" contenteditable="true" onblur="salvarTextosModal()"></div>
                                   </div>
                               </div>
 
                               <div class="mb-3">
-                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-paperclip me-1"></i> Anexos</label>
+                                  <label class="text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-bold ph-paperclip me-1"></i> Anexos</label>
                                   <div id="modalCardAnexos" class="row g-2"></div>
                               </div>
 
                               <div class="mt-auto d-flex justify-content-end gap-2 pt-3 border-top border-custom">
-                                  <button class="btn btn-sm btn-outline-secondary border-custom text-white-50" onclick="acionarUploadModal()" title="Anexar Arquivos"><i class="fa-solid fa-paperclip"></i> Anexar</button>
-                                  <button class="btn btn-sm btn-outline-secondary border-custom text-white-50" onclick="confirmarDeletarCardModal()" title="Excluir Card"><i class="fa-solid fa-trash"></i> Excluir</button>
+                                  <button class="btn btn-sm btn-outline-secondary border-custom text-white-50 d-flex align-items-center gap-1" onclick="acionarUploadModal()" title="Anexar Arquivos"><i class="ph-bold ph-paperclip"></i> Anexar</button>
+                                  <button class="btn btn-sm btn-outline-secondary border-custom text-white-50 d-flex align-items-center gap-1" onclick="confirmarDeletarCardModal()" title="Excluir Card"><i class="ph-bold ph-trash"></i> Excluir</button>
                               </div>
 
                           </div>
 
                           <div id="modal-right-col" class="col-12 col-md-5 col-lg-4 p-4 bg-custom-darker h-100 overflow-y-auto responsive-modal-col">
-                              <h6 class="text-white fw-bold mb-4" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i> Histórico</h6>
+                              <h6 class="text-white fw-bold mb-4" style="font-size: 0.85rem;"><i class="ph-fill ph-clock-counter-clockwise text-accent me-2"></i> Histórico</h6>
                               <div id="modalCardHistory" class="history-timeline"></div>
                           </div>
 
@@ -1069,7 +1148,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-header modal-header-dark border-custom">
-                      <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-table-columns text-accent me-2"></i> Adicionar Coluna</h6>
+                      <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-columns text-accent me-2"></i> Adicionar Coluna</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-4 bg-custom-dark">
@@ -1097,7 +1176,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-body p-4 text-center bg-custom-dark rounded">
-                      <i class="fa-solid fa-trash-can text-danger fs-1 mb-3"></i>
+                      <i class="ph-fill ph-trash text-danger fs-1 mb-3" style="font-size: 3rem;"></i>
                       <h6 class="text-white fw-bold mb-2">Excluir Card?</h6>
                       <p class="text-white-50 small mb-4">Esta ação apagará permanentemente a tarefa e os seus anexos.</p>
                       <input type="hidden" id="deleteCardId">
@@ -1114,7 +1193,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-body p-4 text-center bg-custom-dark rounded">
-                      <i class="fa-solid fa-triangle-exclamation text-warning fs-1 mb-3"></i>
+                      <i class="ph-fill ph-warning-circle text-warning fs-1 mb-3" style="font-size: 3rem;"></i>
                       <h6 class="text-white fw-bold mb-2">Excluir Coluna?</h6>
                       <p class="text-white-50 small mb-4">Todos os cards dentro dela serão perdidos. Esta ação não pode ser desfeita.</p>
                       <input type="hidden" id="deleteColunaId">
@@ -1131,7 +1210,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-body p-4 text-center bg-custom-dark rounded">
-                      <i class="fa-solid fa-trash-can text-danger fs-1 mb-3"></i>
+                      <i class="ph-fill ph-trash text-danger fs-1 mb-3" style="font-size: 3rem;"></i>
                       <h6 class="text-white fw-bold mb-2">Excluir Anexo?</h6>
                       <p class="text-white-50 small mb-4">Esta ação apagará permanentemente o ficheiro.</p>
                       <input type="hidden" id="deleteAnexoId">
@@ -1149,7 +1228,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-lg">
               <div class="modal-content bg-transparent border-0 shadow-none">
                   <div class="modal-header border-0 pb-0 justify-content-end">
-                      <i class="fa-solid fa-circle-xmark text-white fs-2 cursor-pointer" data-bs-dismiss="modal" style="filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));"></i>
+                      <i class="ph-fill ph-x-circle text-white cursor-pointer" data-bs-dismiss="modal" style="font-size: 2rem; filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));"></i>
                   </div>
                   <div class="modal-body text-center p-0">
                       <img id="imgPreviewGrande" src="" class="img-fluid rounded shadow-lg border border-custom" style="max-height: 85vh;">
@@ -1162,7 +1241,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div class="modal-dialog modal-dialog-centered modal-sm">
               <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
                   <div class="modal-header modal-header-dark border-custom py-2 px-3">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-share-from-square text-warning me-2"></i> Transferir Card</h6>
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="ph-fill ph-share-network text-warning me-2"></i> Transferir Card</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-3 bg-custom-dark">
@@ -1182,7 +1261,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           </select>
                       </div>
                       
-                      <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="fa-solid fa-paper-plane me-1"></i> Confirmar Transferência</button>
+                      <button class="btn btn-sm btn-warning w-100 fw-bold shadow-sm py-2" onclick="executarTransferenciaCard()"><i class="ph-fill ph-paper-plane-tilt me-1"></i> Confirmar Transferência</button>
                   </div>
               </div>
           </div>
@@ -1192,7 +1271,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
               <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                   <div>
-                      <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                      <i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i>
                       <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                   </div>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -1206,7 +1285,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
               <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                   <div>
-                      <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                      <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                       <strong class="fs-6" id="erroTitulo">Erro!</strong>
                   </div>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -1225,6 +1304,162 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
       ${termosHTML}
       
       <script>
+
+            // Função global para evitar quebra do HTML nos atributos
+            window.escapeHtmlAttr = function(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            };
+          // =======================================================================
+          // TOUR DE BOOTSTRAP POPOVERS (ONBOARDING KANBAN)
+          // =======================================================================
+          let tourPopovers = [];
+          let tourAtivo = false;
+
+          window.toggleTourMode = function() {
+              if (tourAtivo) {
+                  encerrarTour();
+                  return;
+              }
+              iniciarTour();
+          };
+
+          function iniciarTour() {
+              tourAtivo = true;
+              document.getElementById('btnAjudaTour').classList.add('text-accent');
+              
+              let backdrop = document.getElementById('tourBackdrop');
+              if (!backdrop) {
+                  backdrop = document.createElement('div');
+                  backdrop.id = 'tourBackdrop';
+                  backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); z-index: 1055; transition: opacity 0.3s;';
+                  document.body.appendChild(backdrop);
+              }
+              backdrop.style.display = 'block';
+
+              mostrarPassoTour(0);
+          }
+
+          window.mostrarPassoTour = function(stepIndex) {
+              if (tourPopovers.length > 0) {
+                  tourPopovers.forEach(p => p.dispose());
+                  tourPopovers = [];
+              }
+              
+              document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+              document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+
+              const steps = [
+                  { id: 'btn-tour-menu', title: 'Menu Lateral', content: 'Aceda aos outros módulos do Ecoflow por aqui.', placement: 'bottom' },
+                  { id: 'btn-tour-pesquisa', title: 'Pesquisa Global', content: 'Encontre cartões rapidamente pelo título, descrição ou dados anexos.', placement: 'bottom' },
+                  { id: 'btn-tour-view', title: 'Modos de Visualização', content: 'Agrupe os cartões por Dia da Semana, Mês, ou volte ao Kanban Padrão.', placement: 'bottom' },
+                  { id: 'btn-tour-tags', title: 'Gestão de Etiquetas', content: 'Crie etiquetas coloridas para classificar visualmente as tarefas.', placement: 'bottom' },
+                  { id: 'btn-tour-config', title: 'Configurações do Quadro', content: 'Ajuste o tema, regras de exclusão, filtros, exportação e papel de parede.', placement: 'bottom' },
+                  { id: 'btn-tour-coluna', title: 'Nova Coluna', content: 'Crie uma nova coluna/etapa para o fluxo de trabalho.', placement: 'bottom' }
+              ];
+
+              const primeiraColuna = document.querySelector('.kanban-column .dropdown');
+              if (primeiraColuna) {
+                  primeiraColuna.id = 'tour-primeira-coluna-config';
+                  steps.push({ id: 'tour-primeira-coluna-config', title: 'Ações da Coluna', content: 'Clique na engrenagem para ordenar, mover, limpar ou editar esta coluna.', placement: 'bottom' });
+              }
+
+              if (stepIndex >= steps.length) {
+                  encerrarTour();
+                  return;
+              }
+
+              const step = steps[stepIndex];
+              const el = document.getElementById(step.id);
+              
+              if (!el || window.getComputedStyle(el).display === 'none') {
+                  mostrarPassoTour(stepIndex + 1);
+                  return;
+              }
+
+              el.classList.add('tour-highlight');
+              const parentConfig = el.closest('.kanban-header'); 
+              if (parentConfig) parentConfig.classList.add('tour-highlight-parent');
+
+              const isLast = stepIndex === steps.length - 1;
+              const navHtml = \`
+                  <div class="d-flex justify-content-between mt-3 pt-2 border-top border-custom align-items-center">
+                      <span class="text-white-50 fw-bold" style="font-size: 0.7rem;">\${stepIndex + 1} de \${steps.length}</span>
+                      <div>
+                          <button class="btn btn-sm btn-outline-secondary py-0 px-2 text-white shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="encerrarTour()">Sair</button>
+                          <button class="btn btn-sm btn-primary py-0 px-2 fw-bold text-dark ms-1 shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="mostrarPassoTour(\${stepIndex + 1})">\${isLast ? 'Concluir' : 'Próximo'}</button>
+                      </div>
+                  </div>
+              \`;
+
+              const popover = new bootstrap.Popover(el, {
+                  title: '<i class="ph-fill ph-info text-accent me-2"></i>' + step.title,
+                  content: '<div style="font-size: 0.75rem;" class="text-white-50">' + step.content + '</div>' + navHtml,
+                  placement: step.placement,
+                  trigger: 'manual',
+                  html: true,
+                  sanitize: false,
+                  customClass: 'tour-popover shadow-lg'
+              });
+              
+              popover.show();
+              tourPopovers.push(popover);
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          };
+
+          window.encerrarTour = function() {
+              if (tourPopovers.length > 0) {
+                  tourPopovers.forEach(p => p.dispose());
+                  tourPopovers = [];
+              }
+              document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+              document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+              const backdrop = document.getElementById('tourBackdrop');
+              if (backdrop) backdrop.style.display = 'none';
+              
+              document.getElementById('btnAjudaTour').classList.remove('text-accent');
+              tourAtivo = false;
+          };
+
+          // =======================================================================
+          // APPLE SPINNER LOADER E FUNÇÕES GLOBAIS
+          // =======================================================================
+          window.getAppleSpinner = function(scale) {
+              const s = scale || 1;
+              return '<div class="apple-spinner" style="transform: scale(' + s + ');">' +
+                     '<div></div><div></div><div></div><div></div><div></div><div></div>' +
+                     '<div></div><div></div><div></div><div></div><div></div><div></div>' +
+                     '</div>';
+          };
+
+          window.gerarSkeletonKanban = function() {
+              return '<div class="d-flex flex-column align-items-center justify-content-center w-100" style="min-height: 50vh;">' +
+                     window.getAppleSpinner(1.5) +
+                     '<span class="text-white-50 mt-4 fw-medium" style="font-size: 0.9rem;">Carregando Quadro...</span>' +
+                     '</div>';
+          };
+
+          window.mostrarSkeletonGlobais = function() {
+              const board = document.getElementById('kanbanBoard');
+              if (board && !board.classList.contains('skeleton-active')) { 
+                  board.innerHTML = gerarSkeletonKanban(); 
+                  board.classList.add('skeleton-active'); 
+              }
+          };
+
+          window.ocultarSkeletonGlobais = function() {
+              const board = document.getElementById('kanbanBoard');
+              if (board) board.classList.remove('skeleton-active');
+          };
+
+          // =======================================================================
+          // LÓGICAS DO QUADRO KANBAN
+          // =======================================================================
           const NOME_USUARIO = "${user.nome}";
           const socket = io();
           
@@ -1249,18 +1484,47 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           
           window.filtroEtiquetasAtivo = [];
 
-          // Injetando a função de escapeHtmlAttr no frontend
-          window.escapeHtmlAttr = function(str) {
-              if (!str) return '';
-              return String(str)
-                  .replace(/&/g, '&amp;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#39;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;');
+          // ==========================================
+          // CONTROLO DE NOTIFICAÇÕES (TOASTS)
+          // ==========================================
+          window.mostrarToast = function(tipo, titulo, subtitulo) {
+              const toastId = tipo === 'sucesso' ? 'sucessoToast' : 'erroToast';
+              const toastEl = document.getElementById(toastId);
+              if (!toastEl) return;
+              
+              if (titulo) document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
+              if (subtitulo) document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = subtitulo;
+              
+              // Animação da barra de tempo (Timer)
+              const timerId = tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer';
+              const timerEl = document.getElementById(timerId);
+              if (timerEl) {
+                  timerEl.style.display = 'block';
+                  timerEl.style.width = '100%';
+                  timerEl.style.transition = 'none';
+                  
+                  setTimeout(() => {
+                      timerEl.style.transition = 'width 3s linear';
+                      timerEl.style.width = '0%';
+                  }, 50);
+              }
+              
+              const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+              toast.show();
           };
 
-          // Função de apoio para encontrar a foto do usuário
+          // ==========================================
+          // APPLE SPINNER LOADER E FUNÇÕES GLOBAIS
+          // ==========================================
+          window.getAppleSpinner = function(scale) {
+              const s = scale || 1;
+              return '<div class="apple-spinner" style="transform: scale(' + s + ');">' +
+                     '<div></div><div></div><div></div><div></div><div></div><div></div>' +
+                     '<div></div><div></div><div></div><div></div><div></div><div></div>' +
+                     '</div>';
+          };
+
+          // Função para encontrar a foto do usuário
           function getUsuarioFoto(nomeUsuario) {
               const u = colabCache.find(x => x.nome.toLowerCase() === nomeUsuario.toLowerCase());
               if (u && u.foto) return '/uploads/' + u.foto;
@@ -1458,7 +1722,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const data = await res.json();
                   if (data.success && data.espacos && data.espacos.length > 0) {
                       selectWs.innerHTML = '<option value="" disabled selected>Escolha o Workspace</option>' + 
-                          data.espacos.map(e => \`<option value="\${e.id}">\${escapeHtmlAttr(e.nome)}</option>\`).join('');
+                          data.espacos.map(e => \`<option value="\${e.id}">\${window.escapeHtmlAttr(e.nome)}</option>\`).join('');
                   } else {
                       selectWs.innerHTML = '<option value="">Nenhum workspace disponível</option>';
                   }
@@ -1482,7 +1746,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   const data = await res.json();
                   if (data.success && data.colunas && data.colunas.length > 0) {
                       selectCol.innerHTML = '<option value="" disabled selected>Escolha a Coluna</option>' + 
-                          data.colunas.map(c => \`<option value="\${c.id}">\${escapeHtmlAttr(c.titulo)}</option>\`).join('');
+                          data.colunas.map(c => \`<option value="\${c.id}">\${window.escapeHtmlAttr(c.titulo)}</option>\`).join('');
                   } else {
                       selectCol.innerHTML = '<option value="">Nenhuma coluna encontrada</option>';
                       selectCol.disabled = true;
@@ -1615,12 +1879,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           };
 
           const optionsOperadoresHtml = \`${optionsOperadoresHtml}\`;
-
-          function escapeHtml(text) {
-              const div = document.createElement('div');
-              div.innerText = text;
-              return div.innerHTML;
-          }
 
           function hexToRgba(hex, alpha) {
               const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
@@ -2085,9 +2343,9 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   return '<div class="d-flex justify-content-between align-items-center p-2 bg-custom-dark border border-custom rounded">' +
                          '<div class="d-flex align-items-center gap-2">' +
                          '<div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: ' + e.cor + '; border: 1px solid rgba(255,255,255,0.2);"></div>' +
-                         '<span class="text-white fw-medium" style="font-size: 0.8rem;">' + escapeHtml(e.nome) + '</span>' +
+                         '<span class="text-white fw-medium" style="font-size: 0.8rem;">' + window.escapeHtmlAttr(e.nome) + '</span>' +
                          '</div>' +
-                         '<button class="btn btn-sm text-danger p-0 m-0" onclick="deletarEtiqueta(' + e.id + ')"><i class="fa-solid fa-xmark"></i></button>' +
+                         '<button class="btn btn-sm text-danger p-0 m-0" onclick="deletarEtiqueta(' + e.id + ')"><i class="ph-bold ph-x"></i></button>' +
                          '</div>';
               }).join('');
           };
@@ -2126,7 +2384,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                          '<label class="dropdown-item d-flex align-items-center gap-2 cursor-pointer bg-transparent hover-bg-custom py-1">' +
                          '<input class="form-check-input m-0 tag-checkbox bg-custom-darker border-custom" type="checkbox" value="' + e.id + '" onchange="triggerEtiquetasChange()">' +
                          '<div class="rounded-pill shadow-sm" style="width: 22px; height: 8px; background-color: ' + e.cor + '; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
-                         '<span class="text-white" style="font-size: 0.8rem;">' + escapeHtml(e.nome) + '</span>' +
+                         '<span class="text-white" style="font-size: 0.8rem;">' + window.escapeHtmlAttr(e.nome) + '</span>' +
                          '</label>' +
                          '</li>';
               }).join('');
@@ -2151,7 +2409,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                          'style="border-color: ' + hexToRgba(tag.cor, 0.4) + ' !important; color: ' + tag.cor + ';">' +
                          '<div class="rounded-pill" ' +
                          'style="width: 22px; height: 8px; background-color: ' + tag.cor + '; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
-                         escapeHtml(tag.nome) +
+                         window.escapeHtmlAttr(tag.nome) +
                          '</span>';
               }).join('');
           };
@@ -2202,7 +2460,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           if (isImage) {
                               anexoPreview = \`<img src="\${path}" class="rounded ms-2 border border-custom" style="width: 32px; height: 32px; object-fit: cover;">\`;
                           } else {
-                              anexoPreview = \`<div class="rounded ms-2 d-flex align-items-center justify-content-center bg-custom-dark border border-custom text-white-50" style="width: 32px; height: 32px;"><i class="fa-solid fa-file-pdf"></i></div>\`;
+                              anexoPreview = \`<div class="rounded ms-2 d-flex align-items-center justify-content-center bg-custom-dark border border-custom text-white-50" style="width: 32px; height: 32px;"><i class="ph-fill ph-file-pdf"></i></div>\`;
                           }
                       }
 
@@ -2210,7 +2468,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                              '<div class="flex-grow-1 overflow-hidden">' +
                              '<div class="fw-bold text-white text-truncate" style="font-size: 0.85rem;">' + (m.card.titulo || 'Sem Título') + '</div>' +
                              '<div class="text-white-50 d-flex align-items-center gap-2 mt-1" style="font-size: 0.7rem;">' +
-                             '<span><i class="fa-regular fa-calendar me-1"></i>' + dataCriacao + '</span>' +
+                             '<span><i class="ph-bold ph-calendar-blank me-1"></i>' + dataCriacao + '</span>' +
                              '<span>|</span>' +
                              '<span>Coluna: <span class="text-accent">' + m.colNome + '</span></span>' +
                              '</div>' +
@@ -2312,48 +2570,6 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               });
           };
 
-          window.gerarSkeletonKanban = function() {
-              let html = '';
-              for(let i=0; i<4; i++) {
-                  html += '<div class="kanban-column bg-custom-darker shadow-none p-0" style="border-right: 1px solid rgba(255,255,255,0.1); border-radius: 0;">' +
-                          '<div class="kanban-header skeleton-dark border-0" style="height: 55px; border-radius: 0; margin-bottom: 10px;"></div>' +
-                          '<div class="kanban-cards-container">' +
-                          '<div class="kanban-card skeleton-dark" style="height: 80px; border: none; margin-bottom: 12px; border-radius: 0;"></div>' +
-                          '<div class="kanban-card skeleton-dark" style="height: 120px; border: none; margin-bottom: 12px; border-radius: 0;"></div>' +
-                          '</div></div>';
-              }
-              return html;
-          };
-
-          window.mostrarSkeletonGlobais = function() {
-              const board = document.getElementById('kanbanBoard');
-              if (board && !board.classList.contains('skeleton-active')) { board.innerHTML = gerarSkeletonKanban(); board.classList.add('skeleton-active'); }
-          };
-
-          window.ocultarSkeletonGlobais = function() {
-              const board = document.getElementById('kanbanBoard');
-              if (board) board.classList.remove('skeleton-active');
-          };
-
-          window.mostrarToast = function(tipo, titulo, mensagem) {
-              const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
-              if (toastEl) {
-                  document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
-                  document.getElementById(tipo === 'sucesso' ? 'sucessoSub' : 'erroSub').innerText = mensagem;
-                  const timerEl = document.getElementById(tipo === 'sucesso' ? 'sucessoTimer' : 'erroTimer');
-                  if (timerEl) { 
-                      timerEl.style.display = 'block'; 
-                      timerEl.style.animation = 'none'; 
-                      void timerEl.offsetWidth; 
-                      timerEl.style.animation = 'shrinkToast 5s linear forwards'; 
-                  }
-                  const oldInstance = bootstrap.Toast.getInstance(toastEl);
-                  if (oldInstance) oldInstance.dispose();
-                  const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
-                  toast.show();
-              }
-          };
-
           window.formatarDataCompleta = function(dataStr) {
               if (!dataStr) return '';
               const data = new Date(dataStr);
@@ -2366,7 +2582,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
           window.calcularBadgeDiasRestantes = function(prazoStr, isConcluido) {
               if (isConcluido) {
-                  return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2" style="font-size:0.7rem;"><i class="fa-solid fa-check me-1"></i>Concluído</span>';
+                  return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2" style="font-size:0.7rem;"><i class="ph-bold ph-check me-1"></i>Concluído</span>';
               }
               if (!prazoStr) return '';
               const hoje = new Date();
@@ -2383,13 +2599,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const textoData = dia + ' de ' + mesStr + '.';
               
               if (diffDays < 0) {
-                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>' + textoData + '</span>';
+                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="ph-fill ph-warning me-1"></i>' + textoData + '</span>';
               } else if (diffDays === 0) {
-                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-regular fa-clock me-1"></i>' + textoData + '</span>';
+                  return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="ph-bold ph-clock me-1"></i>' + textoData + '</span>';
               } else if (diffDays === 1) {
-                  return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="fa-regular fa-clock me-1"></i>' + textoData + '</span>';
+                  return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50 px-2 fw-bold" style="font-size:0.7rem;"><i class="ph-bold ph-clock me-1"></i>' + textoData + '</span>';
               } else {
-                  return '<span class="badge bg-custom-dark border-custom text-accent px-2 fw-normal" style="font-size:0.65rem;"><i class="fa-regular fa-calendar me-1"></i>' + textoData + '</span>';
+                  return '<span class="badge bg-custom-dark border-custom text-accent px-2 fw-normal" style="font-size:0.65rem;"><i class="ph-bold ph-calendar-blank me-1"></i>' + textoData + '</span>';
               }
           };
 
@@ -2560,7 +2776,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       <label class="text-white-50 fw-bold mb-1" style="font-size: 0.65rem;">Chapa</label>
                       <input type="text" class="form-control form-control-sm bg-custom-darker border-custom text-white perca-chapa" onchange="salvarTextosModal()" placeholder="Ref">
                   </div>
-                  <button type="button" class="btn btn-sm btn-danger position-absolute shadow-sm" style="width: 22px; height: 22px; top: 18px; right: 0; border-radius: 50%; padding: 0; z-index: 10; font-size: 0.65rem;" onclick="this.closest('.perca-row').remove(); salvarTextosModal();" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+                  <button type="button" class="btn btn-sm btn-danger position-absolute shadow-sm" style="width: 22px; height: 22px; top: 18px; right: 0; border-radius: 50%; padding: 0; z-index: 10; font-size: 0.65rem;" onclick="this.closest('.perca-row').remove(); salvarTextosModal();" title="Remover"><i class="ph-bold ph-x"></i></button>
               \`;
 
               if(dados.op1) div.querySelector('.perca-op1').value = dados.op1;
@@ -2676,13 +2892,13 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   
                   const btnEsquerdaHtml = podeMoverEsquerda ? \`
                       <button class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-between mb-1 border-custom" type="button" onclick="moverColunaKanban('\${col.id}', 'esquerda')">
-                          <i class="fa-solid fa-arrow-left"></i> <span>Mover para Esquerda</span>
+                          <i class="ph-bold ph-arrow-left"></i> <span>Mover para Esquerda</span>
                       </button>
                   \` : '';
                   
                   const btnDireitaHtml = podeMoverDireita ? \`
                       <button class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-between mb-3 border-custom" type="button" onclick="moverColunaKanban('\${col.id}', 'direita')">
-                          <span>Mover para Direita</span> <i class="fa-solid fa-arrow-right"></i>
+                          <span>Mover para Direita</span> <i class="ph-bold ph-arrow-right"></i>
                       </button>
                   \` : '';
 
@@ -2690,7 +2906,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       '' : 
                       \`<div class="dropdown d-inline-block ms-auto">
                           <button class="btn btn-sm btn-link p-1 px-2 text-white-50 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Configurações da Coluna" data-bs-popper-config='{"strategy":"fixed"}'>
-                              <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
+                              <i class="ph-bold ph-gear" style="font-size:1rem;"></i>
                           </button>
                           <div class="dropdown-menu dropdown-menu-dark p-3 shadow-lg border-custom" style="min-width: 240px; background-color: #2a2a2a; z-index: 1060;">
                               
@@ -2717,19 +2933,19 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                               </div>
                               <hr class="dropdown-divider border-custom my-2">
                               <button class="btn btn-sm btn-outline-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2" type="button" onclick="limparCardsVencidosColuna('\${col.id}')">
-                                  <i class="fa-solid fa-calendar-xmark"></i> Excluir Vencidos
+                                  <i class="ph-bold ph-calendar-x"></i> Excluir Vencidos
                               </button>
                           </div>
                       </div>\`;
 
                   const titleEditable = isVirtual ? 
-                      \`<span class="text-truncate fw-bold me-2" style="padding: 2px 4px; font-size: 0.9rem;">\${col.titulo}</span>\` : 
-                      \`<span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${col.titulo}</span>\`;
+                      \`<span class="text-truncate fw-bold me-2" style="padding: 2px 4px; font-size: 0.9rem;">\${window.escapeHtmlAttr(col.titulo)}</span>\` : 
+                      \`<span class="text-truncate column-title-inline" contenteditable="true" onblur="salvarTituloColuna(\${col.id}, this)" onkeydown="if(event.keyCode===13){event.preventDefault(); this.blur();}" onpaste="colarTextoPuro(event)">\${window.escapeHtmlAttr(col.titulo)}</span>\`;
                   
                   const actionButtons = isVirtual ? 
                       \`<span class="ms-auto badge bg-custom-dark border border-custom text-white-50">\${col.cards.length} pedidos</span>\` : 
-                      \`<button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.criarCardRapido(\${col.id})" title="Novo Card"><i class="fa-solid fa-plus"></i></button>
-                       <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="window.confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="fa-solid fa-trash"></i></button>\`;
+                      \`<button class="btn btn-sm btn-link p-1 px-1 text-white-50 text-decoration-none" onclick="window.criarCardRapido(\${col.id})" title="Novo Card"><i class="ph-bold ph-plus"></i></button>
+                       <button class="btn btn-sm btn-link p-0 text-white-50 text-decoration-none ms-1" onclick="window.confirmarDeletarColuna(\${col.id})" title="Excluir Coluna"><i class="ph-bold ph-trash"></i></button>\`;
 
                   colDiv.innerHTML = \`
                       <div class="kanban-header d-flex align-items-center justify-content-between" style="background-color: \${bgHeader}; border-top: 4px solid \${corColuna};">
@@ -2823,7 +3039,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               if (isImage) {
                   return '<img src="' + path + '" class="anexo-cover shadow-sm" style="pointer-events: none;" draggable="false" title="' + window.escapeHtmlAttr(anexo.nome_original || '') + '">';
               } else {
-                  return '<div class="anexo-doc-mini shadow-sm" style="pointer-events: none;" title="' + window.escapeHtmlAttr(anexo.nome_original || '') + '"><i class="fa-solid fa-file-pdf"></i></div>';
+                  return '<div class="anexo-doc-mini shadow-sm" style="pointer-events: none;" title="' + window.escapeHtmlAttr(anexo.nome_original || '') + '"><i class="ph-bold ph-file-pdf"></i></div>';
               }
           };
 
@@ -2839,7 +3055,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               let originBadge = '';
               if (isVirtual) {
-                  originBadge = \`<span class="badge bg-custom-darker border border-custom ms-2 text-truncate" style="max-width: 90px; font-size: 0.6rem; color: \${corColuna};"><i class="fa-solid fa-table-columns me-1"></i>\${window.escapeHtmlAttr(card.originalColName)}</span>\`;
+                  originBadge = \`<span class="badge bg-custom-darker border border-custom ms-2 text-truncate" style="max-width: 90px; font-size: 0.6rem; color: \${corColuna};"><i class="ph-fill ph-columns me-1"></i>\${window.escapeHtmlAttr(card.originalColName)}</span>\`;
               }
 
               let descPreview = '';
@@ -2864,7 +3080,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
 
               let anexosHTML = '<div class="card-anexos w-100" id="anexos-card-board-' + card.id + '">';
               if (card.anexos && card.anexos.length > 0) {
-                  card.anexos.forEach(anexo => { anexosHTML += gerarHTMLAnexo(anexo); });
+                  card.anexos.forEach(anexo => { anexosHTML += window.gerarHTMLAnexo(anexo); });
               }
               anexosHTML += '</div>';
 
@@ -2873,11 +3089,11 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <div class="d-flex justify-content-between align-items-start mb-1">
                       <div class="d-flex flex-wrap align-items-center w-100">
                           <div class="card-title-board text-break fw-bold" style="font-size: 0.85rem;">
-                              \${card.titulo || 'Sem Título'}
+                              \${window.escapeHtmlAttr(card.titulo || 'Sem Título')}
                           </div>
                           \${originBadge}
                       </div>
-                      \${card.concluido ? '<i class="fa-solid fa-circle-check text-success ms-2 mt-1"></i>' : ''}
+                      \${card.concluido ? '<i class="ph-fill ph-check-circle text-success ms-2 mt-1"></i>' : ''}
                   </div>
                   \${descPreview}
                   \${tagsHTML}
@@ -2885,8 +3101,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   <div class="d-flex justify-content-between align-items-center mt-2 w-100">
                       <div class="d-flex gap-2 align-items-center text-white-50" style="font-size: 0.65rem;">
                           \${(prazoStr || card.concluido) ? calcularBadgeDiasRestantes(prazoStr, card.concluido) : ''}
-                          \${hasDesc ? '<span><i class="fa-solid fa-align-left"></i></span>' : ''}
-                          \${anexosCount ? '<span><i class="fa-solid fa-paperclip"></i> ' + anexosCount + '</span>' : ''}
+                          \${hasDesc ? '<span><i class="ph-bold ph-text-align-left"></i></span>' : ''}
+                          \${anexosCount ? '<span><i class="ph-bold ph-paperclip"></i> ' + anexosCount + '</span>' : ''}
                       </div>
                       <div class="text-white-50" style="font-size: 0.65rem;">
                           Criação: \${criadoEmFormatado}
@@ -2941,7 +3157,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                   selectColuna.innerHTML = '';
                   colunasDados.forEach(col => {
                       const isSelected = (col.titulo === colunaNome) ? 'selected' : '';
-                      selectColuna.innerHTML += \`<option value="\${col.id}" \${isSelected}>\${col.titulo}</option>\`;
+                      selectColuna.innerHTML += \`<option value="\${col.id}" \${isSelected}>\${window.escapeHtmlAttr(col.titulo)}</option>\`;
                   });
                   const colOrigem = colunasDados.find(c => c.titulo === colunaNome);
                   if(colOrigem) selectColuna.dataset.originalCol = colOrigem.id;
@@ -2977,12 +3193,12 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                       const isImage = anexo.tipo && anexo.tipo.includes('image');
                       const path = '/uploads/' + anexo.nome_arquivo;
                       
-                      const btnExcluirAnexo = \`<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 shadow" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;" onclick="confirmarDeletarAnexoModal(\${anexo.id}, \${cardId}, event)" title="Excluir Anexo"><i class="fa-solid fa-xmark"></i></button>\`;
+                      const btnExcluirAnexo = \`<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 shadow" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;" onclick="confirmarDeletarAnexoModal(\${anexo.id}, \${cardId}, event)" title="Excluir Anexo"><i class="ph-bold ph-x"></i></button>\`;
 
                       if (isImage) {
-                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100 cursor-pointer" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto; cursor: pointer;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><span class="small text-white-50 mt-1 d-block text-truncate cursor-pointer" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-regular fa-image me-1"></i> \${window.escapeHtmlAttr(anexo.nome_original || '')}</span>\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><img src="\${path}" class="anexo-cover shadow-sm w-100 cursor-pointer" style="height: auto; max-height: 300px; object-fit: cover; pointer-events: auto; cursor: pointer;" draggable="false" onclick="abrirImagemGrande('\${path}', event)" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><span class="small text-white-50 mt-1 d-block text-truncate cursor-pointer" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="ph-bold ph-image me-1"></i> \${window.escapeHtmlAttr(anexo.nome_original || '')}</span>\${btnExcluirAnexo}</div>\`;
                       } else {
-                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2 cursor-pointer" style="height: auto; pointer-events: auto; cursor: pointer !important; text-decoration: none;" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="fa-solid fa-file-pdf me-2 text-danger"></i><span class="text-truncate text-white">\${window.escapeHtmlAttr(anexo.nome_original || 'Documento')}</span></a>\${btnExcluirAnexo}</div>\`;
+                          return \`<div class="col-12 position-relative"><a href="\${path}" target="_blank" class="anexo-doc-mini shadow-sm w-100 d-flex justify-content-start px-3 py-2 cursor-pointer" style="height: auto; pointer-events: auto; cursor: pointer !important; text-decoration: none;" title="\${window.escapeHtmlAttr(anexo.nome_original || '')}"><i class="ph-fill ph-file-pdf me-2 text-danger"></i><span class="text-truncate text-white">\${window.escapeHtmlAttr(anexo.nome_original || 'Documento')}</span></a>\${btnExcluirAnexo}</div>\`;
                       }
                   }).join('');
               } else {
@@ -2990,7 +3206,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               }
 
               const cHist = document.getElementById('modalCardHistory');
-              cHist.innerHTML = '<div class="text-center text-white-50"><i class="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>';
+                cHist.innerHTML = '<div class="text-center text-white-50 mt-4">' + window.getAppleSpinner(1) + '<div class="mt-2" style="font-size: 0.75rem;">Carregando histórico...</div></div>';
               
               try {
                   const resp = await fetch('/kanban/historico/' + cardId);
@@ -3012,7 +3228,7 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           if (h.foto) {
                               avatarHtml = \`<img src="/uploads/\${h.foto}" class="history-avatar" onerror="this.outerHTML='<div class=\\'history-avatar\\'>\${inicial}</div>'">\`;
                           } else if (usuarioNome === 'Sistema') {
-                              avatarHtml = \`<div class="history-avatar"><i class="fa-solid fa-robot" style="font-size:0.6rem;"></i></div>\`;
+                              avatarHtml = \`<div class="history-avatar"><i class="ph-fill ph-robot" style="font-size:0.8rem;"></i></div>\`;
                           } else {
                               avatarHtml = \`<div class="history-avatar">\${inicial}</div>\`;
                           }
@@ -3020,8 +3236,8 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
                           return \`
                           <div class="history-item">
                               \${avatarHtml}
-                              <strong class="text-white" style="font-size: 0.8rem;">\${h.acao}</strong>
-                              <span class="history-time">\${dataFormatada} por <span class="text-accent">\${usuarioNome}</span></span>
+                              <strong class="text-white" style="font-size: 0.8rem;">\${window.escapeHtmlAttr(h.acao)}</strong>
+                              <span class="history-time">\${dataFormatada} por <span class="text-accent">\${window.escapeHtmlAttr(usuarioNome)}</span></span>
                           </div>
                           \`;
                       }).join('');
@@ -3258,7 +3474,22 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           window.criarCardRapido = function(colunaId) { 
               window.ultimoCardCriadoPorMim = Date.now();
               window.playUIFeedback('create');
+              
+              // FEEDBACK VISUAL: Adiciona o spinner fantasma na coluna
+              const colContainer = document.getElementById('coluna-' + colunaId);
+              if (colContainer) {
+                  const spinnerCard = document.createElement('div');
+                  spinnerCard.className = 'kanban-card skeleton-card-spinner d-flex justify-content-center align-items-center py-3 mb-2 shadow-sm';
+                  spinnerCard.style.borderLeftColor = '#08c068';
+                  spinnerCard.innerHTML = window.getAppleSpinner(1) + '<span class="ms-3 text-white-50 fw-medium" style="font-size: 0.8rem;">Criando card...</span>';
+                  
+                  colContainer.appendChild(spinnerCard);
+                  colContainer.scrollTop = colContainer.scrollHeight;
+              }
+
               socket.emit('novo_card', { colunaId: colunaId, titulo: 'Clique para editar', descricao: '', usuario: NOME_USUARIO }); 
+              
+              // NOTIFICAÇÃO LOCAL: Mostra o Toast de sucesso para quem clicou no botão
               mostrarToast('sucesso', 'Criado!', 'Novo card inserido na coluna.');
           };
 
@@ -3270,9 +3501,18 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
               const id = document.getElementById('deleteCardId').value;
               window.ultimoCardDeletadoPorMim = Date.now();
               window.playUIFeedback('delete');
+              
+              // FEEDBACK VISUAL: Transforma o card atual num spinner transparente antes de sumir
+              const cardEl = document.querySelector('.kanban-card[data-id="' + id + '"]');
+              if (cardEl) {
+                  cardEl.style.opacity = '0.5';
+                  cardEl.innerHTML = '<div class="d-flex justify-content-center align-items-center py-2">' + window.getAppleSpinner(1) + '</div>';
+              }
+
               socket.emit('deletar_card', { id: id, usuario: NOME_USUARIO });
               modalDeletarCardObj.hide();
               mostrarToast('sucesso', 'Excluído!', 'O card e os seus anexos foram apagados.');
+              
               if (cardAbertoId == id) { cardAbertoId = null; }
           };
 
@@ -3386,8 +3626,10 @@ function kanbanView(usuario, colunas = [], espacoAtual = { nome: "Quadro Kanban"
           });
 
           socket.on('card_criado', (card) => {
-              const colTarget = colunasDados.find(c => c.id == card.coluna_id);
-              const colNome = colTarget ? colTarget.titulo : '';
+                document.querySelectorAll('.skeleton-card-spinner').forEach(el => el.remove());
+                
+                const colTarget = colunasDados.find(c => c.id == card.coluna_id);
+                const colNome = colTarget ? colTarget.titulo : '';
 
               if (Date.now() - (window.ultimoCardCriadoPorMim || 0) > 2000) {
                   if (!card.isOmie) {

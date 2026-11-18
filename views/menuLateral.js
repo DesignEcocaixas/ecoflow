@@ -17,24 +17,24 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   // --- MAPA GERAL DOS MÓDULOS DISPONÍVEIS ---
   const allModulesMap = {
-      'producao': { href: "/producao", icone: "fas fa-industry", texto: "Produção" },
-      'veiculos': { href: "/veiculos", icone: "fas fa-car", texto: "Veículos" },
-      'checklist': { href: "/checklist-motoristas", icone: "fas fa-clipboard-check", texto: "Checklist" },
-      'rotas': { href: "/entregas", icone: "fas fa-truck", texto: "Rotas" },
-      'caderno': { href: "/caderno-entregas", icone: "fas fa-book-open-reader", texto: "Caderno" },
-      'envios': { href: "/envios-whatsapp", icone: "fab fa-whatsapp", texto: "Envios" },
-      'workspaces': { href: "/espacos-trabalho", icone: "fa-solid fa-cubes", texto: "Workspaces" },
-      'clientes': { href: "/clientes", icone: "fas fa-users", texto: "Clientes" },
-      'downloads': { href: "/downloads", icone: "fa-solid fa-cloud-arrow-down", texto: "Downloads" },
-      'precos': { href: "/tabela-precos", icone: "fas fa-tags", texto: "Preços" },
-      'chapas': { href: "/chapas", icone: "fas fa-layer-group", texto: "Chapas" },
-      'facas': { href: "/catalogo-facas", icone: "fa-solid fa-scissors", texto: "Facas de Corte" },
-      'entradas_saidas': { href: "/entradas-saidas", icone: "fa-solid fa-money-bill-transfer", texto: "Entradas / Saídas" },
-      'diaristas': { href: "/diaristas", icone: "fas fa-users", texto: "Diaristas" },
-      'pagamentos': { href: "/pagamentos", icone: "fas fa-money-bill-wave", texto: "Pagamentos" },
-      'propostas': { href: "/propostas", icone: "fa-solid fa-file-signature", texto: "Propostas" },
-      'gabaritos': { href: "/admin/gabaritos", icone: "fa-solid fa-folder-open", texto: "Gabaritos" },
-      'qr_codes': { href: "/qr-generator", icone: "fa-solid fa-qrcode", texto: "QR Codes" }
+      'producao': { href: "/producao", icone: "ph ph-factory", texto: "Produção" },
+      'veiculos': { href: "/veiculos", icone: "ph ph-car-profile", texto: "Veículos" },
+      'checklist': { href: "/checklist-motoristas", icone: "ph ph-clipboard-text", texto: "Checklist" },
+      'rotas': { href: "/entregas", icone: "ph ph-truck", texto: "Rotas" },
+      'caderno': { href: "/caderno-entregas", icone: "ph ph-book-open", texto: "Caderno" },
+      'envios': { href: "/envios-whatsapp", icone: "ph ph-whatsapp-logo", texto: "Envios" },
+      'workspaces': { href: "/espacos-trabalho", icone: "ph ph-squares-four", texto: "Workspaces" },
+      'clientes': { href: "/clientes", icone: "ph ph-users", texto: "Clientes" },
+      'downloads': { href: "/downloads", icone: "ph ph-cloud-arrow-down", texto: "Downloads" },
+      'precos': { href: "/tabela-precos", icone: "ph ph-tag", texto: "Preços" },
+      'chapas': { href: "/chapas", icone: "ph ph-stack", texto: "Chapas" },
+      'facas': { href: "/catalogo-facas", icone: "ph ph-scissors", texto: "Facas de Corte" },
+      'entradas_saidas': { href: "/entradas-saidas", icone: "ph ph-money", texto: "Entradas / Saídas" },
+      'diaristas': { href: "/diaristas", icone: "ph ph-users-three", texto: "Diaristas" },
+      'pagamentos': { href: "/pagamentos", icone: "ph ph-currency-dollar", texto: "Pagamentos" },
+      'propostas': { href: "/propostas", icone: "ph ph-file-text", texto: "Propostas" },
+      'gabaritos': { href: "/admin/gabaritos", icone: "ph ph-folder-open", texto: "Gabaritos" },
+      'qr_codes': { href: "/qr-generator", icone: "ph ph-qr-code", texto: "QR Codes" }
   };
 
   // --- DEFINIÇÃO DOS LINKS PADRÕES POR PERFIL ---
@@ -45,7 +45,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   const prodLinks = [ allModulesMap['chapas'], allModulesMap['facas'], allModulesMap['workspaces'], allModulesMap['facas'] ];
   const comLinks = [ allModulesMap['precos'], allModulesMap['chapas'], allModulesMap['workspaces'] ];
 
-  let availableLinks = [ { href: "/home", icone: "fas fa-home", texto: "Início" } ];
+  let availableLinks = [ { href: "/home", icone: "ph ph-house", texto: "Início" } ];
 
   // --- FUNÇÕES DE RENDERIZAÇÃO ---
   const renderLink = (href, icone, texto) => {
@@ -74,7 +74,7 @@ function menuLateral(usuario, rotaAtiva = "") {
         <a href="#" class="d-flex align-items-center text-decoration-none py-2 px-3 menu-item-main" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}'>
           <i class="${icone} menu-icone" style="width: 22px; text-align: center;"></i>
           <span class="sidebar-text ms-2">${titulo}</span>
-          <i class="fa-solid fa-chevron-right ms-auto sidebar-text chevron-icon" style="font-size: 0.65rem; opacity: 0.7;"></i>
+          <i class="ph ph-caret-right ms-auto sidebar-text chevron-icon" style="font-size: 0.7rem; opacity: 0.7;"></i>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark shadow-lg border-custom py-2" style="background-color: #222; border-radius: 8px; min-width: 210px; z-index: 1050; margin-left: 5px;">
           ${linksHtmlDesktop}
@@ -98,7 +98,7 @@ function menuLateral(usuario, rotaAtiva = "") {
             <i class="${icone} menu-icone" style="width: 22px; text-align: center;"></i> 
             <span class="sidebar-text ms-2">${titulo}</span>
           </span>
-          <i class="fa-solid fa-chevron-right chevron-icon sidebar-text" style="font-size: 0.65rem; opacity: 0.7;"></i>
+          <i class="ph ph-caret-right chevron-icon sidebar-text" style="font-size: 0.7rem; opacity: 0.7;"></i>
         </a>
         <div class="collapse" id="${id}" data-bs-parent="#sidebarMenuContainer">
           <div class="ms-4 ps-2 mt-1 mb-2 sidebar-submenu">
@@ -114,7 +114,7 @@ function menuLateral(usuario, rotaAtiva = "") {
   const searchBarHtml = `
     <div class="mb-2 mt-2 sidebar-search-container position-relative" style="z-index: 1040;">
       <div class="position-relative w-100">
-        <i class="fa-solid fa-search position-absolute text-white-50" style="top: 50%; transform: translateY(-50%); left: 10px; font-size: 0.8rem;"></i>
+        <i class="ph ph-magnifying-glass position-absolute text-white-50" style="top: 50%; transform: translateY(-50%); left: 10px; font-size: 0.9rem;"></i>
         <input type="text" id="menuSearchInput" oninput="buscarLinksMenu(this.value)" onfocus="buscarLinksMenu(this.value)" onblur="setTimeout(() => fecharSugestoes(), 200)" class="form-control form-control-sm bg-custom-darker border-custom text-white shadow-none w-100" placeholder="Pesquisar..." style="padding-left: 30px; border-radius: 6px;">
       </div>
       <div id="searchSuggestions" class="dropdown-menu dropdown-menu-dark w-100 shadow-lg border-custom py-1 position-absolute" style="top: 100%; left: 0; display: none; max-height: 250px; overflow-y: auto; border-radius: 6px; margin-top: 4px;">
@@ -123,22 +123,24 @@ function menuLateral(usuario, rotaAtiva = "") {
   `;
 
   let menuLinks = searchBarHtml;
-  menuLinks += renderLink("/home", "fas fa-home", "Início");
+  menuLinks += renderLink("/home", "ph ph-house", "Início");
 
   // =======================================================================
   // LÓGICA DE MONTAGEM DINÂMICA DO MENU (MESCLANDO CARGO + MÓDULOS)
   // =======================================================================
   if (tipo === "admin") {
-      menuLinks += renderCollapse("collLog", "fas fa-industry", "Logística", logLinks);
-      menuLinks += renderCollapse("collMot", "fas fa-id-card", "Motorista", motLinks);
-      menuLinks += renderCollapse("collFin", "fa-solid fa-wallet", "Financeiro", finLinks);
-      menuLinks += renderCollapse("collDes", "fa-solid fa-palette", "Design", desLinks);
-      menuLinks += renderLink("/cadastro", "fas fa-user-plus", "Usuários");
-      menuLinks += renderLink("/dev/testes", "fa-solid fa-vial-virus", "Dev Lab");
+      menuLinks += renderCollapse("collLog", "ph ph-factory", "Logística", logLinks);
+      menuLinks += renderCollapse("collMot", "ph ph-identification-card", "Motorista", motLinks);
+      menuLinks += renderCollapse("collFin", "ph ph-wallet", "Financeiro", finLinks);
+      menuLinks += renderCollapse("collDes", "ph ph-palette", "Design", desLinks);
+      menuLinks += renderLink("/cadastro", "ph ph-user-plus", "Usuários");
+      menuLinks += renderLink("/logs", "ph ph-clipboard-text", "Auditoria");
+      menuLinks += renderLink("/dev/testes", "ph ph-bug", "Dev Lab");
       
       availableLinks.push(...logLinks, ...motLinks, ...finLinks, ...desLinks);
-      availableLinks.push({ href: "/cadastro", icone: "fas fa-user-plus", texto: "Usuários" });
-      availableLinks.push({ href: "/dev/testes", icone: "fa-solid fa-vial-virus", texto: "Dev Lab" });
+      availableLinks.push({ href: "/cadastro", icone: "ph ph-user-plus", texto: "Usuários" });
+      availableLinks.push({ href: "/logs", icone: "ph ph-clipboard-text", texto: "Auditoria" });
+      availableLinks.push({ href: "/dev/testes", icone: "ph ph-bug", texto: "Dev Lab" });
   } else {
       let userLinks = [];
       
@@ -165,7 +167,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       const tituloMenu = tipo.charAt(0).toUpperCase() + tipo.slice(1);
       
       if (uniqueUserLinks.length > 0) {
-          menuLinks += renderCollapse("collUser", "fas fa-layer-group", tituloMenu, uniqueUserLinks);
+          menuLinks += renderCollapse("collUser", "ph ph-stack", tituloMenu, uniqueUserLinks);
           availableLinks.push(...uniqueUserLinks);
       }
   }
@@ -174,7 +176,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   const toggleBtnHtml = `
     <button class="d-none d-md-flex align-items-center justify-content-center toggle-sidebar-btn" onclick="toggleSidebarMenu()" title="Recolher Menu">
-      <i class="fa-solid fa-chevron-left fs-6 toggle-icon" id="toggleSidebarIcon"></i>
+      <i class="ph ph-caret-left fs-6 toggle-icon" id="toggleSidebarIcon"></i>
     </button>
   `;
 
@@ -200,28 +202,28 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   const btnConfigAdmin = tipo === "admin"
     ? `<a href="/configuracoes" class="ms-1 mb-0 transition-btn d-flex align-items-center justify-content-center profile-config-btn" title="Configurações do Sistema" style="text-decoration: none; background: transparent; padding: 4px; line-height: 1; color: rgba(255,255,255,0.7);">
-         <i class="fa-solid fa-gear" style="font-size: 0.85rem;"></i>
+         <i class="ph ph-gear" style="font-size: 1rem;"></i>
        </a>`
     : `<button type="button" class="ms-1 mb-0 transition-btn d-flex align-items-center justify-content-center profile-config-btn border-0" data-bs-toggle="modal" data-bs-target="#modalMeuPerfil" title="Meu Perfil" style="background: transparent; padding: 4px; line-height: 1; color: rgba(255,255,255,0.7);">
-         <i class="fa-solid fa-gear" style="font-size: 0.85rem;"></i>
+         <i class="ph ph-gear" style="font-size: 1rem;"></i>
        </button>`;
 
   const btnNotificacoes = `
     <div class="dropdown d-inline-flex">
       <button type="button" id="btnAbrirNotificacoes" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed", "placement":"bottom-start"}' class="mb-0 transition-btn d-flex align-items-center justify-content-center border-0 bg-transparent position-relative profile-notif-btn" title="Notificações" style="padding: 4px; line-height: 1; color: rgba(255,255,255,0.7);">
-         <i class="fa-solid fa-bell" style="font-size: 0.85rem;"></i>
+         <i class="ph ph-bell" style="font-size: 1rem;"></i>
          <span id="contadorNotificacoes" class="position-absolute top-0 start-100 translate-middle badge rounded-pill shadow-sm" style="font-size: 0.45rem; min-width: 14px; height: 14px; display: none; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1f1f1f; background-color: #08c068; color: #fff;">0</span>
       </button>
       <div class="dropdown-menu dropdown-menu-dark shadow-lg border-custom p-0 dropdown-menu-notificacoes" style="background-color: #1f1f1f; width: 320px; z-index: 9999; border-radius: 8px;">
         <div class="p-3 border-bottom border-custom d-flex justify-content-between align-items-center bg-custom-darker" style="border-top-left-radius: 8px; border-top-right-radius: 8px;">
-          <h6 class="mb-0 fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-regular fa-bell me-2 text-accent"></i> Notificações</h6>
+          <h6 class="mb-0 fw-bold text-white" style="font-size: 0.85rem;"><i class="ph ph-bell me-2 text-accent"></i> Notificações</h6>
         </div>
         <div id="listaNotificacoes" class="p-2" style="max-height: 350px; overflow-y: auto;">
           <!-- Lista injetada via JS -->
         </div>
         <div class="p-2 border-top border-custom bg-custom-darker" style="border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
           <button type="button" id="btnLimparNotificacoes" class="btn btn-outline-danger w-100 btn-sm fw-medium" style="border-radius: 6px; font-size: 0.75rem;">
-            <i class="fa-regular fa-trash-can me-1"></i> Limpar todas
+            <i class="ph ph-trash me-1"></i> Limpar todas
           </button>
         </div>
       </div>
@@ -230,7 +232,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
   const btnSair = `
     <a href="/logout" class="ms-1 mb-0 transition-btn d-flex align-items-center justify-content-center profile-logout-btn" title="Sair do Sistema" style="text-decoration: none; background: transparent; padding: 4px; line-height: 1; color: rgba(220, 53, 69, 0.75);">
-      <i class="fas fa-sign-out-alt" style="font-size: 0.85rem;"></i>
+      <i class="ph ph-sign-out" style="font-size: 1rem;"></i>
     </a>
   `;
 
@@ -250,7 +252,8 @@ function menuLateral(usuario, rotaAtiva = "") {
               ${tipo}
             </span>
             ${btnNotificacoes}
-            ${btnConfigAdmin}${btnSair}
+            ${btnConfigAdmin}
+            ${btnSair}
           </div>
         </div>
       </div>
@@ -277,7 +280,7 @@ function menuLateral(usuario, rotaAtiva = "") {
       <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="/usuarios/meu-perfil" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="window.submeterMeuPerfilAjax(event, this)">
           <div class="modal-header bg-custom-darker border-0 text-white pb-2">
-            <h6 class="modal-title fw-bold" style="font-size: 0.9rem;"><i class="fa-solid fa-user-pen text-accent me-2"></i> Meu Perfil</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.9rem;"><i class="ph ph-user-circle-gear text-accent me-2"></i> Meu Perfil</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-sm p-4 bg-custom-dark">
@@ -288,7 +291,7 @@ function menuLateral(usuario, rotaAtiva = "") {
                       : `<div id="previewFotoMeuPerfil" style="width: 100%; height: 100%; object-fit: cover; font-size: 2.5rem; font-weight: bold; color: #08c068; display: flex; align-items: center; justify-content: center;">${iniciais}</div>`
                    }
                    <div class="position-absolute w-100 text-center" style="bottom: 10px; left: 0; pointer-events: none;">
-                       <i class="fa-solid fa-camera text-white opacity-75"></i>
+                       <i class="ph ph-camera text-white opacity-75"></i>
                    </div>
                </div>
                <input type="file" name="foto" id="uploadFotoMeuPerfil" class="d-none" accept="image/*" onchange="window.previewFotoPerfilNativo(this)">
@@ -325,7 +328,7 @@ function menuLateral(usuario, rotaAtiva = "") {
           </div>
           <div class="modal-footer border-0 bg-custom-darker">
             <button type="button" class="btn btn-sm btn-outline-secondary text-white px-4" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark px-4 shadow-sm"><i class="fa-solid fa-check me-1"></i> Atualizar Perfil</button>
+            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark px-4 shadow-sm"><i class="ph ph-check me-1"></i> Atualizar Perfil</button>
           </div>
         </form>
       </div>
@@ -344,11 +347,11 @@ function menuLateral(usuario, rotaAtiva = "") {
 
         <div class="d-flex align-items-center justify-content-center gap-2 social-icons-footer">
           <a href="https://www.instagram.com/71dev_/" target="_blank" class="transition-btn d-flex align-items-center justify-content-center" title="Instagram" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(255,255,255,0.5);">
-            <i class="fa-brands fa-instagram" style="font-size: 1rem;"></i>
+            <i class="ph ph-instagram-logo" style="font-size: 1rem;"></i>
           </a>
 
           <a href="https://wa.me/557183174920" target="_blank" class="transition-btn d-flex align-items-center justify-content-center" title="WhatsApp" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1; color: rgba(255,255,255,0.5);">
-            <i class="fa-brands fa-whatsapp" style="font-size: 1rem;"></i>
+            <i class="ph ph-whatsapp-logo" style="font-size: 1rem;"></i>
           </a>
         </div>
       </div>
@@ -359,6 +362,9 @@ function menuLateral(usuario, rotaAtiva = "") {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- FONT AWESOME MANTIDO PARA GARANTIR COMPATIBILIDADE SE ALGUM MÓDULO NÃO TIVER SIDO ATUALIZADO -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
       html, body, .content, .form-control, .form-select, .btn, .modal-content, .accordion-button, .card, .table, th, td, span, label {
@@ -529,12 +535,14 @@ function menuLateral(usuario, rotaAtiva = "") {
 
     <div class="d-flex flex-column h-100 pt-0 w-100">
       <div class="flex-grow-1 sidebar-scroll-area" id="sidebarMenuContainer">
-        ${userProfileHtml}${menuLinks}
+        ${userProfileHtml}
+        ${menuLinks}
       </div>
       ${footerHTML}
     </div>
 
-    ${modalFotoHtml}${modalMeuPerfilHtml}
+    ${modalFotoHtml}
+    ${modalMeuPerfilHtml}
 
     <script>
       // =======================================================================
@@ -563,7 +571,7 @@ function menuLateral(usuario, rotaAtiva = "") {
 
           const btnSubmit = form.querySelector('button[type="submit"]');
           const originalText = btnSubmit.innerHTML;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Salvando...';
+          btnSubmit.innerHTML = '<i class="ph ph-spinner-gap ph-spin me-1"></i> Salvando...';
           btnSubmit.disabled = true;
 
           try {
@@ -633,7 +641,7 @@ function menuLateral(usuario, rotaAtiva = "") {
               <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 9999;" id="globalToastContainer">
                   <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
                       <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
-                          <div><i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i><strong class="fs-6" id="sucessoTitulo"></strong></div>
+                          <div><i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i><strong class="fs-6" id="sucessoTitulo"></strong></div>
                           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
                       </div>
                       <div class="toast-body pt-1 pb-4 px-3 position-relative">
@@ -643,7 +651,7 @@ function menuLateral(usuario, rotaAtiva = "") {
                   </div>
                   <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
                       <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
-                          <div><i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i><strong class="fs-6" id="erroTitulo"></strong></div>
+                          <div><i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i><strong class="fs-6" id="erroTitulo"></strong></div>
                           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
                       </div>
                       <div class="toast-body pt-1 pb-4 px-3 position-relative">
@@ -719,11 +727,11 @@ function menuLateral(usuario, rotaAtiva = "") {
               
               if (icon) {
                   if (isCollapsed) {
-                      icon.classList.remove("fa-chevron-left");
-                      icon.classList.add("fa-chevron-right");
+                      icon.classList.remove("ph-caret-left");
+                      icon.classList.add("ph-caret-right");
                   } else {
-                      icon.classList.remove("fa-chevron-right");
-                      icon.classList.add("fa-chevron-left");
+                      icon.classList.remove("ph-caret-right");
+                      icon.classList.add("ph-caret-left");
                   }
               }
           }
@@ -748,8 +756,8 @@ function menuLateral(usuario, rotaAtiva = "") {
           if (sidebar && localStorage.getItem("ecoflow_sidebar_collapsed") === "true") {
               sidebar.classList.add("collapsed");
               if (icon) {
-                  icon.classList.remove("fa-chevron-left");
-                  icon.classList.add("fa-chevron-right");
+                  icon.classList.remove("ph-caret-left");
+                  icon.classList.add("ph-caret-right");
               }
           }
 
@@ -846,7 +854,7 @@ function menuLateral(usuario, rotaAtiva = "") {
         const htmlSemNotificacoes = () => {
           return \`
             <div class="text-center text-white-50 py-4" style="opacity: 0.5;">
-              <i class="fa-regular fa-bell-slash fs-3 d-block mb-2"></i>
+              <i class="ph ph-bell-slash fs-3 d-block mb-2"></i>
               Nenhuma notificação.
             </div>
           \`;
@@ -943,7 +951,7 @@ function menuLateral(usuario, rotaAtiva = "") {
                       <small class="text-white-50" style="font-size: 0.65rem;">\${escapeHtml(data)}</small>
                     </div>
                     <button type="button" class="btn btn-sm border-0 text-white-50 btn-excluir-notificacao" data-id="\${n.id}" title="Excluir" style="padding: 2px 6px; background-color: transparent;" onmouseover="this.style.color='#dc3545';" onmouseout="this.style.color='';">
-                      <i class="fa-solid fa-xmark"></i>
+                      <i class="ph ph-x"></i>
                     </button>
                   </div>
                 </div>
@@ -1059,6 +1067,11 @@ function menuLateral(usuario, rotaAtiva = "") {
       }
 
       window.addEventListener('beforeunload', () => {
+          // Ignora o skeleton se a flag global estiver ativa (ex: downloads de ficheiros via form)
+          if (window.ignorarSkeletonMenu) {
+              window.ignorarSkeletonMenu = false; // Reset para voltar ao normal na próxima vez
+              return;
+          }
           mostrarSkeletonMenuLateral();
       });
 

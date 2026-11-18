@@ -2,11 +2,14 @@
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
-function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, paginacao = {}, taxas = {}) {
+function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, paginacao = {}, categoriasDiarias = []) {
   const user = usuario || { nome: "Usuário", tipo_usuario: "admin" };
   const termosHTML = termosComponent(usuario); 
   const page = paginacao.page || 1;
   const totalPages = paginacao.totalPages || 1;
+
+  // Variável para o Frontend gerir o estado localmente das categorias
+  const catsJsonStr = JSON.stringify(categoriasDiarias);
 
   // Função para evitar quebra do HTML em nomes com aspas
   const escapeHtmlAttr = (str) => {
@@ -53,10 +56,6 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       return v;
   };
 
-  const valPadrao = taxas.diaria_padrao || 85.00;
-  const valDomingo = taxas.diaria_domingo || 95.00;
-  const valLimpeza = taxas.diaria_limpeza || 75.00;
-
   const diaristasJson = JSON.stringify(diaristas.map(d => ({
       id: d.id, 
       nome: d.nome, 
@@ -100,7 +99,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
   const cardsDiaristas = apenasDiaristas.length > 0 ? apenasDiaristas.map(d => {
       const fotoUrl = d.foto ? `/uploads/${d.foto}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nome)}&background=1f1f1f&color=08c068`;
-      const pixStatus = d.pix && d.pix.trim() !== '' ? '<span class="text-success"><i class="fa-brands fa-pix"></i> Cadastrado</span>' : '<span class="text-danger"><i class="fa-brands fa-pix"></i> Pendente</span>';
+      const pixStatus = d.pix && d.pix.trim() !== '' ? '<span class="text-success"><i class="ph ph-currency-circle-dollar"></i> Cadastrado</span>' : '<span class="text-danger"><i class="ph ph-currency-circle-dollar"></i> Pendente</span>';
 
       return `
          <div class="diarista-wrapper col-12 col-sm-6 col-md-4 col-xl-3" data-id="${d.id}" data-nome="${escapeHtmlAttr(d.nome).toLowerCase()}">
@@ -115,7 +114,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                      ${getBadgeColabList(d.tipo_usuario)}
                      
                      <div class="w-100 border-top border-custom pt-2 text-muted" style="font-size: 0.70rem;">
-                         <div class="mb-1 text-truncate"><i class="fa-solid fa-id-card opacity-75 me-1"></i> CPF: ${applyMaskCPF(d.cpf) || 'N/A'}</div>
+                         <div class="mb-1 text-truncate"><i class="ph ph-identification-card opacity-75 me-1"></i> CPF: ${applyMaskCPF(d.cpf) || 'N/A'}</div>
                          <div class="text-truncate">${pixStatus}</div>
                      </div>
                  </div>
@@ -135,10 +134,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                          </div>
                      </div>
                      <div class="text-muted text-nowrap d-none d-md-block" style="font-size: 0.75rem;">
-                         <i class="fa-solid fa-phone opacity-75 me-1"></i> ${applyMaskPhone(d.telefone) || 'Sem contato'}
+                         <i class="ph ph-phone opacity-75 me-1"></i> ${applyMaskPhone(d.telefone) || 'Sem contato'}
                      </div>
                      <div class="text-muted text-nowrap" style="font-size: 0.75rem;">
-                         <i class="fa-solid fa-id-card opacity-75 me-1"></i> ${applyMaskCPF(d.cpf) || 'N/A'}
+                         <i class="ph ph-identification-card opacity-75 me-1"></i> ${applyMaskCPF(d.cpf) || 'N/A'}
                      </div>
                      <div class="text-nowrap" style="font-size: 0.75rem;">
                          ${pixStatus}
@@ -147,22 +146,22 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
              </div>
          </div>
       `;
-  }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum diarista ou ajudante cadastrado.</p></div>`;
+  }).join('') : `<div class="col-12 text-center text-muted py-5"><i class="ph ph-users-slash fs-2 opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum diarista ou ajudante cadastrado.</p></div>`;
 
   const modaisDinamicosExcluir = [];
   const linhasPastas = pastas.length > 0 ? pastas.map(p => {
       const fotoUrl = p.foto_colab ? `/uploads/${p.foto_colab}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome_colaborador || 'C')}&background=1f1f1f&color=08c068`;
       
       let badgeStatus = p.status === 'PAGO' 
-        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.65rem;"><i class="fa-solid fa-check-double"></i> Paga</span>' 
-        : '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning" style="font-size: 0.65rem;"><i class="fa-solid fa-folder-open"></i> Aberta</span>';
+        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.65rem;"><i class="ph ph-check-square"></i> Paga</span>' 
+        : '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning" style="font-size: 0.65rem;"><i class="ph ph-folder-open"></i> Aberta</span>';
 
       modaisDinamicosExcluir.push(`
         <div class="modal fade" id="excluirPastaModal${p.id}" tabindex="-1">
             <div class="modal-dialog modal-sm modal-dialog-centered">
                 <form method="POST" action="/diaristas/pasta/excluir/${p.id}" class="modal-content border-0 shadow-lg erp-modal" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta Excluída!')">
                     <div class="modal-body p-4 text-center bg-custom-darker">
-                        <i class="fa-solid fa-triangle-exclamation fa-2x text-danger mb-3"></i>
+                        <i class="ph-fill ph-warning-circle text-danger mb-3" style="font-size: 3rem;"></i>
                         <h6 class="fw-bold text-white mb-2" style="font-size:0.9rem;">Excluir Pasta?</h6>
                         <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação apagará <b>todas as diárias</b> dentro desta pasta de <b>${p.nome_colaborador}</b>!</p>
                     </div>
@@ -186,18 +185,18 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                     </div>
                 </div>
             </td>
-            <td class="text-muted py-1 px-3 fw-medium" style="font-size: 0.75rem;"><i class="fa-regular fa-folder-open me-1"></i> ${fmtData(p.data_criacao)}</td>
+            <td class="text-muted py-1 px-3 fw-medium" style="font-size: 0.75rem;"><i class="ph ph-folder-open me-1"></i> ${fmtData(p.data_criacao)}</td>
             <td class="py-1 px-3 text-center">
-                <span class="badge bg-custom-darker text-white border-custom shadow-sm" style="font-size:0.7rem;"><i class="fa-solid fa-calendar-day text-accent me-1"></i> ${p.qtd_diarias} Regs</span>
+                <span class="badge bg-custom-darker text-white border-custom shadow-sm" style="font-size:0.7rem;"><i class="ph-fill ph-calendar text-accent me-1"></i> ${p.qtd_diarias} Regs</span>
             </td>
             <td class="text-success fw-bold py-1 px-3" style="font-size:0.85rem;">R$ ${fmtMoeda(p.valor_total)}</td>
             <td class="py-1 px-3 text-center">${badgeStatus}</td>
             <td class="text-end py-1 px-3 text-nowrap" onclick="event.stopPropagation();">
-                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPastaModal${p.id}')).show();" title="Excluir Pasta"><i class="fa-solid fa-trash"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm ms-1 py-0 px-2" style="font-size: 0.75rem;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirPastaModal${p.id}')).show();" title="Excluir Pasta"><i class="ph ph-trash"></i></button>
             </td>
         </tr>
       `;
-  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="fa-solid fa-folder-open fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhuma pasta de diárias encontrada no período.</p></td></tr>`;
+  }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4 text-center-empty"><i class="ph ph-folder-open fs-1 opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhuma pasta de diárias encontrada no período.</p></td></tr>`;
 
   const getTipoBadge = (tipo) => {
     switch (tipo) {
@@ -224,19 +223,19 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
               </div>
           </td>
           <td class="py-2 px-3 text-muted" style="font-size: 0.75rem;">
-              <div><i class="fa-solid fa-id-card me-1 opacity-75"></i> ${applyMaskCPF(c.cpf) || '-'}</div>
-              <div class="mt-1"><i class="fa-solid fa-phone me-1 opacity-75"></i> ${applyMaskPhone(c.telefone) || '-'}</div>
+              <div><i class="ph ph-identification-card me-1 opacity-75"></i> ${applyMaskCPF(c.cpf) || '-'}</div>
+              <div class="mt-1"><i class="ph ph-phone me-1 opacity-75"></i> ${applyMaskPhone(c.telefone) || '-'}</div>
           </td>
           <td class="py-2 px-3 text-muted" style="font-size: 0.75rem;">
-              <div class="text-success fw-bold"><i class="fa-brands fa-pix me-1"></i> ${c.pix || '-'}</div>
-              <div class="mt-1"><i class="fa-solid fa-building-columns me-1 opacity-75"></i> ${c.banco || '-'}</div>
+              <div class="text-success fw-bold"><i class="ph ph-currency-circle-dollar me-1"></i> ${c.pix || '-'}</div>
+              <div class="mt-1"><i class="ph ph-bank me-1 opacity-75"></i> ${c.banco || '-'}</div>
           </td>
           <td class="py-2 px-3 text-end text-nowrap" onclick="event.stopPropagation();">
-              <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="abrirModalExcluirColaborador('${c.id}')" title="Excluir"><i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="abrirModalExcluirColaborador('${c.id}')" title="Excluir"><i class="ph ph-trash" style="font-size: 0.75rem;"></i></button>
           </td>
       </tr>
       `;
-  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-users-slash fa-2x mb-3 opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum colaborador cadastrado.</span></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="text-center text-muted py-5"><i class="ph ph-users-slash fs-1 mb-3 opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum colaborador cadastrado.</span></td></tr>`;
 
   const qsParams = [];
   if (filtros.data_inicio) qsParams.push(`data_inicio=${filtros.data_inicio}`);
@@ -278,7 +277,9 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Diaristas | ERP Ecoflow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FONT AWESOME MANTIDO PARA GARANTIR COMPATIBILIDADE -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <style>
       ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -435,6 +436,20 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
     <script id="diaristasData" type="application/json">${diaristasJson}</script>
     <script id="pastasData" type="application/json">${pastasJson}</script>
+    <script id="catsData" type="application/json">${catsJsonStr}</script>
+    
+    <script>
+      // Função global para evitar quebra do HTML
+      window.escapeHtmlAttr = function(str) {
+          if (!str) return '';
+          return String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+      };
+    </script>
 
     <div class="sidebar d-none d-md-flex">
       <div class="text-center mb-4 mt-2"><img src="/img/logo-branca.png" class="img-fluid" style="max-width:130px;"></div>
@@ -443,7 +458,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
     <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
       <div class="offcanvas-header border-bottom border-custom">
-        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="ph ph-list text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
@@ -455,9 +470,9 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
     <div class="content">
       <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="ph ph-list text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-users-gear text-muted me-2"></i>Controle de Diaristas</h5>
+              <h5 class="mb-0 fw-bold text-white"><i class="ph-fill ph-users-three text-muted me-2"></i>Controle de Diaristas</h5>
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.7rem;">Equipe avulsa, limpeza e serviços gerais</span>
             </div>
         </div>
@@ -466,25 +481,25 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
             <!-- Dropdown Ordenação -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary border-custom shadow-sm px-2 text-white h-100" type="button" data-bs-toggle="dropdown" title="Ordenar Lista">
-                    <i id="sortIconIndicador" class="fa-solid fa-arrow-down-a-z"></i>
+                    <i id="sortIconIndicador" class="ph ph-sort-ascending"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-1" style="background-color: #2a2a2a; border-color: rgba(255,255,255,0.1); min-width: 210px; z-index: 1060;">
                     <li><h6 class="dropdown-header text-muted" style="font-size: 0.7rem; text-transform: uppercase;">Classificar por</h6></li>
-                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('az')"><i class="fa-solid fa-arrow-down-a-z me-2 text-accent" style="width: 16px;"></i> Nome (A-Z)</a></li>
-                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('za')"><i class="fa-solid fa-arrow-up-z-a me-2 text-accent" style="width: 16px;"></i> Nome (Z-A)</a></li>
-                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('cad_asc')"><i class="fa-solid fa-arrow-down-1-9 me-2 text-accent" style="width: 16px;"></i> Cadastro (Antigos)</a></li>
-                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="sortDiaristas('cad_desc')"><i class="fa-solid fa-arrow-up-9-1 me-2 text-accent" style="width: 16px;"></i> Cadastro (Recentes)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('az')"><i class="ph ph-sort-ascending me-2 text-accent" style="width: 16px;"></i> Nome (A-Z)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('za')"><i class="ph ph-sort-descending me-2 text-accent" style="width: 16px;"></i> Nome (Z-A)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded mb-1" onclick="sortDiaristas('cad_asc')"><i class="ph ph-sort-ascending me-2 text-accent" style="width: 16px;"></i> Cadastro (Antigos)</a></li>
+                    <li><a class="dropdown-item text-white hover-bg-custom cursor-pointer rounded" onclick="sortDiaristas('cad_desc')"><i class="ph ph-sort-descending me-2 text-accent" style="width: 16px;"></i> Cadastro (Recentes)</a></li>
                 </ul>
             </div>
             
             <div class="btn-group shadow-sm border-custom rounded" role="group">
                 <input type="radio" class="btn-check" name="btnradio_view" id="view_grid" autocomplete="off" checked onchange="toggleViewMode('grid')">
-                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="fa-solid fa-grip"></i></label>
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="ph-fill ph-grid-four"></i></label>
                 <input type="radio" class="btn-check" name="btnradio_view" id="view_list" autocomplete="off" onchange="toggleViewMode('list')">
-                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="fa-solid fa-list"></i></label>
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="ph-fill ph-list"></i></label>
             </div>
             <button class="btn btn-sm btn-primary shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalGerirColaboradores">
-               <i class="fa-solid fa-users me-1"></i> Gestão de Equipe
+               <i class="ph ph-users me-1"></i> Gestão de Equipe
             </button>
         </div>
       </div>
@@ -495,20 +510,20 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       <div id="paginationCards" class="d-flex justify-content-center mt-4 mb-5"></div>
 
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 border-top border-custom pt-4">
-         <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-tree text-accent me-2"></i> Histórico de Pastas de Fechamento</h6>
+         <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;"><i class="ph-fill ph-tree-structure text-accent me-2"></i> Histórico de Pastas de Fechamento</h6>
          <div class="d-flex gap-2 flex-wrap">
             <form id="formFiltro" class="d-flex gap-2 flex-wrap" method="GET" action="/diaristas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
                 <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;">
-                    <span class="input-group-text border-custom d-none d-sm-block"><i class="fa-regular fa-calendar"></i></span>
+                    <span class="input-group-text border-custom d-none d-sm-block"><i class="ph ph-calendar"></i></span>
                     <input type="date" name="data_inicio" class="form-control" value="${filtros.data_inicio || ''}" title="Data Inicial">
                     <span class="input-group-text border-custom">até</span>
                     <input type="date" name="data_fim" class="form-control" value="${filtros.data_fim || ''}" title="Data Final">
-                    <button type="submit" class="btn btn-primary px-3"><i class="fa-solid fa-filter"></i></button>
-                    <button type="button" class="btn btn-outline-secondary border-custom px-2 text-danger bg-custom-darker" onclick="limparFiltros()"><i class="fa-solid fa-eraser"></i></button>
+                    <button type="submit" class="btn btn-primary px-3"><i class="ph ph-funnel"></i></button>
+                    <button type="button" class="btn btn-outline-secondary border-custom px-2 text-danger bg-custom-darker" onclick="limparFiltros()"><i class="ph ph-eraser"></i></button>
                 </div>
             </form>
-            <button class="btn btn-sm btn-outline-primary fw-bold shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" title="Configurar Diárias Diaristas">
-               <i class="fa-solid fa-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>
+            <button class="btn btn-sm btn-outline-primary fw-bold shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalConfigTaxas" onclick="abrirModalCategorias()" title="Configurar Categorias Diárias">
+               <i class="ph ph-gear fs-6"></i> <span class="d-none d-sm-inline ms-1">Valores</span>
             </button>
          </div>
       </div>
@@ -534,7 +549,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       ${paginacaoHtml}
 
       <button type="button" class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoesDiaristas" title="Instruções de Uso">
-          <i class="fa-solid fa-question"></i>
+          <i class="ph ph-question"></i>
       </button>
 
     </div>
@@ -543,35 +558,35 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
           <div class="modal-header text-white border-0 bg-custom-darker">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Instruções de Uso - Diaristas</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-fill ph-info text-accent me-2"></i> Instruções de Uso - Diaristas</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark text-sm">
-            <h6 class="fw-bold text-white border-bottom border-custom pb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-users-gear text-accent me-2"></i> Como funciona este módulo?</h6>
+            <h6 class="fw-bold text-white border-bottom border-custom pb-2" style="font-size: 0.8rem;"><i class="ph-fill ph-users-three text-accent me-2"></i> Como funciona este módulo?</h6>
             <p class="text-muted mb-4" style="font-size: 0.75rem;">Este módulo foi desenhado para gerir de forma eficiente os colaboradores classificados como <strong>Diaristas</strong>, permitindo o agrupamento das suas diárias de trabalho em <b>Pastas de Fechamento (Semanas)</b>.</p>
 
             <div class="row g-3">
                 <div class="col-12 col-md-6">
                     <div class="bg-custom-darker p-3 rounded border-custom shadow-sm h-100">
-                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="fa-solid fa-folder-plus text-success me-1"></i> Criação de Pastas</h6>
+                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="ph-fill ph-folder-plus text-success me-1"></i> Criação de Pastas</h6>
                         <p class="text-muted mb-0" style="font-size:0.7rem;">Para iniciar o registo de trabalho de um diarista, clique no card do colaborador. Isto irá criar uma nova <strong>Pasta de Diárias Aberta</strong> no histórico, que agrupará todas as diárias daquela semana.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6">
                     <div class="bg-custom-darker p-3 rounded border-custom shadow-sm h-100">
-                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="fa-solid fa-list-check text-warning me-1"></i> Inserção de Diárias</h6>
-                        <p class="text-muted mb-0" style="font-size:0.7rem;">Ao clicar em "Abrir" numa pasta, você acede ao painel interno. Lá pode registar o tipo de diária (Padrão, Limpeza, Domingo), definir os dias e adicionar o valor acumulado.</p>
+                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="ph-fill ph-list-checks text-warning me-1"></i> Inserção de Diárias</h6>
+                        <p class="text-muted mb-0" style="font-size:0.7rem;">Ao clicar em "Abrir" numa pasta, você acede ao painel interno. Lá pode registar o tipo de diária, definir os dias e adicionar o valor acumulado.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6">
                     <div class="bg-custom-darker p-3 rounded border-custom shadow-sm h-100">
-                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="fa-brands fa-whatsapp text-success me-1"></i> Relatório WhatsApp</h6>
+                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="ph-fill ph-whatsapp-logo text-success me-1"></i> Relatório WhatsApp</h6>
                         <p class="text-muted mb-0" style="font-size:0.7rem;">Dentro da pasta, antes de fechar, pode clicar no ícone do WhatsApp para enviar ao colaborador um resumo detalhado de todas as diárias lançadas e o valor total a receber.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6">
                     <div class="bg-custom-darker p-3 rounded border-custom shadow-sm h-100">
-                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="fa-solid fa-lock text-danger me-1"></i> Fechamento e Pagamento</h6>
+                        <h6 class="fw-bold text-white mb-2" style="font-size:0.75rem;"><i class="ph-fill ph-lock-key text-danger me-1"></i> Fechamento e Pagamento</h6>
                         <p class="text-muted mb-0" style="font-size:0.7rem;">Após o pagamento, anexe o comprovativo e clique em "Pagar e Fechar Pasta". A pasta será trancada (nenhum novo registo poderá ser adicionado) e passará para o estado <strong>Pago</strong>.</p>
                     </div>
                 </div>
@@ -589,23 +604,23 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
           <div class="modal-header text-white border-0 bg-custom-darker">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-users-gear text-accent me-2"></i> Gestão de Diaristas & Colaboradores</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-fill ph-users-three text-accent me-2"></i> Gestão de Diaristas & Colaboradores</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
              <div class="d-flex justify-content-between mb-3 gap-2 flex-wrap align-items-end">
                  <h6 class="fw-bold text-white mb-0" style="font-size: 0.8rem;">
-                     <i class="fa-solid fa-list text-muted me-1"></i> Funcionários avulsos
+                     <i class="ph ph-list text-muted me-1"></i> Funcionários avulsos
                  </h6>
                  <button class="btn btn-sm btn-success fw-bold shadow-sm" onclick="abrirModalFormColaborador()">
-                     <i class="fa-solid fa-user-plus me-1"></i> Adicionar
+                     <i class="ph ph-user-plus me-1"></i> Adicionar
                  </button>
              </div>
 
              <div class="input-group input-group-sm mb-2 shadow-sm">
-                 <span class="input-group-text bg-custom-darker border-custom border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                 <span class="input-group-text bg-custom-darker border-custom border-end-0"><i class="ph ph-magnifying-glass text-muted"></i></span>
                  <input type="text" class="form-control border-start-0 border-end-0 border-custom bg-custom-darker text-white" id="buscaEquipe" placeholder="Buscar colaborador..." onkeyup="filtrarTabelaEquipe()">
-                 <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparBuscaEquipe()" title="Limpar pesquisa"><i class="fa-solid fa-xmark"></i></button>
+                 <button class="btn btn-outline-secondary bg-custom-darker border-custom border-start-0 text-danger" type="button" onclick="limparBuscaEquipe()" title="Limpar pesquisa"><i class="ph ph-x"></i></button>
              </div>
              
              <div class="table-responsive bg-custom-darker rounded shadow-sm border-custom" style="max-height: 50vh; overflow-y: auto;">
@@ -637,7 +652,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
             <form id="formColaborador" method="POST" action="/cadastros/usuarios/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Colaborador Salvo com Sucesso!')">
                 <input type="hidden" name="redirect_to" value="/diaristas">
                 <div class="modal-header bg-custom-darker text-white border-0">
-                    <h6 class="modal-title fw-bold" id="formColabMainTitle" style="font-size: 0.85rem;"><i class="fa-solid fa-user-plus text-accent me-2"></i> Formulário de Colaborador</h6>
+                    <h6 class="modal-title fw-bold" id="formColabMainTitle" style="font-size: 0.85rem;"><i class="ph-fill ph-user-plus text-accent me-2"></i> Formulário de Colaborador</h6>
                     <button type="button" class="btn-close btn-close-white" onclick="voltarParaGestaoModal('modalFormColaborador')"></button>
                 </div>
                 <div class="modal-body p-4 bg-custom-dark">
@@ -645,7 +660,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                         <div class="profile-upload-container position-relative mx-auto" onclick="document.getElementById('uploadFotoColab').click()" title="Clique para alterar a foto">
                             <img id="previewFotoColab" src="https://ui-avatars.com/api/?name=Novo&background=1f1f1f&color=08c068" data-default-src="https://ui-avatars.com/api/?name=Novo&background=1f1f1f&color=08c068" alt="Foto">
                             <div class="profile-upload-overlay d-flex align-items-center justify-content-center">
-                                <span><i class="fa-solid fa-camera mb-1 d-block"></i> Alterar</span>
+                                <span><i class="ph-fill ph-camera mb-1 d-block"></i> Alterar</span>
                             </div>
                         </div>
                         <input type="file" name="foto" id="uploadFotoColab" class="d-none" accept="image/*" onchange="previewImage(this, 'previewFotoColab')">
@@ -684,7 +699,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                 </div>
                 <div class="modal-footer bg-custom-darker border-0 d-flex flex-nowrap">
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" onclick="voltarParaGestaoModal('modalFormColaborador')">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold"><i class="ph-fill ph-floppy-disk me-1"></i> Salvar</button>
                 </div>
             </form>
         </div>
@@ -696,7 +711,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
             <form id="formExcluirColaborador" method="POST" action="" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Colaborador Excluído!')">
                 <input type="hidden" name="redirect_to" value="/diaristas">
                 <div class="modal-body p-4 text-center bg-custom-darker">
-                    <i class="fa-solid fa-triangle-exclamation fa-2x text-danger mb-3"></i>
+                    <i class="ph-fill ph-warning-circle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Excluir Colaborador?</h6>
                     <p class="text-muted mb-0" style="font-size:0.75rem;">Esta ação removerá o acesso e os dados de perfil de <strong class="text-white" id="excluirColaboradorNome"></strong> do sistema!</p>
                 </div>
@@ -708,32 +723,40 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         </div>
     </div>
 
+    <!-- NOVO MODAL DE CATEGORIAS (FLEXÍVEL) -->
     <div class="modal fade" id="modalConfigTaxas" tabindex="-1">
-      <div class="modal-dialog modal-sm modal-dialog-centered">
-        <form method="POST" action="/configuracoes/taxas" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Valores Salvos no Banco!')">
-          <input type="hidden" name="redirect_to" value="/diaristas">
-          <div class="modal-header bg-custom-darker text-white border-0">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-gear text-accent me-2"></i> Valores das Diárias</h6>
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+        <div class="modal-content erp-modal shadow-lg border-0">
+          <div class="modal-header bg-custom-darker text-white border-custom pb-3 pt-3">
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.9rem;"><i class="ph-fill ph-gear text-accent me-2"></i> Categorias de Diárias</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 bg-custom-dark">
-            <div class="mb-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Diária Padrão (R$)</label>
-                <input type="number" step="0.01" name="diaria_padrao" class="form-control form-control-sm text-center fw-bold shadow-sm" value="${valPadrao}" required>
+          <div class="modal-body p-3 p-md-4 bg-custom-dark">
+            <div class="d-flex justify-content-end mb-3">
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3 py-1" onclick="adicionarLinhaCategoria()">
+                    <i class="ph-bold ph-plus me-1"></i> Nova Categoria
+                </button>
             </div>
-            <div class="mb-3">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Diária aos Domingos (R$)</label>
-                <input type="number" step="0.01" name="diaria_domingo" class="form-control form-control-sm text-center fw-bold shadow-sm" value="${valDomingo}" required>
-            </div>
-            <div class="mb-1">
-                <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Diária de Limpeza (R$)</label>
-                <input type="number" step="0.01" name="diaria_limpeza" class="form-control form-control-sm text-center fw-bold shadow-sm" value="${valLimpeza}" required>
+            
+            <div class="table-responsive bg-custom-darker rounded border border-custom shadow-sm mb-2" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.75rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-2 px-3 text-white-50">Categoria</th>
+                            <th class="py-2 px-3 text-white-50">Valor (R$)</th>
+                            <th class="py-2 px-2 text-center" style="width: 50px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCategorias" class="border-top-0">
+                        <!-- Gerado via Javascript -->
+                    </tbody>
+                </table>
             </div>
           </div>
-          <div class="modal-footer bg-custom-darker border-0">
-            <button type="submit" class="btn btn-sm btn-success w-100 fw-bold shadow-sm text-dark">Salvar Valores Globais</button>
+          <div class="modal-footer bg-custom-darker border-0 p-3 pt-2">
+            <button type="button" class="btn btn-success w-100 fw-bold shadow-sm text-dark" onclick="salvarCategoriasAjax()">Salvar Alterações</button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
@@ -742,7 +765,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         <form method="POST" action="/diaristas/pasta/nova" class="modal-content erp-modal shadow-lg border-0" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta de Diárias Aberta!')">
           <input type="hidden" name="colaborador_id" id="inputCriarPastaColabId">
           <div class="modal-body p-4 text-center bg-custom-darker">
-             <i class="fa-solid fa-folder-plus text-accent fa-3x mb-3"></i>
+             <i class="ph-fill ph-folder-plus text-accent mb-3" style="font-size: 3rem;"></i>
              <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Abrir Nova Pasta?</h6>
              <p class="text-muted mb-0" style="font-size: 0.75rem;">Deseja iniciar um novo ciclo de lançamentos para <strong id="nomeCriarPasta" class="text-white"></strong>?</p>
           </div>
@@ -758,21 +781,21 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0">
           <div class="modal-header bg-custom-darker text-white border-0">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-open text-warning me-2"></i> Pasta de Diárias #<span id="visorPastaId"></span> - <span id="visorPastaNome"></span></h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-fill ph-folder-open text-warning me-2"></i> Pasta de Diárias #<span id="visorPastaId"></span> - <span id="visorPastaNome"></span></h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 bg-custom-dark">
              <div class="row g-0 h-100">
                  
                  <div class="col-12 col-md-4 p-4 bg-custom-darker border-end border-custom d-flex flex-column" id="ladoEsquerdoPasta">
-                     <h6 class="fw-bold text-accent mb-3" style="font-size: 0.8rem;"><i class="fa-solid fa-plus-circle me-1"></i> Inserir Diária na Pasta</h6>
+                     <h6 class="fw-bold text-accent mb-3" style="font-size: 0.8rem;"><i class="ph-fill ph-plus-circle me-1"></i> Inserir Diária na Pasta</h6>
                      <form id="formInserirItem" method="POST" action="/diaristas/pasta/item" onsubmit="prepararSubmissaoSimples(event, this, 'Registro Inserido!')">
                          <input type="hidden" name="pasta_id" id="formItemPastaId">
                          <input type="hidden" name="colaborador_id" id="formItemColabId">
 
                          <div class="mb-3">
                              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Data da diária</label>
-                             <input type="date" name="data_servico" id="itemData" class="form-control form-control-sm shadow-sm" required onchange="verificarDataDomingoPasta(); calcularDiariaPasta()">
+                             <input type="date" name="data_servico" id="itemData" class="form-control form-control-sm shadow-sm" required onchange="calcularDiariaPasta()">
                          </div>
                          <div class="mb-3">
                              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Qtd. Dias</label>
@@ -781,9 +804,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                          <div class="mb-3">
                              <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Tipo de Serviço</label>
                              <select name="tipo_viagem" id="itemTipoDiaria" class="form-select form-select-sm shadow-sm fw-bold text-white" onchange="calcularDiariaPasta()">
-                                 <option value="Diária Padrão">Diária Padrão (R$ ${fmtMoeda(valPadrao)})</option>
-                                 <option value="Diária de Domingo">Diária de Domingo (R$ ${fmtMoeda(valDomingo)})</option>
-                                 <option value="Diária de Limpeza">Diária de Limpeza (R$ ${fmtMoeda(valLimpeza)})</option>
+                                 <!-- Opções injetadas via JS -->
                              </select>
                          </div>
                          <div class="mb-3 text-center p-3 bg-custom-dark rounded border-custom">
@@ -791,11 +812,11 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                              <h4 class="fw-bold text-accent mb-0" id="itemValorVisor">R$ 0,00</h4>
                              <input type="hidden" name="valor_total" id="itemValorTotal" value="0.00">
                          </div>
-                         <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"><i class="fa-solid fa-arrow-down-short-wide me-1"></i> Adicionar à Lista</button>
+                         <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"><i class="ph-bold ph-plus me-1"></i> Adicionar à Lista</button>
                      </form>
                      
                      <div id="avisoPastaFechada" class="text-center mt-auto" style="display:none;">
-                         <i class="fa-solid fa-lock fa-3x text-accent opacity-50 mb-3"></i>
+                         <i class="ph-fill ph-lock-key text-accent opacity-50 mb-3" style="font-size: 3rem;"></i>
                          <p class="text-accent fw-bold" style="font-size: 0.85rem;">Esta pasta já foi fechada e paga.</p>
                          <p class="text-muted small">Não é possível inserir novos registros. Abra uma nova pasta no menu principal se necessário.</p>
                      </div>
@@ -804,7 +825,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                  <div class="col-12 col-md-8 d-flex flex-column">
                      
                      <div class="p-4 flex-grow-1" style="overflow-y: auto; max-height: 50vh;">
-                         <h6 class="fw-bold text-white mb-3 pb-2 border-bottom border-custom" style="font-size: 0.8rem;"><i class="fa-solid fa-list-check text-warning me-2"></i> Lançamentos desta Pasta</h6>
+                         <h6 class="fw-bold text-white mb-3 pb-2 border-bottom border-custom" style="font-size: 0.8rem;"><i class="ph-fill ph-list-checks text-warning me-2"></i> Lançamentos desta Pasta</h6>
                          <div class="table-responsive bg-custom-darker shadow-sm border-custom rounded-3">
                              <table class="table table-hover align-middle mb-0" style="font-size: 0.75rem;">
                                  <thead style="position: sticky; top: 0; z-index: 1;">
@@ -826,26 +847,26 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                          <div class="mb-3 mb-md-0">
                              <span class="text-muted d-block mb-1" style="font-size: 0.7rem; text-transform: uppercase;">Total</span>
                              <h4 class="fw-bold text-accent mb-0" id="visorSomaPasta">R$ 0,00</h4>
-                             <div class="text-muted mt-1" style="font-size: 0.7rem;"><i class="fa-brands fa-pix text-accent"></i> <span id="visorPixPasta"></span></div>
+                             <div class="text-muted mt-1" style="font-size: 0.7rem;"><i class="ph ph-currency-circle-dollar text-accent"></i> <span id="visorPixPasta"></span></div>
                          </div>
                          
                          <form id="formFecharPasta" method="POST" action="" enctype="multipart/form-data" class="d-flex align-items-center gap-2" onsubmit="prepararSubmissaoSimples(event, this, 'Pasta Fechada e Paga com Sucesso!')">
                              <div class="bg-custom-dark p-2 rounded border-custom" style="min-width: 250px;">
-                                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-paperclip"></i> Anexar Comprovante</label>
+                                 <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;"><i class="ph ph-paperclip"></i> Anexar Comprovante</label>
                                  <input type="file" name="comprovante" class="form-control form-control-sm shadow-sm" accept="image/*,.pdf" required>
                              </div>
-                             <button type="button" id="btnWppPasta" class="btn btn-outline-secondary border-custom text-accent fw-bold shadow-sm px-3" style="height: fit-content;" title="Enviar Resumo por WhatsApp" onclick=""><i class="fa-brands fa-whatsapp fs-5"></i></button>
-                             <button type="submit" class="btn btn-success fw-bold text-dark shadow-sm px-3" style="height: fit-content;"><i class="fa-solid fa-check-double me-1"></i> Pagar e Fechar Pasta</button>
+                             <button type="button" id="btnWppPasta" class="btn btn-outline-secondary border-custom text-accent fw-bold shadow-sm px-3" style="height: fit-content;" title="Enviar Resumo por WhatsApp" onclick=""><i class="ph ph-whatsapp-logo fs-5"></i></button>
+                             <button type="submit" class="btn btn-success fw-bold text-dark shadow-sm px-3" style="height: fit-content;"><i class="ph-bold ph-check-square-offset me-1"></i> Pagar e Fechar Pasta</button>
                          </form>
                      </div>
                      
                      <div class="p-4 bg-success bg-opacity-10 border-top border-success d-flex align-items-center justify-content-between" id="rodapePastaMorta" style="display:none !important;">
                          <div>
-                             <span class="text-success fw-bold d-block" style="font-size: 0.8rem;"><i class="fa-solid fa-check-circle me-1"></i> Fechada</span>
+                             <span class="text-success fw-bold d-block" style="font-size: 0.8rem;"><i class="ph-fill ph-check-circle me-1"></i> Fechada</span>
                              <h4 class="fw-bold text-success mb-0" id="visorSomaFechada">R$ 0,00</h4>
                          </div>
                          <div class="d-flex gap-2">
-                             <a href="#" id="linkComprovanteFechada" target="_blank" class="btn btn-sm btn-outline-secondary text-white fw-bold shadow-sm"><i class="fa-solid fa-file-invoice"></i> Ver Comprovante</a>
+                             <a href="#" id="linkComprovanteFechada" target="_blank" class="btn btn-sm btn-outline-secondary text-white fw-bold shadow-sm"><i class="ph-fill ph-receipt"></i> Ver Comprovante</a>
                          </div>
                      </div>
 
@@ -860,7 +881,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                    <i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -874,7 +895,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
         <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                    <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -888,19 +909,114 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
     ${modaisDinamicosExcluir.join('')}
     ${termosHTML}
-
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./script/checkLogin.js"></script>
 
     <script>
       let listaDB = JSON.parse(document.getElementById('diaristasData').textContent);
       let pastasDB = JSON.parse(document.getElementById('pastasData').textContent);
+      let categoriasDiarias = JSON.parse(document.getElementById('catsData').textContent);
 
-      const TAXAS = {
-          padrao: parseFloat(${valPadrao}),
-          domingo: parseFloat(${valDomingo}),
-          limpeza: parseFloat(${valLimpeza})
-      };
+      // =======================================================================
+      // GESTÃO DE CATEGORIAS DINÂMICAS DE DIÁRIAS (FRONTEND)
+      // =======================================================================
+      function renderizarTabelaCategorias() {
+          const tbody = document.getElementById('tabelaCategorias');
+          if (!tbody) return;
+          
+          if (categoriasDiarias.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4 small">Nenhuma categoria cadastrada.</td></tr>';
+              return;
+          }
+
+          tbody.innerHTML = categoriasDiarias.map((cat, index) => \`
+              <tr>
+                  <td class="py-2 px-3">
+                      <input type="text" class="form-control form-control-sm border-0 bg-transparent text-white fw-bold shadow-none p-0 cat-nome" value="\${window.escapeHtmlAttr(cat.nome)}" placeholder="Nome da Categoria">
+                  </td>
+                  <td class="py-2 px-3">
+                      <input type="number" step="0.01" class="form-control form-control-sm border-0 bg-transparent text-white fw-bold shadow-none p-0 cat-valor" value="\${parseFloat(cat.valor).toFixed(2)}" placeholder="0.00">
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                      <button class="btn btn-sm text-danger p-0" onclick="removerLinhaCategoria(this)"><i class="ph-bold ph-trash"></i></button>
+                  </td>
+              </tr>
+          \`).join('');
+      }
+
+      function adicionarLinhaCategoria() {
+          categoriasDiarias.push({ nome: 'Nova Categoria', valor: 0.00 });
+          renderizarTabelaCategorias();
+      }
+
+      function removerLinhaCategoria(btnElement) {
+          const tr = btnElement.closest('tr');
+          tr.remove();
+      }
+
+      function atualizarSelectCategoriasModal() {
+          const select = document.getElementById('itemTipoDiaria');
+          if (!select) return;
+
+          if (categoriasDiarias.length === 0) {
+              select.innerHTML = '<option value="" disabled>Sem categorias cadastradas</option>';
+              return;
+          }
+
+          select.innerHTML = categoriasDiarias.map(cat => 
+              \`<option value="\${window.escapeHtmlAttr(cat.nome)}" data-val="\${cat.valor}">\${window.escapeHtmlAttr(cat.nome)} (R$ \${parseFloat(cat.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})})</option>\`
+          ).join('');
+      }
+
+      function abrirModalCategorias() {
+          renderizarTabelaCategorias();
+      }
+
+      async function salvarCategoriasAjax() {
+          const tbody = document.getElementById('tabelaCategorias');
+          if (!tbody) return;
+
+          const rows = tbody.querySelectorAll('tr');
+          const novasCategorias = [];
+          
+          rows.forEach(tr => {
+              const inputNome = tr.querySelector('.cat-nome');
+              const inputValor = tr.querySelector('.cat-valor');
+              
+              if (inputNome && inputValor) {
+                  const n = inputNome.value.trim();
+                  const v = parseFloat(inputValor.value);
+                  if (n && !isNaN(v)) {
+                      novasCategorias.push({ nome: n, valor: v });
+                  }
+              }
+          });
+
+          mostrarSkeletonGlobais();
+
+          try {
+              const response = await fetch('/diaristas/categorias', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ categorias: novasCategorias })
+              });
+
+              const result = await response.json();
+              if (result.success) {
+                  categoriasDiarias = novasCategorias;
+                  atualizarSelectCategoriasModal();
+                  mostrarToast('sucesso', 'Concluído', result.message);
+                  bootstrap.Modal.getInstance(document.getElementById('modalConfigTaxas')).hide();
+              } else {
+                  mostrarToast('erro', 'Erro', result.message);
+              }
+          } catch (e) {
+              mostrarToast('erro', 'Erro de Conexão', 'Não foi possível salvar as categorias.');
+          } finally {
+              ocultarSkeletonGlobais();
+          }
+      }
 
       // =======================================================================
       // MÁSCARAS DE INPUT PARA CPF E TELEFONE NO FRONT-END
@@ -996,10 +1112,10 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           
           const sortIcon = document.getElementById('sortIconIndicador');
           if(sortIcon) {
-              if(order === 'az') sortIcon.className = 'fa-solid fa-arrow-down-a-z';
-              if(order === 'za') sortIcon.className = 'fa-solid fa-arrow-up-z-a';
-              if(order === 'cad_asc') sortIcon.className = 'fa-solid fa-arrow-down-1-9';
-              if(order === 'cad_desc') sortIcon.className = 'fa-solid fa-arrow-up-9-1';
+              if(order === 'az') sortIcon.className = 'ph ph-sort-ascending';
+              if(order === 'za') sortIcon.className = 'ph ph-sort-descending';
+              if(order === 'cad_asc') sortIcon.className = 'ph ph-sort-ascending';
+              if(order === 'cad_desc') sortIcon.className = 'ph ph-sort-descending';
           }
           
           renderCardsPage(1);
@@ -1042,7 +1158,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
 
           if (id) {
               const c = listaDB.find(x => x.id == id);
-              formTitle.innerHTML = '<i class="fa-solid fa-user-pen me-2 text-accent"></i> Editar Colaborador';
+              formTitle.innerHTML = '<i class="ph-fill ph-pencil-simple me-2 text-accent"></i> Editar Colaborador';
               form.action = '/cadastros/usuarios/editar/' + id;
               
               form.nome.value = c.nome;
@@ -1058,7 +1174,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   preview.src = \`https://ui-avatars.com/api/?name=\${encodeURIComponent(c.nome)}&background=1f1f1f&color=08c068\`;
               }
           } else {
-              formTitle.innerHTML = '<i class="fa-solid fa-user-plus me-2 text-accent"></i> Adicionar Colaborador';
+              formTitle.innerHTML = '<i class="ph-fill ph-user-plus me-2 text-accent"></i> Adicionar Colaborador';
               form.action = '/cadastros/usuarios/novo';
           }
 
@@ -1189,14 +1305,15 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           document.getElementById('formItemColabId').value = p.colaborador_id;
           document.getElementById('itemData').value = new Date().toISOString().split('T')[0];
           document.getElementById('itemQtd').value = 1;
-          verificarDataDomingoPasta();
+          
+          atualizarSelectCategoriasModal(); // Preenche as opções dinamicamente
           calcularDiariaPasta();
 
           // Tabela Interna
           const tbody = document.getElementById('tabelaItensPasta');
           if (p.itens && p.itens.length > 0) {
               tbody.innerHTML = p.itens.map(item => {
-                  const btnExcluir = p.status !== 'PAGO' ? \`<form method="POST" action="/pagamentos/excluir/\${item.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Item Excluído!');"><input type="hidden" name="redirect_to" value="/diaristas"><button type="submit" class="btn btn-sm btn-outline-secondary text-danger border-custom p-1"><i class="fa-solid fa-trash"></i></button></form>\` : \`<i class="fa-solid fa-lock text-accent opacity-50"></i>\`;
+                  const btnExcluir = p.status !== 'PAGO' ? \`<form method="POST" action="/pagamentos/excluir/\${item.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Item Excluído!');"><input type="hidden" name="redirect_to" value="/diaristas"><button type="submit" class="btn btn-sm btn-outline-secondary text-danger border-custom p-1"><i class="ph-bold ph-trash"></i></button></form>\` : \`<i class="ph-fill ph-lock-key text-accent opacity-50"></i>\`;
                   
                   return \`<tr>
                       <td class="text-white px-3" style="font-size:0.75rem;">\${fmtDataJs(item.data_servico)}</td>
@@ -1207,7 +1324,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
                   </tr>\`;
               }).join('');
           } else {
-              tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-receipt fa-2x opacity-25 mb-2 d-block"></i>Pasta vazia.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="ph-fill ph-receipt fs-1 opacity-25 mb-2 d-block"></i>Pasta vazia.</td></tr>';
           }
 
           // Controle de Exibição (Aberta vs Paga)
@@ -1218,7 +1335,7 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           const rodapeFechado = document.getElementById('rodapePastaMorta');
 
           if (p.status === 'PAGO') {
-              colAcao.innerHTML = '<i class="fa-solid fa-lock"></i>';
+              colAcao.innerHTML = '<i class="ph-fill ph-lock-key"></i>';
               areaEsq.style.display = 'none';
               avisoEsq.style.display = 'block';
               
@@ -1260,29 +1377,14 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGerenciarPasta')).show();
       }
 
-      function verificarDataDomingoPasta() {
-          const dataVal = document.getElementById('itemData').value;
-          if(!dataVal) return;
-          const [ano, mes, dia] = dataVal.split('-');
-          const data = new Date(ano, mes - 1, dia);
-          const isDomingo = data.getDay() === 0;
-          
-          const select = document.getElementById('itemTipoDiaria');
-          if (isDomingo && select.value === 'Diária Padrão') {
-              select.value = 'Diária de Domingo';
-          } else if (!isDomingo && select.value === 'Diária de Domingo') {
-              select.value = 'Diária Padrão';
-          }
-      }
-
       function calcularDiariaPasta() {
-          const tipo = document.getElementById('itemTipoDiaria').value;
-          const qtd = parseInt(document.getElementById('itemQtd').value) || 1;
-          let valorBase = TAXAS.padrao;
+          const select = document.getElementById('itemTipoDiaria');
+          const option = select.options[select.selectedIndex];
+          if(!option) return;
           
-          if (tipo === 'Diária de Domingo') valorBase = TAXAS.domingo;
-          if (tipo === 'Diária de Limpeza') valorBase = TAXAS.limpeza;
-
+          let valorBase = parseFloat(option.getAttribute('data-val')) || 0;
+          const qtd = parseInt(document.getElementById('itemQtd').value) || 1;
+          
           const total = valorBase * qtd;
 
           document.getElementById('itemValorVisor').innerText = "R$ " + total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
@@ -1573,6 +1675,9 @@ function diaristasView(usuario, diaristas = [], pastas = [], filtros = {}, pagin
           
           const newPastasData = doc.getElementById('pastasData');
           if (newPastasData) pastasDB = JSON.parse(newPastasData.textContent);
+          
+          const newCatsData = doc.getElementById('catsData');
+          if (newCatsData) categoriasDiarias = JSON.parse(newCatsData.textContent);
       }
     </script>
   </body>

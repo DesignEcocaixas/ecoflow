@@ -69,15 +69,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <div class="text-truncate me-3" style="max-width: 85%;">
               <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">${v.marca || "-"} ${v.modelo || "-"}</span>
               <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
-                <span class="text-truncate"><i class="fa-solid fa-wrench me-1"></i> ${v.servico || "Sem manutenção"}</span>
-                <span><i class="fa-regular fa-calendar me-1"></i> ${v.data_servico ? fmtData(v.data_servico) : "-"}</span>
+                <span class="text-truncate"><i class="ph ph-wrench me-1"></i> ${v.servico || "Sem manutenção"}</span>
+                <span><i class="ph ph-calendar-blank me-1"></i> ${v.data_servico ? fmtData(v.data_servico) : "-"}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
+            <i class="ph ph-caret-right text-accent opacity-50" style="font-size:0.85rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="ph ph-tray mb-2 fs-2 opacity-25"></i><br>Sem dados</div>`;
 
   const cardsChecklist = checklists.length
     ? checklists.slice(0, 3).map((c, i) => `
@@ -86,15 +86,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <div class="text-truncate me-3" style="max-width: 85%;">
               <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">Motorista: ${c.motorista || "-"}</span>
               <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
-                <span class="text-truncate"><i class="fa-solid fa-car-side me-1"></i> ${c.veiculo || "-"}</span>
-                <span><i class="fa-regular fa-clock me-1"></i> ${fmtData(c.criado_em)}</span>
+                <span class="text-truncate"><i class="ph ph-car-profile me-1"></i> ${c.veiculo || "-"}</span>
+                <span><i class="ph ph-clock me-1"></i> ${fmtData(c.criado_em)}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
+            <i class="ph ph-caret-right text-accent opacity-50" style="font-size:0.85rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="ph ph-tray mb-2 fs-2 opacity-25"></i><br>Sem dados</div>`;
 
   const cardsPrecos = precos.length
     ? precos.slice(0, 3).map((p, i) => `
@@ -103,15 +103,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <div class="text-truncate me-3" style="max-width: 85%;">
               <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">Modelo: ${p.modelo || "-"}</span>
               <div class="d-flex gap-3 text-muted mt-1" style="font-size: 0.7rem;">
-                <span class="text-truncate"><i class="fa-solid fa-user-pen me-1"></i> ${p.atualizado_por || "-"}</span>
-                <span><i class="fa-solid fa-clock-rotate-left me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
+                <span class="text-truncate"><i class="ph ph-user-circle-gear me-1"></i> ${p.atualizado_por || "-"}</span>
+                <span><i class="ph ph-clock-counter-clockwise me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
+            <i class="ph ph-caret-right text-accent opacity-50" style="font-size:0.85rem;"></i>
           </div>
         </div>
       `).join("")
-    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem dados</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="ph ph-tray mb-2 fs-2 opacity-25"></i><br>Sem dados</div>`;
 
   const cardRota = rota
     ? `
@@ -120,9 +120,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="text-truncate me-3">
               <span class="d-block fw-bold text-white text-truncate" style="font-size: 0.8rem;">${rota.titulo || "-"}</span>
-              <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(rota.data_pedido)}</span>
+              <span class="text-muted" style="font-size: 0.7rem;"><i class="ph ph-calendar-blank me-1"></i> ${fmtData(rota.data_pedido)}</span>
             </div>
-            <i class="fa-solid fa-chevron-right text-accent opacity-50" style="font-size:0.75rem;"></i>
+            <i class="ph ph-caret-right text-accent opacity-50" style="font-size:0.85rem;"></i>
           </div>
           <div class="bg-custom-darker rounded p-2 border-custom">
             ${(rotaClientes.slice(0, 3)).map(c => `
@@ -135,19 +135,19 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         </div>
       </div>
     `
-    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="fa-solid fa-inbox mb-2 fa-xl opacity-25"></i><br>Sem rotas</div>`;
+    : `<div class="text-center text-muted p-3" style="font-size:0.8rem;"><i class="ph ph-tray mb-2 fs-2 opacity-25"></i><br>Sem rotas</div>`;
 
   // --- MONTAGEM DOS ITENS DO CAROUSEL ---
   const carouselItemsHTML = [
     `
     <div class="carousel-item active h-100">
-      <h6 class="dashboard-title"><i class="fa-solid fa-wrench"></i> Últimas Manutenções</h6>
+      <h6 class="dashboard-title"><i class="ph-fill ph-wrench"></i> Últimas Manutenções</h6>
       ${cardsManutencao}
     </div>
     `,
     `
     <div class="carousel-item h-100">
-      <h6 class="dashboard-title"><i class="fa-solid fa-clipboard-list"></i> Últimos Checklists</h6>
+      <h6 class="dashboard-title"><i class="ph-fill ph-clipboard-text"></i> Últimos Checklists</h6>
       ${cardsChecklist}
     </div>
     `
@@ -156,7 +156,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
   if (!isMotorista) {
     carouselItemsHTML.push(`
     <div class="carousel-item h-100">
-      <h6 class="dashboard-title"><i class="fa-solid fa-tags"></i> Atualizações de Preço</h6>
+      <h6 class="dashboard-title"><i class="ph-fill ph-tag"></i> Atualizações de Preço</h6>
       ${cardsPrecos}
     </div>
     `);
@@ -164,7 +164,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
   carouselItemsHTML.push(`
     <div class="carousel-item h-100">
-      <h6 class="dashboard-title"><i class="fa-solid fa-truck-fast"></i> Última Rota</h6>
+      <h6 class="dashboard-title"><i class="ph-fill ph-truck"></i> Última Rota</h6>
       ${cardRota}
     </div>
   `);
@@ -195,7 +195,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-wrench me-2 text-accent"></i> Detalhes da Manutenção</h6>
+                <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-wrench me-2 text-accent"></i> Detalhes da Manutenção</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
@@ -237,9 +237,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   <div>
                   ${v.documento
                       ? `<a href="/uploads/${v.documento}" target="_blank" class="btn btn-sm btn-outline-success">
-                          <i class="fa-solid fa-paperclip me-1"></i>Ver Documento
+                          <i class="ph ph-paperclip me-1"></i>Ver Documento
                          </a>`
-                      : `<span class="text-muted" style="font-size:0.75rem;"><i class="fa-solid fa-file-excel me-1"></i>Sem anexo</span>`
+                      : `<span class="text-muted" style="font-size:0.75rem;"><i class="ph ph-file-x me-1"></i>Sem anexo</span>`
                   }
                   </div>
                 </div>
@@ -258,7 +258,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-clipboard-check me-2 text-accent"></i> Detalhes do Checklist</h6>
+                <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-clipboard-text me-2 text-accent"></i> Detalhes do Checklist</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
@@ -301,9 +301,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                   <div class="col-12 col-md-4 d-flex align-items-end justify-content-md-end mt-2 mt-md-0">
                     ${c.foto
                         ? `<a href="/uploads/${c.foto}" target="_blank" class="btn btn-sm btn-outline-success w-100">
-                            <i class="fa-solid fa-image me-1"></i>Ver Foto
+                            <i class="ph ph-image me-1"></i>Ver Foto
                            </a>`
-                        : `<span class="text-muted w-100 text-center p-2 border-custom rounded" style="font-size:0.75rem;"><i class="fa-solid fa-image-slash me-1"></i>Sem foto</span>`
+                        : `<span class="text-muted w-100 text-center p-2 border-custom rounded" style="font-size:0.75rem;"><i class="ph ph-image-broken me-1"></i>Sem foto</span>`
                     }
                   </div>
                 </div>
@@ -322,7 +322,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content erp-modal">
               <div class="modal-header">
-                <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-tags me-2 text-success"></i> Detalhes do Preço</h6>
+                <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-tag me-2 text-success"></i> Detalhes do Preço</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-sm">
@@ -354,8 +354,8 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 </div>
                 <hr class="my-3 border-custom">
                 <div class="d-flex justify-content-between text-muted" style="font-size:0.75rem;">
-                  <span><i class="fa-solid fa-user-pen me-1"></i> Atualizado por: ${p.atualizado_por || "-"}</span>
-                  <span><i class="fa-regular fa-clock me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
+                  <span><i class="ph ph-user-circle-gear me-1"></i> Atualizado por: ${p.atualizado_por || "-"}</span>
+                  <span><i class="ph ph-clock-counter-clockwise me-1"></i> ${fmtDataHora(p.atualizado_em)}</span>
                 </div>
               </div>
               <div class="modal-footer bg-custom-darker">
@@ -372,7 +372,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content erp-modal">
             <div class="modal-header">
-              <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-route me-2 text-warning"></i> Detalhes da Rota</h6>
+              <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-truck me-2 text-warning"></i> Detalhes da Rota</h6>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-sm">
@@ -432,7 +432,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal">
           <div class="modal-header">
-            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-trophy me-2 text-warning"></i> Ranking <span id="spanDiaModal"></span></h6>
+            <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-trophy me-2 text-warning"></i> Ranking <span id="spanDiaModal"></span></h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 text-sm" id="corpoModalRanking">
@@ -459,8 +459,10 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
 
       <title>Início | Ecoflow</title>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <!-- FONT AWESOME MANTIDO PARA GARANTIR COMPATIBILIDADE SE ALGUM MÓDULO NÃO TIVER SIDO ATUALIZADO -->
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <script src="https://unpkg.com/@phosphor-icons/web"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -538,24 +540,60 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         .erp-modal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); background-color: #222 !important; }
         .list-group-item { background-color: transparent !important; border-color: rgba(255,255,255,0.05); color: #fff;}
 
-        .skeleton-dark {
-            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
-            background-size: 200% 100% !important;
-            animation: skeleton-loading-view 1.5s infinite linear !important;
-            border-radius: 4px;
-            color: transparent !important;
-            border-color: transparent !important;
-            box-shadow: none !important;
-            pointer-events: none;
+        /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+        .apple-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            position: relative;
         }
-        .skeleton-dark * {
-            visibility: hidden !important;
+        .apple-spinner div {
+            transform-origin: 12px 12px;
+            animation: apple-spinner 1.2s linear infinite;
         }
-        .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
-        @keyframes skeleton-loading-view {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+        .apple-spinner div:after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 11px;
+            width: 2.5px;
+            height: 6px;
+            border-radius: 20%;
+            background: #08c068;
         }
+        .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+        .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+        .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+        .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+        .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+        .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+        .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+        .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+        .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+        .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+        .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+        .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+        
+        @keyframes apple-spinner {
+            0% { opacity: 1; }
+            100% { opacity: 0.15; }
+        }
+
+        .local-spinner-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #222222;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: inherit;
+            opacity: 0;
+            animation: fadeInOverlay 0.2s forwards;
+        }
+        @keyframes fadeInOverlay { to { opacity: 1; } }
 
         @media (max-width: 767.98px) {
           body { flex-direction: column; }
@@ -601,7 +639,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu">
       <div class="offcanvas-header border-bottom border-custom">
-        <h5 class="offcanvas-title ms-2"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+        <h5 class="offcanvas-title ms-2"><i class="ph ph-list text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
@@ -610,7 +648,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         </div>
         ${menuHTML}
         <hr class="border-custom mt-4">
-        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair</a>
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="ph ph-sign-out me-2"></i>Sair</a>
       </div>
     </div>
 
@@ -619,7 +657,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary border d-md-none shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-                <i class="fa-solid fa-bars text-white"></i>
+                <i class="ph ph-list text-white"></i>
             </button>
             <div>
               <h4 class="mb-0 fw-bold text-white fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Painel de Controle</h4>
@@ -631,15 +669,15 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
             <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
                 <input class="form-check-input cursor-pointer m-0 border-custom shadow-sm" type="checkbox" id="homeWallpaperSwitch" onchange="toggleHomeWallpaper(this.checked)" style="width: 26px; height: 13px;">
                 <label class="form-check-label text-white-50 cursor-pointer fw-medium m-0 ms-1" for="homeWallpaperSwitch" style="font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                    <i class="fa-regular fa-image text-accent"></i> Fundo dinâmico
+                    <i class="ph ph-image text-accent"></i> Fundo dinâmico
                 </label>
             </div>
             
             <div id="wallpaperTooltip" class="position-absolute bg-custom-darker border rounded shadow-lg p-2" style="top: 100%; right: 0; margin-top: 10px; width: 230px; z-index: 1050; border-color: rgba(8,192,104,0.5) !important; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease;">
                 <div class="position-absolute" style="top: -6px; right: 30px; width: 10px; height: 10px; background-color: #222; border-top: 1px solid rgba(8,192,104,0.5); border-left: 1px solid rgba(8,192,104,0.5); transform: rotate(45deg);"></div>
                 <div class="d-flex justify-content-between align-items-start mb-1">
-                    <strong class="text-white" style="font-size: 0.75rem;"><i class="fa-solid fa-lightbulb text-warning me-1"></i> Fundo dinâmico</strong>
-                    <i class="fa-solid fa-xmark text-white-50 cursor-pointer hover-text-white" style="font-size: 0.8rem;" onclick="dismissWallpaperTooltip()"></i>
+                    <strong class="text-white" style="font-size: 0.75rem;"><i class="ph-fill ph-lightbulb text-warning me-1"></i> Fundo dinâmico</strong>
+                    <i class="ph ph-x text-white-50 cursor-pointer hover-text-white" style="font-size: 0.8rem;" onclick="dismissWallpaperTooltip()"></i>
                 </div>
                 <p class="text-white-50 mb-0" style="font-size: 0.7rem; line-height: 1.3;">Ative para ver uma paisagem diferente a cada dia</p>
             </div>
@@ -648,16 +686,16 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
 
       <!-- MÓDULOS RECENTES -->
       <div class="mb-4" id="recentModulesSection" style="display: none;">
-        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i>Acessos recentes</h6>
+        <h6 class="fw-bold text-white mb-3" style="font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8);"><i class="ph ph-clock-counter-clockwise text-accent me-2"></i>Acessos recentes</h6>
         <div class="row g-3" id="recentModulesContainer">
             <!-- Renderizado via JS -->
         </div>
       </div>
 
-      <div class="row g-3">
+      <div class="row g-3" id="mainDashboardContainer">
         <div class="${isMotorista ? 'col-12' : 'col-12 col-lg-5'}">
           <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
-            <div class="card-body p-3 d-flex flex-column pb-4">
+            <div class="card-body p-3 d-flex flex-column pb-4 position-relative" id="carouselCardBody">
               <div id="dashboardCarousel" class="carousel slide carousel-fade flex-grow-1" data-bs-ride="carousel" data-bs-interval="6000">
                 <div class="carousel-indicators mb-0" style="bottom: -20px;">
                   ${carouselIndicators}
@@ -673,10 +711,10 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
         ${!isMotorista ? `
         <div class="col-12 col-lg-7">
           <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
-            <div class="card-body p-3 d-flex flex-column">
+            <div class="card-body p-3 d-flex flex-column position-relative" id="chartCardBody">
               
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h6 class="dashboard-title mb-0"><i class="fa-solid fa-chart-column text-accent me-2"></i> Volume de Pedidos</h6>
+                <h6 class="dashboard-title mb-0"><i class="ph-fill ph-chart-bar text-accent me-2"></i> Volume de Pedidos</h6>
                 
                 <div class="d-flex align-items-center gap-2">
                     <div class="btn-group shadow-sm" role="group">
@@ -691,7 +729,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               <div class="d-flex align-items-center justify-content-between bg-custom-darker p-2 px-3 rounded border border-custom mb-3 flex-wrap gap-2 shadow-sm">
                   <div class="d-flex align-items-center gap-2">
                       <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-accent flex-shrink-0" style="width: 34px; height: 34px;">
-                          <i class="fa-solid fa-boxes-stacked"></i>
+                          <i class="ph ph-package"></i>
                       </div>
                       <div>
                           <span class="text-muted d-block" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Total do Período</span>
@@ -714,7 +752,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 <canvas id="graficoMensalCanvas"></canvas>
               </div>
               <small id="dica-grafico" class="text-muted text-center mt-2" style="font-size: 0.7rem;">
-                <i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
+                <i class="ph ph-hand-pointing me-1"></i> Clique em uma barra para ver o ranking de clientes do ${modoVisao === 'diario' ? 'dia' : 'mês'}.
               </small>
             </div>
           </div>
@@ -728,7 +766,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content erp-modal">
           <div class="modal-header">
-            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-bell me-2 text-warning"></i> Central de Notificações</h6>
+            <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-bell me-2 text-warning"></i> Central de Notificações</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-0 bg-custom-darker">
@@ -739,20 +777,20 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                     <div class="list-group-item d-flex justify-content-between align-items-start p-3 border-custom border-bottom">
                       <div>
                         <div class="fw-bold text-white mb-1" style="font-size:0.8rem;">
-                           ${n.tipo === "checklist" ? '<i class="fa-solid fa-clipboard-check text-accent me-1"></i> Checklist' : 
-                             n.tipo === "caixa" ? '<i class="fa-solid fa-box text-success me-1"></i> Cadastro/Tabela' : 
-                             n.tipo === "veiculo" ? '<i class="fa-solid fa-car text-info me-1"></i> Veículo' :
-                             n.tipo === "entrega" ? '<i class="fa-solid fa-route text-warning me-1"></i> Entrega' :
-                             '<i class="fa-solid fa-circle-info text-secondary me-1"></i> Notificação'}
+                           ${n.tipo === "checklist" ? '<i class="ph-fill ph-clipboard-text text-accent me-1"></i> Checklist' : 
+                             n.tipo === "caixa" ? '<i class="ph-fill ph-package text-success me-1"></i> Cadastro/Tabela' : 
+                             n.tipo === "veiculo" ? '<i class="ph-fill ph-car text-info me-1"></i> Veículo' :
+                             n.tipo === "entrega" ? '<i class="ph-fill ph-map-pin-line text-warning me-1"></i> Entrega' :
+                             '<i class="ph-fill ph-info text-secondary me-1"></i> Notificação'}
                         </div>
                         <div class="text-muted mb-1" style="font-size:0.75rem;">${n.mensagem}</div>
                         <small class="text-muted" style="font-size:0.7rem;">
-                          <i class="fa-regular fa-clock me-1"></i> ${new Date(n.criado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                          <i class="ph ph-clock me-1"></i> ${new Date(n.criado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                         </small>
                       </div>
                       <form method="POST" action="/notificacoes/${n.id}/excluir" class="ms-3 mt-1">
                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" title="Remover" style="width:26px; height:26px; padding:0;">
-                          <i class="fas fa-times" style="font-size:0.75rem;"></i>
+                          <i class="ph ph-x" style="font-size:0.75rem;"></i>
                         </button>
                       </form>
                     </div>
@@ -760,7 +798,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                 </div>
               `
               : `<div class="text-center text-muted p-5">
-                   <i class="fa-regular fa-bell-slash fa-2x mb-3 opacity-25"></i>
+                   <i class="ph ph-bell-slash fs-2 mb-3 opacity-25"></i>
                    <p class="mb-0" style="font-size:0.8rem;">Nenhuma notificação no momento.</p>
                  </div>`
             }
@@ -770,7 +808,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               ? `
                 <form method="POST" action="/notificacoes/limpar" class="me-auto">
                   <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;">
-                    <i class="fas fa-trash-alt me-1"></i> Limpar todas
+                    <i class="ph ph-trash me-1"></i> Limpar todas
                   </button>
                 </form>
               `
@@ -793,11 +831,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content erp-modal shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
           <div class="modal-header text-white border-0 p-3" style="background-color: #0D5749;">
-            <h6 class="modal-title fw-bold" style="font-size:0.95rem;"><i class="fa-solid fa-bullhorn me-2"></i> Mensagem do sistema</h6>
+            <h6 class="modal-title fw-bold" style="font-size:0.95rem;"><i class="ph-fill ph-megaphone me-2"></i> Mensagem do sistema</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-darker text-center">
-            ${notificacaoAtiva.imagem ? `<img src="/uploads/mensagensSistema/${notificacaoAtiva.imagem}" class="img-fluid rounded border-custom mb-4 shadow-sm" style="max-height: 500px; width: 100%; object-fit: contain; background-color: rgba(0,0,0,0.15);">` : '<i class="fa-solid fa-circle-exclamation fa-3x text-accent mb-4 opacity-50"></i>'}
+            ${notificacaoAtiva.imagem ? `<img src="/uploads/mensagensSistema/${notificacaoAtiva.imagem}" class="img-fluid rounded border-custom mb-4 shadow-sm" style="max-height: 500px; width: 100%; object-fit: contain; background-color: rgba(0,0,0,0.15);">` : '<i class="ph-fill ph-warning-circle text-accent mb-4 opacity-50" style="font-size: 3rem;"></i>'}
             <h5 class="fw-bold text-white mb-3">${notificacaoAtiva.titulo}</h5>
             <p class="text-muted mb-0" style="font-size: 0.95rem; white-space: pre-wrap; text-align: left; line-height: 1.6;">${notificacaoAtiva.mensagem}</p>
           </div>
@@ -819,7 +857,31 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       let chartData = ${JSON.stringify(graficoMensal)};
       let chartInstance = null;
 
-      // FUNÇÃO QUE RENDERIZA OS DOIS COMPARATIVOS ALINHADOS À ESQUERDA
+      function getAppleSpinner(scale = 1) {
+          return \`<div class="apple-spinner" style="transform: scale(\${scale});">
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                  </div>\`;
+      }
+
+      function mostrarSpinnerLocal(elementId, texto = '') {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          if (el.querySelector('.local-spinner-overlay')) return;
+          
+          const overlay = document.createElement('div');
+          overlay.className = 'local-spinner-overlay text-white-50';
+          overlay.innerHTML = getAppleSpinner(1.2) + (texto ? \`<span class="mt-3 fw-medium" style="font-size: 0.8rem;">\${texto}</span>\` : '');
+          el.appendChild(overlay);
+      }
+
+      function ocultarSpinnerLocal(elementId) {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          const overlay = el.querySelector('.local-spinner-overlay');
+          if (overlay) overlay.remove();
+      }
+
       function atualizarMiniContainerVolume() {
           const totalEl = document.getElementById('totalVolumePeriodo');
           const badgeEl = document.getElementById('badgeVariacaoVolume');
@@ -829,29 +891,27 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           const totalAtual = chartData.data.reduce((acc, val) => acc + Number(val || 0), 0);
           totalEl.textContent = totalAtual.toLocaleString('pt-BR') + ' caixas';
 
-          // 1. Badge vs Mês Passado / Ano Passado
           const pct = Number(chartData.variacaoPct || 0);
           const periodoLabel = mesSelecionadoJS.modo === 'mensal' ? 'ano passado' : 'mês passado';
 
           if (pct > 0) {
-              badgeEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1"><i class="fa-solid fa-arrow-trend-up me-2"></i> +\${pct}% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1"><i class="ph ph-trend-up me-2"></i> +\${pct}% vs \${periodoLabel}</span>\`;
           } else if (pct < 0) {
-              badgeEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-start px-3 py-1"><i class="fa-solid fa-arrow-trend-down me-2"></i> \${pct}% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-start px-3 py-1"><i class="ph ph-trend-down me-2"></i> \${pct}% vs \${periodoLabel}</span>\`;
           } else {
-              badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1"><i class="fa-solid fa-minus me-2"></i> 0% vs \${periodoLabel}</span>\`;
+              badgeEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1"><i class="ph ph-minus me-2"></i> 0% vs \${periodoLabel}</span>\`;
           }
 
-          // 2. Badge vs Período Passado / Meses Anteriores
           if (badgePeriodoEl) {
               const pctPeriodo = Number(chartData.variacaoPeriodoPct || 0);
               const subLabel = mesSelecionadoJS.modo === 'mensal' ? 'meses anteriores' : 'período passado';
               
               if (pctPeriodo > 0) {
-                  badgePeriodoEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-arrow-trend-up me-2"></i> +\${pctPeriodo}% vs \${subLabel}</span>\`;
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-success bg-opacity-10 text-success border border-success w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="ph ph-trend-up me-2"></i> +\${pctPeriodo}% vs \${subLabel}</span>\`;
               } else if (pctPeriodo < 0) {
-                  badgePeriodoEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-center text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-arrow-trend-down me-2"></i> \${pctPeriodo}% vs \${subLabel}</span>\`;
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-danger bg-opacity-10 text-danger border border-danger w-100 text-center text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="ph ph-trend-down me-2"></i> \${pctPeriodo}% vs \${subLabel}</span>\`;
               } else {
-                  badgePeriodoEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="fa-solid fa-minus me-2"></i> 0% vs \${subLabel}</span>\`;
+                  badgePeriodoEl.innerHTML = \`<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary w-100 text-start px-3 py-1" title="Comparação exata da mesma quantidade decorrida"><i class="ph ph-minus me-2"></i> 0% vs \${subLabel}</span>\`;
               }
           }
       }
@@ -882,10 +942,12 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
           
           const dicaObj = document.getElementById('dica-grafico');
           if (dicaObj) {
-              dicaObj.innerHTML = \`<i class="fa-solid fa-hand-pointer me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
+              dicaObj.innerHTML = \`<i class="ph ph-hand-pointing me-1"></i> Clique em uma barra para ver o ranking de clientes do \${modo === 'diario' ? 'dia' : 'mês'}.\`;
           }
 
           try {
+              mostrarSpinnerLocal('chartCardBody');
+
               const response = await fetch(\`/api/dashboard-chart?mes=\${mes}&ano=\${ano}&modo=\${modo}\`);
               if (!response.ok) throw new Error('Falha ao buscar dados do gráfico');
               
@@ -901,10 +963,11 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               }
 
               atualizarMiniContainerVolume();
-
           } catch (error) {
               console.error("Erro na requisição AJAX:", error);
               alert("Não foi possível atualizar o gráfico. Tente novamente.");
+          } finally {
+              ocultarSpinnerLocal('chartCardBody');
           }
       }
 
@@ -958,9 +1021,9 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                     htmlRanking = '<ul class="list-group list-group-flush bg-custom-darker">';
                     rankingData.forEach((item, i) => {
                         let medalha = '';
-                        if(i === 0) medalha = '<i class="fa-solid fa-medal text-warning me-2 fa-lg"></i>';
-                        else if(i === 1) medalha = '<i class="fa-solid fa-medal text-secondary me-2 fa-lg"></i>';
-                        else if(i === 2) medalha = '<i class="fa-solid fa-medal me-2 fa-lg" style="color: #cd7f32;"></i>';
+                        if(i === 0) medalha = '<i class="ph-fill ph-medal text-warning me-2 fs-5"></i>';
+                        else if(i === 1) medalha = '<i class="ph-fill ph-medal text-secondary me-2 fs-5"></i>';
+                        else if(i === 2) medalha = '<i class="ph-fill ph-medal me-2 fs-5" style="color: #cd7f32;"></i>';
                         else medalha = \`<span class="me-2 text-muted fw-bold ms-1" style="width:20px; display:inline-block; font-size:0.75rem;">\${i+1}º</span>\`;
 
                         htmlRanking += \`
@@ -971,7 +1034,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                     });
                     htmlRanking += '</ul>';
                 } else {
-                    htmlRanking = '<div class="text-center text-muted p-4"><i class="fa-solid fa-box-open mb-3 fa-lg opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum pedido ou ranking encontrado.</span></div>';
+                    htmlRanking = '<div class="text-center text-muted p-4"><i class="ph ph-package mb-3 fs-2 opacity-25"></i><br><span style="font-size:0.8rem;">Nenhum pedido ou ranking encontrado.</span></div>';
                 }
                 
                 document.getElementById('corpoModalRanking').innerHTML = htmlRanking;
@@ -1024,15 +1087,14 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       const WALLPAPER_KEY = 'ecoflow_home_wallpaper_global'; 
       const TOOLTIP_KEY = 'ecoflow_wallpaper_tooltip_seen_${usuario.nome}';
 
-      // Imagens padronizadas baseadas em dias da semana
       const dailyWallpapers = [
-          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2672&auto=format&fit=crop', // Domingo (Planeta/Espaço)
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2670&auto=format&fit=crop', // Segunda (Paisagem Natural)
-          'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop', // Terça (Paisagem Urbana)
-          'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=2659&auto=format&fit=crop', // Quarta (Animais/Leão)
-          'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2574&auto=format&fit=crop', // Quinta (Planeta/Marte)
-          'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2775&auto=format&fit=crop', // Sexta (Paisagem Natural)
-          'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2756&auto=format&fit=crop'  // Sábado (Paisagem Urbana Noturna)
+          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2672&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2670&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=2659&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2574&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2775&auto=format&fit=crop', 
+          'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2756&auto=format&fit=crop'  
       ];
 
       function showWallpaperTooltip() {
@@ -1044,7 +1106,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                       tooltip.style.visibility = 'visible';
                       tooltip.style.transform = 'translateY(0)';
                       
-                      // Auto-fechar após 12 segundos para não incomodar
                       setTimeout(dismissWallpaperTooltip, 12000);
                   }
               }, 1200); 
@@ -1069,7 +1130,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               const dayOfWeek = new Date().getDay();
               const bgUrl = dailyWallpapers[dayOfWeek];
               
-              // Adiciona o degradê escuro superior sobre a imagem para não ofuscar os textos brancos
               contentDiv.style.backgroundImage = 'linear-gradient(to bottom, rgba(31,31,31,0.9) 0%, rgba(31,31,31,0.4) 100%), url(' + bgUrl + ')';
               document.body.classList.add('home-has-wallpaper');
           } else {
@@ -1081,7 +1141,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       function toggleHomeWallpaper(checked) {
           localStorage.setItem(WALLPAPER_KEY, checked ? '1' : '0');
           applyHomeWallpaper(checked);
-          dismissWallpaperTooltip(); // Esconde o balão ao utilizar o botão
+          dismissWallpaperTooltip();
       }
 
       function renderRecentModules() {
@@ -1110,7 +1170,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                       let n = textNode ? textNode.nodeValue.trim() : l.innerText.trim();
                       
                       let iconEl = l.querySelector('i');
-                      let iHtml = '<i class="fa-solid fa-cube"></i>';
+                      let iHtml = '<i class="ph-fill ph-cube"></i>';
                       if (iconEl) {
                           const clone = iconEl.cloneNode(true);
                           clone.className = clone.className.replace(/me-\\d+/g, '').replace(/ms-\\d+/g, '').replace(/text-\\w+/g, '').trim();
@@ -1137,7 +1197,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
                                       <strong class="mb-1 fw-bold text-white text-truncate" style="font-size: 0.85rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">\${m.name}</strong>
                                       <span class="text-white-50 text-truncate" style="font-size: 0.7rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Acessar módulo</span>
                                   </div>
-                                  <i class="fa-solid fa-chevron-right text-muted opacity-50" style="font-size: 0.8rem;"></i>
+                                  <i class="ph ph-caret-right text-muted opacity-50" style="font-size: 0.8rem;"></i>
                               </div>
                           </div>
                       </a>
@@ -1153,7 +1213,7 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
               if (hrefAttr && hrefAttr.startsWith('/') && hrefAttr !== '/home' && hrefAttr !== '/logout' && hrefAttr !== '#') {
                   
                   let name = link.getAttribute('data-name'); 
-                  let iHtml = '<i class="fa-solid fa-cube"></i>';
+                  let iHtml = '<i class="ph-fill ph-cube"></i>';
 
                   if (!name) {
                       let textNode = Array.from(link.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
@@ -1187,89 +1247,26 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
     </script>
 
     <script>
-      function gerarSkeletonCard() {
-          let html = '';
-          for(let i=0; i<3; i++) {
-              html += \`
-              <div class="card border-0 bg-custom-darker shadow-sm mb-2 p-2">
-                  <div class="d-flex justify-content-between align-items-center">
-                      <div style="width: 80%;">
-                          <div class="skeleton-dark skeleton-text-view" style="width: 100%;"></div>
-                          <div class="skeleton-dark skeleton-text-view" style="width: 60%; margin-bottom: 0;"></div>
-                      </div>
-                      <div class="skeleton-dark skeleton-text-view" style="width: 20px; margin-bottom: 0;"></div>
-                  </div>
-              </div>\`;
-          }
-          return html;
-      }
-
       function mostrarSkeletonGlobais() {
-          const mainContainer = document.querySelector('.content > .row.g-3');
-          if (document.getElementById('skeleton-temp-container')) return;
-
-          const isMotoristaStr = ${isMotorista};
-
-          const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="skeleton-container">
-              <div class="mb-4">
-                  <div class="skeleton-dark skeleton-text-view mb-3" style="width: 220px; height: 18px;"></div>
-                  <div class="row g-3">
-                      <div class="col-12 col-md-4"><div class="skeleton-dark" style="height: 66px; border-radius: 8px;"></div></div>
-                      <div class="col-12 col-md-4"><div class="skeleton-dark d-none d-md-block" style="height: 66px; border-radius: 8px;"></div></div>
-                      <div class="col-12 col-md-4"><div class="skeleton-dark d-none d-md-block" style="height: 66px; border-radius: 8px;"></div></div>
-                  </div>
-              </div>
-              <div class="row g-3">
-                  <div class="\${isMotoristaStr ? 'col-12' : 'col-12 col-lg-5'}">
-                      <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
-                          <div class="card-body p-3">
-                              <div class="skeleton-dark skeleton-text-view mb-3" style="width: 60%; height: 20px;"></div>
-                              \${gerarSkeletonCard()}
-                          </div>
-                      </div>
-                  </div>
-                  \${!isMotoristaStr ? \`
-                  <div class="col-12 col-lg-7">
-                      <div class="card dashboard-section-card h-100 bg-custom-dark border-0">
-                          <div class="card-body p-3 d-flex flex-column">
-                              <div class="d-flex justify-content-between mb-3">
-                                  <div class="skeleton-dark skeleton-text-view mb-0" style="width: 40%; height: 24px;"></div>
-                                  <div class="skeleton-dark skeleton-text-view mb-0" style="width: 15%; height: 24px; border-radius: 12px;"></div>
-                              </div>
-                              <div class="skeleton-dark w-100 flex-grow-1" style="min-height: 250px; border-radius: 8px;"></div>
-                          </div>
-                      </div>
-                  </div>
-                  \` : ''}
-              </div>
-          </div>\`;
-
-          if (mainContainer && !mainContainer.classList.contains('skeleton-container')) {
-              mainContainer.style.display = 'none';
-              const recentSection = document.getElementById('recentModulesSection');
-              if(recentSection) recentSection.style.display = 'none';
-              
-              mainContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
+          mostrarSpinnerLocal('carouselCardBody');
+          if (document.getElementById('chartCardBody')) {
+              mostrarSpinnerLocal('chartCardBody');
           }
       }
 
       function ocultarSkeletonGlobais() {
-          const tempSkeleton = document.getElementById('skeleton-temp-container');
-          if (tempSkeleton) tempSkeleton.remove();
+          ocultarSpinnerLocal('carouselCardBody');
+          if (document.getElementById('chartCardBody')) {
+              ocultarSpinnerLocal('chartCardBody');
+          }
 
-          const mainContainer = document.querySelector('.content > .row.g-3:not(.skeleton-container)');
-          if (mainContainer) mainContainer.style.display = 'flex';
-          
           if(typeof renderRecentModules === 'function') renderRecentModules();
 
-          // Inicia o Wallpaper se estiver ativado no LocalStorage
           const isWallpaperEnabled = localStorage.getItem(WALLPAPER_KEY) === '1';
           const sw = document.getElementById('homeWallpaperSwitch');
           if (sw) sw.checked = isWallpaperEnabled;
           applyHomeWallpaper(isWallpaperEnabled);
           
-          // Dispara a verificação para exibir o balão da nova funcionalidade
           showWallpaperTooltip();
       }
 
@@ -1280,10 +1277,6 @@ function homeView(usuario, notificacoes = [], dashboard = {}, notificacaoAtiva =
       } else {
           window.addEventListener('load', ocultarSkeletonGlobais);
       }
-
-      window.addEventListener('beforeunload', () => {
-          mostrarSkeletonGlobais();
-      });
     </script>
 
     ${notificacaoAtiva ? `

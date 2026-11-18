@@ -108,10 +108,12 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
 
   const veiculosOptions = veiculos.map(v => `<option value="${v.id}">${v.modelo}</option>`).join("");
 
-  const linhas = cadernos.map(c => {
+  const linhas = cadernos.map((c, idx) => {
     const paradasData = JSON.stringify(c.entregas ? c.entregas.map(e => e.coordenadas || e.local_entrega + ", Camaçari, BA") : []);
+    const isFirst = idx === 0 ? 'id="tour-linha-caderno"' : '';
+
     return `
-    <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();">
+    <tr class="align-middle table-hover-row" style="cursor: pointer;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${c.id}')).show();" ${isFirst}>
       <td class="text-muted fw-medium py-2 px-3"><i class="fa-regular fa-calendar-check me-1"></i> ${fmtData(c.data_criacao)}</td>
       <td class="text-white fw-bold py-2 px-3"><i class="fa-solid fa-id-card text-muted me-1"></i> ${c.motorista}</td>
       <td class="text-white py-2 px-3">${c.veiculo_modelo || '<span class="text-muted small">Não informado</span>'}</td>
@@ -538,9 +540,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
       
-      .btn-flutuante { position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background-color: #08c068; color: #1f1f1f; border: none; box-shadow: 0 4px 15px rgba(8, 192, 104, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 1050; transition: all 0.3s ease; }
-      .btn-flutuante:hover { transform: scale(1.1); background-color: #06a055; color: #1f1f1f; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.5); }
-
       .autocomplete-container { position: relative; width: 100%; }
       .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 2000; background-color: #2a2a2a; border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none; }
       .autocomplete-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: rgba(255,255,255,0.8); }
@@ -551,11 +550,97 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       .toast-timer { height: 4px; background: rgba(255, 255, 255, 0.4); width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
-      .skeleton-dark * { visibility: hidden !important; }
-      .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
-      .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
-      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+      .apple-spinner {
+          display: inline-block;
+          width: 24px;
+          height: 24px;
+          position: relative;
+      }
+      .apple-spinner div {
+          transform-origin: 12px 12px;
+          animation: apple-spinner 1.2s linear infinite;
+      }
+      .apple-spinner div:after {
+          content: " ";
+          display: block;
+          position: absolute;
+          top: 0;
+          left: 11px;
+          width: 2.5px;
+          height: 6px;
+          border-radius: 20%;
+          background: #08c068;
+      }
+      .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+      .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+      .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+      .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+      .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+      .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+      .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+      .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+      .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+      .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+      .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+      .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+      
+      @keyframes apple-spinner {
+          0% { opacity: 1; }
+          100% { opacity: 0.15; }
+      }
+
+      .local-spinner-overlay {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #222222;
+          z-index: 50;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: inherit;
+          opacity: 0;
+          animation: fadeInOverlay 0.2s forwards;
+      }
+      @keyframes fadeInOverlay { to { opacity: 1; } }
+
+      /* TOUR POPOVER STYLES */
+      .tour-popover {
+          border: 1px solid #08c068 !important;
+          --bs-popover-bg: #2a2a2a;
+          --bs-popover-header-bg: #222;
+          --bs-popover-header-color: #fff;
+          --bs-popover-body-color: rgba(255,255,255,0.8);
+          z-index: 1070 !important;
+      }
+      .tour-popover .popover-header { font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      .tour-popover .popover-arrow::after { border-bottom-color: #222 !important; border-top-color: #2a2a2a !important; }
+
+      .tour-highlight {
+          position: relative !important;
+          z-index: 1060 !important;
+          pointer-events: none !important;
+          box-shadow: 0 0 15px rgba(8, 192, 104, 0.4), 0 0 0 2px #08c068 !important;
+          border-radius: inherit;
+      }
+      .tour-highlight-parent {
+          position: relative !important;
+          z-index: 1056 !important;
+      }
+
+      /* Botão de ajuda inline no cabeçalho */
+      .btn-ajuda-inline {
+          background-color: transparent;
+          color: rgba(255,255,255,0.4);
+          border: none;
+          padding: 0 5px;
+          margin-left: 8px;
+          font-size: 1.1rem;
+          transition: color 0.2s ease, transform 0.2s ease;
+      }
+      .btn-ajuda-inline:hover { color: #08c068; }
+      .btn-ajuda-inline:active { transform: scale(0.9); }
 
       @media (max-width: 767.98px) { body { flex-direction: column; } .sidebar { display: none; } .content { padding: 16px; } }
       .offcanvas { background-color: #1f1f1f !important; }
@@ -582,9 +667,14 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
     <div class="content">
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" id="tour-menu"><i class="fa-solid fa-bars text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-book-open-reader text-muted me-2"></i>Caderno de Entregas</h5>
+              <div class="d-flex align-items-center">
+                  <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-book-open-reader text-muted me-2"></i>Caderno de Entregas</h5>
+                  <button type="button" class="btn-ajuda-inline" id="btnAjudaTour" onclick="toggleTourMode()" title="Como funciona esta tela?">
+                      <i class="fa-solid fa-circle-question"></i>
+                  </button>
+              </div>
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.7rem;">Crie e otimize rotas com inteligência geográfica</span>
             </div>
         </div>
@@ -595,7 +685,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
          
     <div class="d-flex align-items-center flex-wrap flex-md-nowrap gap-3 justify-content-xl-end">
         <form id="formFiltroCaderno" class="d-flex align-items-center mb-0" method="GET" action="/caderno-entregas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-            <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;">
+            <div class="input-group input-group-sm shadow-sm" style="flex-wrap: nowrap; width: auto;" id="tour-filtro">
                 <span class="input-group-text border-custom"><i class="fa-regular fa-calendar"></i></span>
                 <input type="date" name="data_inicio" class="form-control" value="${filtros.data_inicio || ''}" title="Data Inicial" style="max-width: 130px;">
                 <span class="input-group-text border-custom">até</span>
@@ -609,29 +699,21 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
 
         <div class="d-flex align-items-center gap-3 flex-nowrap">
             
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center" id="tour-whatsapp">
                 <div class="form-check form-switch bg-custom-darker border-custom py-1 px-3 rounded-pill d-flex align-items-center gap-2 m-0 shadow-sm" style="height: 31px;">
                     <input class="form-check-input text-accent border-secondary" type="checkbox" id="switchWhatsappClientes" style="cursor: pointer; width: 2em; height: 1em; margin-top: 0;" ${req && req.session && (req.session.whatsappAtivo === true || req.session.whatsappAtivo === 'true') ? 'checked' : ''} onchange="window.alternarStatusWhatsapp(this.checked)">
                     <label class="form-check-label text-white fw-bold" for="switchWhatsappClientes" style="font-size: 0.68rem; cursor: pointer; white-space: nowrap;">
                         <i class="fa-brands fa-whatsapp text-success me-1 fs-6 align-middle"></i> Avisos WhatsApp
                     </label>
                 </div>
-                
-                <i class="fa-regular fa-circle-question text-muted" 
-                   style="cursor: help; font-size: 0.8rem;" 
-                   data-bs-toggle="tooltip" 
-                   data-bs-custom-class="custom-tooltip"
-                   data-bs-placement="top" 
-                   title="Habilita o envio automático de mensagens para os clientes através da leitura QR Code da rota geral nos cadernos.">
-                </i>
             </div>
 
             <!-- BOTÃO ABRIR MODAL DE EXPORTAÇÃO -->
-            <button class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalRelatorioCadernos">
+            <button class="btn btn-sm btn-outline-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalRelatorioCadernos" id="tour-relatorio">
                 <i class="fa-solid fa-file-excel"></i> <span class="d-none d-md-inline ms-1">Relatório</span>
             </button>
             
-            <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal">
+            <button class="btn btn-sm btn-success shadow-sm fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#novoCadernoModal" id="tour-novo">
                 <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">Novo</span>
             </button>
         </div>
@@ -640,9 +722,9 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
 
       <span id="resumoRegistrosText" class="text-muted d-block w-100 text-end" style="font-size: 0.75rem; margin-bottom: 0.5rem;">Exibindo página ${page} de ${totalPages}</span>
 
-      ${cadernos.length > 0 
-        ? `<div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom mb-4">
-             <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0;">
+      <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom mb-4 position-relative" id="tabelaContainer">
+        ${cadernos.length > 0 
+          ? `<table class="table table-sm align-middle mb-0" style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0;">
                <thead>
                  <tr>
                    <th class="py-2 px-3">Data de Saída</th>
@@ -655,10 +737,10 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                <tbody class="border-top-0">
                  ${linhas}
                </tbody>
-             </table>
-           </div>` 
-        : `<div class="col-12 text-center text-muted mt-4 text-center-empty"><i class="fa-solid fa-route fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum caderno encontrado para este filtro.</p></div>`
-      }
+             </table>` 
+          : `<div class="col-12 text-center text-muted mt-4 py-5 text-center-empty"><i class="fa-solid fa-route fa-2x opacity-25 mb-3"></i><p style="font-size:0.8rem;">Nenhum caderno encontrado para este filtro.</p></div>`
+        }
+      </div>
 
       ${paginacaoHtml}
     </div>
@@ -701,45 +783,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               </div>
             </div>
             <button type="button" onclick="baixarRelatorioCadernos()" class="btn btn-sm btn-success w-100 fw-bold shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Planilha</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
-      <i class="fa-solid fa-question"></i>
-    </button>
-
-    <div class="modal fade" id="modalInstrucoes" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg erp-modal">
-          <div class="modal-header bg-custom-darker border-0">
-            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Como usar o Caderno</h6>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body p-4 text-muted bg-custom-dark" style="font-size: 0.8rem;">
-            <p class="mb-4">Bem-vindo ao <strong>Caderno de Entregas Inteligente</strong>. Siga as orientações abaixo para gerenciar as rotas:</p>
-            <ul class="list-group list-group-flush mb-4">
-              <li class="list-group-item bg-transparent px-0 border-custom pb-3">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-route text-accent me-2"></i> 1. Roteirização Automática</strong>
-                Ao adicionar as entregas e clicar em "Gerar Caderno", o systema irá usar a inteligência do servidor para traçar e reordenar automaticamente a sequência mais rápida de percurso.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom py-3">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-location-arrow text-success me-2"></i> 2. Navegação Rápida</strong>
-                Use o botão "Iniciar Navegação" (ícone verde nas rotas) para abrir o <strong>Google Maps no telemóvel</strong> já com a rota completa montada em sequência.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom py-3">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-boxes-stacked text-info me-2"></i> 3. Adicionar Entregas e Itens</strong>
-                Você pode incluir múltiplos itens para a mesma entrega, especificando as quantidades e opcionalmente o valor a receber em cada parada.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-print text-secondary me-2"></i> 4. Imprimir Manifesto PDF</strong>
-                Após o cálculo do systema, gere um PDF para o motorista contendo a rota otimizada e os <strong>QR Codes</strong> de navegação de cada local.
-              </li>
-            </ul>
-          </div>
-          <div class="modal-footer border-0 bg-custom-darker">
-            <button type="button" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
           </div>
         </div>
       </div>
@@ -795,7 +838,7 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
             <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-plus-circle me-2 text-accent"></i> Criar Caderno de Entregas (Otimizado)</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body p-4 bg-custom-dark">
+          <div class="modal-body p-4 bg-custom-dark position-relative" id="modalNovoBody">
             <h6 class="fw-bold text-accent mb-3 border-bottom border-custom pb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-truck me-1"></i> Equipe e Transporte</h6>
             <div class="row g-3 mb-4">
               <div class="col-12 col-md-4">
@@ -949,6 +992,117 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
       let clientNames = Object.keys(dictClientes);
       const arrayItensCatalogo = ${JSON.stringify(catalogoItens.map(i => i.nome) || [])};
       const listaColabDB = ${JSON.stringify(colaboradores || [])};
+
+      // =======================================================================
+      // TOUR DE BOOTSTRAP POPOVERS (ONBOARDING)
+      // =======================================================================
+      let tourPopovers = [];
+      let tourAtivo = false;
+
+      window.toggleTourMode = function() {
+          if (tourAtivo) {
+              encerrarTour();
+              return;
+          }
+          iniciarTour();
+      };
+
+      function iniciarTour() {
+          tourAtivo = true;
+          document.getElementById('btnAjudaTour').classList.add('text-accent');
+          
+          let backdrop = document.getElementById('tourBackdrop');
+          if (!backdrop) {
+              backdrop = document.createElement('div');
+              backdrop.id = 'tourBackdrop';
+              backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); z-index: 1055; transition: opacity 0.3s;';
+              document.body.appendChild(backdrop);
+          }
+          backdrop.style.display = 'block';
+
+          mostrarPassoTour(0);
+      }
+
+      window.mostrarPassoTour = function(stepIndex) {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+
+          const steps = [
+              { id: 'btn-tour-menu', title: 'Menu Lateral', content: 'Aceda aos outros módulos do sistema.', placement: 'bottom' },
+              { id: 'tour-filtro', title: 'Pesquisa por Data', content: 'Encontre cadernos de entrega criados num período específico.', placement: 'bottom' },
+              { id: 'tour-whatsapp', title: 'Automação de WhatsApp', content: 'Ative esta opção se desejar disparar mensagens automáticas para os clientes quando a rota iniciar.', placement: 'bottom' },
+              { id: 'tour-relatorio', title: 'Exportar para Excel', content: 'Faça o download de todas as rotas visíveis no formato Excel.', placement: 'bottom' },
+              { id: 'tour-novo', title: 'Novo Caderno', content: 'Crie uma nova rota, adicione entregas e deixe que o sistema organize e encontre a melhor rota para si.', placement: 'bottom' }
+          ];
+
+          if (document.getElementById('tour-linha-caderno')) {
+              steps.push({ id: 'tour-linha-caderno', title: 'Visualizar Rota', content: 'Clique num caderno salvo para visualizar detalhes, imprimir ou iniciar a rota diretamente no Google Maps.', placement: 'top' });
+          }
+
+          if (stepIndex >= steps.length) {
+              encerrarTour();
+              return;
+          }
+
+          const step = steps[stepIndex];
+          const el = document.getElementById(step.id);
+          
+          if (!el || window.getComputedStyle(el).display === 'none') {
+              mostrarPassoTour(stepIndex + 1);
+              return;
+          }
+
+          el.classList.add('tour-highlight');
+          
+          if(step.id === 'tour-linha-caderno') {
+              const cardParent = el.closest('tr');
+              if (cardParent) cardParent.classList.add('tour-highlight-parent');
+          }
+
+          const isLast = stepIndex === steps.length - 1;
+          const navHtml = \`
+              <div class="d-flex justify-content-between mt-3 pt-2 border-top border-custom align-items-center">
+                  <span class="text-white-50 fw-bold" style="font-size: 0.7rem;">\${stepIndex + 1} de \${steps.length}</span>
+                  <div>
+                      <button class="btn btn-sm btn-outline-secondary py-0 px-2 text-white shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="encerrarTour()">Sair</button>
+                      <button class="btn btn-sm btn-primary py-0 px-2 fw-bold text-dark ms-1 shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="mostrarPassoTour(\${stepIndex + 1})">\${isLast ? 'Concluir' : 'Próximo'}</button>
+                  </div>
+              </div>
+          \`;
+
+          const popover = new bootstrap.Popover(el, {
+              title: '<i class="fa-solid fa-circle-info text-accent me-2"></i>' + step.title,
+              content: '<div style="font-size: 0.75rem;" class="text-white-50">' + step.content + '</div>' + navHtml,
+              placement: step.placement,
+              trigger: 'manual',
+              html: true,
+              sanitize: false,
+              customClass: 'tour-popover shadow-lg'
+          });
+          
+          popover.show();
+          tourPopovers.push(popover);
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+
+      window.encerrarTour = function() {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+          const backdrop = document.getElementById('tourBackdrop');
+          if (backdrop) backdrop.style.display = 'none';
+          
+          document.getElementById('btnAjudaTour').classList.remove('text-accent');
+          tourAtivo = false;
+      };
 
       // ==========================================
       // LÓGICA DE EXPORTAÇÃO EXCEL
@@ -1134,67 +1288,46 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           successToast.show();
       }
 
-      function gerarSkeletonTabela(quantidade = 5) {
-          let html = '';
-          for(let i=0; i<quantidade; i++) {
-              html += \`
-              <tr class="align-middle">
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 40px; margin: 0 auto;"></div></td>
-                  <td class="text-end py-2 px-3 d-flex justify-content-end gap-1">
-                      <div class="skeleton-dark skeleton-btn-view"></div>
-                      <div class="skeleton-dark skeleton-btn-view"></div>
-                      <div class="skeleton-dark skeleton-btn-view"></div>
-                  </td>
-              </tr>\`;
-          }
-          return html;
+      function getAppleSpinner(scale = 1) {
+          return \`<div class="apple-spinner" style="transform: scale(\${scale});">
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                  </div>\`;
+      }
+
+      function mostrarSpinnerLocal(elementId, texto = '') {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          if (el.querySelector('.local-spinner-overlay')) return;
+          
+          const overlay = document.createElement('div');
+          overlay.className = 'local-spinner-overlay text-white-50';
+          overlay.innerHTML = getAppleSpinner(1) + (texto ? \`<span class="mt-3 fw-medium" style="font-size: 0.8rem;">\${texto}</span>\` : '');
+          el.appendChild(overlay);
+      }
+
+      function ocultarSpinnerLocal(elementId) {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          const overlay = el.querySelector('.local-spinner-overlay');
+          if (overlay) overlay.remove();
       }
 
       function mostrarSkeletonGlobais() {
-          const tableContainer = document.querySelector('.content > .table-responsive');
-          const emptyState = document.querySelector('.content > .text-center-empty');
-
-          if (document.getElementById('skeleton-temp-container')) return;
-
-          const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="table-responsive bg-custom-darker rounded-3 shadow-sm border-custom mb-4 skeleton-container">
-              <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0;">
-                 <thead class="table-light">
-                   <tr>
-                     <th class="py-2 px-3">Data de Saída</th>
-                     <th class="py-2 px-3">Motorista</th>
-                     <th class="py-2 px-3">Veículo</th>
-                     <th class="py-2 px-3 text-center">Entregas</th>
-                     <th class="py-2 px-3 text-end">Ações</th>
-                   </tr>
-                 </thead>
-                 <tbody class="border-top-0">
-                    \${gerarSkeletonTabela(5)}
-                 </tbody>
-              </table>
-          </div>\`;
-
-          if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
-              tableContainer.style.display = 'none';
-              tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
-          } else if (emptyState) {
-              emptyState.style.display = 'none';
-              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
+          mostrarSpinnerLocal('tabelaContainer', 'Atualizando Rotas...');
+          
+          const modalEdicaoAberto = document.querySelector('.modal.show .modal-body[id^="modalNovoBody"]');
+          if(modalEdicaoAberto) {
+              mostrarSpinnerLocal(modalEdicaoAberto.id, 'Salvando...');
           }
       }
 
       function ocultarSkeletonGlobais() {
-          const tempSkeleton = document.getElementById('skeleton-temp-container');
-          if (tempSkeleton) tempSkeleton.remove();
-
-          const tableContainer = document.querySelector('.content > .table-responsive');
-          const emptyState = document.querySelector('.content > .text-center-empty');
-
-          if (tableContainer) tableContainer.style.display = '';
-          if (emptyState) emptyState.style.display = '';
+          ocultarSpinnerLocal('tabelaContainer');
+          
+          document.querySelectorAll('.modal-body[id^="modalNovoBody"]').forEach(el => {
+              ocultarSpinnerLocal(el.id);
+          });
       }
 
       mostrarSkeletonGlobais();
@@ -1267,6 +1400,8 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           } catch (err) {
               console.error(err);
               mostrarToast('erro', 'Falha de Conexão', 'Verifique a sua rede e tente novamente.');
+          } finally {
+              ocultarSkeletonGlobais();
           }
       }
 
@@ -1301,6 +1436,8 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               }
           } catch (err) {
               mostrarToast('erro', 'Erro', 'Falha ao carregar a página.');
+          } finally {
+              ocultarSkeletonGlobais();
           }
       }
 
@@ -1504,7 +1641,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               if (modalLoading) {
                   modalLoading.hide();
               }
-              // Força a limpeza para evitar que a tela fique bloqueada pelo fundo cinza
               setTimeout(() => {
                   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
                   document.body.classList.remove('modal-open');
@@ -1536,7 +1672,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
           const isProcessamentoRota = form.action.includes('/caderno-entregas/novo') ||
                                      form.action.includes('/caderno-entregas/editar/');
 
-          // Fechar modal atual caso esteja aberto
           const modalEl = form.closest('.modal');
           if (modalEl) {
               const modalAtual = bootstrap.Modal.getInstance(modalEl) ||
@@ -1544,7 +1679,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               modalAtual.hide();
           }
 
-          // Delay rápido para evitar choque de animações do Bootstrap
           await new Promise(resolve => setTimeout(resolve, 300));
 
           if (isProcessamentoRota) {
@@ -1652,7 +1786,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                               btnDisparar.setAttribute('onclick', \`dispararMensagensNovoCaderno(\${cadernoCriadoId})\`);
                           }
 
-                          // Aguarda o processamento do DOM para exibir a sugestão
                           setTimeout(() => {
                               const modalImp = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImprimirNovo'));
                               modalImp.show();
@@ -1671,7 +1804,6 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
               if (isProcessamentoRota && loadingModalEl) {
                   const modalLoading = bootstrap.Modal.getInstance(loadingModalEl);
                   if (modalLoading) {
-                      // Espera a animação de ocultar o carregamento terminar antes de processar
                       loadingModalEl.addEventListener('hidden.bs.modal', function handler() {
                           loadingModalEl.removeEventListener('hidden.bs.modal', handler);
                           processarResposta();
@@ -1713,23 +1845,23 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                   <input type="hidden" name="quantidade[]" class="hidden-qtd">
 
                   <div class="col-12 col-md-5">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Cliente / Local</label>
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Cliente / Local</label>
                       <div class="autocomplete-container">
                           <input type="text" name="local[]" class="form-control form-control-sm client-input shadow-sm" oninput="handleClientInput(event, this)" onclick="handleClientInput(event, this)" placeholder="Digite o nome..." required autocomplete="off">
                           <div class="autocomplete-dropdown shadow-sm" style="display:none;"></div>
                       </div>
                   </div>
                   <div class="col-12 col-md-4">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Link do Maps</label>
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Link do Maps</label>
                       <input type="url" name="link[]" class="form-control form-control-sm link-maps-input shadow-sm" placeholder="Cole o link aqui" oninput="extrairCoordenadasAoColar(this)">
                   </div>
                   <div class="col-12 col-md-3">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Coordenadas</label>
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Coordenadas</label>
                       <input type="text" name="coordenadas_rota[]" class="form-control form-control-sm coord-input shadow-sm" placeholder="Lat, Lng">
                   </div>
 
                   <div class="col-12 col-md-8 mt-2">
-                      <label class="form-label text-white fw-bold mb-1" style="font-size:0.7rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
+                      <label class="form-label text-white fw-bold mb-1" style="font-size:0.75rem;"><i class="fa-solid fa-list-check text-muted me-1"></i> Itens do Pedido</label>
                       <div class="sub-itens-container bg-custom-dark p-2 rounded border-custom">
                           <div class="row g-1 mb-1 sub-item-row">
                               <div class="col-8">
@@ -1746,13 +1878,13 @@ function cadernoEntregasView(req, cadernos = [], veiculos = [], clientesHistoric
                               </div>
                           </div>
                       </div>
-                      <button type="button" class="btn btn-xs btn-link text-accent text-decoration-none p-0 mt-1 fw-bold" style="font-size:0.7rem;" onclick="addSubItemLinha(this)">
+                      <button type="button" class="btn btn-xs btn-link text-accent text-decoration-none p-0 mt-1 fw-bold" style="font-size:0.75rem;" onclick="addSubItemLinha(this)">
                           <i class="fa-solid fa-plus-circle me-1"></i> Adicionar outro item
                       </button>
                   </div>
 
                   <div class="col-12 col-md-4 mt-2">
-                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.7rem;">Valor a Receber (Opcional)</label>
+                      <label class="form-label text-muted fw-bold mb-1" style="font-size:0.75rem;">Valor a Receber (Opcional)</label>
                       <div class="input-group input-group-sm shadow-sm">
                         <span class="input-group-text border-custom">R$</span>
                         <input type="text" name="valor_aberto[]" class="form-control mask-moeda" oninput="maskMoeda(this)" placeholder="0,00">

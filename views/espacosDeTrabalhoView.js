@@ -114,7 +114,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                       </div>
                       ${roleUsers.length > 0 ? `
                       <button class="btn btn-sm text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${e.id}_${r.id}" aria-expanded="false" onclick="event.stopPropagation();">
-                          <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                          <i class="ph-bold ph-caret-down" style="font-size: 0.8rem;"></i>
                       </button>
                       ` : ''}
                   </div>
@@ -126,12 +126,12 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           if (isOwnerOrAdmin) {
               dropdownPermissoes = `
               <div class="dropdown" onclick="event.stopPropagation();">
-                  <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
-                      <i class="fa-solid fa-gear" style="font-size:0.75rem;"></i>
+                  <button class="btn btn-sm btn-outline-secondary border-custom text-light shadow-sm py-1 px-2 tour-card-config" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" data-bs-popper-config='{"placement":"bottom-start", "strategy":"fixed"}' title="Permissões de Acesso">
+                      <i class="ph-bold ph-gear" style="font-size:1rem;"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-dark shadow-lg p-2 border-custom mt-1" style="background-color: #222; min-width: 240px; max-height: 350px; overflow-y: auto; z-index: 1060; border-radius: 8px;">
                       <li class="px-2 pb-2 border-bottom border-custom mb-2">
-                          <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-eye me-1"></i> Visibilidade e Usuários</span>
+                          <span class="text-white-50" style="font-size: 0.75rem; font-weight: bold;"><i class="ph-bold ph-eye me-1"></i> Visibilidade e Usuários</span>
                       </li>
                       ${permissoesHtml}
                   </ul>
@@ -147,17 +147,17 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                    ${hasAccess ? `onclick="window.location.href='/kanban?espaco_id=${e.id}'"` : ''}
                    title="${hasAccess ? `Acessar o quadro Kanban: ${e.nome}` : 'Acesso Restrito'}">
                    
-                  <div class="position-relative" style="height: 140px; background-color: #222; border-radius: 11px 11px 0 0; overflow: hidden;">
+                  <div class="position-relative tour-card-img" style="height: 140px; background-color: #222; border-radius: 11px 11px 0 0; overflow: hidden; background-color: #2a2a2a;">
                       <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
                       
                       ${!hasAccess ? `
                       <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 5;">
-                          <i class="fa-solid fa-lock fa-3x text-white-50"></i>
+                          <i class="ph-fill ph-lock-key text-white-50" style="font-size: 3rem;"></i>
                       </div>
                       ` : ''}
 
                       <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                          <span class="badge bg-custom-darker border-custom text-muted shadow-sm" style="font-size: 0.6rem;"><i class="fa-solid fa-table-columns text-accent me-1"></i> Kanban</span>
+                          <span class="badge bg-custom-darker border-custom text-muted shadow-sm" style="font-size: 0.6rem;"><i class="ph-fill ph-kanban text-accent me-1"></i> Kanban</span>
                       </div>
                   </div>
 
@@ -176,12 +176,12 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                           </div>
 
                           ${hasAccess ? `
-                          <div class="btn-group">
+                          <div class="btn-group tour-card-acoes bg-custom-darker rounded">
                               <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
-                                  <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+                                  <i class="ph-bold ph-pencil-simple" style="font-size:1rem;"></i>
                               </button>
                               <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation(); abrirModalExcluirEspaco('${e.id}', '${e.nome.replace(/'/g, "\\'")}')" title="Excluir">
-                                  <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                                  <i class="ph-bold ph-trash" style="font-size:1rem;"></i>
                               </button>
                           </div>
                           ` : ''}
@@ -203,7 +203,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                       <img src="${imgUrl}" alt="${e.nome}" class="w-100 h-100" style="object-fit: cover; filter: brightness(${hasAccess ? '0.8' : '0.4'});">
                       ${!hasAccess ? `
                       <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5);">
-                          <i class="fa-solid fa-lock text-white-50" style="font-size: 1rem;"></i>
+                          <i class="ph-fill ph-lock-key text-white-50" style="font-size: 1.2rem;"></i>
                       </div>
                       ` : ''}
                   </div>
@@ -227,10 +227,10 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                       ${hasAccess ? `
                       <div class="btn-group">
                           <button class="btn btn-sm btn-outline-secondary border-custom text-warning shadow-sm py-1 px-2" onclick="event.stopPropagation(); abrirModalEditarEspaco('${e.id}')" title="Editar">
-                              <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+                              <i class="ph-bold ph-pencil-simple" style="font-size:1rem;"></i>
                           </button>
                           <button class="btn btn-sm btn-outline-secondary border-custom text-danger shadow-sm py-1 px-2 ms-1" onclick="event.stopPropagation(); abrirModalExcluirEspaco('${e.id}', '${e.nome.replace(/'/g, "\\'")}')" title="Excluir">
-                              <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+                              <i class="ph-bold ph-trash" style="font-size:1rem;"></i>
                           </button>
                       </div>
                       ` : ''}
@@ -242,7 +242,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
   } else {
       const emptyStateHtml = `
         <div class="col-12 text-center text-muted py-5 text-center-empty w-100">
-            <i class="fa-solid fa-cubes fa-3x opacity-25 mb-3 d-block"></i>
+            <i class="ph-fill ph-squares-four opacity-25 mb-3 d-block" style="font-size: 4rem;"></i>
             <span style="font-size: 0.85rem;">Nenhum Workspace criado.<br>Crie um novo Workspace para gerenciar os seus quadros Kanban.</span>
         </div>
       `;
@@ -262,7 +262,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           <div class="modal-dialog modal-dialog-centered">
               <form method="POST" action="/espacos-trabalho/editar/${e.id}" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Espaço Atualizado!')">
                   <div class="modal-header bg-custom-darker border-custom">
-                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i> Editar Espaço de Trabalho</h6>
+                      <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="ph-fill ph-pencil-simple me-2 text-warning"></i> Editar Espaço de Trabalho</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-sm p-4 bg-custom-dark">
@@ -271,7 +271,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                               <label class="form-label text-muted fw-bold d-block" style="font-size:0.75rem;">Capa (Thumb)</label>
                               <div class="image-upload-wrapper mx-auto shadow-sm border-custom bg-custom-darker position-relative" style="width: 100%; max-width: 250px; height: 120px; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="document.getElementById('uploadThumbEdit${e.id}').click()">
                                   <img id="previewThumbEdit${e.id}" src="${imgUrl}" class="w-100 h-100" style="object-fit: cover; filter: brightness(0.8);">
-                                  <div class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-75 px-3 py-1 rounded shadow-sm opacity-hover" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-camera me-1"></i> Alterar Capa</div>
+                                  <div class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-75 px-3 py-1 rounded shadow-sm opacity-hover" style="font-size: 0.75rem; font-weight: bold;"><i class="ph-fill ph-camera me-1"></i> Alterar Capa</div>
                               </div>
                               <input type="file" name="thumb" id="uploadThumbEdit${e.id}" class="d-none" accept="image/*" onchange="previewImage(this, 'previewThumbEdit${e.id}')">
                           </div>
@@ -289,7 +289,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                   </div>
                   <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
                       <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-                      <button type="submit" class="btn btn-sm btn-primary fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar Alterações</button>
+                      <button type="submit" class="btn btn-sm btn-primary fw-bold text-dark w-100 shadow-sm"><i class="ph-bold ph-floppy-disk me-1"></i> Salvar Alterações</button>
                   </div>
               </form>
           </div>
@@ -306,6 +306,8 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
     <title>Espaços de Trabalho | Ecoflow</title>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- FONT AWESOME MANTIDO PARA GARANTIR COMPATIBILIDADE SE ALGUM MÓDULO NÃO TIVER SIDO ATUALIZADO -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
@@ -386,25 +388,94 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       .toast-timer { height: 4px; background: #08c068; width: 100%; position: absolute; bottom: 0; left: 0; transform-origin: left; }
       @keyframes shrinkToast { from { width: 100%; } to { width: 0%; } }
 
-      /* SKELETON LOADING (DARK) */
-      .skeleton-dark {
-          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
-          background-size: 200% 100% !important;
-          animation: skeleton-loading-view 1.5s infinite linear !important;
-          border-radius: 4px;
-          color: transparent !important;
-          border-color: transparent !important;
-          box-shadow: none !important;
-          pointer-events: none;
+      /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+      .apple-spinner {
+          display: inline-block;
+          width: 24px;
+          height: 24px;
+          position: relative;
       }
-      .skeleton-dark * { visibility: hidden !important; }
-      .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
-      .skeleton-btn-view { height: 26px; width: 50px; border-radius: 4px; display: inline-block; }
-      .skeleton-img-view { height: 140px; width: 100%; }
-      @keyframes skeleton-loading-view {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
+      .apple-spinner div {
+          transform-origin: 12px 12px;
+          animation: apple-spinner 1.2s linear infinite;
       }
+      .apple-spinner div:after {
+          content: " ";
+          display: block;
+          position: absolute;
+          top: 0;
+          left: 11px;
+          width: 2.5px;
+          height: 6px;
+          border-radius: 20%;
+          background: #08c068;
+      }
+      .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+      .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+      .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+      .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+      .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+      .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+      .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+      .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+      .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+      .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+      .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+      .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+      
+      @keyframes apple-spinner {
+          0% { opacity: 1; }
+          100% { opacity: 0.15; }
+      }
+      
+      /* Container centralizador do loader para substituir os cards */
+      .loader-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 300px;
+          width: 100%;
+          color: rgba(255,255,255,0.5);
+          font-size: 0.85rem;
+      }
+
+      /* TOUR POPOVER STYLES */
+      .tour-popover {
+          border: 1px solid #08c068 !important;
+          --bs-popover-bg: #2a2a2a;
+          --bs-popover-header-bg: #222;
+          --bs-popover-header-color: #fff;
+          --bs-popover-body-color: rgba(255,255,255,0.8);
+          z-index: 1070 !important;
+      }
+      .tour-popover .popover-header { font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      .tour-popover .popover-arrow::after { border-bottom-color: #222 !important; border-top-color: #2a2a2a !important; }
+
+      .tour-highlight {
+          position: relative !important;
+          z-index: 1060 !important;
+          pointer-events: none !important;
+          box-shadow: 0 0 15px rgba(8, 192, 104, 0.4), 0 0 0 2px #08c068 !important;
+          border-radius: inherit;
+      }
+      .tour-highlight-parent {
+          position: relative !important;
+          z-index: 1056 !important;
+      }
+
+      /* Botão de ajuda inline no cabeçalho */
+      .btn-ajuda-inline {
+          background-color: transparent;
+          color: rgba(255,255,255,0.4);
+          border: none;
+          padding: 0 5px;
+          margin-left: 8px;
+          font-size: 1.1rem;
+          transition: color 0.2s ease, transform 0.2s ease;
+      }
+      .btn-ajuda-inline:hover { color: #08c068; }
+      .btn-ajuda-inline:active { transform: scale(0.9); }
 
       @media (max-width: 767.98px) {
         body { flex-direction: column; }
@@ -427,16 +498,14 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
 
     <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
       <div class="offcanvas-header border-bottom border-custom">
-        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="ph-bold ph-list text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
-        <div class="text-center mb-4 mt-2">
-            <img src="/img/logo.png" alt="Logo" class="img-fluid" style="max-width:140px;">
-        </div>
+        <div class="text-center mb-4 mt-2"><img src="/img/logo.png" alt="Logo" class="img-fluid" style="max-width:140px;"></div>
         ${menuHTML}
         <hr class="border-custom mt-4">
-        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="ph-bold ph-sign-out me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
@@ -444,25 +513,30 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       
       <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+            <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" id="btn-tour-menu"><i class="ph-bold ph-list text-white"></i></button>
             <div>
-              <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-cubes text-muted me-2"></i>Workspaces</h5>
+              <div class="d-flex align-items-center">
+                  <h5 class="mb-0 fw-bold text-white"><i class="ph-fill ph-squares-four text-muted me-2"></i>Workspaces</h5>
+                  <button type="button" class="btn-ajuda-inline" id="btnAjudaTour" onclick="toggleTourMode()" title="Como funciona esta tela?">
+                      <i class="ph-fill ph-question"></i>
+                  </button>
+              </div>
               <span class="text-muted d-none d-sm-block mt-1" style="font-size:0.75rem;">Organize os quadros Kanban por projetos ou setores</span>
             </div>
         </div>
         
         <div class="d-flex align-items-center gap-2 ms-auto">
             <!-- BOTÕES DE ALTERNAR VIEW -->
-            <div class="btn-group shadow-sm border-custom rounded me-2" role="group">
+            <div class="btn-group shadow-sm border-custom rounded me-2" role="group" id="btn-tour-view" style="border-radius: 6px;">
                 <input type="radio" class="btn-check" name="btnradio_view_ws" id="view_grid" autocomplete="off" onchange="toggleWorkspaceView('grid')">
-                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="fa-solid fa-table-cells-large"></i></label>
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_grid" title="Visualização em Grade"><i class="ph-fill ph-grid-four"></i></label>
 
                 <input type="radio" class="btn-check" name="btnradio_view_ws" id="view_list" autocomplete="off" onchange="toggleWorkspaceView('list')">
-                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="fa-solid fa-list"></i></label>
+                <label class="btn btn-sm btn-outline-secondary text-white border-0" for="view_list" title="Visualização em Lista"><i class="ph-bold ph-list-dashes"></i></label>
             </div>
 
-            <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-3" data-bs-toggle="modal" data-bs-target="#novoEspacoModal">
-                <i class="fa-solid fa-plus me-1"></i> Criar
+            <button class="btn btn-sm btn-success fw-bold shadow-sm text-dark px-3" data-bs-toggle="modal" data-bs-target="#novoEspacoModal" id="btn-tour-criar">
+                <i class="ph-bold ph-plus me-1"></i> Criar
             </button>
         </div>
       </div>
@@ -483,7 +557,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="/espacos-trabalho/novo" enctype="multipart/form-data" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Espaço Criado com Sucesso!')">
           <div class="modal-header bg-custom-darker border-custom text-white">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-plus text-accent me-2"></i> Criar Workspace</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-fill ph-folder-plus text-accent me-2"></i> Criar Workspace</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-sm p-4 bg-custom-dark">
@@ -492,7 +566,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                     <label class="form-label text-muted fw-bold d-block" style="font-size:0.75rem;">Capa (Thumb)</label>
                     <div class="image-upload-wrapper mx-auto shadow-sm border-custom bg-custom-darker position-relative" style="width: 100%; max-width: 250px; height: 120px; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="document.getElementById('uploadThumbNovo').click()">
                         <img id="previewThumbNovo" src="https://ui-avatars.com/api/?name=Projeto&background=222&color=08c068&size=250&font-size=0.25" class="w-100 h-100" style="object-fit: cover; filter: brightness(0.8);">
-                        <div class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-75 px-3 py-1 rounded shadow-sm opacity-hover" style="font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-camera me-1"></i> Adicionar Capa</div>
+                        <div class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-75 px-3 py-1 rounded shadow-sm opacity-hover" style="font-size: 0.75rem; font-weight: bold;"><i class="ph-bold ph-camera me-1"></i> Adicionar Capa</div>
                     </div>
                     <input type="file" name="thumb" id="uploadThumbNovo" class="d-none" accept="image/*" onchange="previewImage(this, 'previewThumbNovo')">
                 </div>
@@ -510,7 +584,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           </div>
           <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-check me-1"></i> Criar Workspace</button>
+            <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="ph-bold ph-check me-1"></i> Criar Workspace</button>
           </div>
         </form>
       </div>
@@ -523,7 +597,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <form id="formExcluirEspaco" method="POST" action="" onsubmit="prepararSubmissaoSimples(event, this, 'Workspace Excluído!')">
             <div class="modal-body text-center p-4">
-              <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+              <i class="ph-fill ph-warning-circle text-danger mb-3" style="font-size: 3.5rem;"></i>
               <h6 class="mb-2 fw-bold text-white">Excluir Workspace?</h6>
               <p class="text-muted mb-0" style="font-size:0.8rem;">Deseja excluir o Workspace <b id="nomeEspacoExcluir" class="text-white"></b>? <b>TODOS</b> os quadros Kanban, cartões e anexos vinculados a ele serão perdidos permanentemente.</p>
             </div>
@@ -536,11 +610,11 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       </div>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 2050;">
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 3000;">
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                    <i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -554,7 +628,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
         <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                    <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -571,27 +645,234 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
 
     <script>
       // =======================================================================
-      // ALTERNADOR DE VIEW (GRID / LISTA)
+      // TOUR DE BOOTSTRAP POPOVERS (ONBOARDING)
+      // =======================================================================
+      let tourPopovers = [];
+      let tourAtivo = false;
+
+      window.toggleTourMode = function() {
+          if (tourAtivo) {
+              encerrarTour();
+              return;
+          }
+          iniciarTour();
+      };
+
+      function iniciarTour() {
+          tourAtivo = true;
+          document.getElementById('btnAjudaTour').classList.add('text-accent');
+          
+          let backdrop = document.getElementById('tourBackdrop');
+          if (!backdrop) {
+              backdrop = document.createElement('div');
+              backdrop.id = 'tourBackdrop';
+              backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); z-index: 1055; transition: opacity 0.3s;';
+              document.body.appendChild(backdrop);
+          }
+          backdrop.style.display = 'block';
+
+          // Prepara IDs dos primeiros cards
+          const primeiroCardConfig = document.querySelector('.tour-card-config');
+          if (primeiroCardConfig) primeiroCardConfig.id = 'tour-primeiro-card';
+          
+          const primeiroCardAcoes = document.querySelector('.tour-card-acoes');
+          if (primeiroCardAcoes) primeiroCardAcoes.id = 'tour-primeiro-card-acoes';
+
+          const primeiroCardImg = document.querySelector('.tour-card-img');
+          if (primeiroCardImg) primeiroCardImg.id = 'tour-primeiro-card-img';
+
+          mostrarPassoTour(0);
+      }
+
+      window.mostrarPassoTour = function(stepIndex) {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+
+          const steps = [
+              { id: 'btn-tour-menu', title: 'Menu Lateral', content: 'Aceda aos outros módulos de gestão do Ecoflow por aqui.', placement: 'bottom' },
+              { id: 'btn-tour-view', title: 'Visualização', content: 'Alterne a sua preferência de visualização entre Grade (Cartões grandes) ou Lista (Compacto).', placement: 'bottom' },
+              { id: 'btn-tour-criar', title: 'Criar Workspace', content: 'Clique aqui para adicionar um novo Espaço de Trabalho e organizar os quadros Kanban.', placement: 'bottom' }
+          ];
+
+          if (document.getElementById('tour-primeiro-card-img')) {
+              steps.push({ id: 'tour-primeiro-card-img', title: 'Acessar o Kanban', content: 'Clique em qualquer parte da capa do cartão para entrar no Quadro Kanban e gerir as tarefas.', placement: 'top' });
+          }
+          if (document.getElementById('tour-primeiro-card')) {
+              steps.push({ id: 'tour-primeiro-card', title: 'Acessos e Visibilidade', content: 'Clique na engrenagem para definir que papéis ou colaboradores têm permissão para ver ou modificar este quadro.', placement: 'top' });
+          }
+          if (document.getElementById('tour-primeiro-card-acoes')) {
+              steps.push({ id: 'tour-primeiro-card-acoes', title: 'Editar ou Excluir', content: 'Utilize estes botões para renomear, mudar a foto de capa ou excluir completamente um Workspace.', placement: 'top' });
+          }
+
+          if (stepIndex >= steps.length) {
+              encerrarTour();
+              return;
+          }
+
+          const step = steps[stepIndex];
+          const el = document.getElementById(step.id);
+          
+          if (!el || window.getComputedStyle(el).display === 'none') {
+              mostrarPassoTour(stepIndex + 1);
+              return;
+          }
+
+          el.classList.add('tour-highlight');
+          const cardParent = el.closest('.card');
+          if (cardParent) cardParent.classList.add('tour-highlight-parent');
+
+          const isLast = stepIndex === steps.length - 1;
+          const navHtml = \`
+              <div class="d-flex justify-content-between mt-3 pt-2 border-top border-custom align-items-center">
+                  <span class="text-white-50 fw-bold" style="font-size: 0.7rem;">\${stepIndex + 1} de \${steps.length}</span>
+                  <div>
+                      <button class="btn btn-sm btn-outline-secondary py-0 px-2 text-white shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="encerrarTour()">Sair</button>
+                      <button class="btn btn-sm btn-primary py-0 px-2 fw-bold text-dark ms-1 shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="mostrarPassoTour(\${stepIndex + 1})">\${isLast ? 'Concluir' : 'Próximo'}</button>
+                  </div>
+              </div>
+          \`;
+
+          const popover = new bootstrap.Popover(el, {
+              title: '<i class="ph-fill ph-info text-accent me-2"></i>' + step.title,
+              content: '<div style="font-size: 0.75rem;" class="text-white-50">' + step.content + '</div>' + navHtml,
+              placement: step.placement,
+              trigger: 'manual',
+              html: true,
+              sanitize: false,
+              customClass: 'tour-popover shadow-lg'
+          });
+          
+          popover.show();
+          tourPopovers.push(popover);
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      window.encerrarTour = function() {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+          const backdrop = document.getElementById('tourBackdrop');
+          if (backdrop) backdrop.style.display = 'none';
+          
+          document.getElementById('btnAjudaTour').classList.remove('text-accent');
+          tourAtivo = false;
+      };
+
+      // =======================================================================
+      // ALTERNADOR DE VIEW (GRID / LISTA) E SKELETON
       // =======================================================================
       function toggleWorkspaceView(mode) {
-          // Atualiza o atributo global para o CSS agir
-          document.documentElement.setAttribute('data-workspace-view', mode);
-          // Salva no LocalStorage atrelado ao usuário
-          localStorage.setItem(VIEW_PREF_KEY, mode);
-          
-          // Mantém os botões visuais sincronizados
-          const btnList = document.getElementById('view_list');
-          const btnGrid = document.getElementById('view_grid');
-          if (mode === 'list' && btnList) btnList.checked = true;
-          if (mode === 'grid' && btnGrid) btnGrid.checked = true;
+          if (document.documentElement.getAttribute('data-workspace-view') === mode) return;
+          mostrarSkeletonGlobais(mode);
+          setTimeout(() => {
+              document.documentElement.setAttribute('data-workspace-view', mode);
+              localStorage.setItem(VIEW_PREF_KEY, mode);
+              ocultarSkeletonGlobais();
+          }, 350); 
       }
 
       window.addEventListener('DOMContentLoaded', () => {
-          // Sincroniza os botões de rádio com a view carregada inicialmente
           const currentView = document.documentElement.getAttribute('data-workspace-view') || 'grid';
           if (currentView === 'list') document.getElementById('view_list').checked = true;
           else document.getElementById('view_grid').checked = true;
       });
+
+      function getAppleSpinner(scale = 1) {
+          return \`<div class="apple-spinner" style="transform: scale(\${scale});">
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                  </div>\`;
+      }
+
+      function gerarSkeletonCards(quantidade = 4) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                <div class="card erp-card bg-custom-darker border-custom shadow-sm border-0 h-100 p-0 d-flex flex-column align-items-center justify-content-center" style="min-height: 250px;">
+                  \${getAppleSpinner(1.2)}
+                  <span class="text-white-50 mt-3" style="font-size: 0.75rem; font-weight: 500;">Carregando...</span>
+                </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function gerarSkeletonLista(quantidade = 4) {
+          let html = '';
+          for(let i=0; i<quantidade; i++) {
+              html += \`
+              <div class="card erp-card bg-custom-darker border-custom shadow-sm mb-2">
+                <div class="card-body p-2 px-3 d-flex align-items-center justify-content-center" style="min-height: 68px;">
+                  \${getAppleSpinner(0.8)}
+                </div>
+              </div>\`;
+          }
+          return html;
+      }
+
+      function mostrarSkeletonGlobais(forcedMode) {
+          const grid = document.getElementById('espacosGrid');
+          const list = document.getElementById('espacosList');
+          const targetMode = forcedMode || document.documentElement.getAttribute('data-workspace-view') || 'grid';
+          const emptyState = document.querySelector('.text-center-empty');
+          
+          if (emptyState) emptyState.style.display = 'none';
+
+          if (grid) {
+              if (!grid.hasAttribute('data-original-content')) grid.setAttribute('data-original-content', grid.innerHTML);
+              grid.innerHTML = gerarSkeletonCards(4);
+              grid.style.display = targetMode === 'grid' ? 'flex' : 'none';
+          }
+          
+          if (list) {
+              if (!list.hasAttribute('data-original-content')) list.setAttribute('data-original-content', list.innerHTML);
+              list.innerHTML = gerarSkeletonLista(4);
+              list.style.display = targetMode === 'list' ? 'flex' : 'none';
+          }
+      }
+
+      function ocultarSkeletonGlobais() {
+          const grid = document.getElementById('espacosGrid');
+          const list = document.getElementById('espacosList');
+          const emptyState = document.querySelector('.text-center-empty');
+
+          if (grid && grid.hasAttribute('data-original-content')) {
+              grid.innerHTML = grid.getAttribute('data-original-content');
+              grid.removeAttribute('data-original-content');
+          }
+          if (list && list.hasAttribute('data-original-content')) {
+              list.innerHTML = list.getAttribute('data-original-content');
+              list.removeAttribute('data-original-content');
+          }
+          if (emptyState) emptyState.style.display = 'block';
+
+          const savedView = document.documentElement.getAttribute('data-workspace-view') || 'grid';
+          
+          if (grid) grid.style.display = savedView === 'grid' ? 'flex' : 'none';
+          if (list) list.style.display = savedView === 'list' ? 'flex' : 'none';
+          
+          const btnList = document.getElementById('view_list');
+          const btnGrid = document.getElementById('view_grid');
+          if (savedView === 'list' && btnList) btnList.checked = true;
+          if (savedView === 'grid' && btnGrid) btnGrid.checked = true;
+      }
+
+      mostrarSkeletonGlobais();
+
+      if (document.readyState === 'complete') {
+          setTimeout(ocultarSkeletonGlobais, 100);
+      } else {
+          window.addEventListener('load', ocultarSkeletonGlobais);
+      }
 
       // =======================================================================
       // SALVAR PERMISSÕES DE ACESSO AO WORKSPACE
@@ -611,21 +892,18 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
               if(response.ok) {
                   mostrarToast('sucesso', 'Acesso Atualizado', 'A visibilidade do workspace foi alterada.');
                   
-                  // Atualização Dinâmica da Interface
                   if (!papel.startsWith('usr_')) {
-                      // Se o clique foi no Cargo, afeta todos os usuários do grupo visualmente
                       const userCheckboxes = document.querySelectorAll('.user-cb-' + espacoId + '-' + papel);
                       userCheckboxes.forEach(cb => {
                           if (isChecked) {
                               cb.checked = true;
-                              cb.disabled = true; // Herda o acesso total do cargo
+                              cb.disabled = true;
                           } else {
                               cb.disabled = false;
-                              cb.checked = cb.getAttribute('data-explicit') === 'true'; // Retorna pro acesso individual salvo
+                              cb.checked = cb.getAttribute('data-explicit') === 'true';
                           }
                       });
                   } else {
-                      // Se o clique foi num Usuário, salva o estado individual dele no atributo de dados
                       const cbList = document.querySelectorAll('input[id^="perm_' + espacoId + '_' + papel + '"]');
                       cbList.forEach(cb => {
                           cb.setAttribute('data-explicit', isChecked ? 'true' : 'false');
@@ -643,7 +921,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       }
 
       // =======================================================================
-      // FUNÇÃO GENÉRICA DE TOASTS
+      // FUNÇÃO GENÉRICA DE TOASTS E AUXILIARES
       // =======================================================================
       function mostrarToast(tipo, titulo, mensagem) {
           const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
@@ -671,9 +949,6 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           }
       }
 
-      // =======================================================================
-      // PREVIEW DE IMAGEM ANTES DO UPLOAD
-      // =======================================================================
       function previewImage(inputElement, imgId) {
           if (inputElement.files && inputElement.files[0]) {
               const reader = new FileReader();
@@ -684,9 +959,6 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           }
       }
 
-      // =======================================================================
-      // MODAL DE EXCLUSÃO GLOBAL
-      // =======================================================================
       function abrirModalExcluirEspaco(id, nome) {
           document.getElementById('nomeEspacoExcluir').innerText = nome;
           document.getElementById('formExcluirEspaco').action = '/espacos-trabalho/excluir/' + id;
@@ -698,84 +970,7 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
       }
 
       // =======================================================================
-      // SKELETON LOADING (DARK)
-      // =======================================================================
-      function gerarSkeletonCards(quantidade = 4) {
-          let html = '';
-          for(let i=0; i<quantidade; i++) {
-              html += \`
-              <div class="col-12 col-md-6 col-lg-4 col-xl-3">
-                <div class="card erp-card bg-custom-darker border-custom shadow-sm border-0 h-100 p-0">
-                  <div class="skeleton-dark skeleton-img-view"></div>
-                  <div class="card-body p-3 d-flex flex-column">
-                    <div class="skeleton-dark skeleton-text-view mb-2" style="width: 70%;"></div>
-                    <div class="skeleton-dark skeleton-text-view mb-3" style="width: 50%;"></div>
-                    <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
-                       <div class="skeleton-dark skeleton-text-view" style="width: 40%; margin: 0;"></div>
-                       <div class="d-flex gap-1">
-                           <div class="skeleton-dark skeleton-btn-view" style="width: 32px;"></div>
-                           <div class="skeleton-dark skeleton-btn-view" style="width: 32px;"></div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>\`;
-          }
-          return html;
-      }
-
-      function mostrarSkeletonGlobais() {
-          const viewsContainers = document.querySelectorAll('.view-container');
-          const emptyState = document.querySelector('.content > .text-center-empty');
-          
-          if (document.getElementById('skeleton-temp-container')) return;
-
-          const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="row g-3 skeleton-container">
-              \${gerarSkeletonCards(4)}
-          </div>\`;
-
-          viewsContainers.forEach(container => {
-              // Checa o estilo computado e ignora os escondidos
-              if(window.getComputedStyle(container).display !== 'none') {
-                  container.style.display = 'none';
-                  container.insertAdjacentHTML('beforebegin', skeletonHTML);
-              }
-          });
-          
-          if (emptyState) {
-              emptyState.style.display = 'none';
-              if(!document.getElementById('skeleton-temp-container')) emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
-          }
-      }
-
-      function ocultarSkeletonGlobais() {
-          const tempSkeleton = document.getElementById('skeleton-temp-container');
-          if (tempSkeleton) tempSkeleton.remove();
-
-          const emptyState = document.querySelector('.content > .text-center-empty');
-          if (emptyState) emptyState.style.display = 'block';
-
-          // A View ativa já será controlada e exibida pelo CSS data-workspace-view no html
-          // Apenas removemos o inline display: none injetado pelo skeleton
-          document.querySelectorAll('.view-container').forEach(container => {
-              container.style.display = '';
-          });
-          
-          const savedView = document.documentElement.getAttribute('data-workspace-view') || 'grid';
-          toggleWorkspaceView(savedView); // Sincroniza radios
-      }
-
-      mostrarSkeletonGlobais();
-
-      if (document.readyState === 'complete') {
-          setTimeout(ocultarSkeletonGlobais, 100);
-      } else {
-          window.addEventListener('load', ocultarSkeletonGlobais);
-      }
-
-      // =======================================================================
-      // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA (SUPORTA FOTOS)
+      // SUBMISSÃO AJAX SEM RECARREGAR A PÁGINA
       // =======================================================================
       let isSubmitting = false;
 
@@ -787,7 +982,6 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
           }
           if (isSubmitting) return;
 
-          // Ocultar modal atual com segurança
           const modalEl = formElement.closest('.modal');
           if (modalEl) {
               const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -814,15 +1008,13 @@ function espacosDeTrabalhoView(usuario, espacos = [], usuarios = []) {
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(html, 'text/html');
 
-                  // Atualizar o container visual principal
                   const oldContent = document.querySelector('.content');
                   const newContent = doc.querySelector('.content');
                   if (oldContent && newContent) {
                       oldContent.innerHTML = newContent.innerHTML;
                   }
 
-                  // Atualizar Modais Dinâmicos
-                  const staticModals = ['novoEspacoModal', 'modalExcluirEspaco', 'sidebarMenu'];
+                  const staticModals = ['novoEspacoModal', 'modalExcluirEspaco', 'sidebarMenu', 'modalInstrucoes'];
                   document.querySelectorAll('.modal').forEach(m => {
                       if (!staticModals.includes(m.id)) m.remove();
                   });

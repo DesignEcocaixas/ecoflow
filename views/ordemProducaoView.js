@@ -14,7 +14,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   const badgeStatus = status =>
     status === 'concluido'
-      ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50">Concluído</span>'
+      ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50"><i class="ph-bold ph-check me-1"></i>Concluído</span>'
       : '<span class="badge bg-custom-darker border-custom text-muted">Pendente</span>';
 
   // Lógica de Paginação Inteligente
@@ -106,7 +106,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   const jsonCalendario = JSON.stringify(ordensCalendario).replace(/</g, '\\u003c');
 
-
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -117,6 +116,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
   <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <style>
     /* Scrollbars Globais (Dark & Green) */
@@ -134,7 +134,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     /* Tema Escuro Customizado */
     .bg-custom-dark { background-color: #2a2a2a !important; }
     .bg-custom-darker { background-color: #222222 !important; }
-    .border-custom { border-color: rgba(255,255,255,0.08) !important; border-style: solid; border-width: 1px; }
+    .border-custom { border-color: rgba(255,255,255,0.08) !important; border-width: 1px; }
     .text-accent { color: #08c068 !important; }
 
     /* Modificadores Bootstrap */
@@ -223,25 +223,97 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
     .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-    /* SKELETON LOADING (MODO ESCURO) */
-    .skeleton-dark {
-        background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
-        background-size: 200% 100% !important;
-        animation: skeleton-loading-view 1.5s infinite linear !important;
-        border-radius: 4px;
-        color: transparent !important;
-        border-color: transparent !important;
-        box-shadow: none !important;
-        pointer-events: none;
+    /* APPLE STYLE SPINNER LOADER (DARK THEME) E OVERLAY INDIVIDUAL */
+    .apple-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        position: relative;
     }
-    .skeleton-dark * { visibility: hidden !important; }
-    .skeleton-text-view { height: 14px; width: 100%; margin-bottom: 8px; }
-    .skeleton-btn-view { height: 26px; width: 50px; border-radius: 4px; display: inline-block; }
-    .skeleton-img-view { height: 140px; width: 100%; }
-    @keyframes skeleton-loading-view {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+    .apple-spinner div {
+        transform-origin: 12px 12px;
+        animation: apple-spinner 1.2s linear infinite;
     }
+    .apple-spinner div:after {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 11px;
+        width: 2.5px;
+        height: 6px;
+        border-radius: 20%;
+        background: #08c068;
+    }
+    .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+    .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+    .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+    .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+    .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+    .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+    .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+    .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+    .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+    .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+    .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+    .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+    
+    @keyframes apple-spinner {
+        0% { opacity: 1; }
+        100% { opacity: 0.15; }
+    }
+
+    .local-spinner-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #222222; /* Fundo totalmente sólido e opaco */
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: inherit;
+        opacity: 0;
+        animation: fadeInOverlay 0.2s forwards;
+    }
+    @keyframes fadeInOverlay { to { opacity: 1; } }
+
+    /* TOUR POPOVER STYLES */
+    .tour-popover {
+        border: 1px solid #08c068 !important;
+        --bs-popover-bg: #2a2a2a;
+        --bs-popover-header-bg: #222;
+        --bs-popover-header-color: #fff;
+        --bs-popover-body-color: rgba(255,255,255,0.8);
+        z-index: 1070 !important;
+    }
+    .tour-popover .popover-header { font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .tour-popover .popover-arrow::after { border-bottom-color: #222 !important; border-top-color: #2a2a2a !important; }
+
+    .tour-highlight {
+        position: relative !important;
+        z-index: 1060 !important;
+        pointer-events: none !important;
+        box-shadow: 0 0 15px rgba(8, 192, 104, 0.4), 0 0 0 2px #08c068 !important;
+        border-radius: inherit;
+    }
+    .tour-highlight-parent {
+        position: relative !important;
+        z-index: 1056 !important;
+    }
+
+    /* Botão de ajuda inline no cabeçalho */
+    .btn-ajuda-inline {
+        background-color: transparent;
+        color: rgba(255,255,255,0.4);
+        border: none;
+        padding: 0 5px;
+        margin-left: 8px;
+        font-size: 1.1rem;
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-ajuda-inline:hover { color: #08c068; }
+    .btn-ajuda-inline:active { transform: scale(0.9); }
 
     /* Divisória apenas no desktop */
     @media (min-width: 992px) {
@@ -260,32 +332,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     .scroll-calendar-cell::-webkit-scrollbar { width: 3px; }
     .scroll-calendar-cell::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     .scroll-calendar-cell:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); }
-
-    /* Botão Flutuante de Ajuda */
-    .btn-flutuante {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      background-color: #08c068;
-      color: #1f1f1f;
-      border: none;
-      box-shadow: 0 4px 15px rgba(8, 192, 104, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      z-index: 1050;
-      transition: all 0.3s ease;
-    }
-    .btn-flutuante:hover {
-      transform: scale(1.1);
-      background-color: #06a055;
-      color: #1f1f1f;
-      box-shadow: 0 6px 20px rgba(8, 192, 104, 0.5);
-    }
     
     @media (max-width: 767.98px) {
       body { flex-direction: column; }
@@ -304,7 +350,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu">
     <div class="offcanvas-header border-bottom border-custom">
-      <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+      <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="ph-bold ph-list text-muted me-2"></i> Menu</h5>
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
@@ -315,24 +361,29 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
   <div class="content">
     <div class="d-flex align-items-center gap-3 mb-4">
-      <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
+      <button class="btn btn-sm btn-outline-secondary border-custom d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" id="btn-tour-menu"><i class="ph-bold ph-list text-white"></i></button>
       <div>
-          <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-industry text-muted me-2"></i>Ordens de Produção</h5>
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 fw-bold text-white"><i class="ph-fill ph-factory text-muted me-2"></i>Ordens de Produção</h5>
+            <button type="button" class="btn-ajuda-inline" id="btnAjudaTour" onclick="toggleTourMode()" title="Como funciona esta tela?">
+                <i class="ph-fill ph-question"></i>
+            </button>
+        </div>
       </div>
     </div>
 
     <div class="bg-custom-darker p-4 rounded-3 shadow-sm mb-4 border border-custom">
       <div class="row g-4 align-items-center">
         
-        <div class="col-lg-6 border-lg-end-custom pe-lg-4">
-          <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-file-excel me-1"></i> IMPORTAR PLANILHA EXCEL</h6>
+        <div class="col-lg-6 border-lg-end-custom pe-lg-4 position-relative" id="tour-importar">
+          <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="ph-fill ph-file-csv me-1"></i> IMPORTAR PLANILHA EXCEL</h6>
           <form action="/importar" method="POST" enctype="multipart/form-data" class="row g-2 align-items-end" id="formImportacao">
             <div class="col-12 col-xl-8">
               <input type="file" name="planilha" accept=".xlsx,.xls" class="form-control form-control-sm shadow-sm" required>
             </div>
             <div class="col-12 col-xl-4 d-flex gap-2">
               <button type="submit" class="btn btn-sm btn-primary flex-grow-1 shadow-sm fw-bold">Gerar</button>
-              <button type="button" class="btn btn-sm btn-outline-danger shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalLimpar" title="Limpar Tudo"><i class="fa-solid fa-trash-can"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-danger shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalLimpar" title="Limpar Tudo"><i class="ph-bold ph-trash"></i></button>
             </div>
           </form>
         </div>
@@ -340,34 +391,34 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         <div class="col-lg-6 ps-lg-4">
           
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="text-muted fw-bold mb-0" style="font-size: 0.75rem;"><i class="fa-solid fa-bars-progress me-1"></i> ACOMPANHAMENTO DA PRODUÇÃO</h6>
-            <button type="button" class="btn btn-sm btn-outline-info shadow-sm fw-bold px-2 py-1" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalCalendario">
-              <i class="fa-regular fa-calendar-days me-1"></i> Calendário
+            <h6 class="text-muted fw-bold mb-0" style="font-size: 0.75rem;"><i class="ph-fill ph-chart-bar me-1"></i> ACOMPANHAMENTO DA PRODUÇÃO</h6>
+            <button type="button" id="tour-calendario" class="btn btn-sm btn-outline-info shadow-sm fw-bold px-2 py-1" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalCalendario">
+              <i class="ph-bold ph-calendar-blank me-1"></i> Calendário
             </button>
           </div>
           
           <div class="row g-3">
             <div class="col-sm-6">
-              <button class="btn btn-outline-primary w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
+              <button id="btn-rotativa" class="btn btn-outline-primary w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
                       data-bs-toggle="modal"
                       data-bs-target="#modalRotativa"
-                      style="font-size: 0.85rem;"
+                      style="font-size: 0.85rem; overflow: hidden;"
                       onclick="marcarVisualizado('rotativa', this)">
                 <div class="d-flex align-items-center text-white">
-                  <i class="fa-solid fa-gear text-primary me-2"></i> Rotativa / Plana
+                  <i class="ph-fill ph-gear text-primary me-2"></i> Rotativa / Plana
                   <span class="badge ${rotativaNovas > 0 ? 'bg-danger' : 'bg-primary'} ms-2">${rotativa.length}</span>
                 </div>
               </button>
             </div>
 
             <div class="col-sm-6">
-              <button class="btn btn-outline-success w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
+              <button id="btn-flexo" class="btn btn-outline-success w-100 py-3 position-relative fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center"
                       data-bs-toggle="modal"
                       data-bs-target="#modalFlexo"
-                      style="font-size: 0.85rem;"
+                      style="font-size: 0.85rem; overflow: hidden;"
                       onclick="marcarVisualizado('flexografica', this)">
                 <div class="d-flex align-items-center text-white">
-                  <i class="fa-solid fa-layer-group text-accent me-2"></i> Flexográfica
+                  <i class="ph-fill ph-stack text-accent me-2"></i> Flexográfica
                   <span class="badge ${flexoNovas > 0 ? 'bg-danger' : 'bg-success'} text-dark ms-2">${flexo.length}</span>
                 </div>
               </button>
@@ -379,10 +430,10 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       </div>
     </div>
 
-    <div class="bg-custom-darker p-4 rounded-3 shadow-sm border border-custom">
-      <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-clock-rotate-left me-2"></i>HISTÓRICO DE IMPORTAÇÕES GERADAS</h6>
+    <div class="bg-custom-darker p-4 rounded-3 shadow-sm border border-custom position-relative">
+      <h6 class="text-muted fw-bold mb-3 d-inline-block" id="tour-historico" style="font-size: 0.75rem;"><i class="ph-bold ph-clock me-2"></i>HISTÓRICO DE IMPORTAÇÕES GERADAS</h6>
       
-      <div class="table-responsive bg-custom-darker border-custom rounded shadow-sm">
+      <div class="table-responsive bg-custom-darker border-custom rounded shadow-sm position-relative" id="tabelaContainer">
         <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.8rem;">
           <thead class="table-light">
             <tr>
@@ -392,12 +443,12 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
             </tr>
           </thead>
           <tbody class="border-top-0">
-            ${historico.length === 0 ? '<tr><td colspan="3" class="text-center text-muted py-5"><i class="fa-solid fa-inbox fa-2x d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhum histórico encontrado.</span></td></tr>' : historico.map(h => `
+            ${historico.length === 0 ? '<tr><td colspan="3" class="text-center text-muted py-5"><i class="ph-bold ph-download-simple fs-1 d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhum histórico encontrado.</span></td></tr>' : historico.map(h => `
               <tr class="table-hover-row" onclick="window.open('/exportar/historico?lote=${h.lote_id}', '_blank')" title="Clique para baixar esta geração específica">
-                <td class="fw-bold text-white py-2 px-3"><i class="fa-regular fa-clock text-muted me-2"></i> ${h.data_formatada}</td>
+                <td class="fw-bold text-white py-2 px-3"><i class="ph-bold ph-clock text-muted me-2"></i> ${h.data_formatada}</td>
                 <td class="text-center text-muted py-2 px-3">${h.total_pedidos} registros nesta geração</td>
                 <td class="text-end py-2 px-3">
-                    <button class="btn btn-sm btn-outline-secondary border-custom text-accent fw-bold shadow-sm py-1 px-2" style="font-size: 0.75rem;"><i class="fa-solid fa-download me-1"></i> Histórico</button>
+                    <button class="btn btn-sm btn-outline-secondary border-custom text-accent fw-bold shadow-sm py-1 px-2" style="font-size: 0.75rem;"><i class="ph-bold ph-download-simple me-1"></i> Histórico</button>
                 </td>
               </tr>
             `).join('')}
@@ -413,7 +464,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
               <div>
-                  <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                  <i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i>
                   <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
               </div>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -427,7 +478,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
               <div>
-                  <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                  <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                   <strong class="fs-6" id="erroTitulo">Erro!</strong>
               </div>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -443,7 +494,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
         <div class="modal-header bg-custom-darker border-custom shadow-sm">
-          <h6 class="modal-title fw-bold text-white"><i class="fa-regular fa-calendar-days text-info me-2"></i> Calendário de Produção e Faturamento</h6>
+          <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-calendar-check text-info me-2"></i> Calendário de Produção e Faturamento</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3 p-md-4 bg-custom-dark">
@@ -462,8 +513,8 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
             <h5 class="mb-0 text-white fw-bold d-md-none w-100 text-center order-first" id="mesAnoCalendarioMobile" style="text-transform: capitalize;">Mês Ano</h5>
             
             <div class="d-flex gap-1 ms-auto ms-md-0">
-                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(-1)"><i class="ph-bold ph-caret-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary text-white border-custom shadow-sm px-3" onclick="mudarMesCalendario(1)"><i class="ph-bold ph-caret-right"></i></button>
             </div>
           </div>
           
@@ -493,17 +544,17 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
           <div class="modal-header bg-custom-darker border-custom shadow-sm">
-            <h6 class="modal-title fw-bold text-white"><i class="fa-regular fa-calendar-check text-accent me-2"></i> Pedidos do Dia: <span id="tituloModalDia"></span></h6>
+            <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-calendar-check text-accent me-2"></i> Pedidos do Dia: <span id="tituloModalDia"></span></h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark text-sm">
              <div class="row g-4">
                  <div class="col-md-6 border-md-end pe-md-3">
-                     <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-gear me-1"></i> Rotativa / Plana</h6>
+                     <h6 class="fw-bold text-primary mb-3"><i class="ph-fill ph-gear me-1"></i> Rotativa / Plana</h6>
                      <div id="listaDiaRotativa" class="d-flex flex-column gap-2"></div>
                  </div>
                  <div class="col-md-6 ps-md-3 mt-4 mt-md-0">
-                     <h6 class="fw-bold text-success mb-3 mt-4"><i class="fa-solid fa-layer-group me-1"></i> Flexográfica</h6>
+                     <h6 class="fw-bold text-success mb-3 mt-4"><i class="ph-fill ph-stack me-1"></i> Flexográfica</h6>
                      <div id="listaDiaFlexo" class="d-flex flex-column gap-2"></div>
                  </div>
              </div>
@@ -515,53 +566,157 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       </div>
   </div>
 
-  <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
-    <i class="fa-solid fa-question"></i>
-  </button>
-
-  <div class="modal fade" id="modalInstrucoes" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content erp-modal shadow-lg border-0">
-        <div class="modal-header bg-custom-darker text-white border-0">
-          <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Como usar este módulo</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <div class="modal fade" id="modalLimpar" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-body text-center p-4 bg-custom-darker">
+          <i class="ph-bold ph-trash fa-3x text-danger mb-3" style="font-size: 3rem;"></i>
+          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Limpar tudo?</h6>
+          <p class="text-muted mb-4" style="font-size: 0.75rem;">Esta ação arquivará as ordens atuais e limpará o painel. Continuar?</p>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Não</button>
+            <form action="/limpar" method="POST" class="w-100 m-0"><button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Sim, Limpar</button></form>
+          </div>
         </div>
-        <div class="modal-body p-4 text-muted bg-custom-dark" style="font-size: 0.8rem;">
-          <p class="mb-4">Bem-vindo ao módulo de <strong>Ordens de Produção</strong>. Siga os passos abaixo para o funcionamento correto do sistema:</p>
-          
-          <ul class="list-group list-group-flush mb-4">
-            <li class="list-group-item bg-transparent px-0 border-custom pb-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 1. Importar Planilha</strong>
-              Selecione o seu ficheiro Excel (.xlsx) de ordens e clique em "Gerar Ordens". O sistema vai analisar e separar tudo automaticamente em "Rotativa / Plana" e "Flexográfica". <em class="text-muted">Nota: Importar uma nova planilha arquiva automaticamente a anterior no Histórico.</em>
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-bars-progress text-primary me-2"></i> 2. Acompanhamento & Status</strong>
-              Abra os painéis (Rotativa ou Flexográfica). Pode clicar diretamente em qualquer cartão para alterar o estado do pedido entre <span class="badge bg-custom-darker border border-custom text-muted">Pendente</span> e <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50">Concluído</span>.
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-regular fa-calendar-days text-info me-2"></i> 3. Calendário de Agendamentos</strong>
-              Utilize o botão "Calendário" para verificar visualmente todas as previsões de faturamento agrupadas por dia com blocos coloridos para cada cliente. Um clique sobre a célula mostra a lista detalhada.
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-share-nodes text-info me-2"></i> 4. Integração Workspaces</strong>
-              Dentro dos painéis, clique em "Enviar p/ Workspaces" para exportar as ordens selecionadas diretamente para a coluna do Workspace Produção (Corte ou Pintura).
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom py-3">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-download text-muted me-2"></i> 5. Exportar Planilhas</strong>
-              Dentro dos modais de produção, o botão "Baixar relatório" faz o download do que está visível naquele exato momento.
-            </li>
-            <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0">
-              <strong class="text-white d-block mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> 6. Limpar Tudo</strong>
-              Remove as ordens atuais do ecrã e transfere-as para o painel de Histórico, deixando o sistema em branco para o próximo turno/semana.
-            </li>
-          </ul>
+      </div>
+    </div>
+  </div>
 
-          <div class="alert bg-custom-darker border-custom text-muted shadow-sm mb-0">
-            <i class="fa-solid fa-lightbulb text-warning me-2"></i> <strong>Dica de Pesquisa:</strong> Utilize as barras de pesquisa dentro dos modais para filtrar instantaneamente por Cliente, Vendedor, Modelo ou Status (digite "concluído").
+  <div class="modal fade" id="modalProcessamento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-body p-4 text-center bg-custom-darker">
+          <i class="ph-bold ph-gear ph-spin text-accent mb-3" style="font-size: 3rem;"></i>
+          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Processando Planilha</h6>
+          <p id="textoEtapa" class="text-muted mb-4" style="font-size: 0.75rem;">Iniciando leitura dos dados...</p>
+          <div class="progress shadow-sm" style="height: 10px;">
+            <div id="barraProgresso" class="progress-bar progress-bar-striped progress-bar-animated text-dark" style="width: 0%; font-size: 0.6rem;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSugestaoDownload" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
+        <div class="modal-header bg-custom-darker border-custom shadow-sm">
+          <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-check-circle text-success me-2"></i> Importação Concluída</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body p-4 bg-custom-dark">
+          <div class="d-flex align-items-center mb-4">
+             <div class="d-flex align-items-center justify-content-center bg-custom-darker rounded-circle shadow-sm border border-custom me-3" style="width: 60px; height: 60px;">
+                 <i class="ph-fill ph-file-csv fs-1 text-accent"></i>
+             </div>
+             <div>
+                 <h6 class="fw-bold text-white mb-1" style="font-size: 0.95rem;">Ordens Geradas com Sucesso</h6>
+                 <p class="text-muted mb-0" style="font-size:0.8rem;">A planilha foi processada e as ordens separadas. O que deseja fazer a seguir?</p>
+             </div>
+          </div>
+
+          <div class="row g-4">
+             <div class="col-md-6">
+                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
+                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="ph-bold ph-download-simple me-1"></i> EXPORTAR PLANILHAS</h6>
+                     <div class="d-flex flex-column gap-2">
+                         <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('rotativa');">
+                             <i class="ph-fill ph-gear me-2"></i> Baixar Rotativa / Plana
+                         </button>
+                         <button type="button" class="btn btn-sm btn-success fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('flexo');">
+                             <i class="ph-fill ph-stack me-2"></i> Baixar Flexográfica
+                         </button>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="col-md-6">
+                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
+                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="ph-bold ph-share-network me-1"></i> INTEGRAÇÃO WORKSPACE</h6>
+                     <div class="d-flex flex-column gap-2">
+                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalRotativa');">
+                             <i class="ph-bold ph-kanban me-2"></i> Gerar Cards Rotativa (Corte)
+                         </button>
+                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalFlexo');">
+                             <i class="ph-bold ph-kanban me-2"></i> Gerar Cards Flexo (Pintura)
+                         </button>
+                     </div>
+                 </div>
+             </div>
           </div>
         </div>
         <div class="modal-footer border-0 bg-custom-darker">
-          <button type="button" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Entendi</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white fw-bold px-4" data-bs-dismiss="modal">
+               Fechar
+           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOVO MODAL: CONFIGURAÇÃO DO EXCEL E KANBAN -->
+  <div class="modal fade" id="modalConfigExportacao" tabindex="-1" style="z-index: 2065;" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+          <form id="formExportacaoExcel" method="GET" action="" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarOrdemColunas(event)">
+              <div class="modal-header bg-custom-darker border-custom shadow-sm">
+                  <h6 class="modal-title fw-bold text-white"><i class="ph-bold ph-file-xls text-success me-2"></i> Gerar Relatório Excel</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4 bg-custom-dark">
+                  
+                  <div class="mb-4">
+                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-bold ph-list me-1"></i> Agrupar e Ordenar linhas por:</label>
+                      <select name="agrupamento" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm">
+                          <option value="cliente" selected>Cliente (Padrão)</option>
+                          <option value="data">Data de Faturamento</option>
+                          <option value="modelo">Modelo</option>
+                          <option value="tamanho">Tamanho</option>
+                      </select>
+                      <small class="text-muted mt-2 d-block" style="font-size: 0.65rem;">O sistema irá criar automaticamente uma linha em branco para separar cada grupo no Excel.</small>
+                  </div>
+                  
+                  <hr class="border-custom mb-3 mt-3">
+
+                  <div>
+                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="ph-bold ph-arrows-down-up me-1"></i> Ordem das Colunas na Planilha:</label>
+                      <input type="hidden" name="colunas" id="hiddenColunasExport">
+                      <div id="sortableColunasExport" class="d-flex flex-wrap gap-2">
+                          <!-- Preenchido via JS -->
+                      </div>
+                      <small class="text-muted mt-3 d-block" style="font-size: 0.65rem;">Arraste os blocos acima para definir a ordem (da esquerda para a direita) que as colunas aparecerão na planilha.</small>
+                  </div>
+
+              </div>
+              <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="ph-bold ph-download-simple me-1"></i> Gerar Relatório</button>
+              </div>
+          </form>
+      </div>
+  </div>
+
+  <div class="modal fade" id="modalConfirmarKanban" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content erp-modal border-0 shadow-lg">
+        <div class="modal-body text-center p-4 bg-custom-darker">
+          <i class="ph-bold ph-share-network fa-3x text-info mb-3" style="font-size: 3rem;"></i>
+          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Integrar com Kanban?</h6>
+          <p id="textoConfirmacaoKanban" class="text-muted mb-3" style="font-size: 0.75rem;">Deseja processar e enviar as ordens?</p>
+          
+          <div class="mb-4 text-start">
+              <label class="form-label text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Agrupar cartões por:</label>
+              <select id="selectAgrupamentoKanban" class="form-select form-select-sm bg-custom-dark border-custom text-white shadow-sm">
+                  <option value="cliente" selected>Cliente</option>
+                  <option value="data">Data de Previsão</option>
+                  <option value="modelo">Modelo</option>
+                  <option value="tamanho">Tamanho</option>
+              </select>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-50 text-white" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-info w-50 fw-bold text-white" onclick="executarEnvioKanban()">Sim, Enviar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -571,29 +726,29 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
       <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
         <div class="modal-header bg-custom-darker border-custom shadow-sm" style="z-index: 10;">
-          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-gear text-primary me-2"></i> Produção Rotativa / Plana</h6>
+          <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-gear text-primary me-2"></i> Produção Rotativa / Plana</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3 p-md-4 bg-custom-dark">
           
           <div class="d-flex flex-column flex-sm-row gap-2 mb-4">
             <div class="input-group input-group-sm flex-fill shadow-sm">
-              <span class="input-group-text border-custom border-end-0 bg-custom-darker"><i class="fa-solid fa-search text-muted"></i></span>
+              <span class="input-group-text border-custom border-end-0 bg-custom-darker"><i class="ph-bold ph-magnifying-glass text-muted"></i></span>
               <input type="text" class="form-control border-custom border-start-0 border-end-0 bg-custom-darker text-white" placeholder="Buscar por cliente, vendedor, modelo..." oninput="filtrarCards(this, 'rotativa')" id="buscaRotativa">
-              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('rotativa')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
+              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('rotativa')" title="Limpar busca"><i class="ph-bold ph-x"></i></button>
             </div>
             
             <button class="btn btn-sm btn-info fw-bold text-nowrap shadow-sm text-white d-flex align-items-center" onclick="prepararEnvioKanban('modalRotativa')" title="Enviar para a coluna Corte no Kanban">
-              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Workspace
+              <i class="ph-bold ph-share-network me-1"></i> Enviar p/ Workspace
             </button>
             
             <button type="button" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center" onclick="abrirConfigExportacao('rotativa')">
-              <i class="fa-solid fa-file-excel me-1"></i> Baixar relatório
+              <i class="ph-bold ph-download-simple me-1"></i> Baixar relatório
             </button>
           </div>
 
           <div style="padding-right: 5px;">
-            ${rotativa.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : rotativa.map(r => `
+            ${rotativa.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="ph-fill ph-tray fs-1 d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : rotativa.map(r => `
               <div class="card erp-card shadow-sm mb-2 ${r.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
                    data-id="${r.id}"
                    onclick="alterarStatus('rotativa', ${r.id}, this)"
@@ -623,29 +778,29 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
       <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
         <div class="modal-header bg-custom-darker border-custom shadow-sm" style="z-index: 10;">
-          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-layer-group text-accent me-2"></i> Produção Flexográfica</h6>
+          <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-stack text-accent me-2"></i> Produção Flexográfica</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3 p-md-4 bg-custom-dark">
           
           <div class="d-flex flex-column flex-sm-row gap-2 mb-4">
             <div class="input-group input-group-sm flex-fill shadow-sm">
-              <span class="input-group-text border-custom border-end-0 bg-custom-darker"><i class="fa-solid fa-search text-muted"></i></span>
+              <span class="input-group-text border-custom border-end-0 bg-custom-darker"><i class="ph-bold ph-magnifying-glass text-muted"></i></span>
               <input type="text" class="form-control border-custom border-start-0 border-end-0 bg-custom-darker text-white" placeholder="Buscar por cliente, modelo, cor..." oninput="filtrarCards(this, 'flexo')" id="buscaFlexo">
-              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('flexo')" title="Limpar busca"><i class="fa-solid fa-xmark"></i></button>
+              <button class="btn btn-outline-secondary border-custom bg-custom-darker text-danger" type="button" onclick="limparBusca('flexo')" title="Limpar busca"><i class="ph-bold ph-x"></i></button>
             </div>
             
             <button class="btn btn-sm btn-info fw-bold text-nowrap shadow-sm text-white d-flex align-items-center" onclick="prepararEnvioKanban('modalFlexo')" title="Enviar para a coluna Pintura no Kanban">
-              <i class="fa-solid fa-share-nodes me-1"></i> Enviar p/ Kanban
+              <i class="ph-bold ph-share-network me-1"></i> Enviar p/ Kanban
             </button>
             
             <button type="button" class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm text-dark d-flex align-items-center" onclick="abrirConfigExportacao('flexo')">
-              <i class="fa-solid fa-file-excel me-1"></i> Baixar Todas
+              <i class="ph-bold ph-download-simple me-1"></i> Baixar Todas
             </button>
           </div>
 
           <div style="padding-right: 5px;">
-            ${flexo.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="fa-solid fa-inbox fa-2x d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : flexo.map(f => `
+            ${flexo.length === 0 ? '<div class="text-center py-5 text-muted small"><i class="ph-fill ph-tray fs-1 d-block mb-3 opacity-25"></i><span style="font-size:0.8rem;">Nenhuma ordem carregada</span></div>' : flexo.map(f => `
               <div class="card erp-card shadow-sm mb-2 ${f.status_producao === 'concluido' ? 'card-concluido' : 'card-pendente'}" 
                    data-id="${f.id}"
                    onclick="alterarStatus('flexografica', ${f.id}, this)"
@@ -671,166 +826,118 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     </div>
   </div>
 
-  <div class="modal fade" id="modalLimpar" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-body text-center p-4 bg-custom-darker">
-          <i class="fa-solid fa-trash-can fa-3x text-danger mb-3"></i>
-          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Limpar tudo?</h6>
-          <p class="text-muted mb-4" style="font-size: 0.75rem;">Esta ação arquivará as ordens atuais e limpará o painel. Continuar?</p>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Não</button>
-            <form action="/limpar" method="POST" class="w-100 m-0"><button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Sim, Limpar</button></form>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="modalProcessamento" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-body p-4 text-center bg-custom-darker">
-          <i class="fa-solid fa-gear fa-spin fa-3x text-accent mb-3"></i>
-          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Processando Planilha</h6>
-          <p id="textoEtapa" class="text-muted mb-4" style="font-size: 0.75rem;">Iniciando leitura dos dados...</p>
-          <div class="progress shadow-sm" style="height: 10px;">
-            <div id="barraProgresso" class="progress-bar progress-bar-striped progress-bar-animated text-dark" style="width: 0%; font-size: 0.6rem;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="modalSugestaoDownload" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
-        <div class="modal-header bg-custom-darker border-custom shadow-sm">
-          <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-circle-check text-success me-2"></i> Importação Concluída</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body p-4 bg-custom-dark">
-          <div class="d-flex align-items-center mb-4">
-             <div class="d-flex align-items-center justify-content-center bg-custom-darker rounded-circle shadow-sm border border-custom me-3" style="width: 60px; height: 60px;">
-                 <i class="fa-solid fa-file-excel fa-2x text-accent"></i>
-             </div>
-             <div>
-                 <h6 class="fw-bold text-white mb-1" style="font-size: 0.95rem;">Ordens Geradas com Sucesso</h6>
-                 <p class="text-muted mb-0" style="font-size:0.8rem;">A planilha foi processada e as ordens separadas. O que deseja fazer a seguir?</p>
-             </div>
-          </div>
-
-          <div class="row g-4">
-             <div class="col-md-6">
-                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
-                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-download me-1"></i> EXPORTAR PLANILHAS</h6>
-                     <div class="d-flex flex-column gap-2">
-                         <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('rotativa');">
-                             <i class="fa-solid fa-gear me-2"></i> Baixar Rotativa / Plana
-                         </button>
-                         <button type="button" class="btn btn-sm btn-success fw-bold shadow-sm text-dark text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); abrirConfigExportacao('flexo');">
-                             <i class="fa-solid fa-layer-group me-2"></i> Baixar Flexográfica
-                         </button>
-                     </div>
-                 </div>
-             </div>
-
-             <div class="col-md-6">
-                 <div class="p-3 bg-custom-darker border border-custom rounded h-100">
-                     <h6 class="text-muted fw-bold mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-share-nodes me-1"></i> INTEGRAÇÃO WORKSPACE</h6>
-                     <div class="d-flex flex-column gap-2">
-                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalRotativa');">
-                             <i class="fa-solid fa-table-columns me-2"></i> Gerar Cards Rotativa (Corte)
-                         </button>
-                         <button type="button" class="btn btn-sm btn-outline-info fw-bold shadow-sm text-white text-start" onclick="bootstrap.Modal.getInstance(document.getElementById('modalSugestaoDownload')).hide(); prepararEnvioKanban('modalFlexo');">
-                             <i class="fa-solid fa-table-columns me-2"></i> Gerar Cards Flexo (Pintura)
-                         </button>
-                     </div>
-                 </div>
-             </div>
-          </div>
-        </div>
-        <div class="modal-footer border-0 bg-custom-darker">
-          <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-white fw-bold px-4" data-bs-dismiss="modal">
-               Fechar
-           </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- NOVO MODAL: CONFIGURAÇÃO DO EXCEL E KANBAN -->
-  <div class="modal fade" id="modalConfigExportacao" tabindex="-1" style="z-index: 2065;" data-bs-backdrop="static">
-      <div class="modal-dialog modal-dialog-centered">
-          <form id="formExportacaoExcel" method="GET" action="" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="salvarOrdemColunas(event)">
-              <div class="modal-header bg-custom-darker border-custom shadow-sm">
-                  <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-file-excel text-success me-2"></i> Gerar Relatório Excel</h6>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body p-4 bg-custom-dark">
-                  
-                  <div class="mb-4">
-                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-layer-group me-1"></i> Agrupar e Ordenar linhas por:</label>
-                      <select name="agrupamento" class="form-select form-select-sm bg-custom-darker border-custom text-white shadow-sm">
-                          <option value="cliente" selected>Cliente (Padrão)</option>
-                          <option value="data">Data de Faturamento</option>
-                          <option value="modelo">Modelo</option>
-                          <option value="tamanho">Tamanho</option>
-                      </select>
-                      <small class="text-muted mt-2 d-block" style="font-size: 0.65rem;">O sistema irá criar automaticamente uma linha em branco para separar cada grupo no Excel.</small>
-                  </div>
-                  
-                  <hr class="border-custom mb-3 mt-3">
-
-                  <div>
-                      <label class="form-label text-white-50 fw-bold mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-arrows-up-down me-1"></i> Ordem das Colunas na Planilha:</label>
-                      <input type="hidden" name="colunas" id="hiddenColunasExport">
-                      <div id="sortableColunasExport" class="d-flex flex-wrap gap-2">
-                          <!-- Preenchido via JS -->
-                      </div>
-                      <small class="text-muted mt-3 d-block" style="font-size: 0.65rem;">Arraste os blocos acima para definir a ordem (da esquerda para a direita) que as colunas aparecerão na planilha.</small>
-                  </div>
-
-              </div>
-              <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
-                  <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="submit" class="btn btn-sm btn-success fw-bold text-dark w-100 shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar Relatório</button>
-              </div>
-          </form>
-      </div>
-  </div>
-
-  <div class="modal fade" id="modalConfirmarKanban" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content erp-modal border-0 shadow-lg">
-        <div class="modal-body text-center p-4 bg-custom-darker">
-          <i class="fa-solid fa-share-nodes fa-3x text-info mb-3"></i>
-          <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Integrar com Kanban?</h6>
-          <p id="textoConfirmacaoKanban" class="text-muted mb-3" style="font-size: 0.75rem;">Deseja processar e enviar as ordens?</p>
-          
-          <div class="mb-4 text-start">
-              <label class="form-label text-white-50 fw-bold mb-1" style="font-size: 0.7rem;">Agrupar cartões por:</label>
-              <select id="selectAgrupamentoKanban" class="form-select form-select-sm bg-custom-dark border-custom text-white shadow-sm">
-                  <option value="cliente" selected>Cliente</option>
-                  <option value="data">Data de Previsão</option>
-                  <option value="modelo">Modelo</option>
-                  <option value="tamanho">Tamanho</option>
-              </select>
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary w-50 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-sm btn-info w-50 fw-bold text-white" onclick="executarEnvioKanban()">Sim, Enviar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   ${termosHTML}
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // =======================================================================
+    // TOUR DE BOOTSTRAP POPOVERS (ONBOARDING)
+    // =======================================================================
+    let tourPopovers = [];
+    let tourAtivo = false;
+
+    window.toggleTourMode = function() {
+        if (tourAtivo) {
+            encerrarTour();
+            return;
+        }
+        iniciarTour();
+    };
+
+    function iniciarTour() {
+        tourAtivo = true;
+        document.getElementById('btnAjudaTour').classList.add('text-accent');
+        
+        let backdrop = document.getElementById('tourBackdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.id = 'tourBackdrop';
+            backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); z-index: 1055; transition: opacity 0.3s;';
+            document.body.appendChild(backdrop);
+        }
+        backdrop.style.display = 'block';
+
+        mostrarPassoTour(0);
+    }
+
+    window.mostrarPassoTour = function(stepIndex) {
+        if (tourPopovers.length > 0) {
+            tourPopovers.forEach(p => p.dispose());
+            tourPopovers = [];
+        }
+        
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+        document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+
+        const steps = [
+            { id: 'btn-tour-menu', title: 'Menu Lateral', content: 'Aceda aos outros módulos do sistema.', placement: 'bottom' },
+            { id: 'tour-importar', title: '1. Importar Planilha', content: 'Selecione a sua planilha Excel de ordens e clique em "Gerar". O sistema irá analisar e separar tudo automaticamente em "Rotativa" e "Flexo".', placement: 'bottom' },
+            { id: 'btn-rotativa', title: '2. Produção Rotativa', content: 'Painel dedicado às ordens da Rotativa e Plana. Pode alterar os estados ou enviar as ordens para o Workspace.', placement: 'bottom' },
+            { id: 'btn-flexo', title: '3. Produção Flexográfica', content: 'Painel para as ordens Flexográficas. Pode alterar estados e integrar com o Workspace de Pintura.', placement: 'bottom' },
+            { id: 'tour-calendario', title: '4. Calendário de Agendamentos', content: 'Verifique visualmente todas as previsões de faturamento agrupadas por dia com blocos coloridos.', placement: 'bottom' },
+            { id: 'tour-historico', title: '5. Histórico', content: 'Consulte ou baixe as planilhas das ordens importadas em dias anteriores.', placement: 'top' }
+        ];
+
+        if (stepIndex >= steps.length) {
+            encerrarTour();
+            return;
+        }
+
+        const step = steps[stepIndex];
+        const el = document.getElementById(step.id);
+        
+        if (!el || window.getComputedStyle(el).display === 'none') {
+            mostrarPassoTour(stepIndex + 1);
+            return;
+        }
+
+        el.classList.add('tour-highlight');
+        
+        // Se o elemento em destaque não for o próprio tour-historico, adiciona a classe visual ao pai (para elevação no Z-index)
+        if(step.id !== 'tour-historico') {
+            const cardParent = el.closest('.col-lg-6');
+            if (cardParent) cardParent.classList.add('tour-highlight-parent');
+        }
+
+        const isLast = stepIndex === steps.length - 1;
+        const navHtml = \`
+            <div class="d-flex justify-content-between mt-3 pt-2 border-top border-custom align-items-center">
+                <span class="text-white-50 fw-bold" style="font-size: 0.7rem;">\${stepIndex + 1} de \${steps.length}</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2 text-white shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="encerrarTour()">Sair</button>
+                    <button class="btn btn-sm btn-primary py-0 px-2 fw-bold text-dark ms-1 shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="mostrarPassoTour(\${stepIndex + 1})">\${isLast ? 'Concluir' : 'Próximo'}</button>
+                </div>
+            </div>
+        \`;
+
+        const popover = new bootstrap.Popover(el, {
+            title: '<i class="ph-fill ph-info text-accent me-2"></i>' + step.title,
+            content: '<div style="font-size: 0.75rem;" class="text-white-50">' + step.content + '</div>' + navHtml,
+            placement: step.id === 'tour-historico' ? 'auto' : step.placement,
+            trigger: 'manual',
+            html: true,
+            sanitize: false,
+            customClass: 'tour-popover shadow-lg'
+        });
+        
+        popover.show();
+        tourPopovers.push(popover);
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    window.encerrarTour = function() {
+        if (tourPopovers.length > 0) {
+            tourPopovers.forEach(p => p.dispose());
+            tourPopovers = [];
+        }
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+        document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+        const backdrop = document.getElementById('tourBackdrop');
+        if (backdrop) backdrop.style.display = 'none';
+        
+        document.getElementById('btnAjudaTour').classList.remove('text-accent');
+        tourAtivo = false;
+    };
 
     // =======================================================================
     // CONFIGURAÇÃO DO RELATÓRIO EXCEL (SORTABLE)
@@ -870,7 +977,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         
         container.innerHTML = cols.map(c => \`
             <div class="p-1 px-2 bg-custom-darker border border-custom rounded shadow-sm d-flex align-items-center cursor-pointer sortable-col-item" data-key="\${c.key}" style="width: calc(50% - 0.5rem);">
-                <i class="fa-solid fa-grip-vertical text-muted me-2"></i>
+                <i class="ph-bold ph-dots-six-vertical text-muted me-2"></i>
                 <span class="text-white fw-medium text-truncate" style="font-size: 0.75rem;" title="\${c.label}">\${c.label}</span>
             </div>
         \`).join('');
@@ -895,7 +1002,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     };
 
     window.salvarOrdemColunas = function(e) {
-        e.preventDefault(); // Impede o envio tradicional que aciona o beforeunload
+        e.preventDefault(); 
         
         const form = e.target;
         const items = document.querySelectorAll('.sortable-col-item');
@@ -912,7 +1019,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         
         mostrarToast('sucesso', 'Relatório Gerado', 'O download foi iniciado com as suas configurações.');
         
-        // Dispara o download de forma silenciosa via hiperligação escondida
         const a = document.createElement('a');
         a.href = url;
         a.target = '_blank';
@@ -976,7 +1082,6 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
                         const todosAvatares = [];
                         
-                        // Extrai apenas nomes únicos para exibir no quadrado, separados por tipo
                         const clientesRotativa = [...new Set(dadosDia.rotativa.map(i => i.cliente))];
                         clientesRotativa.forEach(cli => todosAvatares.push({ cli, cor: 'primary' }));
                         
@@ -1053,13 +1158,13 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         if (dados.rotativa && dados.rotativa.length > 0) {
             containerRotativa.innerHTML = dados.rotativa.map(o => gerarCardDetalhe(o, true)).join('');
         } else {
-            containerRotativa.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fa-solid fa-inbox opacity-25 d-block mb-2 fa-2x"></i>Nenhum pedido</div>';
+            containerRotativa.innerHTML = '<div class="text-muted small py-3 text-center"><i class="ph-fill ph-tray opacity-25 d-block mb-2 fs-1"></i>Nenhum pedido</div>';
         }
 
         if (dados.flexo && dados.flexo.length > 0) {
             containerFlexo.innerHTML = dados.flexo.map(o => gerarCardDetalhe(o, false)).join('');
         } else {
-            containerFlexo.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fa-solid fa-inbox opacity-25 d-block mb-2 fa-2x"></i>Nenhum pedido</div>';
+            containerFlexo.innerHTML = '<div class="text-muted small py-3 text-center"><i class="ph-fill ph-tray opacity-25 d-block mb-2 fs-1"></i>Nenhum pedido</div>';
         }
 
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalhesDia'));
@@ -1080,18 +1185,16 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     // =======================================================================
     let kanbanEnvioState = { ids: [], tipo: '', modalOrigem: '' };
 
-    function prepararEnvioKanban(modalId) {
+    window.prepararEnvioKanban = function(modalId) {
         const modal = document.getElementById(modalId);
         if(!modal) return;
         
         const cards = modal.querySelectorAll('.card');
         const idsVisiveis = [];
 
-        // Identifica de onde estamos enviando (Flexo -> Pintura | Rotativa -> Corte)
         const tipoSetor = modalId === 'modalRotativa' ? 'rotativa' : 'flexo';
         const nomeColuna = tipoSetor === 'rotativa' ? 'Corte' : 'Pintura';
 
-        // Pega apenas os IDs dos cartões que NÃO estão escondidos pela busca
         cards.forEach(card => {
             if (card.style.display !== 'none' && card.dataset.id) {
                 idsVisiveis.push(parseInt(card.dataset.id));
@@ -1102,20 +1205,16 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
             return mostrarToast('erro', 'Aviso', 'Nenhuma ordem visível para enviar.');
         }
 
-        // Salva o estado para executar no modal de confirmação
         kanbanEnvioState = { ids: idsVisiveis, tipo: tipoSetor, modalOrigem: modalId };
         
-        // Define a mensagem do modal dinamicamente
         document.getElementById('textoConfirmacaoKanban').innerHTML = 
             \`Deseja integrar as <b>\${idsVisiveis.length}</b> ordem(ns) atual(is) para o Kanban na coluna <b>\${nomeColuna}</b>?\`;
 
-        // Mostra o modal customizado em vez do confirm() do Windows
         const confirmModal = new bootstrap.Modal(document.getElementById('modalConfirmarKanban'));
         confirmModal.show();
     }
 
-    async function executarEnvioKanban() {
-        // Esconde o modal de confirmação
+    window.executarEnvioKanban = async function() {
         const confirmModalEl = document.getElementById('modalConfirmarKanban');
         const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
         if(confirmModal) confirmModal.hide();
@@ -1153,52 +1252,45 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
     }
 
     // =======================================================================
-    // SKELETON LOADING E FUNÇÕES AUXILIARES DA VIEW
+    // SKELETON LOADING (APPLE SPINNER) E FUNÇÕES AUXILIARES DA VIEW
     // =======================================================================
-    function gerarSkeletonTabela(quantidade = 3) {
-        let html = '';
-        for(let i=0; i<quantidade; i++) {
-            html += \`
-            <tr class="align-middle">
-                <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                <td class="text-center py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 50%; margin: 0 auto;"></div></td>
-                <td class="text-end py-2 px-3 d-flex justify-content-end gap-1"><div class="skeleton-dark skeleton-btn-view" style="width: 80px;"></div></td>
-            </tr>\`;
-        }
-        return html;
+    function getAppleSpinner(scale = 1) {
+        return \`<div class="apple-spinner" style="transform: scale(\${scale});">
+                  <div></div><div></div><div></div><div></div><div></div><div></div>
+                  <div></div><div></div><div></div><div></div><div></div><div></div>
+                </div>\`;
+    }
+
+    function mostrarSpinnerLocal(elementId, texto = '', scale = 1) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        if (el.querySelector('.local-spinner-overlay')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'local-spinner-overlay text-white-50';
+        overlay.innerHTML = getAppleSpinner(scale) + (texto ? \`<span class="mt-3 fw-medium" style="font-size: 0.8rem;">\${texto}</span>\` : '');
+        el.appendChild(overlay);
+    }
+
+    function ocultarSpinnerLocal(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const overlay = el.querySelector('.local-spinner-overlay');
+        if (overlay) overlay.remove();
     }
 
     function mostrarSkeletonGlobais() {
-        const tableContainer = document.querySelector('.content > .bg-custom-darker .table-responsive');
-        if (document.getElementById('skeleton-temp-container')) return;
-
-        const skeletonHTML = \`
-        <div id="skeleton-temp-container" class="table-responsive bg-custom-darker border-custom rounded shadow-sm skeleton-container">
-            <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
-               <thead class="table-light">
-                 <tr>
-                   <th class="py-2 px-3">Data de Geração das Ordens</th>
-                   <th class="py-2 px-3 text-center">Ordens Geradas Neste Dia</th>
-                   <th class="py-2 px-3 text-end">Ação</th>
-                 </tr>
-               </thead>
-               <tbody class="border-top-0">
-                  \${gerarSkeletonTabela(3)}
-               </tbody>
-            </table>
-        </div>\`;
-
-        if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
-            tableContainer.style.display = 'none';
-            tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
-        }
+        mostrarSpinnerLocal('tour-importar', '', 1);
+        mostrarSpinnerLocal('btn-rotativa', '', 0.8);
+        mostrarSpinnerLocal('btn-flexo', '', 0.8);
+        mostrarSpinnerLocal('tabelaContainer', 'Carregando histórico...', 1.2);
     }
 
     function ocultarSkeletonGlobais() {
-        const tempSkeleton = document.getElementById('skeleton-temp-container');
-        if (tempSkeleton) tempSkeleton.remove();
-        const tableContainer = document.querySelector('.content > .bg-custom-darker .table-responsive:not(.skeleton-container)');
-        if (tableContainer) tableContainer.style.display = '';
+        ocultarSpinnerLocal('tour-importar');
+        ocultarSpinnerLocal('btn-rotativa');
+        ocultarSpinnerLocal('btn-flexo');
+        ocultarSpinnerLocal('tabelaContainer');
     }
 
     mostrarSkeletonGlobais();
@@ -1210,7 +1302,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
 
     window.addEventListener('beforeunload', () => mostrarSkeletonGlobais());
 
-    function mostrarToast(tipo, titulo, mensagem) {
+    window.mostrarToast = function(tipo, titulo, mensagem) {
         const toastEl = document.getElementById(tipo === 'sucesso' ? 'sucessoToast' : 'erroToast');
         if (toastEl) {
             document.getElementById(tipo === 'sucesso' ? 'sucessoTitulo' : 'erroTitulo').innerText = titulo;
@@ -1279,7 +1371,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         });
     }
 
-    function alterarStatus(tipo, id, card) {
+    window.alterarStatus = function(tipo, id, card) {
       fetch(\`/status/\${tipo}/\${id}\`, { method: 'POST' })
         .then(res => res.json())
         .then(data => {
@@ -1287,7 +1379,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
           const badge = card.querySelector('.badge');
           if (data.status === 'concluido') {
             badge.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-50';
-            badge.innerText = 'Concluído';
+            badge.innerHTML = '<i class="ph-bold ph-check me-1"></i>Concluído';
             card.classList.add('card-concluido');
             card.classList.remove('card-pendente');
           } else {
@@ -1304,7 +1396,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
         });
     }
 
-    function marcarVisualizado(tipo, botao) {
+    window.marcarVisualizado = function(tipo, botao) {
       const badge = botao.querySelector('.bg-danger');
       if (!badge) return; 
       fetch(\`/notificacao/\${tipo}\`, { method: 'POST' })
@@ -1321,7 +1413,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       return texto.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
     }
 
-    function filtrarCards(input, tipo) {
+    window.filtrarCards = function(input, tipo) {
       const termo = normalizarTexto(input.value);
       const modalId = tipo === 'rotativa' ? 'modalRotativa' : 'modalFlexo';
       const modal = document.getElementById(modalId);
@@ -1333,7 +1425,7 @@ module.exports = function ordemProducaoView(usuario, rotativa = [], flexo = [], 
       });
     }
 
-    function limparBusca(tipo) {
+    window.limparBusca = function(tipo) {
       const inputId = tipo === 'rotativa' ? 'buscaRotativa' : 'buscaFlexo';
       const input = document.getElementById(inputId);
       input.value = '';

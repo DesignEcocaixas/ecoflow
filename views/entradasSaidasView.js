@@ -1,3 +1,4 @@
+// views/entradasSaidasView.js
 const menuLateral = require("./menuLateral");
 const termosComponent = require("./termosComponent"); 
 
@@ -35,14 +36,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     const isEntrada = m.tipo === 'entrada';
     const corClass = isEntrada ? 'success' : 'danger';
     const sinal = isEntrada ? '+' : '-';
-    const icone = isEntrada ? 'fa-arrow-down' : 'fa-arrow-up';
+    const icone = isEntrada ? 'ph-arrow-down' : 'ph-arrow-up';
 
     return `
     <tr style="cursor: pointer;" class="align-middle table-hover-row" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('detalheModal${m.id}')).show();">
-      <td class="text-white-50 fw-medium py-2 px-3"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</td>
+      <td class="text-white-50 fw-medium py-2 px-3"><i class="ph-bold ph-calendar-blank me-1"></i> ${fmtData(m.data)}</td>
       <td class="py-2 px-3">
         <span class="badge bg-${corClass} bg-opacity-10 text-${corClass} border border-${corClass} border-opacity-50 px-2 py-1" style="width: 85px; display: inline-block; text-align: center;">
-          <i class="fa-solid ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
+          <i class="ph-bold ${icone} me-1"></i> ${isEntrada ? 'Entrada' : 'Saída'}
         </span>
       </td>
       <td class="py-2 px-3">
@@ -52,7 +53,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       </td>
       <td class="py-2 px-3">
         <div class="text-truncate text-white-50" style="max-width: 200px;" title="Assinante: ${m.nome_assinante || 'Não informado'}">
-          <i class="fa-solid fa-pen-nib text-accent me-1"></i> ${m.nome_assinante || 'Não informado'}
+          <i class="ph-bold ph-pen-nib text-accent me-1"></i> ${m.nome_assinante || 'Não informado'}
         </div>
       </td>
       <td class="text-end fw-bold text-${corClass} py-2 px-3">
@@ -62,11 +63,11 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         <div class="btn-group">
           <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-warning py-1 px-2 shadow-sm" 
                   onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('editarModal${m.id}')).show();" title="Editar">
-            <i class="fa-solid fa-pen" style="font-size:0.75rem;"></i>
+            <i class="ph-bold ph-pencil-simple" style="font-size:0.75rem;"></i>
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-danger py-1 px-2 shadow-sm ms-1" 
                   onclick="event.stopPropagation(); bootstrap.Modal.getOrCreateInstance(document.getElementById('excluirModal${m.id}')).show();" title="Excluir">
-            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
+            <i class="ph-bold ph-trash" style="font-size:0.75rem;"></i>
           </button>
         </div>
       </td>
@@ -87,7 +88,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content erp-modal shadow-lg border-0 bg-custom-darker">
           <div class="modal-header modal-header-dark border-custom">
-            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-money-bill-transfer text-accent me-2"></i> Detalhes da Movimentação</h6>
+            <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-money text-accent me-2"></i> Detalhes da Movimentação</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
@@ -100,7 +101,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                             ${isEntrada ? 'ENTRADA' : 'SAÍDA'}
                         </span>
                         <h4 class="fw-bold text-${corClass} mb-1">${sinal} R$ ${fmtMoeda(m.valor)}</h4>
-                        <p class="text-white-50 mb-0" style="font-size:0.75rem;"><i class="fa-regular fa-calendar me-1"></i> ${fmtData(m.data)}</p>
+                        <p class="text-white-50 mb-0" style="font-size:0.75rem;"><i class="ph-bold ph-calendar-blank me-1"></i> ${fmtData(m.data)}</p>
                     </div>
                 </div>
 
@@ -108,7 +109,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 <div class="col-12 col-sm-7 d-flex flex-column">
                     <div class="bg-custom-darker p-3 rounded-3 border border-custom shadow-sm h-100 d-flex flex-column justify-content-center">
                         <h6 class="text-white-50 fw-bold mb-2 text-center border-bottom border-custom pb-2" style="font-size: 0.7rem;">
-                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Rastreio de Saldo
+                            <i class="ph-bold ph-clock-counter-clockwise me-1"></i> Rastreio de Saldo
                         </h6>
                         <div class="d-flex align-items-center justify-content-around px-1">
                             <div class="text-center">
@@ -118,7 +119,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                                 </span>
                             </div>
                             <div class="text-center px-1">
-                                <i class="fa-solid fa-arrow-right-long text-${corClass}"></i>
+                                <i class="ph-bold ph-arrow-right text-${corClass}"></i>
                             </div>
                             <div class="text-center">
                                 <span class="d-block text-muted fw-bold mb-1" style="font-size: 0.6rem; text-transform: uppercase;">Novo</span>
@@ -143,7 +144,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 </div>
                 <div class="pt-2 border-top border-custom">
                     <span class="fw-bold text-white" style="font-size:0.8rem;">Registrado por:</span>
-                    <span class="text-white-50 ms-1" style="font-size:0.75rem;"><i class="fa-solid fa-desktop text-accent mx-1"></i> ${m.responsavel || "Sistema"}</span>
+                    <span class="text-white-50 ms-1" style="font-size:0.75rem;"><i class="ph-bold ph-desktop text-accent mx-1"></i> ${m.responsavel || "Sistema"}</span>
                 </div>
             </div>
 
@@ -152,13 +153,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               <h6 class="fw-bold text-white mb-2" style="font-size:0.8rem;">Assinatura de: ${m.nome_assinante || "Não informado"}</h6>
               ${m.assinatura_base64 
                 ? `<img src="${m.assinatura_base64}" alt="Assinatura" style="max-width: 100%; height: auto; max-height: 110px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; filter: invert(1) brightness(2);">` 
-                : `<div class="text-muted py-2" style="font-size:0.75rem;"><i class="fa-solid fa-signature fa-2x opacity-25 mb-1"></i><br>Nenhuma assinatura capturada.</div>`
+                : `<div class="text-muted py-2" style="font-size:0.75rem;"><i class="ph-bold ph-signature fa-2x opacity-25 mb-1"></i><br>Nenhuma assinatura capturada.</div>`
               }
             </div>
 
           </div>
           <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap gap-2">
-             ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Comprovante</a>` : ''}
+             ${!isEntrada ? `<a href="/movimentacoes/comprovante/${m.id}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-bold"><i class="ph-bold ph-file-pdf me-1"></i> Comprovante</a>` : ''}
              <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Fechar Detalhes</button>
           </div>
         </div>
@@ -169,7 +170,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="/movimentacoes/editar/${m.id}" class="modal-content erp-modal shadow-lg border-0 bg-custom-darker" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Atualizado!')">
           <div class="modal-header modal-header-dark border-custom">
-            <h6 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> Editar Registo</h6>
+            <h6 class="modal-title fw-bold text-white"><i class="ph-fill ph-pencil-simple text-warning me-2"></i> Editar Registo</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
@@ -198,7 +199,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           </div>
           <div class="modal-footer modal-footer-dark border-custom d-flex flex-nowrap">
              <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-             <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+             <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm text-dark"><i class="ph-bold ph-floppy-disk me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -209,7 +210,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <form method="POST" action="/movimentacoes/excluir/${m.id}" onsubmit="prepararSubmissaoSimples(event, this, 'Registo Excluído!')">
             <div class="modal-body text-center p-4 bg-custom-darker">
-              <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>
+              <i class="ph-fill ph-warning-circle fa-3x text-danger mb-3"></i>
               <h6 class="fw-bold text-white mb-2" style="font-size: 0.9rem;">Excluir este registo?</h6>
               <p class="text-muted mb-0" style="font-size:0.8rem;">Esta ação é irreversível e afetará o saldo.</p>
             </div>
@@ -282,14 +283,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         <div class="modal-body text-center p-5 pt-2">
           <div class="mb-4">
              <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle shadow-sm" style="width: 80px; height: 80px; border: 1px solid rgba(220,53,69,0.3);">
-                 <i class="fa-solid fa-file-pdf fa-2x text-danger"></i>
+                 <i class="ph-fill ph-file-pdf fa-2x text-danger"></i>
              </div>
           </div>
           <h5 class="fw-bold text-white mb-3">Retirada Registada</h5>
           <p class="text-white-50 mb-4" style="font-size:0.85rem; line-height: 1.5;">Deseja gerar o comprovante em PDF com a assinatura do recebedor agora?</p>
           <div class="d-flex flex-column gap-2 mt-2">
              <a href="#" target="_blank" id="btnImprimirComprovanteModal" class="btn btn-danger fw-bold shadow-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('modalImprimirComprovante')).hide();">
-                 <i class="fa-solid fa-file-pdf me-1"></i> Gerar Comprovante
+                 <i class="ph-bold ph-file-pdf me-1"></i> Gerar Comprovante
              </a>
              <button type="button" class="btn btn-outline-secondary border-custom text-white-50 fw-bold" data-bs-dismiss="modal">
                  Agora Não
@@ -310,7 +311,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     <title>Entradas / Saídas | Ecoflow</title>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
       /* Scrollbars Globais (Dark & Green) */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -377,18 +378,48 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       .modal.fade .modal-dialog { transform: scale(0.85) translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
       .modal.show .modal-dialog { transform: scale(1) translateY(0); }
 
-      /* SKELETON LOADING (Dark) */
-      .skeleton-dark { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important; background-size: 200% 100% !important; animation: skeleton-loading-view 1.5s infinite linear !important; border-radius: 4px; color: transparent !important; border-color: transparent !important; box-shadow: none !important; pointer-events: none; }
-      .skeleton-dark * { visibility: hidden !important; }
-      .skeleton-text-view { height: 16px; width: 100%; margin-bottom: 8px; }
-      .skeleton-btn-view { height: 26px; width: 32px; border-radius: 4px; display: inline-block; }
-      @keyframes skeleton-loading-view { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-      /* Botão Flutuante */
-      .btn-flutuante { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background-color: var(--verde-ecoflow); color: #1f1f1f; border: none; box-shadow: 0 4px 15px rgba(8, 192, 104, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; z-index: 1050; transition: all 0.3s ease; }
-      .btn-flutuante:hover { transform: scale(1.1); background-color: var(--verde-hover); color: #1f1f1f; box-shadow: 0 6px 20px rgba(8, 192, 104, 0.6); }
+      /* Botão de ajuda inline no cabeçalho */
+      .btn-ajuda-inline {
+          background-color: transparent;
+          color: rgba(255,255,255,0.4);
+          border: none;
+          padding: 0 5px;
+          margin-left: 8px;
+          font-size: 1.1rem;
+          transition: color 0.2s ease, transform 0.2s ease;
+      }
+      .btn-ajuda-inline:hover { color: #08c068; }
+      .btn-ajuda-inline:active { transform: scale(0.9); }
 
       .hover-verde:hover { color: var(--verde-ecoflow) !important; }
+      
+      /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+      .apple-spinner { display: inline-block; width: 24px; height: 24px; position: relative; }
+      .apple-spinner div { transform-origin: 12px 12px; animation: apple-spinner 1.2s linear infinite; }
+      .apple-spinner div:after { content: " "; display: block; position: absolute; top: 0; left: 11px; width: 2.5px; height: 6px; border-radius: 20%; background: #08c068; }
+      .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+      .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+      .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+      .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+      .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+      .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+      .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+      .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+      .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+      .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+      .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+      .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+      @keyframes apple-spinner { 0% { opacity: 1; } 100% { opacity: 0.15; } }
+
+      .local-spinner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #222222; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: inherit; opacity: 0; animation: fadeInOverlay 0.2s forwards; }
+      @keyframes fadeInOverlay { to { opacity: 1; } }
+
+      /* TOUR POPOVER STYLES */
+      .tour-popover { border: 1px solid #08c068 !important; --bs-popover-bg: #2a2a2a; --bs-popover-header-bg: #222; --bs-popover-header-color: #fff; --bs-popover-body-color: rgba(255,255,255,0.8); z-index: 1070 !important; }
+      .tour-popover .popover-header { font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      .tour-popover .popover-arrow::after { border-bottom-color: #222 !important; border-top-color: #2a2a2a !important; }
+      .tour-highlight { position: relative !important; z-index: 1060 !important; pointer-events: none !important; box-shadow: 0 0 15px rgba(8, 192, 104, 0.4), 0 0 0 2px #08c068 !important; border-radius: inherit; }
+      .tour-highlight-parent { position: relative !important; z-index: 1056 !important; }
 
       .offcanvas { background-color: #1f1f1f !important; }
 
@@ -406,35 +437,42 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
 
     <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarMenu" style="background-color: #1f1f1f; border-right: 1px solid rgba(255,255,255,0.05);">
       <div class="offcanvas-header border-bottom border-custom">
-        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="fa-solid fa-bars text-muted me-2"></i> Menu</h5>
+        <h5 class="offcanvas-title ms-2" style="font-size: 0.9rem;"><i class="ph-bold ph-list text-muted me-2"></i> Menu</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
       <div class="offcanvas-body">
         <div class="text-center mb-4 mt-2"><img src="/img/logo.png" class="img-fluid" style="max-width:140px;"></div>
         ${menuHTML}
         <hr class="border-custom mt-4">
-        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema</a>
+        <a href="/logout" class="text-danger mt-2" style="font-size: 0.85rem;"><i class="ph-bold ph-sign-out me-2"></i>Sair do Sistema</a>
       </div>
     </div>
 
     <div class="content">
-      <div class="d-flex align-items-center gap-3 mb-3">
-        <button class="btn btn-sm btn-outline-secondary border-custom d-md-none hover-verde" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars text-white"></i></button>
-        <div>
-          <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-money-bill-transfer text-white-50 me-2"></i>Entradas e Saídas</h4>
-          <span class="text-white-50 d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
+      <div class="d-flex align-items-center justify-content-between mb-3 gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-outline-secondary border-custom d-md-none hover-verde" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" id="btn-tour-menu"><i class="ph-bold ph-list text-white"></i></button>
+          <div>
+            <div class="d-flex align-items-center">
+                <h4 class="mb-0 fw-bold text-white"><i class="ph-fill ph-money text-white-50 me-2"></i>Entradas e Saídas</h4>
+                <button type="button" class="btn-ajuda-inline" id="btnAjudaTour" onclick="toggleTourMode()" title="Como funciona esta tela?">
+                    <i class="ph-fill ph-question"></i>
+                </button>
+            </div>
+            <span class="text-white-50 d-none d-sm-block mt-1" style="font-size:0.75rem;">Controle financeiro e assinaturas</span>
+          </div>
         </div>
       </div>
 
       <div class="row g-3 mb-3">
         
-        <div class="col-12 col-xl-5">
-          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column">
+        <div class="col-12 col-xl-5 position-relative" id="painel-resumo-container">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column" id="tour-resumo">
             
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
               
               <div class="d-flex align-items-center gap-2">
-                <h6 class="mb-0 text-white-50" style="font-size:0.85rem;"><i class="fa-solid fa-list-ul me-1"></i> Resumo Financeiro</h6>
+                <h6 class="mb-0 text-white-50" style="font-size:0.85rem;"><i class="ph-bold ph-list-bullets me-1"></i> Resumo Financeiro</h6>
                 <span class="badge bg-custom-dark border border-custom text-accent shadow-sm" style="background-color: rgba(8,192,104,0.1) !important;">${mesAtualStr}</span>
               </div>
               
@@ -442,7 +480,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 
                 <div class="d-flex align-items-center gap-2 pe-2 d-none d-sm-flex">
                    <button type="button" id="btnToggleVisibilidade" class="btn btn-link text-white-50 p-0 shadow-none hover-verde" onclick="toggleVisibilidadeFinanceira()" title="Mostrar/Ocultar Valores">
-                       <i class="fa-solid fa-eye-slash" id="iconeVisibilidade"></i>
+                       <i class="ph-bold ph-eye-slash" id="iconeVisibilidade"></i>
                    </button>
                    <div class="text-end">
                        <span class="text-white-50 fw-bold" style="font-size: 0.75rem;">Total em Caixa</span><br>
@@ -461,21 +499,21 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button class="btn btn-success shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold text-dark border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaEntradaModal">
-                        <i class="fa-solid fa-arrow-down me-1"></i> Entrada
+                    <button class="btn btn-success shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold text-dark border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaEntradaModal" id="tour-entrada">
+                        <i class="ph-bold ph-arrow-down me-1"></i> Entrada
                     </button>
-                    <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal">
-                        <i class="fa-solid fa-arrow-up me-1"></i> Retirada
+                    <button class="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0 py-1 px-2 fw-bold border-0" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#novaSaidaModal" id="tour-saida">
+                        <i class="ph-bold ph-arrow-up me-1"></i> Retirada
                     </button>
-                    <button class="btn btn-outline-secondary border-custom text-white shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0 hover-verde" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#modalRelatorio" title="Exportar para Excel">
-                        <i class="fa-solid fa-file-excel me-1 text-accent"></i> Relatório
+                    <button class="btn btn-outline-secondary border-custom text-white shadow-sm py-1 px-2 flex-grow-1 flex-sm-grow-0 hover-verde" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#modalRelatorio" title="Exportar para Excel" id="tour-relatorio">
+                        <i class="ph-bold ph-file-xls me-1 text-accent"></i> Relatório
                     </button>
                 </div>
               </div>
             </div>
 
             <form id="formFiltro" class="row g-2 align-items-end mt-2 border-top border-custom pt-2" method="GET" action="/entradas-saidas" onsubmit="prepararBuscaSimples(event, this, 'Filtros Aplicados!')">
-                <div class="col-12 col-md-6 col-xxl-3">
+                <div class="col-12 col-md-6 col-xxl-3" id="tour-filtro">
                     <label class="form-label text-white-50 fw-bold mb-1" style="font-size:0.75rem;">Período De</label>
                     <input type="date" name="data_inicio" class="form-control form-control-sm shadow-sm" value="${filtros.data_inicio || ''}">
                 </div>
@@ -492,23 +530,23 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                     </select>
                 </div>
                 <div class="col-12 col-md-6 col-xxl-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary text-dark flex-grow-1 shadow-sm fw-bold border-0"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-center shadow-sm text-danger" onclick="limparFiltros()"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="submit" class="btn btn-sm btn-primary text-dark flex-grow-1 shadow-sm fw-bold border-0"><i class="ph-bold ph-funnel me-1"></i> Filtrar</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-custom text-center shadow-sm text-danger" onclick="limparFiltros()"><i class="ph-bold ph-x"></i></button>
                 </div>
             </form>
           </div>
         </div>
 
-        <div class="col-12 col-xl-7">
-          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column" id="containerGrafico">
+        <div class="col-12 col-xl-7 position-relative" id="containerGrafico">
+          <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 d-flex flex-column" id="tour-grafico">
               <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-nowrap">
-                  <h6 class="mb-0 fw-bold text-white text-nowrap" style="font-size:0.85rem;"><i class="fa-solid fa-chart-line text-accent me-2"></i> Fluxo Financeiro</h6>
+                  <h6 class="mb-0 fw-bold text-white text-nowrap" style="font-size:0.85rem;"><i class="ph-bold ph-chart-line-up text-accent me-2"></i> Fluxo Financeiro</h6>
                   <div class="d-flex gap-2 align-items-center flex-nowrap">
                       <select id="selectFiltroGrafico" class="form-select form-select-sm shadow-sm text-white-50 fw-medium" style="width: auto; min-width: 110px; font-size: 0.75rem;" onchange="buscarDadosGrafico()">
                           <option value="">Carregando...</option>
                       </select>
                       <button id="btnToggleVisaoGrafico" class="btn btn-outline-secondary border-custom shadow-sm fw-medium py-1 px-2 text-nowrap text-white" style="font-size: 0.75rem;" onclick="alternarVisaoGrafico()">
-                          <i class="fa-solid fa-calendar-days me-1 text-accent"></i> Ver por Mês
+                          <i class="ph-bold ph-calendar-blank me-1 text-accent"></i> Ver por Mês
                       </button>
                   </div>
               </div>
@@ -519,8 +557,10 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         </div>
 
       </div>
+      
+      <div class="position-relative" id="containerTabela">
       ${movimentacoes.length > 0 
-        ? `<div class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4">
+        ? `<div class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4" id="tour-tabela">
              <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem; border-collapse: separate; border-spacing: 0;">
                <thead>
                  <tr>
@@ -537,8 +577,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                </tbody>
              </table>
            </div>` 
-        : `<div class="col-12 text-center text-white-50 mt-4 text-center-empty"><i class="fa-solid fa-wallet fa-3x opacity-25 mb-3 d-block"></i><p style="font-size:0.85rem;">Nenhuma movimentação registada para este filtro.</p></div>`
+        : `<div class="col-12 text-center text-white-50 mt-4 text-center-empty"><i class="ph-fill ph-wallet fa-3x opacity-25 mb-3 d-block"></i><p style="font-size:0.85rem;">Nenhuma movimentação registada para este filtro.</p></div>`
       }
+      </div>
 
       ${paginacaoHtml}
     </div>
@@ -548,13 +589,13 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content erp-modal border-0 shadow-lg bg-custom-darker">
           <div class="modal-header modal-header-dark border-custom">
-            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-file-excel text-accent me-2"></i> Exportar Relatório</h6>
+            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="ph-bold ph-file-xls text-accent me-2"></i> Exportar Relatório</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 bg-custom-dark">
             
             <div class="mb-3">
-              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-calendar-days text-accent me-1"></i> Período do Relatório</label>
+              <label class="form-label text-white fw-bold mb-3"><i class="ph-bold ph-calendar-blank text-accent me-1"></i> Período do Relatório</label>
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label text-white-50 small mb-1" for="relatorioDataInicio">De:</label>
@@ -568,7 +609,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
             </div>
 
             <div class="mb-4 pt-3 border-top border-custom">
-              <label class="form-label text-white fw-bold mb-3"><i class="fa-solid fa-table-columns text-accent me-1"></i> Selecione as Colunas</label>
+              <label class="form-label text-white fw-bold mb-3"><i class="ph-bold ph-columns text-accent me-1"></i> Selecione as Colunas</label>
               <div class="row g-2">
                  <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="data" id="chkData" checked><label class="form-check-label text-white-50 small" for="chkData">Data</label></div></div>
                  <div class="col-6"><div class="form-check form-switch"><input class="form-check-input chk-coluna border-secondary" type="checkbox" value="tipo" id="chkTipo" checked><label class="form-check-label text-white-50 small" for="chkTipo">Tipo (Entrada/Saída)</label></div></div>
@@ -581,51 +622,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               </div>
             </div>
 
-            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Gerar relatório</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn-flutuante" data-bs-toggle="modal" data-bs-target="#modalInstrucoes" title="Ajuda / Como usar">
-      <i class="fa-solid fa-question"></i>
-    </button>
-
-    <div class="modal fade" id="modalInstrucoes" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content erp-modal border-0 shadow-lg">
-          <div class="modal-header bg-custom-darker border-0">
-            <h6 class="modal-title fw-bold text-white" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-info text-accent me-2"></i> Como usar este módulo</h6>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body p-4 text-white-50 bg-custom-dark" style="font-size: 0.8rem;">
-            <p class="mb-4">Bem-vindo ao módulo de <strong class="text-white">Entradas e Saídas</strong>. Siga as orientações abaixo para um controle financeiro eficaz:</p>
-            
-            <ul class="list-group list-group-flush mb-4">
-              <li class="list-group-item bg-transparent px-0 border-custom pb-3 text-white-50">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-plus-circle text-success me-2"></i> 1. Registar Movimentação</strong>
-                Clique em "Entrada" ou "Retirada" para adicionar um novo registo. É obrigatório informar o valor, a descrição, o nome de quem entregou/retirou o valor e <strong class="text-white">recolher a assinatura na tela</strong>.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-wallet text-accent me-2"></i> 2. Saldo em Caixa e Gráfico</strong>
-                O painel superior exibe o "Total em Caixa". Logo abaixo, você encontra o gráfico de <strong class="text-white">Fluxo Financeiro</strong> que permite acompanhar visualmente o balanço por dias do mês ou uma visão geral do ano inteiro.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom py-3 text-white-50">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-magnifying-glass text-info me-2"></i> 3. Detalhes e Ações</strong>
-                Clique em cima de qualquer registo na tabela para ver os detalhes completos e confirmar a <strong class="text-white">assinatura salva</strong>. Caso note algum erro, pode usar os botões de editar (<i class="fa-solid fa-pen text-warning mx-1"></i>) ou excluir (<i class="fa-solid fa-trash text-danger mx-1"></i>) na respetiva linha da tabela.
-              </li>
-              <li class="list-group-item bg-transparent px-0 border-custom pt-3 border-bottom-0 text-white-50">
-                <strong class="text-white d-block mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i> 4. Exportar Relatório</strong>
-                Clique em "Relatório" para fazer o download imediato de uma planilha Excel com todo o histórico de caixa e as informações dos assinantes.
-              </li>
-            </ul>
-
-            <div class="alert bg-custom-darker border-custom text-white-50 shadow-sm mb-0">
-              <i class="fa-solid fa-lightbulb text-warning me-2"></i> <strong class="text-white">Dica de Assinatura:</strong> Caso a assinatura não fique legível à primeira tentativa, basta clicar em "Limpar Assinatura" logo abaixo do quadro e desenhar de novo antes de guardar.
-            </div>
-          </div>
-          <div class="modal-footer border-0 bg-custom-darker">
-            <button type="button" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm text-dark border-0" data-bs-dismiss="modal">Entendi</button>
+            <button type="button" onclick="baixarRelatorioExcel()" class="btn btn-sm btn-primary w-100 fw-bold text-dark border-0 shadow-sm"><i class="ph-bold ph-download-simple me-1"></i> Gerar relatório</button>
           </div>
         </div>
       </div>
@@ -638,7 +635,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           <input type="hidden" name="assinatura_base64" id="assinaturaEntradaHidden">
           
           <div class="modal-header bg-custom-darker text-white border-custom">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-arrow-down text-accent me-2"></i> Nova Entrada</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-bold ph-arrow-down text-accent me-2"></i> Nova Entrada</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           
@@ -668,14 +665,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 <label class="form-label text-white fw-bold mb-2" style="font-size:0.75rem;">Assinatura</label>
                 <canvas id="canvasEntrada" class="signature-pad shadow-sm"></canvas>
                 <div class="text-end mt-2">
-                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasEntrada')"><i class="fa-solid fa-eraser me-1"></i> Limpar Assinatura</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasEntrada')"><i class="ph-bold ph-eraser me-1"></i> Limpar Assinatura</button>
                 </div>
               </div>
             </div>
           </div>
           <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm border-0"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+            <button type="submit" class="btn btn-sm btn-primary text-dark fw-bold w-100 shadow-sm border-0"><i class="ph-bold ph-floppy-disk me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -688,7 +685,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           <input type="hidden" name="assinatura_base64" id="assinaturaSaidaHidden">
           
           <div class="modal-header bg-custom-darker text-white border-custom">
-            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="fa-solid fa-arrow-up text-danger me-2"></i> Nova Retirada</h6>
+            <h6 class="modal-title fw-bold" style="font-size: 0.85rem;"><i class="ph-bold ph-arrow-up text-danger me-2"></i> Nova Retirada</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           
@@ -718,14 +715,14 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
                 <label class="form-label text-white fw-bold mb-2" style="font-size:0.75rem;">Assinatura na Tela</label>
                 <canvas id="canvasSaida" class="signature-pad shadow-sm"></canvas>
                 <div class="text-end mt-2">
-                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasSaida')"><i class="fa-solid fa-eraser me-1"></i> Limpar Assinatura</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-medium" onclick="limparAssinatura('canvasSaida')"><i class="ph-bold ph-eraser me-1"></i> Limpar Assinatura</button>
                 </div>
               </div>
             </div>
           </div>
           <div class="modal-footer bg-custom-darker border-custom d-flex flex-nowrap">
             <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-white" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold border-0 shadow-sm"><i class="fa-solid fa-save me-1"></i> Salvar</button>
+            <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold border-0 shadow-sm"><i class="ph-bold ph-floppy-disk me-1"></i> Salvar</button>
           </div>
         </form>
       </div>
@@ -737,7 +734,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         <div id="sucessoToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(8,192,104,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent" id="sucessoIcon"></i>
+                    <i class="ph-fill ph-check-circle fs-5 me-2 text-accent" id="sucessoIcon"></i>
                     <strong class="fs-6" id="sucessoTitulo">Concluído!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -751,7 +748,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
         <div id="erroToast" class="toast shadow-lg border-0 bg-custom-darker text-white overflow-hidden position-relative" style="border: 1px solid rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                    <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -771,6 +768,125 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
     
     <script>
       // =======================================================================
+      // TOUR DE BOOTSTRAP POPOVERS (ONBOARDING)
+      // =======================================================================
+      let tourPopovers = [];
+      let tourAtivo = false;
+
+      window.toggleTourMode = function() {
+          if (tourAtivo) {
+              encerrarTour();
+              return;
+          }
+          iniciarTour();
+      };
+
+      function iniciarTour() {
+          tourAtivo = true;
+          document.getElementById('btnAjudaTour').classList.add('text-accent');
+          
+          let backdrop = document.getElementById('tourBackdrop');
+          if (!backdrop) {
+              backdrop = document.createElement('div');
+              backdrop.id = 'tourBackdrop';
+              backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); z-index: 1055; transition: opacity 0.3s;';
+              document.body.appendChild(backdrop);
+          }
+          backdrop.style.display = 'block';
+
+          mostrarPassoTour(0);
+      }
+
+      window.mostrarPassoTour = function(stepIndex) {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+
+          const steps = [
+              { id: 'btn-tour-menu', title: 'Menu Lateral', content: 'Aceda aos outros módulos de gestão do sistema.', placement: 'bottom' },
+              { id: 'tour-resumo', title: 'Resumo Financeiro', content: 'Visualize o valor total em caixa atual e alterne a visibilidade dos valores no ícone de "olho".', placement: 'auto' },
+              { id: 'tour-filtro', title: 'Filtro por Data', content: 'Selecione um intervalo de datas e veja apenas as entradas/saídas correspondentes ao período.', placement: 'bottom' },
+              { id: 'tour-entrada', title: 'Registrar Entrada', content: 'Adicione um novo valor recebido preenchendo as informações.', placement: 'bottom' },
+              { id: 'tour-saida', title: 'Registrar Retirada', content: 'Adicione uma retirada. É necessário assinar diretamente no modal como recibo.', placement: 'bottom' },
+              { id: 'tour-relatorio', title: 'Exportar Relatório', content: 'Baixe todo o histórico financeiro selecionado num arquivo Excel.', placement: 'bottom' },
+              { id: 'tour-grafico', title: 'Gráfico Interativo', content: 'Acompanhe as receitas e despesas organizadas por dia ou por mês.', placement: 'bottom' }
+          ];
+
+          if (document.querySelector('.table-hover-row')) {
+              document.querySelector('.table-hover-row').id = 'tour-tabela-linha';
+              steps.push({ id: 'tour-tabela-linha', title: 'Visualizar e Gerir', content: 'Clique num registro da tabela para ver a assinatura e o balanço do caixa, ou acesse os botões para editar/excluir.', placement: 'top' });
+          }
+
+          if (stepIndex >= steps.length) {
+              encerrarTour();
+              return;
+          }
+
+          const step = steps[stepIndex];
+          const el = document.getElementById(step.id);
+          
+          if (!el || window.getComputedStyle(el).display === 'none') {
+              mostrarPassoTour(stepIndex + 1);
+              return;
+          }
+
+          el.classList.add('tour-highlight');
+          
+          if (step.id === 'tour-grafico') {
+              el.closest('.bg-custom-darker').classList.add('tour-highlight-parent');
+          } else if (step.id === 'tour-resumo') {
+              el.closest('.bg-custom-darker').classList.add('tour-highlight-parent');
+          } else if (step.id === 'tour-tabela-linha') {
+              el.closest('tr').classList.add('tour-highlight-parent');
+          } else if (['tour-entrada', 'tour-saida', 'tour-relatorio'].includes(step.id)) {
+              el.closest('.d-flex.gap-2').classList.add('tour-highlight-parent');
+          }
+
+          const isLast = stepIndex === steps.length - 1;
+          const navHtml = \`
+              <div class="d-flex justify-content-between mt-3 pt-2 border-top border-custom align-items-center">
+                  <span class="text-white-50 fw-bold" style="font-size: 0.7rem;">\${stepIndex + 1} de \${steps.length}</span>
+                  <div>
+                      <button class="btn btn-sm btn-outline-secondary py-0 px-2 text-white shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="encerrarTour()">Sair</button>
+                      <button class="btn btn-sm btn-primary py-0 px-2 fw-bold text-dark ms-1 shadow-sm" style="font-size: 0.7rem; pointer-events: auto;" onclick="mostrarPassoTour(\${stepIndex + 1})">\${isLast ? 'Concluir' : 'Próximo'}</button>
+                  </div>
+              </div>
+          \`;
+
+          const popover = new bootstrap.Popover(el, {
+              title: '<i class="ph-fill ph-info text-accent me-2"></i>' + step.title,
+              content: '<div style="font-size: 0.75rem;" class="text-white-50">' + step.content + '</div>' + navHtml,
+              placement: step.placement,
+              trigger: 'manual',
+              html: true,
+              sanitize: false,
+              customClass: 'tour-popover shadow-lg'
+          });
+          
+          popover.show();
+          tourPopovers.push(popover);
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+
+      window.encerrarTour = function() {
+          if (tourPopovers.length > 0) {
+              tourPopovers.forEach(p => p.dispose());
+              tourPopovers = [];
+          }
+          document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+          document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+          const backdrop = document.getElementById('tourBackdrop');
+          if (backdrop) backdrop.style.display = 'none';
+          
+          document.getElementById('btnAjudaTour').classList.remove('text-accent');
+          tourAtivo = false;
+      };
+
+      // =======================================================================
       // FUNÇÕES DE VISIBILIDADE FINANCEIRA (OLHO) - PADRÃO OCULTO
       // =======================================================================
       window.toggleVisibilidadeFinanceira = function() {
@@ -783,7 +899,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const isOculto = localStorage.getItem('ocultar_valores_financeiros') !== 'false';
           const icone = document.getElementById('iconeVisibilidade');
           if (icone) {
-              icone.className = isOculto ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+              icone.className = isOculto ? 'ph-bold ph-eye-slash' : 'ph-bold ph-eye';
           }
           
           document.querySelectorAll('.valor-financeiro').forEach(el => {
@@ -861,11 +977,36 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       // =======================================================================
-      // LÓGICA DO GRÁFICO
+      // LÓGICA DO GRÁFICO E APPLE SPINNER LOCAL
       // =======================================================================
       let chartFluxo = null;
       let visaoGraficoAtual = 'dia'; 
       let periodosDisponiveisGrafico = [];
+
+      function getAppleSpinner(scale = 1) {
+          return \`<div class="apple-spinner" style="transform: scale(\${scale});">
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                    <div></div><div></div><div></div><div></div><div></div><div></div>
+                  </div>\`;
+      }
+
+      function mostrarSpinnerLocal(elementId, texto = '') {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          if (el.querySelector('.local-spinner-overlay')) return;
+          
+          const overlay = document.createElement('div');
+          overlay.className = 'local-spinner-overlay text-white-50';
+          overlay.innerHTML = getAppleSpinner(1.2) + (texto ? \`<span class="mt-3 fw-medium" style="font-size: 0.8rem;">\${texto}</span>\` : '');
+          el.appendChild(overlay);
+      }
+
+      function ocultarSpinnerLocal(elementId) {
+          const el = document.getElementById(elementId);
+          if (!el) return;
+          const overlay = el.querySelector('.local-spinner-overlay');
+          if (overlay) overlay.remove();
+      }
 
       async function carregarFiltrosGrafico() {
           try {
@@ -923,9 +1064,9 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           const btn = document.getElementById('btnToggleVisaoGrafico');
           
           if (visaoGraficoAtual === 'dia') {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-days me-1 text-accent"></i> Ver por Mês';
+              btn.innerHTML = '<i class="ph-bold ph-calendar-blank me-1 text-accent"></i> Ver por Mês';
           } else {
-              btn.innerHTML = '<i class="fa-solid fa-calendar-day me-1 text-accent"></i> Ver por Dia';
+              btn.innerHTML = '<i class="ph-bold ph-calendar-blank me-1 text-accent"></i> Ver por Dia';
           }
           
           atualizarDropdownGrafico();
@@ -944,6 +1085,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               url += \`&ano=\${val}\`;
           }
 
+          mostrarSpinnerLocal('containerGrafico', 'Atualizando Gráfico...');
+
           try {
               const res = await fetch(url);
               if (res.ok) {
@@ -954,6 +1097,8 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
               }
           } catch(e) {
               renderizarMockGrafico();
+          } finally {
+              ocultarSpinnerLocal('containerGrafico');
           }
       }
 
@@ -1063,85 +1208,16 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
           });
       }
 
-      // =======================================================================
-      // SKELETON LOADING DA TABELA E GRID
-      // =======================================================================
-      function gerarSkeletonTabela(quantidade = 5) {
-          let html = '';
-          for(let i=0; i<quantidade; i++) {
-              html += \`
-              <tr class="align-middle" style="height: 40px;">
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 80%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 85px; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 70%; margin: 0;"></div></td>
-                  <td class="py-2 px-3"><div class="skeleton-dark skeleton-text-view" style="width: 60%; margin: 0;"></div></td>
-                  <td class="py-2 px-3 text-end"><div class="skeleton-dark skeleton-text-view" style="width: 50%; margin: 0 0 0 auto;"></div></td>
-                  <td class="text-center py-2 px-3 d-flex justify-content-center gap-1">
-                      <div class="skeleton-dark skeleton-btn-view" style="height: 24px; width: 30px;"></div>
-                      <div class="skeleton-dark skeleton-btn-view" style="height: 24px; width: 30px;"></div>
-                  </td>
-              </tr>\`;
-          }
-          return html;
-      }
-
       function mostrarSkeletonGlobais() {
-          const tableContainer = document.querySelector('.content > .table-responsive');
-          const gridContainer = document.querySelector('.row.g-3.mb-3');
-          const emptyState = document.querySelector('.content > .text-center.text-white-50.mt-4');
-          
-          if (document.getElementById('skeleton-temp-container')) return;
-
-          const skeletonHTML = \`
-          <div id="skeleton-temp-container" class="skeleton-container">
-              <div class="row g-3 mb-3">
-                  <div class="col-12 col-xl-5">
-                      <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 skeleton-dark" style="min-height: 180px;"></div>
-                  </div>
-                  <div class="col-12 col-xl-7">
-                      <div class="bg-custom-darker p-3 rounded-3 shadow-sm border border-custom h-100 skeleton-dark" style="min-height: 180px;"></div>
-                  </div>
-              </div>
-              <div class="table-responsive bg-custom-darker rounded-3 shadow-sm border border-custom mb-4">
-                  <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                     <thead>
-                       <tr>
-                         <th class="py-2 px-3 border-0">Data</th>
-                         <th class="py-2 px-3 border-0">Tipo</th>
-                         <th class="py-2 px-3 border-0">Descrição</th>
-                         <th class="py-2 px-3 border-0">Assinante</th>
-                         <th class="py-2 px-3 border-0 text-end">Valor (R$)</th>
-                         <th class="py-2 px-3 border-0 text-center">Ações</th>
-                       </tr>
-                     </thead>
-                     <tbody class="border-top-0">
-                        \${gerarSkeletonTabela(5)}
-                     </tbody>
-                  </table>
-              </div>
-          </div>\`;
-
-          if (gridContainer) gridContainer.style.display = 'none';
-          if (tableContainer && !tableContainer.classList.contains('skeleton-container')) {
-              tableContainer.style.display = 'none';
-              tableContainer.insertAdjacentHTML('beforebegin', skeletonHTML);
-          } else if (emptyState) {
-              emptyState.style.display = 'none';
-              emptyState.insertAdjacentHTML('beforebegin', skeletonHTML);
-          }
+          mostrarSpinnerLocal('painel-resumo-container', 'Calculando...');
+          mostrarSpinnerLocal('containerGrafico', 'Atualizando Gráfico...');
+          mostrarSpinnerLocal('containerTabela', 'Atualizando Tabela...');
       }
 
       function ocultarSkeletonGlobais() {
-          const tempSkeleton = document.getElementById('skeleton-temp-container');
-          if (tempSkeleton) tempSkeleton.remove();
-
-          const tableContainer = document.querySelector('.content > .table-responsive');
-          const gridContainer = document.querySelector('.row.g-3.mb-3');
-          const emptyState = document.querySelector('.content > .text-center.text-white-50.mt-4');
-
-          if (gridContainer) gridContainer.style.display = 'flex';
-          if (tableContainer) tableContainer.style.display = 'block';
-          if (emptyState) emptyState.style.display = 'block';
+          ocultarSpinnerLocal('painel-resumo-container');
+          ocultarSpinnerLocal('containerGrafico');
+          ocultarSpinnerLocal('containerTabela');
       }
 
       mostrarSkeletonGlobais();
@@ -1245,7 +1321,7 @@ function entradasSaidasView(usuario, movimentacoes = [], paginacao = {}, filtros
       }
 
       function atualizarModaisDinamicos(doc) {
-          const staticModals = ['modalInstrucoes', 'modalRelatorio', 'novaEntradaModal', 'novaSaidaModal', 'sidebarMenu', 'modalImprimirComprovante'];
+          const staticModals = ['modalRelatorio', 'novaEntradaModal', 'novaSaidaModal', 'sidebarMenu', 'modalImprimirComprovante'];
           document.querySelectorAll('.modal').forEach(m => {
               if (!staticModals.includes(m.id)) m.remove();
           });

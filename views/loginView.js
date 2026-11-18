@@ -10,7 +10,7 @@ function loginView(msg = "") {
       <title>Entrar | Ecoflow</title>
       <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
       <style>
         body, html {
@@ -30,7 +30,7 @@ function loginView(msg = "") {
         .hover-verde:hover { color: #08c068 !important; transform: scale(1.1); }
         .transition-btn { transition: all 0.25s ease; }
 
-                /* IMAGEM DE FUNDO NO SLIDER */
+        /* IMAGEM DE FUNDO NO SLIDER */
         .slider-background {
           position: absolute;
           top: 0;
@@ -44,7 +44,7 @@ function loginView(msg = "") {
           z-index: 0;
         }
 
-                /* OVERLAY DO SLIDER */
+        /* OVERLAY DO SLIDER */
         .slider-overlay {
           position: absolute;
           top: 0;
@@ -72,8 +72,9 @@ function loginView(msg = "") {
           border-radius: 4px;
         }
         .slider-icon {
-          font-size: 3.5rem;
+          font-size: 4rem;
           margin-bottom: 1.5rem;
+          color: #08c068;
         }
 
         /* CONTAINER DE LOGIN */
@@ -134,11 +135,15 @@ function loginView(msg = "") {
           padding: 0.75rem 1rem;
           border-radius: 8px;
           transition: all 0.3s ease;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 48px;
         }
         .btn-erp:hover, .btn-erp:focus {
           background-color: #06a055;
           border-color: #06a055;
-          color: #323232;
+          color: #1f1f1f;
         }
         .btn-erp:disabled {
           background-color: #08c068;
@@ -180,6 +185,46 @@ function loginView(msg = "") {
             from { width: 100%; }
             to { width: 0%; }
         }
+
+        /* APPLE STYLE SPINNER LOADER (DARK THEME) */
+        .apple-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+        .apple-spinner div {
+            transform-origin: 12px 12px;
+            animation: apple-spinner 1.2s linear infinite;
+        }
+        .apple-spinner div:after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 11px;
+            width: 2.5px;
+            height: 6px;
+            border-radius: 20%;
+            background: #1f1f1f;
+        }
+        .apple-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+        .apple-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+        .apple-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+        .apple-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+        .apple-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+        .apple-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+        .apple-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+        .apple-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+        .apple-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+        .apple-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+        .apple-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+        .apple-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+        
+        @keyframes apple-spinner {
+            0% { opacity: 1; }
+            100% { opacity: 0.15; }
+        }
       </style>
   </head>
 
@@ -189,7 +234,7 @@ function loginView(msg = "") {
       
       <div class="d-none d-lg-block col-lg-7 col-xl-8 position-relative overflow-hidden">
         
-                <div class="slider-background"></div>
+        <div class="slider-background"></div>
         <div class="slider-overlay"></div>
 
         <div id="loginSlider" class="carousel slide carousel-fade h-100 carousel-container w-100" data-bs-ride="carousel" data-bs-interval="5000">
@@ -206,7 +251,7 @@ function loginView(msg = "") {
           <div class="carousel-inner w-100 px-5 text-center">
             
             <div class="carousel-item active">
-              <i class="fa-solid fa-map-location-dot slider-icon"></i>
+              <i class="ph-fill ph-map-pin-line slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Gestão de Entregas</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Otimize rotas, controle clientes e acompanhe todas as entregas do dia com a geração de mapas automáticos.
@@ -214,7 +259,7 @@ function loginView(msg = "") {
             </div>
 
             <div class="carousel-item">
-              <i class="fa-solid fa-money-bill-transfer slider-icon"></i>
+              <i class="ph-fill ph-money slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Controle Financeiro</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Registre entradas e saídas e emita comprovantes em um ambiente seguro. Controle diário e relatórios detalhados.
@@ -222,7 +267,7 @@ function loginView(msg = "") {
             </div>
 
             <div class="carousel-item">
-              <i class="fa-solid fa-layer-group slider-icon"></i>
+              <i class="ph-fill ph-stack slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Produção & Estoque</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Gere ordens de produção, gerencie o stock de chapas e o fluxo da flexografia e rotativa.
@@ -230,7 +275,7 @@ function loginView(msg = "") {
             </div>
 
             <div class="carousel-item">
-              <i class="fa-solid fa-clipboard-check slider-icon"></i>
+              <i class="ph-fill ph-clipboard-text slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Inspeção de Frota</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Checklists digitais para todos os veículos. Controle manutenção, quilometragem e o estado dos veículos.
@@ -238,7 +283,7 @@ function loginView(msg = "") {
             </div>
             
             <div class="carousel-item">
-              <i class="fa-solid fa-route slider-icon"></i>
+              <i class="ph-fill ph-book-open slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Cadernos de Entrega</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Sincronize coordenadas GPS precisas e trace as rotas mais rápidas. Gere relatórios e exporte dados para PDF ou Excel facilmente.
@@ -246,7 +291,7 @@ function loginView(msg = "") {
             </div>
 
             <div class="carousel-item">
-              <i class="fa-solid fa-users-gear slider-icon"></i>
+              <i class="ph-fill ph-users-three slider-icon"></i>
               <h2 class="fw-bold text-white mb-3" style="letter-spacing: 1px;">Diaristas & Pagamentos</h2>
               <p class="text-white opacity-75 fs-5 mx-auto" style="max-width: 600px; line-height: 1.6;">
                 Controle integral dos turnos, pagamentos em lote e geração rápida de comprovantes e mensagens padronizadas de WhatsApp.
@@ -271,7 +316,7 @@ function loginView(msg = "") {
 
             ${msg ? `
               <div class="alert bg-danger bg-opacity-10 border border-danger border-opacity-50 text-white d-flex align-items-center p-3 mb-4 shadow-sm" style="font-size:0.85rem; border-radius:8px;">
-                <i class="fa-solid fa-circle-exclamation text-danger me-2"></i>
+                <i class="ph-fill ph-warning-circle text-danger me-2 fs-5"></i>
                 <div>${msg}</div>
               </div>
             ` : ""}
@@ -281,7 +326,7 @@ function loginView(msg = "") {
               <div class="mb-3">
                   <label class="form-label text-white-50 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">E-mail</label>
                   <div class="input-group input-group-lg shadow-sm">
-                    <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
+                    <span class="input-group-text"><i class="ph ph-envelope"></i></span>
                     <input type="email" name="email" class="form-control fs-6" placeholder="email@ecoflow.com" required>
                   </div>
               </div>
@@ -289,7 +334,7 @@ function loginView(msg = "") {
               <div class="mb-4">
                   <label class="form-label text-white-50 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">Senha</label>
                   <div class="input-group input-group-lg shadow-sm">
-                    <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                    <span class="input-group-text"><i class="ph ph-lock"></i></span>
                     <input type="password" name="senha" class="form-control fs-6" placeholder="••••••••" required>
                   </div>
               </div>
@@ -303,8 +348,8 @@ function loginView(msg = "") {
                   </div>
               </div>
 
-              <button type="submit" class="btn btn-erp w-100 shadow">
-                Entrar<i class="fa-solid fa-arrow-right-to-bracket ms-1"></i>
+              <button type="submit" class="btn btn-erp w-100 shadow" id="btnSubmit">
+                Entrar<i class="ph-bold ph-sign-in ms-1 fs-5"></i>
               </button>
 
             </form>
@@ -317,10 +362,10 @@ function loginView(msg = "") {
               <span class="sidebar-text" style="letter-spacing: 0.5px;">Desenvolvido por <strong class="text-accent">71DEV</strong></span>
               <div class="d-flex align-items-center justify-content-center gap-3 mt-1">
                 <a href="https://www.instagram.com/71dev_/" target="_blank" class="text-white-50 hover-verde transition-btn d-flex align-items-center justify-content-center" title="Instagram" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1;">
-                  <i class="fa-brands fa-instagram" style="font-size: 1.1rem;"></i>
+                  <i class="ph ph-instagram-logo" style="font-size: 1.2rem;"></i>
                 </a>
                 <a href="https://wa.me/557183174920" target="_blank" class="text-white-50 hover-verde transition-btn d-flex align-items-center justify-content-center" title="WhatsApp" style="text-decoration: none; background: transparent; padding: 2px; line-height: 1;">
-                  <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
+                  <i class="ph ph-whatsapp-logo" style="font-size: 1.2rem;"></i>
                 </a>
               </div>
             </div>
@@ -336,7 +381,7 @@ function loginView(msg = "") {
         <div id="sucessoToast" class="toast shadow-lg border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-check fs-5 me-2 text-accent"></i>
+                    <i class="ph-fill ph-check-circle fs-5 me-2 text-accent"></i>
                     <strong class="fs-6" id="sucessoTitulo">Acesso Permitido!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -350,7 +395,7 @@ function loginView(msg = "") {
         <div id="erroToast" class="toast shadow-lg border-0" style="border-color: rgba(220,53,69,0.3) !important;" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-transparent border-bottom-0 pb-0 pt-3 px-3 text-white d-flex justify-content-between">
                 <div>
-                    <i class="fa-solid fa-circle-xmark fs-5 me-2 text-danger"></i>
+                    <i class="ph-fill ph-x-circle fs-5 me-2 text-danger"></i>
                     <strong class="fs-6" id="erroTitulo">Erro!</strong>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Fechar"></button>
@@ -366,6 +411,13 @@ function loginView(msg = "") {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        function getAppleSpinner(scale = 1) {
+            return \`<div class="apple-spinner me-2" style="transform: scale(\${scale});">
+                      <div></div><div></div><div></div><div></div><div></div><div></div>
+                      <div></div><div></div><div></div><div></div><div></div><div></div>
+                    </div>\`;
+        }
+
         // Função Genérica de Toasts adaptada
         function mostrarToastLogin(tipo, titulo, mensagem) {
             const isSuccess = tipo === 'sucesso';
@@ -403,9 +455,9 @@ function loginView(msg = "") {
         async function prepararLogin(event, form) {
             event.preventDefault();
             
-            const btn = form.querySelector('button[type="submit"]');
+            const btn = document.getElementById('btnSubmit');
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Validando...';
+            btn.innerHTML = getAppleSpinner(0.8) + '<span class="ms-1">Validando...</span>';
             btn.disabled = true;
 
             try {

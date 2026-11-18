@@ -223,6 +223,7 @@ router.post("/kanban/relatorio", isLogged, async (req, res) => {
             titulo: 'Título',
             prioridade: 'Prioridade',
             prazo: 'Prazo',
+            data_criacao: 'Data de Criação',
             coluna: 'Coluna Atual',
             descricao: 'Descrição',
             etiquetas: 'Etiquetas',
@@ -246,6 +247,9 @@ router.post("/kanban/relatorio", isLogged, async (req, res) => {
                 }
                 else if (campo === 'prazo') {
                     linhaArray.push(`"${c.prazo ? new Date(c.prazo).toLocaleDateString('pt-BR') : ''}"`);
+                }
+                else if (campo === 'data_criacao') {
+                    linhaArray.push(`"${c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : ''}"`);
                 }
                 else if (campo === 'coluna') {
                     linhaArray.push(`"${colMap[c.coluna_id] || ''}"`);
